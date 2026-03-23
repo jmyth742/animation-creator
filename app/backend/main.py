@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from config import settings
 from database import init_db
-from routers import auth, characters, episodes, jobs, locations, projects, scenes
+from routers import auth, characters, episodes, generate, jobs, locations, projects, scenes
 
 
 # ── Lifespan ──────────────────────────────────────────────────────────────────
@@ -72,6 +72,7 @@ app.include_router(locations.router, tags=["locations"])
 app.include_router(episodes.router, tags=["episodes"])
 app.include_router(scenes.router, tags=["scenes"])
 app.include_router(jobs.router, tags=["jobs"])
+app.include_router(generate.router, tags=["generate"])
 
 
 # ── Root ──────────────────────────────────────────────────────────────────────

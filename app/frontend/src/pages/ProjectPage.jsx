@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Users, Tv, Settings } from 'lucide-react'
+import { ArrowLeft, Users, Tv, MapPin, Settings } from 'lucide-react'
 import { get } from '../api/client'
 import CharactersTab from '../components/CharactersTab'
 import EpisodesTab from '../components/EpisodesTab'
+import LocationsTab from '../components/LocationsTab'
 import ProjectSettingsForm from '../components/ProjectSettingsForm'
 import ProductionPanel from '../components/ProductionPanel'
 
 const TABS = [
   { key: 'characters', label: 'Characters', Icon: Users },
+  { key: 'locations', label: 'Locations', Icon: MapPin },
   { key: 'episodes', label: 'Episodes', Icon: Tv },
   { key: 'settings', label: 'Settings', Icon: Settings },
 ]
@@ -41,6 +43,7 @@ export default function ProjectPage() {
 
   const handleCharactersChange = () => fetchProject()
   const handleEpisodesChange = () => fetchProject()
+  const handleLocationsChange = () => fetchProject()
   const handleProjectUpdate = (updated) => setProject(updated)
 
   const handleProduce = (jobId, meta) => {
@@ -119,6 +122,13 @@ export default function ProjectPage() {
             projectId={id}
             characters={project.characters || []}
             onCharactersChange={handleCharactersChange}
+          />
+        )}
+        {activeTab === 'locations' && (
+          <LocationsTab
+            projectId={id}
+            locations={project.locations || []}
+            onLocationsChange={handleLocationsChange}
           />
         )}
         {activeTab === 'episodes' && (

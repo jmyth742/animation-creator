@@ -53,10 +53,61 @@ Text encoders:
 
 ---
 
+## Web UI (Story Builder)
+
+Full-stack web interface for managing series through a browser.
+
+### Stack
+- **Backend**: FastAPI + SQLAlchemy (SQLite) — `app/backend/`
+- **Frontend**: React 18 + Vite + Tailwind — `app/frontend/`
+
+### Running
+```bash
+# Terminal 1 — backend
+cd app/backend && uvicorn main:app --reload
+
+# Terminal 2 — frontend dev server
+cd app/frontend && npm run dev
+# → http://localhost:5173
+```
+
+### Features (as of 2026-03)
+| Tab | What you can do |
+|-----|----------------|
+| Characters | Add/edit/delete characters, set voice, visual description, backstory |
+| Locations | Add/edit/delete filming locations with visual descriptions |
+| Episodes | Add episodes manually or generate full scripts via Claude; expand to view/edit/delete scenes; produce episodes (draft or quality) |
+| Settings | Edit project metadata; **Generate Scripts with AI** — calls Claude to write full episode scripts and imports them into the DB |
+
+### API routes
+- `POST /projects/{id}/generate-scripts` — generate episode scripts via Claude, import to DB
+- `POST /episodes/{id}/produce?quality=draft|quality` — start background production job
+- `GET /ws/{job_id}` (WebSocket) — stream job progress to UI
+
+### Architecture
+```
+React UI → FastAPI → pipeline.py → showrunner.py → ComfyUI + FFmpeg
+                   → routers/generate.py → Claude API (script gen)
+                   → SQLite (project/episode/scene data)
+```
+
+---
+
 ## Repository Layout
 
 ```
 .
+├── app/
+│   ├── backend/            # FastAPI app
+│   │   ├── main.py
+│   │   ├── routers/        # auth, characters, episodes, generate, jobs, locations, projects, scenes
+│   │   ├── pipeline.py     # DB ↔ showrunner bridge
+│   │   └── schemas.py
+│   └── frontend/           # React + Vite
+│       └── src/
+│           ├── components/ # CharactersTab, EpisodesTab, LocationsTab, ProductionPanel, ProjectSettingsForm
+│           └── pages/      # Dashboard, Project, Login, Register
+│
 ├── ComfyUI/
 │   ├── custom_nodes/
 │   │   ├── ComfyUI-HunyuanVideoWrapper/   # Kijai's wrapper (legacy v1.0 support)
