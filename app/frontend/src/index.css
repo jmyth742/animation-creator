@@ -2,8 +2,277 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dark scrollbar */
-* { scrollbar-width: thin; scrollbar-color: #3f3f46 transparent; }
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+/* ── Google pixel fonts are loaded in index.html ── */
+
+@layer base {
+  html, body {
+    background-color: #06060f;
+    color: #e8e8f8;
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    image-rendering: pixelated;
+  }
+
+  /* Remove default border-radius everywhere */
+  *, *::before, *::after {
+    border-radius: 0 !important;
+  }
+
+  /* Pixel scrollbar */
+  * { scrollbar-width: thin; scrollbar-color: #2a2a50 #0c0c1e; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #0c0c1e; }
+  ::-webkit-scrollbar-thumb { background: #2a2a50; border: 2px solid #0c0c1e; }
+  ::-webkit-scrollbar-thumb:hover { background: #44446a; }
+}
+
+@layer components {
+  /* ── Pixel panel / card ── */
+  .pixel-panel {
+    @apply bg-zinc-900 border-2 border-zinc-700;
+    box-shadow: 4px 4px 0 0 #000;
+  }
+  .pixel-panel-sm {
+    @apply bg-zinc-900 border-2 border-zinc-700;
+    box-shadow: 2px 2px 0 0 #000;
+  }
+  .pixel-panel-accent {
+    @apply bg-zinc-900 border-2 border-accent-700;
+    box-shadow: 4px 4px 0 0 #6d28d9;
+  }
+
+  /* ── Pixel buttons ── */
+  .btn-pixel {
+    @apply font-pixel text-white bg-accent-600 border-2 border-accent-400 px-4 py-2 cursor-pointer inline-flex items-center gap-2;
+    box-shadow: 4px 4px 0 0 #000;
+    transition: transform 0.05s, box-shadow 0.05s;
+    font-size: 9px;
+    line-height: 1.6;
+    image-rendering: pixelated;
+  }
+  .btn-pixel:hover {
+    @apply bg-accent-500;
+  }
+  .btn-pixel:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 0 #000;
+  }
+  .btn-pixel:disabled {
+    @apply opacity-40 cursor-not-allowed;
+    transform: none;
+    box-shadow: 4px 4px 0 0 #000;
+  }
+
+  .btn-pixel-sm {
+    @apply btn-pixel px-3 py-1.5;
+    font-size: 8px;
+    box-shadow: 2px 2px 0 0 #000;
+  }
+  .btn-pixel-sm:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0 0 #000;
+  }
+
+  .btn-pixel-ghost {
+    @apply font-pixel border-2 border-zinc-600 text-zinc-300 bg-zinc-800 px-4 py-2 cursor-pointer inline-flex items-center gap-2;
+    box-shadow: 4px 4px 0 0 #000;
+    transition: transform 0.05s, box-shadow 0.05s;
+    font-size: 9px;
+    line-height: 1.6;
+  }
+  .btn-pixel-ghost:hover {
+    @apply border-zinc-400 text-zinc-100 bg-zinc-700;
+  }
+  .btn-pixel-ghost:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 0 #000;
+  }
+
+  .btn-pixel-danger {
+    @apply btn-pixel bg-red-800 border-red-500;
+    box-shadow: 4px 4px 0 0 #000;
+  }
+  .btn-pixel-danger:hover { @apply bg-red-700; }
+
+  /* ── Pixel input / textarea / select ── */
+  .input-pixel {
+    @apply w-full bg-zinc-800 border-2 border-zinc-600 text-zinc-100 px-3 py-2 font-retro;
+    font-size: 18px;
+    outline: none;
+    box-shadow: inset 2px 2px 0 0 rgba(0,0,0,0.5);
+    transition: border-color 0.1s;
+  }
+  .input-pixel::placeholder { @apply text-zinc-500; }
+  .input-pixel:focus {
+    @apply border-accent-500;
+    box-shadow: inset 2px 2px 0 0 rgba(0,0,0,0.5), 0 0 0 2px rgba(124,58,237,0.3);
+  }
+
+  /* ── Pixel label ── */
+  .label-pixel {
+    @apply font-pixel text-accent-400 block mb-2;
+    font-size: 8px;
+    letter-spacing: 0.1em;
+  }
+
+  /* ── Pixel heading ── */
+  .heading-pixel {
+    @apply font-pixel text-zinc-100;
+    font-size: 12px;
+    line-height: 2;
+    text-shadow: 2px 2px 0 #000;
+  }
+  .heading-pixel-sm {
+    @apply font-pixel text-zinc-200;
+    font-size: 9px;
+    line-height: 2;
+    text-shadow: 1px 1px 0 #000;
+  }
+  .heading-pixel-lg {
+    @apply font-pixel text-zinc-100;
+    font-size: 16px;
+    line-height: 2;
+    text-shadow: 3px 3px 0 #000, -1px -1px 0 rgba(168,85,247,0.3);
+  }
+
+  /* ── Pixel badge ── */
+  .badge-pixel {
+    @apply font-pixel bg-zinc-800 border border-zinc-600 px-2 py-0.5 text-zinc-300 inline-flex items-center gap-1;
+    font-size: 7px;
+    box-shadow: 2px 2px 0 0 #000;
+  }
+  .badge-pixel-accent {
+    @apply badge-pixel bg-accent-900 border-accent-700 text-accent-300;
+    box-shadow: 2px 2px 0 0 #3b0764;
+  }
+  .badge-pixel-green {
+    @apply badge-pixel bg-green-900 border-green-700 text-green-300;
+    box-shadow: 2px 2px 0 0 #14532d;
+  }
+
+  /* ── Pixel progress / HP bar ── */
+  .hp-bar-track {
+    @apply bg-zinc-800 border-2 border-zinc-600 h-4 overflow-hidden;
+    box-shadow: inset 2px 2px 0 0 rgba(0,0,0,0.6);
+  }
+  .hp-bar-fill {
+    @apply h-full transition-all duration-500;
+    background: repeating-linear-gradient(
+      90deg,
+      #7c3aed 0px, #7c3aed 8px,
+      #9333ea 8px, #9333ea 16px
+    );
+  }
+  .hp-bar-fill-green {
+    background: repeating-linear-gradient(
+      90deg,
+      #16a34a 0px, #16a34a 8px,
+      #22c55e 8px, #22c55e 16px
+    );
+  }
+  .hp-bar-fill-red {
+    background: repeating-linear-gradient(
+      90deg,
+      #dc2626 0px, #dc2626 8px,
+      #ef4444 8px, #ef4444 16px
+    );
+  }
+
+  /* ── Pixel divider ── */
+  .divider-pixel {
+    @apply border-0 border-t-2 border-zinc-700 my-4;
+  }
+
+  /* ── Retro text body ── */
+  .text-retro { @apply font-retro; font-size: 18px; }
+  .text-retro-sm { @apply font-retro; font-size: 16px; }
+  .text-retro-lg { @apply font-retro; font-size: 22px; }
+  .text-retro-xl { @apply font-retro; font-size: 26px; }
+
+  /* ── Scanline overlay (apply to top-level containers) ── */
+  .scanlines::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.08) 2px,
+      rgba(0, 0, 0, 0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ── Pixel cursor blink ── */
+  .cursor-blink::after {
+    content: '█';
+    @apply animate-blink text-accent-400;
+    margin-left: 2px;
+  }
+
+  /* ── Pixel tab ── */
+  .tab-pixel {
+    @apply font-pixel border-b-4 border-transparent text-zinc-500 px-4 py-3 cursor-pointer transition-colors;
+    font-size: 8px;
+    letter-spacing: 0.05em;
+  }
+  .tab-pixel:hover { @apply text-zinc-200 border-zinc-600; }
+  .tab-pixel.active {
+    @apply text-accent-400 border-accent-500;
+    text-shadow: 0 0 8px rgba(168,85,247,0.5);
+  }
+
+  /* ── Pixel modal overlay ── */
+  .modal-overlay {
+    @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+    background: rgba(0, 0, 0, 0.85);
+  }
+  .modal-pixel {
+    @apply bg-zinc-900 border-2 border-accent-700 w-full flex flex-col;
+    box-shadow: 8px 8px 0 0 #000, 0 0 32px rgba(124,58,237,0.2);
+    max-height: 90vh;
+  }
+  .modal-header {
+    @apply flex items-center justify-between px-6 py-4 border-b-2 border-zinc-700;
+    background: linear-gradient(90deg, rgba(124,58,237,0.15) 0%, transparent 100%);
+  }
+
+  /* ── Retro error/success boxes ── */
+  .alert-error {
+    @apply border-2 border-px-red bg-red-950 text-px-red px-4 py-3 font-retro;
+    font-size: 16px;
+    box-shadow: 3px 3px 0 0 #000;
+  }
+  .alert-success {
+    @apply border-2 border-px-green bg-green-950 text-px-green px-4 py-3 font-retro;
+    font-size: 16px;
+    box-shadow: 3px 3px 0 0 #000;
+  }
+  .alert-info {
+    @apply border-2 border-accent-700 bg-accent-950 text-accent-300 px-4 py-3 font-retro;
+    font-size: 16px;
+    box-shadow: 3px 3px 0 0 #000;
+  }
+}
+
+/* ── Pixel loading spinner (CSS only, no spin animation on circles) ── */
+@keyframes pixelSpin {
+  0%   { content: '⣾'; }
+  12%  { content: '⣽'; }
+  25%  { content: '⣻'; }
+  37%  { content: '⢿'; }
+  50%  { content: '⡿'; }
+  62%  { content: '⣟'; }
+  75%  { content: '⣯'; }
+  87%  { content: '⣷'; }
+  100% { content: '⣾'; }
+}
+
+.pixel-spinner::before {
+  content: '⣾';
+  @apply text-accent-400;
+  font-size: 24px;
+  animation: pixelSpin 0.8s steps(8) infinite;
+}

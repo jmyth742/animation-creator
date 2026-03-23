@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { X, Wand2, Check } from 'lucide-react'
 import { post, put } from '../api/client'
 
 const VOICES = [
   { value: 'en-GB-RyanNeural',    label: 'Ryan — British Male' },
-  { value: 'en-GB-ThomasNeural', label: 'Thomas — British Male' },
-  { value: 'en-GB-SoniaNeural',  label: 'Sonia — British Female' },
-  { value: 'en-GB-LibbyNeural',  label: 'Libby — British Female' },
-  { value: 'en-US-GuyNeural',    label: 'Guy — American Male' },
-  { value: 'en-US-JennyNeural',  label: 'Jenny — American Female' },
-  { value: 'en-AU-NatashaNeural',label: 'Natasha — Australian Female' },
+  { value: 'en-GB-ThomasNeural',  label: 'Thomas — British Male' },
+  { value: 'en-GB-SoniaNeural',   label: 'Sonia — British Female' },
+  { value: 'en-GB-LibbyNeural',   label: 'Libby — British Female' },
+  { value: 'en-US-GuyNeural',     label: 'Guy — American Male' },
+  { value: 'en-US-JennyNeural',   label: 'Jenny — American Female' },
+  { value: 'en-AU-NatashaNeural', label: 'Natasha — Australian Female' },
 ]
 
 function getInitials(name = '') {
@@ -29,29 +29,22 @@ export default function CharacterModal({ projectId, character, onSave, onClose }
   })
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
-
-  // Portrait generation state
   const [generating, setGenerating] = useState(false)
   const [portraitOptions, setPortraitOptions] = useState([])
   const [selectedPortrait, setSelectedPortrait] = useState(character?.reference_image_path ?? null)
   const [portraitError, setPortraitError] = useState('')
 
-  const handleChange = (e) => {
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
-  }
+  const handleChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e?.preventDefault()
     if (!form.name.trim()) { setError('Name is required.'); return }
     setError('')
     setSaving(true)
     try {
-      let saved
-      if (isEditing) {
-        saved = await put(`/characters/${character.id}`, form)
-      } else {
-        saved = await post(`/projects/${projectId}/characters`, form)
-      }
+      const saved = isEditing
+        ? await put(`/characters/${character.id}`, form)
+        : await post(`/projects/${projectId}/characters`, form)
       onSave(saved)
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to save character.')
@@ -78,97 +71,65 @@ export default function CharacterModal({ projectId, character, onSave, onClose }
     setSelectedPortrait(url)
     try {
       await put(`/characters/${character.id}`, { reference_image_path: url })
-    } catch (err) {
-      console.error('Failed to update portrait:', err)
-    }
+    } catch {}
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-xl bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+    <div className="modal-overlay">
+      <div className="modal-pixel max-w-xl">
+
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
-          <h2 className="text-base font-semibold text-zinc-100">
-            {isEditing ? `Edit: ${character.name}` : 'New Character'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+        <div className="modal-header">
+          <span className="heading-pixel-sm text-accent-400">
+            {isEditing ? `✎ ${character.name}` : '+ NEW CHARACTER'}
+          </span>
+          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-200 font-pixel text-sm p-1">✕</button>
         </div>
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-          {error && (
-            <div className="px-4 py-3 bg-red-950/60 border border-red-700/50 rounded-lg text-red-300 text-sm">
-              {error}
-            </div>
-          )}
+          {error && <div className="alert-error">✖ {error}</div>}
 
-          {/* Portrait section (editing only) */}
+          {/* Portrait section */}
           {isEditing && (
-            <div className="bg-zinc-800/60 border border-zinc-700/50 rounded-xl p-4 space-y-3">
-              <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Portrait</h3>
-
-              {/* Current portrait */}
+            <div className="pixel-panel-sm p-4 space-y-3">
+              <div className="label-pixel">CHARACTER PORTRAIT</div>
               <div className="flex items-start gap-4">
-                <div className="w-20 h-20 rounded-xl overflow-hidden bg-zinc-700 flex-shrink-0 flex items-center justify-center">
+                <div className="w-20 h-20 bg-zinc-700 border-2 border-zinc-600 flex-shrink-0 flex items-center justify-center overflow-hidden"
+                  style={{ boxShadow: '2px 2px 0 0 #000', imageRendering: 'pixelated' }}>
                   {character.portrait_url ? (
                     <img src={character.portrait_url} alt={character.name} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-2xl font-bold text-zinc-400">{getInitials(character.name)}</span>
+                    <span className="font-pixel text-accent-400" style={{ fontSize: '16px' }}>
+                      {getInitials(character.name)}
+                    </span>
                   )}
                 </div>
-                <div className="flex-1">
-                  <button
-                    onClick={handleGeneratePortrait}
-                    disabled={generating}
-                    className="flex items-center gap-2 px-4 py-2 bg-accent-700 hover:bg-accent-600 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
-                  >
-                    {generating ? (
-                      <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <Wand2 className="w-3.5 h-3.5" />
-                    )}
-                    {generating ? 'Generating… (~30s)' : 'Generate Portrait'}
+                <div>
+                  <button onClick={handleGeneratePortrait} disabled={generating} className="btn-pixel-sm">
+                    {generating ? <span className="pixel-spinner" /> : <Wand2 className="w-3 h-3" />}
+                    {generating ? 'GENERATING...' : 'GEN PORTRAIT'}
                   </button>
-                  {generating && (
-                    <p className="text-xs text-zinc-500 mt-2">
-                      AI is creating portrait options. This may take ~30 seconds.
-                    </p>
-                  )}
-                  {portraitError && (
-                    <p className="text-xs text-red-400 mt-2">{portraitError}</p>
-                  )}
+                  {portraitError && <p className="text-retro text-px-red mt-2" style={{ fontSize: '15px' }}>{portraitError}</p>}
                 </div>
               </div>
-
-              {/* Portrait options */}
               {portraitOptions.length > 0 && (
-                <div>
-                  <p className="text-xs text-zinc-400 mb-2">Select a portrait:</p>
-                  <div className="flex gap-3 flex-wrap">
-                    {portraitOptions.map((url, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleSelectPortrait(url)}
-                        className={`relative w-24 h-24 rounded-xl overflow-hidden border-2 transition-all ${
-                          selectedPortrait === url
-                            ? 'border-accent-500 ring-2 ring-accent-500/40'
-                            : 'border-zinc-700 hover:border-zinc-500'
-                        }`}
-                      >
-                        <img src={url} alt={`Portrait option ${i + 1}`} className="w-full h-full object-cover" />
-                        {selectedPortrait === url && (
-                          <div className="absolute inset-0 bg-accent-500/20 flex items-center justify-center">
-                            <Check className="w-6 h-6 text-white drop-shadow-lg" />
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
+                <div className="flex gap-3 flex-wrap pt-1">
+                  {portraitOptions.map((url, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleSelectPortrait(url)}
+                      className={`relative w-20 h-20 border-2 overflow-hidden ${selectedPortrait === url ? 'border-accent-400' : 'border-zinc-600 hover:border-zinc-400'}`}
+                      style={{ boxShadow: '2px 2px 0 0 #000' }}
+                    >
+                      <img src={url} alt={`Portrait ${i + 1}`} className="w-full h-full object-cover" />
+                      {selectedPortrait === url && (
+                        <div className="absolute inset-0 bg-accent-500/30 flex items-center justify-center">
+                          <Check className="w-5 h-5 text-white drop-shadow-lg" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -177,112 +138,50 @@ export default function CharacterModal({ projectId, character, onSave, onClose }
           {/* Form fields */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wider">
-                Name <span className="text-red-400">*</span>
-              </label>
-              <input
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                required
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent transition"
-                placeholder="Character name"
-              />
+              <label className="label-pixel">NAME *</label>
+              <input name="name" value={form.name} onChange={handleChange} required className="input-pixel" placeholder="Character name" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wider">
-                Role
-              </label>
-              <input
-                name="role"
-                value={form.role}
-                onChange={handleChange}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent transition"
-                placeholder="e.g. Protagonist"
-              />
+              <label className="label-pixel">ROLE</label>
+              <input name="role" value={form.role} onChange={handleChange} className="input-pixel" placeholder="e.g. Protagonist" />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wider">
-              Backstory
-            </label>
-            <textarea
-              name="backstory"
-              value={form.backstory}
-              onChange={handleChange}
-              rows={3}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent transition resize-none"
-              placeholder="Character history, motivations, key events…"
-            />
+            <label className="label-pixel">BACKSTORY</label>
+            <textarea name="backstory" value={form.backstory} onChange={handleChange} rows={3}
+              className="input-pixel resize-none" placeholder="Character history, motivations..." />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wider">
-              Visual Description
-            </label>
-            <p className="text-xs text-zinc-500 mb-1.5">Describe how this character looks for AI generation</p>
-            <textarea
-              name="visual_description"
-              value={form.visual_description}
-              onChange={handleChange}
-              rows={4}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent transition resize-none"
-              placeholder="Tall man in his 40s, weathered face, dark coat, piercing grey eyes…"
-            />
+            <label className="label-pixel">VISUAL DESCRIPTION</label>
+            <p className="text-retro text-zinc-500 mb-1" style={{ fontSize: '15px' }}>How this character looks for AI generation</p>
+            <textarea name="visual_description" value={form.visual_description} onChange={handleChange} rows={3}
+              className="input-pixel resize-none" placeholder="Tall man in his 40s, weathered face, dark coat..." />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wider">
-                Voice
-              </label>
-              <select
-                name="voice"
-                value={form.voice}
-                onChange={handleChange}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent transition"
-              >
+              <label className="label-pixel">VOICE</label>
+              <select name="voice" value={form.voice} onChange={handleChange} className="input-pixel">
                 {VOICES.map((v) => (
-                  <option key={v.value} value={v.value}>
-                    {v.label}
-                  </option>
+                  <option key={v.value} value={v.value}>{v.label}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wider">
-                Voice Notes
-              </label>
-              <input
-                name="voice_notes"
-                value={form.voice_notes}
-                onChange={handleChange}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent transition"
-                placeholder="Slow, deliberate, weary…"
-              />
+              <label className="label-pixel">VOICE NOTES</label>
+              <input name="voice_notes" value={form.voice_notes} onChange={handleChange}
+                className="input-pixel" placeholder="Slow, weary, deliberate..." />
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-zinc-800">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={saving}
-            className="flex items-center gap-2 px-5 py-2 bg-accent-600 hover:bg-accent-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
-          >
-            {saving && (
-              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            )}
-            {saving ? 'Saving…' : isEditing ? 'Save Changes' : 'Create Character'}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t-2 border-zinc-700">
+          <button type="button" onClick={onClose} className="btn-pixel-ghost">CANCEL</button>
+          <button onClick={handleSubmit} disabled={saving} className="btn-pixel">
+            {saving ? '▶▶ SAVING...' : isEditing ? '▶ SAVE CHANGES' : '▶ CREATE CHARACTER'}
           </button>
         </div>
       </div>

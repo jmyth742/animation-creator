@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
-import { Film, LogIn } from 'lucide-react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -26,52 +25,51 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
+    <div className="scanlines min-h-screen bg-zinc-950 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
+
         {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 bg-accent-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-accent-900/40">
-            <Film className="w-7 h-7 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-zinc-100 tracking-tight">Story Builder</h1>
-          <p className="text-zinc-400 text-sm mt-1">Sign in to your account</p>
+        <div className="flex flex-col items-center mb-10 text-center">
+          <div className="text-6xl mb-4">👾</div>
+          <h1 className="heading-pixel-lg text-accent-400 mb-2">STORY BUILDER</h1>
+          <p className="text-retro text-zinc-400">INSERT COIN TO CONTINUE</p>
         </div>
 
-        {/* Card */}
-        <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 shadow-xl">
+        {/* Panel */}
+        <div className="pixel-panel p-6">
+          <div className="heading-pixel-sm text-accent-500 mb-6 border-b-2 border-zinc-700 pb-3">
+            ▶ PLAYER LOGIN
+          </div>
+
           {error && (
-            <div className="mb-4 px-4 py-3 bg-red-950/60 border border-red-700/50 rounded-lg text-red-300 text-sm">
-              {error}
+            <div className="alert-error mb-4">
+              ✖ {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wider">
-                Email
-              </label>
+              <label className="label-pixel">EMAIL ADDRESS</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent transition"
-                placeholder="you@example.com"
+                className="input-pixel"
+                placeholder="player@example.com"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wider">
-                Password
-              </label>
+              <label className="label-pixel">PASSWORD</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent transition"
+                className="input-pixel"
                 placeholder="••••••••"
               />
             </div>
@@ -79,22 +77,17 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-accent-600 hover:bg-accent-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg py-2.5 text-sm transition-colors mt-2"
+              className="btn-pixel w-full justify-center mt-2"
             >
-              {loading ? (
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <LogIn className="w-4 h-4" />
-              )}
-              {loading ? 'Signing in…' : 'Sign in'}
+              {loading ? '▶▶ LOADING...' : '▶ PRESS START'}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-zinc-500 text-sm mt-5">
-          Don't have an account?{' '}
-          <Link to="/register" className="text-accent-400 hover:text-accent-300 transition-colors font-medium">
-            Create one
+        <p className="text-center text-retro text-zinc-500 mt-6">
+          NEW PLAYER?{' '}
+          <Link to="/register" className="text-accent-400 hover:text-accent-300">
+            CREATE ACCOUNT
           </Link>
         </p>
       </div>

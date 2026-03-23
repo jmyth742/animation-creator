@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Film, Plus, LogOut, FolderOpen } from 'lucide-react'
+import { Plus, LogOut } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { get } from '../api/client'
 import ProjectCard from '../components/ProjectCard'
@@ -23,9 +23,7 @@ export default function DashboardPage() {
     }
   }
 
-  useEffect(() => {
-    fetchProjects()
-  }, [])
+  useEffect(() => { fetchProjects() }, [])
 
   const handleCreated = (project) => {
     setProjects((prev) => [project, ...prev])
@@ -37,74 +35,76 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col">
+    <div className="scanlines min-h-screen bg-zinc-950 flex flex-col">
+
       {/* Header */}
-      <header className="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-10">
+      <header className="bg-zinc-900 border-b-2 border-zinc-700 sticky top-0 z-10"
+        style={{ boxShadow: '0 4px 0 0 #000' }}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-accent-600 rounded-xl flex items-center justify-center shadow-md shadow-accent-900/40">
-              <Film className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-lg font-bold text-zinc-100 tracking-tight">Story Builder</span>
+            <span className="text-2xl">👾</span>
+            <span className="font-pixel text-accent-400" style={{ fontSize: '11px', textShadow: '2px 2px 0 #000' }}>
+              STORY BUILDER
+            </span>
           </div>
 
           <div className="flex items-center gap-4">
             {user && (
-              <span className="text-sm text-zinc-400 hidden sm:block">{user.email}</span>
+              <span className="text-retro text-zinc-500 hidden sm:block">
+                {user.email}
+              </span>
             )}
             <button
               onClick={logout}
-              className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors px-3 py-1.5 rounded-lg hover:bg-zinc-800"
+              className="btn-pixel-ghost"
+              style={{ fontSize: '8px' }}
             >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Sign out</span>
+              <LogOut className="w-3 h-3" />
+              SIGN OUT
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main content */}
+      {/* Main */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
-        {/* Page title + action */}
+
+        {/* Page title */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-zinc-100">Projects</h2>
-            <p className="text-zinc-400 text-sm mt-1">Your animated video series</p>
+            <h2 className="heading-pixel text-zinc-100 mb-1">
+              ▸ YOUR STORIES
+            </h2>
+            <p className="text-retro text-zinc-500">
+              {projects.length} project{projects.length !== 1 ? 's' : ''} in your library
+            </p>
           </div>
-          <button
-            onClick={() => setShowNewModal(true)}
-            className="flex items-center gap-2 bg-accent-600 hover:bg-accent-500 text-white font-medium rounded-xl px-4 py-2.5 text-sm transition-colors shadow-lg shadow-accent-900/30"
-          >
-            <Plus className="w-4 h-4" />
-            New Project
+          <button onClick={() => setShowNewModal(true)} className="btn-pixel">
+            <Plus className="w-3 h-3" />
+            NEW STORY
           </button>
         </div>
 
         {/* Content */}
         {loading ? (
-          <div className="flex items-center justify-center h-48">
-            <span className="w-8 h-8 border-2 border-zinc-700 border-t-accent-500 rounded-full animate-spin" />
+          <div className="flex items-center justify-center h-48 gap-4">
+            <span className="pixel-spinner" />
+            <span className="text-retro text-zinc-400">LOADING...</span>
           </div>
         ) : projects.length === 0 ? (
-          /* Empty state */
-          <div className="flex flex-col items-center justify-center h-64 text-center">
-            <div className="w-20 h-20 bg-zinc-800 rounded-3xl flex items-center justify-center mb-5">
-              <FolderOpen className="w-10 h-10 text-zinc-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-zinc-300 mb-2">No projects yet</h3>
-            <p className="text-zinc-500 text-sm max-w-xs mb-6">
-              Create your first animated series project to get started.
+          <div className="pixel-panel p-12 text-center">
+            <div className="text-6xl mb-6">📼</div>
+            <h3 className="heading-pixel text-zinc-300 mb-3">NO STORIES FOUND</h3>
+            <p className="text-retro text-zinc-500 mb-8 max-w-xs mx-auto">
+              Your quest log is empty. Begin your first story to get started.
             </p>
-            <button
-              onClick={() => setShowNewModal(true)}
-              className="flex items-center gap-2 bg-accent-600 hover:bg-accent-500 text-white font-medium rounded-xl px-5 py-2.5 text-sm transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Create your first project
+            <button onClick={() => setShowNewModal(true)} className="btn-pixel">
+              <Plus className="w-3 h-3" />
+              START FIRST STORY
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {projects.map((project) => (
               <ProjectCard
                 key={project.id}
@@ -116,7 +116,6 @@ export default function DashboardPage() {
         )}
       </main>
 
-      {/* New project modal */}
       {showNewModal && (
         <NewProjectModal
           onCreated={handleCreated}

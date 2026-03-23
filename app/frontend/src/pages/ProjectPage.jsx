@@ -9,10 +9,10 @@ import ProjectSettingsForm from '../components/ProjectSettingsForm'
 import ProductionPanel from '../components/ProductionPanel'
 
 const TABS = [
-  { key: 'characters', label: 'Characters', Icon: Users },
-  { key: 'locations', label: 'Locations', Icon: MapPin },
-  { key: 'episodes', label: 'Episodes', Icon: Tv },
-  { key: 'settings', label: 'Settings', Icon: Settings },
+  { key: 'characters', label: 'PARTY',     Icon: Users   },
+  { key: 'locations',  label: 'WORLD MAP', Icon: MapPin  },
+  { key: 'episodes',   label: 'QUEST LOG', Icon: Tv      },
+  { key: 'settings',   label: 'OPTIONS',   Icon: Settings },
 ]
 
 export default function ProjectPage() {
@@ -23,7 +23,7 @@ export default function ProjectPage() {
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('characters')
   const [activeJobId, setActiveJobId] = useState(null)
-  const [activeJobMeta, setActiveJobMeta] = useState(null) // { episodeTitle, seriesSlug, episodeNumber }
+  const [activeJobMeta, setActiveJobMeta] = useState(null)
 
   const fetchProject = async () => {
     try {
@@ -31,15 +31,12 @@ export default function ProjectPage() {
       setProject(data)
     } catch (err) {
       setError('Failed to load project.')
-      console.error(err)
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => {
-    fetchProject()
-  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchProject() }, [id]) // eslint-disable-line
 
   const handleCharactersChange = () => fetchProject()
   const handleEpisodesChange = () => fetchProject()
@@ -53,8 +50,9 @@ export default function ProjectPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <span className="w-8 h-8 border-2 border-zinc-700 border-t-accent-500 rounded-full animate-spin" />
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center gap-4">
+        <span className="pixel-spinner" />
+        <span className="text-retro text-zinc-400">LOADING...</span>
       </div>
     )
   }
@@ -62,13 +60,11 @@ export default function ProjectPage() {
   if (error || !project) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-400 mb-4">{error || 'Project not found.'}</p>
-          <button
-            onClick={() => navigate('/')}
-            className="text-accent-400 hover:text-accent-300 text-sm"
-          >
-            Back to dashboard
+        <div className="pixel-panel p-8 text-center max-w-sm">
+          <div className="text-4xl mb-4">💀</div>
+          <p className="text-retro text-px-red mb-4">{error || 'GAME OVER — Project not found.'}</p>
+          <button onClick={() => navigate('/')} className="btn-pixel-ghost">
+            ◀ BACK TO MENU
           </button>
         </div>
       </div>
@@ -76,38 +72,38 @@ export default function ProjectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col">
+    <div className="scanlines min-h-screen bg-zinc-950 flex flex-col">
+
       {/* Header */}
-      <header className="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-10">
+      <header className="bg-zinc-900 border-b-2 border-zinc-700 sticky top-0 z-10"
+        style={{ boxShadow: '0 4px 0 0 #000' }}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center gap-4">
           <button
             onClick={() => navigate('/')}
-            className="text-zinc-400 hover:text-zinc-200 p-1.5 rounded-lg hover:bg-zinc-800 transition-colors"
+            className="text-zinc-400 hover:text-accent-400 p-1.5 transition-colors border-2 border-transparent hover:border-zinc-600"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold text-zinc-100 truncate">{project.title}</h1>
+            <h1 className="font-pixel text-accent-400 truncate" style={{ fontSize: '10px', textShadow: '1px 1px 0 #000' }}>
+              {project.title}
+            </h1>
             {project.tone && (
-              <p className="text-xs text-zinc-500 truncate">{project.tone}</p>
+              <p className="text-retro text-zinc-500 text-sm truncate">{project.tone}</p>
             )}
           </div>
         </div>
 
         {/* Tabs */}
         <div className="max-w-7xl mx-auto px-6">
-          <nav className="flex gap-1 -mb-px">
+          <nav className="flex gap-0 -mb-px">
             {TABS.map(({ key, label, Icon }) => (
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === key
-                    ? 'border-accent-500 text-accent-400'
-                    : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-600'
-                }`}
+                className={`tab-pixel flex items-center gap-2 ${activeTab === key ? 'active' : ''}`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-3 h-3" />
                 {label}
               </button>
             ))}
@@ -145,7 +141,6 @@ export default function ProjectPage() {
         )}
       </main>
 
-      {/* Production panel */}
       {activeJobId && activeJobMeta && (
         <ProductionPanel
           jobId={activeJobId}

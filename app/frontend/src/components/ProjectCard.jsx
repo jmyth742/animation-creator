@@ -1,7 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MoreVertical, Tv, Users, Trash2 } from 'lucide-react'
+import { Tv, Users, Trash2 } from 'lucide-react'
 import { del } from '../api/client'
+
+const CARD_COLORS = [
+  'border-accent-700',
+  'border-px-cyan',
+  'border-px-green',
+  'border-px-yellow',
+  'border-px-orange',
+]
 
 export default function ProjectCard({ project, onDelete }) {
   const navigate = useNavigate()
@@ -9,17 +17,17 @@ export default function ProjectCard({ project, onDelete }) {
   const [deleting, setDeleting] = useState(false)
   const menuRef = useRef(null)
 
+  // Deterministic color based on project id
+  const borderColor = CARD_COLORS[project.id % CARD_COLORS.length]
+
   const truncated =
-    project.premise && project.premise.length > 120
-      ? project.premise.slice(0, 120) + '…'
+    project.premise && project.premise.length > 100
+      ? project.premise.slice(0, 100) + '…'
       : project.premise
 
-  // Close menu on outside click
   useEffect(() => {
     const handler = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setMenuOpen(false)
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -27,13 +35,12 @@ export default function ProjectCard({ project, onDelete }) {
 
   const handleDelete = async (e) => {
     e.stopPropagation()
-    if (!window.confirm(`Delete "${project.title}"? This cannot be undone.`)) return
+    if (!window.confirm(`DELETE "${project.title}"? This cannot be undone.`)) return
     setDeleting(true)
     try {
       await del(`/projects/${project.id}`)
       onDelete(project.id)
     } catch (err) {
-      console.error('Delete failed:', err)
       alert('Failed to delete project.')
     } finally {
       setDeleting(false)
@@ -43,65 +50,67 @@ export default function ProjectCard({ project, onDelete }) {
   return (
     <div
       onClick={() => navigate(`/projects/${project.id}`)}
-      className="group relative bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 hover:border-zinc-600 rounded-xl p-5 cursor-pointer transition-all duration-150 flex flex-col gap-3"
+      className={`group relative bg-zinc-900 border-2 ${borderColor} cursor-pointer flex flex-col gap-3 p-5 transition-all duration-100`}
+      style={{ boxShadow: '4px 4px 0 0 #000' }}
+      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translate(-2px,-2px)'; e.currentTarget.style.boxShadow = '6px 6px 0 0 #000' }}
+      onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '4px 4px 0 0 #000' }}
     >
-      {/* Three-dot menu */}
-      <div
-        ref={menuRef}
-        className="absolute top-3 right-3"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={() => setMenuOpen((o) => !o)}
-          className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-700 transition-colors opacity-0 group-hover:opacity-100"
-        >
-          <MoreVertical className="w-4 h-4" />
-        </button>
+      {/* Header row */}
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="font-pixel text-zinc-100 flex-1 leading-relaxed" style={{ fontSize: '9px', textShadow: '1px 1px 0 #000' }}>
+          {project.title}
+        </h3>
 
-        {menuOpen && (
-          <div className="absolute right-0 top-8 z-20 w-40 bg-zinc-800 border border-zinc-700 rounded-xl shadow-xl py-1">
-            <button
-              onClick={() => { setMenuOpen(false); navigate(`/projects/${project.id}`) }}
-              className="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100 transition-colors"
-            >
-              Open
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-zinc-700 hover:text-red-300 transition-colors flex items-center gap-2 disabled:opacity-50"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              {deleting ? 'Deleting…' : 'Delete'}
-            </button>
-          </div>
-        )}
+        {/* Menu */}
+        <div ref={menuRef} onClick={(e) => e.stopPropagation()} className="shrink-0">
+          <button
+            onClick={() => setMenuOpen((o) => !o)}
+            className="text-zinc-600 hover:text-zinc-300 font-pixel opacity-0 group-hover:opacity-100 transition-opacity px-1"
+            style={{ fontSize: '10px' }}
+          >
+            ···
+          </button>
+          {menuOpen && (
+            <div className="absolute right-2 top-10 z-20 bg-zinc-800 border-2 border-zinc-600 min-w-32"
+              style={{ boxShadow: '4px 4px 0 0 #000' }}>
+              <button
+                onClick={() => { setMenuOpen(false); navigate(`/projects/${project.id}`) }}
+                className="w-full text-left px-4 py-2 text-retro text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100 border-b border-zinc-700"
+              >
+                ▶ OPEN
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="w-full text-left px-4 py-2 text-retro text-px-red hover:bg-zinc-700 flex items-center gap-2 disabled:opacity-50"
+              >
+                <Trash2 className="w-3 h-3" />
+                {deleting ? 'DELETING...' : 'DELETE'}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-
-      {/* Title */}
-      <h3 className="text-base font-semibold text-zinc-100 pr-6 leading-snug">
-        {project.title}
-      </h3>
 
       {/* Premise */}
       {truncated && (
-        <p className="text-sm text-zinc-400 leading-relaxed flex-1">{truncated}</p>
+        <p className="text-retro text-zinc-400 flex-1" style={{ fontSize: '16px', lineHeight: '1.4' }}>
+          {truncated}
+        </p>
       )}
 
-      {/* Badges */}
+      {/* Stats badges */}
       <div className="flex items-center gap-2 pt-1 flex-wrap">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-zinc-800 border border-zinc-700 rounded-full text-xs text-zinc-300">
-          <Tv className="w-3 h-3 text-accent-400" />
-          {project.episode_count ?? project.episodes?.length ?? 0} episodes
+        <span className="badge-pixel">
+          <Tv className="w-2.5 h-2.5 text-accent-400" />
+          {project.episode_count ?? project.episodes?.length ?? 0} EP
         </span>
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-zinc-800 border border-zinc-700 rounded-full text-xs text-zinc-300">
-          <Users className="w-3 h-3 text-accent-400" />
-          {project.character_count ?? project.characters?.length ?? 0} characters
+        <span className="badge-pixel">
+          <Users className="w-2.5 h-2.5 text-accent-400" />
+          {project.character_count ?? project.characters?.length ?? 0} CHAR
         </span>
         {project.tone && (
-          <span className="inline-flex items-center px-2.5 py-1 bg-accent-950/60 border border-accent-800/50 rounded-full text-xs text-accent-300">
-            {project.tone}
-          </span>
+          <span className="badge-pixel-accent">{project.tone.slice(0, 12)}</span>
         )}
       </div>
     </div>
