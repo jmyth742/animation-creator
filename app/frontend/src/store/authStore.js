@@ -40,7 +40,7 @@ export const useAuthStore = create(
       },
     }),
     {
-      name: 'sb_token',
+      name: 'auth_storage',
       partialize: (state) => ({ token: state.token, user: state.user }),
     }
   )
