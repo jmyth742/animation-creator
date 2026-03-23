@@ -1,0 +1,76 @@
+{
+  "1": {
+    "class_type": "UnetLoaderGGUF",
+    "inputs": {
+      "unet_name": "hunyuan-video-t2v-720p-Q4_K_S.gguf"
+    }
+  },
+  "2": {
+    "class_type": "CLIPLoaderHunyuanVideo",
+    "inputs": {
+      "clip_name": "clip-vit-large-patch14",
+      "llm_name": "llava-llama-3-8b",
+      "type": "hunyuan_video"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "hunyuan-video-vae/pytorch_model.pt"
+    }
+  },
+  "4": {
+    "class_type": "HunyuanVideoTextEncode",
+    "inputs": {
+      "clip": ["2", 0],
+      "text": "A woman in a red coat walks slowly through an empty Berlin train station at dawn. The camera tracks alongside her at eye level. Warm morning light streams through tall windows. Cinematic, 35mm film grain, shallow depth of field.",
+      "offload_text_encoder": true
+    }
+  },
+  "5": {
+    "class_type": "EmptyHunyuanLatentVideo",
+    "inputs": {
+      "width": 544,
+      "height": 960,
+      "length": 33,
+      "batch_size": 1
+    }
+  },
+  "6": {
+    "class_type": "HunyuanVideoSampler",
+    "inputs": {
+      "model": ["1", 0],
+      "positive": ["4", 0],
+      "negative": ["4", 1],
+      "latent_image": ["5", 0],
+      "seed": 42,
+      "steps": 20,
+      "cfg": 1.0,
+      "embedded_guidance_scale": 6.0,
+      "flow_shift": 7.0,
+      "flow_reverse": true,
+      "denoise": 1.0,
+      "scheduler": "normal",
+      "sampler_name": "euler"
+    }
+  },
+  "7": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["6", 0],
+      "vae": ["3", 0]
+    }
+  },
+  "8": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": ["7", 0],
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "hunyuan_t2v_draft",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "title": "Wee Differences",
+  "premise": "A ten-episode animated sitcom set in present-day Belfast, following two next-door neighbours: Paddy Murphy, a proudly Catholic man from the Falls Road, and Billy Wilson, a proudly Protestant man from just the other side of the peace wall. They are best friends who should have nothing in common, united only by a shared love of tea, an irrational hatred of their other neighbour Derek, and a complete inability to agree on literally anything else. Each episode mines a specific cultural flashpoint — the pronunciation of the letter H, the correct name of Derry/Londonderry, where to keep a toaster, what sport counts as real — for warm, affectionate, laugh-out-loud comedy. The tone is 'Give My Head Peace' meets 'Derry Girls': Belfast self-deprecation at its finest, laughing with both communities rather than at either. Nobody is the villain. Both are equally daft.",
+  "tone": "warm sitcom comedy, affectionate, self-deprecating, absurdist escalation from tiny disagreements, never mean-spirited, heavy Belfast dialect humour, callbacks and running gags",
+  "visual_style": "bright Saturday-morning cartoon style, warm bold colours, expressive exaggerated faces, simple clean backgrounds, Belfast red-brick terraced houses with opposing flags (tricolour on Paddy's side, Union Jack on Billy's side), comedic timing through facial reaction holds, bouncy fluid animation",
+  "target_audience": "general",
+  "setting": "Present-day Belfast. Two adjoining terraced houses on the peace wall divide. Paddy's side: green front door, small tricolour in the window, Celtic FC calendar, GAA gear in the hall. Billy's side: red front door, Union Jack bunting, Rangers FC calendar, bowler hat on the hook. The shared back garden fence is their primary meeting point. Other locations: the local pub (awkwardly neutral territory), a shared office, the chip shop, a car journey to Derry/Londonderry.",
+  "main_characters": [
+    "Paddy Murphy — 35-year-old Catholic man from Falls Road. Dark curly hair, wiry build, always wearing a faded St Gall's GAA club jersey or an Ireland rugby top. Has a tricolour somewhere on his person at all times. Rosary beads hang from his rear-view mirror. Mildly obsessed with the Famine (always works it into conversation), says 'haitch' emphatically, calls the city 'Derry', has no idea how a TV remote works but knows every rule of Gaelic football. His mammy still does his laundry even though he is 35.",
+    "Billy Wilson — 35-year-old Protestant man from just across the peace wall. Fair hair, stocky build, always in a blue polo shirt or a Linfield FC top. Has a Union Jack somewhere on his person at all times. Member of the Orange Order (goes to exactly one meeting per year, forgets the passwords every time). Spotlessly clean house — keeps his toaster in the cupboard. Calls the city 'Londonderry', says 'aitch' with aggressive precision, supports Northern Ireland and Rangers, has never heard of hurling and refuses to believe it is a real sport. His mammy also still does his laundry even though he is 35.",
+    "Deirdre — Paddy's long-suffering girlfriend. Raised in a mixed Catholic/Protestant family, she finds both men equally exhausting. The voice of reason who is consistently ignored.",
+    "Narrator — A deadpan Belfast voice that provides absurdly over-serious historical context for the most trivial disagreements (e.g. solemnly noting that 'the correct pronunciation of the letter H has divided this island since at least 1921')."
+  ],
+  "season_arc": "Paddy and Billy navigate a series of escalating cultural misunderstandings that always end with them back at the garden fence, drinking tea and complaining about Derek. Each episode is self-contained but builds running gags: the toaster debate, the ongoing Derry/Londonderry argument, Paddy's mammy, Billy's inability to understand GAA, and their shared irrational hatred of Derek next door.",
+  "episode_plan": [
+    "Ep01 — The Letter H: A simple argument about how to pronounce the letter H spirals into a full historical inquiry involving the Irish language, the Act of Union, and a very confused post office worker.",
+    "Ep02 — Derry/Londonderry: They have to drive to 'the city up north' together. Neither will type their version of the name into the satnav. They end up going to the wrong city entirely.",
+    "Ep03 — The Toaster: Paddy discovers Billy keeps his toaster in a cupboard. He cannot let this go. Billy cannot explain it. An intervention is staged.",
+    "Ep04 — The Twelfth: Billy invites Paddy to watch the Twelfth parade. Paddy agrees, then spends the entire episode accidentally committing Orange Order social crimes through pure ignorance.",
+    "Ep05 — The GAA: Paddy tries to teach Billy the rules of hurling. Billy is convinced Paddy is making it up as he goes along. Paddy begins to suspect Billy might be right.",
+    "Ep06 — First Communion: Paddy's young nephew has his First Communion. Billy comes along as moral support and treats the whole thing like an anthropological field trip, asking increasingly inappropriate questions.",
+    "Ep07 — St Patrick's Day vs The Twelfth: Both men simultaneously try to celebrate their respective biggest holidays on days that happen to fall on the same weekend. Flag wars. Bunting wars. Whose music is louder wars.",
+    "Ep08 — The Pub Quiz: They enter a pub quiz as a team. Their combined historical knowledge consists of two completely different and mutually exclusive versions of Irish history. They somehow win.",
+    "Ep09 — What Are You?: A new person moves into the street and neither Paddy nor Billy can figure out if he's Catholic or Protestant. They employ every shibboleth known to man. The answer is deeply anticlimactic.",
+    "Ep10 — The Good Friday Agreement: A minor dispute about whose turn it is to cut the shared back hedge escalates, via increasingly formal negotiation, to an actual peace agreement being drawn up, signed, and immediately violated."
+  ],
+  "reference_images": [],
+  "episodes_per_season": 10,
+  "episode_duration_seconds": 30
+}

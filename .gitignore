@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Environment / secrets
+.env
+.env.local
+.env.sh
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Database
+*.db
+*.sqlite
+
+# Models & large binaries (too large for git)
+ComfyUI/models/
+ComfyUI/output/
+ComfyUI/input/
+*.gguf
+*.safetensors
+*.pt
+*.pth
+*.bin
+
+# Generated output
+output/
+ambience/
+series/*/ep*/
+series/*/bible.json
+series/*/episode_*.json
+
+# ComfyUI runtime
+ComfyUI/__pycache__/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp

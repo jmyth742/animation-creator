@@ -1,0 +1,364 @@
+"""
+Showrunner integration layer.
+
+All heavy lifting (video generation, audio synthesis, stitching) is delegated
+to the existing showrunner.py pipeline script.  This module:
+
+  1. Exports DB data to the on-disk JSON format expected by showrunner.
+  2. Runs showrunner.cmd_produce() in a background thread for episode production.
+  3. Calls showrunner's ComfyUI helpers to generate character portraits.
+"""
+
+from __future__ import annotations
+
+import io
+import json
+import re
+import shutil
+import sys
+import threading
+import types
+from contextlib import redirect_stdout
+from pathlib import Path
+import datetime
+import time
+
+# ── Bootstrap showrunner import ───────────────────────────────────────────────
+
+sys.path.insert(0, str(Path("/workspace/text-to-video/scripts")))
+import showrunner  # noqa: E402  (side-effects intentional)
+
+from config import settings
+from database import SessionLocal
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def slugify(text: str) -> str:
+    """Lowercase, replace spaces/special chars with hyphens, collapse runs."""
+    text = text.lower().strip()
+    text = re.sub(r"[^\w\s-]", "", text)
+    text = re.sub(r"[\s_]+", "-", text)
+    text = re.sub(r"-{2,}", "-", text)
+    return text.strip("-")
+
+
+# ── Bible / episode file export ───────────────────────────────────────────────
+
+def export_project_to_files(project_id: int, db) -> tuple[str, Path]:
+    """
+    Read the project (characters, locations, episodes, scenes) from the database
+    and write the bible.json + per-episode JSON files expected by showrunner.
+
+    Returns (series_slug, series_path).
+    """
+    from models import Project, Character, Location, Episode, Scene, SceneCharacter
+
+    project = db.get(Project, project_id)
+    if project is None:
+        raise ValueError(f"Project {project_id} not found")
+
+    series_slug = project.series_slug
+    series_path = settings.SERIES_DIR / series_slug
+    series_path.mkdir(parents=True, exist_ok=True)
+    (series_path / "episodes").mkdir(exist_ok=True)
+
+    # ── Build characters dict ─────────────────────────────────────────────────
+    characters_dict: dict[str, dict] = {}
+    for char in project.characters:
+        characters_dict[f"char_{char.id}"] = {
+            "name": char.name,
+            "visual": char.visual_description,
+            "voice": char.voice,
+            "voice_notes": char.voice_notes,
+            "role": char.role,
+        }
+
+    # ── Build locations dict ──────────────────────────────────────────────────
+    locations_dict: dict[str, str] = {}
+    for loc in project.locations:
+        locations_dict[f"loc_{loc.id}"] = loc.description
+
+    # ── Write bible.json ──────────────────────────────────────────────────────
+    bible: dict = {
+        "series": {
+            "title": project.title,
+            "style": project.visual_style,
+            "format": {"resolution": [480, 320], "fps": 24},
+        },
+        "characters": characters_dict,
+        "world": {
+            "setting": project.setting,
+            "locations": locations_dict,
+            "rules": [],
+        },
+        "season_arc": {
+            "summary": project.premise,
+            "themes": [],
+            "progression": "",
+        },
+        "narrator": {
+            "voice": "en-GB-SoniaNeural",
+            "style": "Detached documentary narrator.",
+        },
+    }
+
+    bible_path = series_path / "bible.json"
+    bible_path.write_text(json.dumps(bible, indent=2, ensure_ascii=False))
+
+    # ── Write per-episode JSON ────────────────────────────────────────────────
+    for episode in project.episodes:
+        ep_id = f"ep{episode.number:02d}"
+        scenes_list: list[dict] = []
+
+        for scene in episode.scenes:
+            # Resolve character IDs for this scene
+            char_ids = [
+                f"char_{sc.character_id}" for sc in scene.scene_characters
+            ]
+
+            # Parse stored dialogue JSON; translate bare names → char_* keys
+            try:
+                raw_dialogue: list[dict] = json.loads(scene.dialogue or "[]")
+            except (json.JSONDecodeError, TypeError):
+                raw_dialogue = []
+
+            scene_dict: dict = {
+                "id": f"{ep_id}_s{scene.order_idx + 1:02d}",
+                "location": (
+                    f"loc_{scene.location_id}" if scene.location_id else "loc_unknown"
+                ),
+                "characters": char_ids,
+                "clip_length": scene.clip_length,
+                "visual": scene.visual,
+                "narration": scene.narration,
+                "dialogue": raw_dialogue,
+            }
+            scenes_list.append(scene_dict)
+
+        ep_json: dict = {
+            "id": ep_id,
+            "title": episode.title,
+            "summary": episode.summary,
+            "scenes": scenes_list,
+        }
+
+        ep_file = series_path / "episodes" / f"{ep_id}.json"
+        ep_file.write_text(json.dumps(ep_json, indent=2, ensure_ascii=False))
+
+    return series_slug, series_path
+
+
+# ── Background episode production ─────────────────────────────────────────────
+
+def produce_episode_job(
+    job_id: int,
+    episode_id: int,
+    quality: str = "draft",
+) -> None:
+    """
+    Intended to run in a background threading.Thread.
+
+    Lifecycle
+    ---------
+    1. Acquires its own DB session from the scoped_session factory.
+    2. Sets job.status = "running".
+    3. Exports project files to disk.
+    4. Builds a synthetic argparse.Namespace and delegates to
+       showrunner.cmd_produce(args), capturing stdout.
+    5. Periodically flushes captured stdout to job.log_text.
+    6. On completion sets job.status = "complete" / "error" and records
+       job.completed_at + job.progress_pct = 100.
+    """
+    from models import Episode, GenerationJob
+
+    db = SessionLocal()
+
+    def _flush_log(buf: io.StringIO, job: GenerationJob) -> None:
+        content = buf.getvalue()
+        if content:
+            job.log_text = content
+            db.commit()
+
+    def _count_expected_clips(ep_id: int) -> int:
+        ep = db.get(Episode, ep_id)
+        return len(ep.scenes) if ep else 0
+
+    try:
+        job = db.get(GenerationJob, job_id)
+        if job is None:
+            return
+
+        job.status = "running"
+        db.commit()
+
+        episode = db.get(Episode, episode_id)
+        if episode is None:
+            job.status = "error"
+            job.log_text += "\nEpisode not found."
+            db.commit()
+            return
+
+        series_slug, _ = export_project_to_files(episode.project_id, db)
+
+        expected_clips = _count_expected_clips(episode_id)
+
+        # Build a namespace that mirrors what argparse would produce for
+        # `showrunner.py produce <series> --episode N --quality Q`
+        args = types.SimpleNamespace(
+            series=series_slug,
+            episode=episode.number,
+            quality=quality,
+            steps=showrunner.QUALITY_STEPS.get(quality, 15),
+            image=None,
+            seed_base=1000,
+            resume=True,
+            no_audio=False,
+            no_crossfade=False,
+            no_grade=False,
+            no_subs=False,
+            no_ambience=False,
+            no_music=False,
+            flagged_only=False,
+            enhance=False,
+        )
+
+        log_buf = io.StringIO()
+        error_msg: str | None = None
+
+        # Run showrunner in the same thread, capturing its stdout output.
+        # We update progress_pct by counting clips that appear in COMFYUI_OUTPUT.
+        ep_prefix = f"ep{episode.number:02d}"
+
+        def _progress_thread() -> None:
+            """Lightweight poller that updates progress_pct by watching output files."""
+            while True:
+                time.sleep(5)
+                try:
+                    j = db.get(GenerationJob, job_id)
+                    if j is None or j.status in ("complete", "error"):
+                        break
+                    if expected_clips > 0 and settings.COMFYUI_OUTPUT.exists():
+                        found = len(
+                            list(settings.COMFYUI_OUTPUT.glob(f"{ep_prefix}_s*.mp4"))
+                        )
+                        pct = min(int(found / expected_clips * 95), 95)
+                        j.progress_pct = pct
+                    _flush_log(log_buf, j)
+                    db.commit()
+                except Exception:
+                    pass
+
+        progress_t = threading.Thread(target=_progress_thread, daemon=True)
+        progress_t.start()
+
+        try:
+            with redirect_stdout(log_buf):
+                showrunner.cmd_produce(args)
+        except Exception as exc:
+            error_msg = str(exc)
+
+        # Final flush
+        job = db.get(GenerationJob, job_id)
+        if job is None:
+            return
+
+        job.log_text = log_buf.getvalue()
+        job.completed_at = datetime.datetime.utcnow()
+
+        if error_msg:
+            job.status = "error"
+            job.log_text += f"\n\n[ERROR] {error_msg}"
+        else:
+            job.status = "complete"
+            job.progress_pct = 100
+
+        db.commit()
+
+    except Exception as exc:
+        try:
+            job = db.get(GenerationJob, job_id)
+            if job:
+                job.status = "error"
+                job.log_text += f"\n\n[FATAL] {exc}"
+                job.completed_at = datetime.datetime.utcnow()
+                db.commit()
+        except Exception:
+            pass
+    finally:
+        db.close()
+
+
+# ── Character portrait generation ─────────────────────────────────────────────
+
+def generate_character_portrait(character_id: int, db) -> list[str]:
+    """
+    Generate 3 portrait candidates for a character (different seeds).
+
+    Uses showrunner.build_ref_workflow + queue_prompt + poll_until_done.
+    The first successful candidate is stored in Character.reference_image_path.
+
+    Returns a list of paths relative to the series reference_images directory
+    (as URL-friendly strings).
+    """
+    import requests as _requests
+    from models import Character
+
+    char = db.get(Character, character_id)
+    if char is None:
+        raise ValueError(f"Character {character_id} not found")
+
+    project = char.project
+    series_slug = project.series_slug
+    style = project.visual_style
+
+    ref_dir = settings.SERIES_DIR / series_slug / "reference_images"
+    ref_dir.mkdir(parents=True, exist_ok=True)
+
+    # ComfyUI saves images to ComfyUI/output/refs/<prefix>_*.png
+    comfy_refs_out = settings.COMFYUI_DIR / "output" / "refs"
+
+    prompt = (
+        f"Portrait of {char.visual_description} "
+        f"Facing camera directly, neutral expression, standing still. {style}"
+    )
+    prefix = f"char_{char.id}"
+
+    seeds = [999, 1234, 5678]
+    saved_paths: list[str] = []
+
+    for i, seed in enumerate(seeds):
+        candidate_label = f"{prefix}_v{i+1}"
+        out_png = ref_dir / f"{candidate_label}.png"
+
+        wf = showrunner.build_ref_workflow(prompt, seed=seed, prefix=candidate_label)
+
+        try:
+            prompt_id = showrunner.queue_prompt(wf)
+        except _requests.ConnectionError:
+            raise RuntimeError("ComfyUI not reachable at http://localhost:8188")
+
+        success = showrunner.poll_until_done(prompt_id)
+        if not success:
+            continue
+
+        # Find the generated file in ComfyUI output
+        candidates = (
+            sorted(
+                comfy_refs_out.glob(f"{candidate_label}*.png"),
+                key=lambda p: p.stat().st_mtime,
+                reverse=True,
+            )
+            if comfy_refs_out.exists()
+            else []
+        )
+        if candidates:
+            shutil.copy2(candidates[0], out_png)
+            rel_path = f"{series_slug}/reference_images/{candidate_label}.png"
+            saved_paths.append(rel_path)
+
+    # Persist the first generated portrait path on the character
+    if saved_paths:
+        char.reference_image_path = saved_paths[0]
+        db.commit()
+
+    return saved_paths

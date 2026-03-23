@@ -1,0 +1,115 @@
+{
+  "1": {
+    "class_type": "UnetLoaderGGUF",
+    "inputs": {
+      "unet_name": "hunyuanvideo1.5_480p_t2v_cfg_distilled-Q4_K_S.gguf"
+    }
+  },
+  "2": {
+    "class_type": "DualCLIPLoader",
+    "inputs": {
+      "clip_name1": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "clip_name2": "byt5_small_glyphxl_fp16.safetensors",
+      "type": "hunyuan_video_15"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "hunyuanvideo15_vae_fp16.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["2", 0],
+      "text": "Anime style, both warriors leap apart and land on opposite edges of the rooftop. They are breathing heavily, clothes torn. The blue-haired warrior smirks and the red-haired warrior cracks a smile. They bow to each other with mutual respect as the sun sets behind them, painting the sky orange and purple. Wide cinematic shot pulling back. Cel-shaded animation, vibrant colors, anime aesthetic, emotional ending."
+    }
+  },
+  "5": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["2", 0],
+      "text": ""
+    }
+  },
+  "6": {
+    "class_type": "EmptyHunyuanVideo15Latent",
+    "inputs": {
+      "width": 480,
+      "height": 320,
+      "length": 81,
+      "batch_size": 1
+    }
+  },
+  "7": {
+    "class_type": "ModelSamplingSD3",
+    "inputs": {
+      "model": ["1", 0],
+      "shift": 5.0
+    }
+  },
+  "8": {
+    "class_type": "CFGGuider",
+    "inputs": {
+      "model": ["7", 0],
+      "positive": ["4", 0],
+      "negative": ["5", 0],
+      "cfg": 1.0
+    }
+  },
+  "9": {
+    "class_type": "BasicScheduler",
+    "inputs": {
+      "model": ["7", 0],
+      "scheduler": "simple",
+      "steps": 15,
+      "denoise": 1.0
+    }
+  },
+  "10": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 400
+    }
+  },
+  "11": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "euler"
+    }
+  },
+  "12": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": ["10", 0],
+      "guider": ["8", 0],
+      "sampler": ["11", 0],
+      "sigmas": ["9", 0],
+      "latent_image": ["6", 0]
+    }
+  },
+  "13": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["12", 0],
+      "vae": ["3", 0]
+    }
+  },
+  "14": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "images": ["13", 0],
+      "fps": 24.0
+    }
+  },
+  "15": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "video": ["14", 0],
+      "filename_prefix": "video/fight_clip4",
+      "format": "mp4",
+      "codec": "h264"
+    }
+  }
+}

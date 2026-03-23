@@ -1,0 +1,139 @@
+{
+  "series": {
+    "title": "The Keeper's Garden",
+    "style": "Anime style, Studio Ghibli inspired, warm watercolor palette, soft diffused lighting, hand-drawn aesthetic, detailed natural backgrounds, gentle and contemplative mood.",
+    "negative_style": "realistic, 3D render, photographic, harsh lighting, dark, violent",
+    "format": {
+      "resolution": [480, 320],
+      "frames_per_clip": 81,
+      "fps": 24,
+      "steps": 15
+    }
+  },
+
+  "characters": {
+    "hana": {
+      "name": "Hana",
+      "visual": "A small elderly Japanese woman with silver hair tied in a loose bun, wearing a faded indigo apron over a cream linen shirt. She has kind wrinkled eyes and weathered hands.",
+      "voice_notes": "Warm, slow, thoughtful. Speaks in short poetic sentences. Slight rasp.",
+      "role": "The keeper of a magical rooftop garden in a quiet Tokyo neighborhood."
+    },
+    "sora": {
+      "name": "Sora",
+      "visual": "A curious ten-year-old boy with messy black hair and round glasses, wearing a yellow raincoat that's slightly too big for him. Always carries a small worn notebook.",
+      "voice_notes": "Eager, bright, asks lots of questions. Speaks quickly when excited.",
+      "role": "A neighborhood kid who discovers Hana's garden and becomes her apprentice."
+    }
+  },
+
+  "world": {
+    "setting": "A quiet residential neighborhood in Tokyo, present day. On the rooftop of an old apartment building, Hana tends a garden where the plants have subtle magical properties — flowers that glow faintly at dusk, herbs that hum when touched, a small tree that changes with the emotions of whoever sits beneath it.",
+    "rules": [
+      "The magic is always subtle and natural — never flashy or fantastical",
+      "Plants respond to genuine emotion, not commands",
+      "Each episode centers on one plant or garden element",
+      "The garden reflects the emotional state of the neighborhood"
+    ],
+    "locations": {
+      "rooftop_garden": "A lush rooftop garden on a 4-story apartment building. Wooden planters, hanging vines, a small greenhouse, a weathered bench under a cherry tree. Tokyo skyline visible in the background.",
+      "stairwell": "A narrow concrete stairwell leading up to the rooftop. Faded green paint, small window at each landing letting in afternoon light.",
+      "hanas_kitchen": "A tiny apartment kitchen below the garden. Dried herbs hanging from the ceiling, a cast-iron kettle always on the stove, warm yellow light, cluttered but cozy.",
+      "neighborhood_street": "A quiet residential Tokyo street. Small shops, power lines, potted plants outside doorways, bicycles parked along walls."
+    }
+  },
+
+  "episodes": [
+    {
+      "id": "ep01",
+      "title": "The Humming Basil",
+      "summary": "Sora discovers Hana's rooftop garden for the first time when he follows a strange humming sound up the stairwell. He meets Hana and learns that her basil plant hums different melodies depending on who is near it.",
+      "scenes": [
+        {
+          "id": "ep01_s01",
+          "location": "neighborhood_street",
+          "characters": ["sora"],
+          "visual": "Sora walks home from school along the quiet Tokyo street, headphones around his neck. He stops suddenly, tilting his head — he hears a faint melodic humming coming from above. He looks up at the old apartment building.",
+          "narration": "Sora first heard the humming on a Tuesday. Not from his headphones, which hung silent around his neck, but from somewhere above — as if the building itself were singing.",
+          "dialogue": null,
+          "duration_seconds": 3.4
+        },
+        {
+          "id": "ep01_s02",
+          "location": "stairwell",
+          "characters": ["sora"],
+          "visual": "Sora climbs the narrow concrete stairwell, one hand on the faded green railing. Afternoon light streams through small windows at each landing. The humming grows louder with each floor. His eyes widen with curiosity.",
+          "narration": "He followed it up four flights of stairs he'd never climbed before, past doors that smelled of miso and fresh laundry.",
+          "dialogue": null,
+          "duration_seconds": 3.4
+        },
+        {
+          "id": "ep01_s03",
+          "location": "rooftop_garden",
+          "characters": ["sora"],
+          "visual": "Sora pushes open the heavy rooftop door and steps into brilliant afternoon light. Before him stretches an impossible garden — lush green plants overflowing from wooden planters, hanging vines, flowers in every color. The Tokyo skyline stretches behind it all. He stands frozen in amazement.",
+          "narration": "And then he opened the door to the roof, and forgot how to breathe.",
+          "dialogue": null,
+          "duration_seconds": 3.4
+        },
+        {
+          "id": "ep01_s04",
+          "location": "rooftop_garden",
+          "characters": ["hana", "sora"],
+          "visual": "Hana kneels beside a large clay pot of basil, her weathered hands gently touching the leaves. The basil glows faintly green and hums a soft melody. She notices Sora standing at the door and looks up with a warm, unsurprised smile.",
+          "narration": null,
+          "dialogue": [
+            {"character": "hana", "line": "Ah. You can hear it too."},
+            {"character": "sora", "line": "The... the plant is singing?"},
+            {"character": "hana", "line": "Humming. It hums differently for everyone. Come closer — let's hear what song it has for you."}
+          ],
+          "duration_seconds": 3.4
+        },
+        {
+          "id": "ep01_s05",
+          "location": "rooftop_garden",
+          "characters": ["hana", "sora"],
+          "visual": "Sora kneels beside the basil plant, reaching out hesitantly. As his fingers brush the leaves, the humming changes to a brighter, faster melody. Tiny motes of light drift upward from the leaves. Hana watches with knowing eyes, nodding slowly.",
+          "narration": "When Sora touched the basil, it changed its tune entirely — from Hana's slow lullaby to something quick and curious, like a question asked in music.",
+          "dialogue": [
+            {"character": "hana", "line": "Hmm. A curious song. It likes you."},
+            {"character": "sora", "line": "How is this possible?"},
+            {"character": "hana", "line": "Some things grow better when you don't ask how. Would you like some tea?"}
+          ],
+          "duration_seconds": 3.4
+        },
+        {
+          "id": "ep01_s06",
+          "location": "hanas_kitchen",
+          "characters": ["hana", "sora"],
+          "visual": "Hana's tiny kitchen. She pours tea from a cast-iron kettle into two ceramic cups. Dried herbs hang from the ceiling. Sora sits at a small wooden table, his notebook open, scribbling furiously. Warm yellow light fills the room.",
+          "narration": "Over tea that tasted like sunlight and something he couldn't name, Sora filled three pages of his notebook with questions. Hana answered none of them directly.",
+          "dialogue": [
+            {"character": "sora", "line": "Can all plants do that? The humming?"},
+            {"character": "hana", "line": "Only the ones that are listening."},
+            {"character": "sora", "line": "Listening to what?"},
+            {"character": "hana", "line": "To you. To what you carry with you. Come back tomorrow and I'll show you the rosemary. It does something quite different."}
+          ],
+          "duration_seconds": 3.4
+        },
+        {
+          "id": "ep01_s07",
+          "location": "rooftop_garden",
+          "characters": ["sora"],
+          "visual": "Sunset on the rooftop garden. Sora stands at the railing looking out over the Tokyo skyline, bathed in golden light. Behind him, the garden glows softly — various plants emitting faint colored light as dusk settles. He holds his notebook to his chest and smiles.",
+          "narration": "Sora left the garden that evening carrying more questions than answers, which — though he didn't know it yet — was exactly the right number.",
+          "dialogue": null,
+          "duration_seconds": 3.4
+        },
+        {
+          "id": "ep01_s08",
+          "location": "neighborhood_street",
+          "characters": ["sora"],
+          "visual": "Sora walks down the quiet evening street, streetlights flickering on. He looks back up at the apartment building one last time. On the rooftop, barely visible, a faint warm glow rises from the garden into the darkening sky. He puts on his headphones and walks on, smiling.",
+          "narration": "He put his headphones on for the walk home, but didn't press play. The basil's song was still in his ears, and he wasn't ready to let it go.",
+          "dialogue": null,
+          "duration_seconds": 3.4
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "title": "My Series Title",
+  "premise": "A 2-3 sentence description of what the series is about. This is the core idea.",
+  "tone": "e.g. whimsical, dark, comedic, heartfelt, mysterious",
+  "visual_style": "e.g. anime, watercolor, cyberpunk, studio ghibli, pixel art",
+  "target_audience": "e.g. general, kids, young adults",
+  "setting": "Where and when the series takes place. Be descriptive.",
+  "main_characters": [
+    "Character 1 — brief description and role",
+    "Character 2 — brief description and role"
+  ],
+  "season_arc": "What is the overarching story across all 20 episodes? What changes from episode 1 to 20?",
+  "reference_images": [],
+  "episodes_per_season": 20,
+  "episode_duration_seconds": 30
+}

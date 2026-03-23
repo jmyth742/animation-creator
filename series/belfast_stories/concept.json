@@ -1,0 +1,32 @@
+{
+  "title": "The Wall Between Us",
+  "premise": "A ten-episode animated documentary drama set in Belfast, 1971–1972, following Seamus, a Catholic teenager from the Falls Road, as he and his community live under British military occupation during the most violent years of The Troubles. Told through personal stories and historical narration, each episode covers a real event — the Falls Curfew, internment, the Ballymurphy Massacre, Bloody Sunday — and shows the brutal reality of what it meant to be Catholic and Irish in occupied Belfast.",
+  "tone": "unflinching, documentary-realist, sorrowful, politically clear-eyed, humanising of the civilian victims",
+  "visual_style": "gritty hand-drawn animation, muted palette of greys and brick reds, warm amber light from street lamps, harsh white searchlights from army Land Rovers, realistic Belfast architecture — terraced red-brick houses, republican murals, the peace wall, cobblestones wet with rain and sometimes blood",
+  "target_audience": "general",
+  "setting": "Belfast and Derry, Northern Ireland, 1971–1972. Catholic neighbourhoods under military curfew and constant army patrols. Burnt-out vehicles, barbed wire, army checkpoints at every junction. British Army Saracen armoured vehicles and soldiers in full combat gear are a constant presence. The community lives in fear of night raids, internment, and violence from both the army and loyalist paramilitaries.",
+  "main_characters": [
+    "Seamus — 17-year-old Catholic from Falls Road. Dark curly hair, green army surplus jacket. His older brother Declan was interned without trial. Seamus narrates much of the series from personal experience.",
+    "Robbie — 17-year-old Protestant from Shankill Road. Fair hair, navy anorak. His father is in the RUC. Robbie questions what he sees but is constrained by his community. A moral witness from 'the other side'.",
+    "Máire — Seamus's mother. A strong, grieving woman whose home has been raided three times. Voice of the community's suffering.",
+    "Declan — Seamus's older brother. Interned in Long Kesh without charge. Represents the thousands held without trial.",
+    "Corporal Harris — British Army soldier, 1st Parachute Regiment. Cold, authoritarian, brutalising. Represents the institutional violence of the occupation.",
+    "Narrator — A detached historical voice providing documented facts and context, quoting real testimonies and official records."
+  ],
+  "season_arc": "Each episode covers one documented historical event from The Troubles, 1971–1972, told through the eyes of Seamus and his community. The season builds from the Falls Curfew through internment and torture, through the Ballymurphy Massacre, to the horror of Bloody Sunday and its cover-up. The final episode reflects on the generational cost and the long road to the Good Friday Agreement. The British Army is portrayed as the architects of systematic oppression — this is consistent with the findings of the Saville Inquiry, the Ballymurphy Inquest, and decades of historical record.",
+  "episode_plan": [
+    "Ep01 — The Falls Curfew (July 1970): British Army imposes a 35-hour curfew on the Falls Road. 3,000 homes are raided. Seamus watches soldiers tear apart his family's house.",
+    "Ep02 — Internment (August 1971): Operation Demetrius. 342 men arrested overnight based on faulty intelligence lists. Declan is taken. No charge, no trial.",
+    "Ep03 — The Hooded Men: Internees are subjected to the Five Techniques — hooding, stress positions, sleep deprivation, white noise, starvation. Declan's experience in the interrogation centre.",
+    "Ep04 — Ballymurphy Massacre (August 1971): Over three days, the Parachute Regiment kills 11 civilians in Ballymurphy. A priest, a mother-of-eight, teenagers. All unarmed. The army calls them IRA gunmen.",
+    "Ep05 — Bloody Sunday (30 January 1972): The Parachute Regiment fires on unarmed civil rights marchers in Derry. 14 killed. Seamus watches it on a neighbour's television. The city goes silent.",
+    "Ep06 — The Lie: The British government blames the victims. General Ford is exonerated. The Widgery Tribunal is a whitewash. The dead are called bombers and gunmen. The cover-up begins.",
+    "Ep07 — The Burning: Dublin erupts. The British Embassy is burned. Across Ireland, thousands join the IRA. The army's brutality has done more for republican recruitment than any speech.",
+    "Ep08 — No Go: Operation Motorman (July 1972). The largest British military operation since Suez. Army demolishes the barricades of Free Derry and Belfast's no-go areas. Tanks roll through civilian streets.",
+    "Ep09 — Collusion: Evidence emerges of British security forces passing Catholic civilians' names to loyalist death squads. The UDA and UVF kill with information provided by the state.",
+    "Ep10 — The Long Count: The cost. Over 3,500 dead by the end of The Troubles. The Good Friday Agreement (1998). The Saville Report (2010) finally admits Bloody Sunday was unjustified murder. Too late for the dead."
+  ],
+  "reference_images": [],
+  "episodes_per_season": 10,
+  "episode_duration_seconds": 30
+}

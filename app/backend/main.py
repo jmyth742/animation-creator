@@ -1,0 +1,81 @@
+"""FastAPI application entry-point for Story Builder."""
+
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+from config import settings
+from database import init_db
+from routers import auth, characters, episodes, jobs, locations, projects, scenes
+
+
+# ── Lifespan ──────────────────────────────────────────────────────────────────
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    init_db()
+    # Ensure static-served directories exist so StaticFiles doesn't raise.
+    settings.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    settings.COMFYUI_OUTPUT.mkdir(parents=True, exist_ok=True)
+    settings.SERIES_DIR.mkdir(parents=True, exist_ok=True)
+    yield
+    # Shutdown (nothing to tear down)
+
+
+# ── App ───────────────────────────────────────────────────────────────────────
+
+app = FastAPI(
+    title="Story Builder API",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+# ── CORS ──────────────────────────────────────────────────────────────────────
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:4173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ── Static file mounts ────────────────────────────────────────────────────────
+
+app.mount(
+    "/static/output",
+    StaticFiles(directory=str(settings.OUTPUT_DIR)),
+    name="output",
+)
+app.mount(
+    "/static/clips",
+    StaticFiles(directory=str(settings.COMFYUI_OUTPUT)),
+    name="clips",
+)
+app.mount(
+    "/static/series",
+    StaticFiles(directory=str(settings.SERIES_DIR)),
+    name="series",
+)
+
+# ── Routers ───────────────────────────────────────────────────────────────────
+
+app.include_router(auth.router, prefix="/auth", tags=["auth"])
+app.include_router(projects.router, prefix="/projects", tags=["projects"])
+app.include_router(characters.router, tags=["characters"])
+app.include_router(locations.router, tags=["locations"])
+app.include_router(episodes.router, tags=["episodes"])
+app.include_router(scenes.router, tags=["scenes"])
+app.include_router(jobs.router, tags=["jobs"])
+
+
+# ── Root ──────────────────────────────────────────────────────────────────────
+
+@app.get("/", tags=["health"])
+def root():
+    return {"message": "Story Builder API", "docs": "/docs"}
