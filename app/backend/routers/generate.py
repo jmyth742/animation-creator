@@ -104,16 +104,15 @@ def enhance_text(
 
     context_block = "\n".join(context_lines)
     current = payload.current_text.strip() or "(empty — write something from scratch)"
+    context_section = ("Project context:\n" + context_block + "\n") if context_block else ""
 
-    user_message = f"""Field type: {payload.field_type}
-Field purpose: {hint}
-
-{"Project context:\n" + context_block if context_block else ""}
-
-Current text:
-{current}
-
-Generate 3 enhanced versions of this field."""
+    user_message = (
+        f"Field type: {payload.field_type}\n"
+        f"Field purpose: {hint}\n\n"
+        f"{context_section}\n"
+        f"Current text:\n{current}\n\n"
+        f"Generate 3 enhanced versions of this field."
+    )
 
     client = anthropic.Anthropic(api_key=api_key)
     message = client.messages.create(
