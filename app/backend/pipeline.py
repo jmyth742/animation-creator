@@ -273,7 +273,7 @@ def produce_episode_job(
             no_ambience=False,
             no_music=False,
             flagged_only=False,
-            enhance=False,
+            enhance=True,
         )
 
         log_buf = io.StringIO()

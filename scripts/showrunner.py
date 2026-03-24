@@ -596,7 +596,6 @@ def _char_brief(char: dict) -> str:
 def build_scene_prompt(scene: dict, bible: dict) -> str:
     """Build a video generation prompt tailored to the scene type."""
     is_dialogue = bool(scene.get("dialogue"))
-    has_narration = bool(scene.get("narration"))
     characters = scene.get("characters", [])
 
     visual_lower = scene["visual"].lower()
@@ -613,21 +612,25 @@ def build_scene_prompt(scene: dict, bible: dict) -> str:
     if tone:
         parts.append(tone)
 
+    # Character descriptions come BEFORE the scene visual so they land in high-weight
+    # early tokens and the model knows exactly who is in the shot.
+    char_parts = []
+    for char_id in characters:
+        char = bible.get("characters", {}).get(char_id)
+        if char:
+            name = char.get("name", char_id)
+            visual = char.get("visual", "")
+            # Always use the full visual description so the model has enough signal.
+            char_parts.append(f"{name} ({visual})")
+    if char_parts:
+        parts.append(", ".join(char_parts))
+
     # Scene visual description
     parts.append(scene["visual"])
 
     # For dialogue scenes: add a stable-camera hint if not already implied.
     if is_dialogue and not any(w in visual_lower for w in ["static", "close-up", "two-shot", "medium shot", "facing"]):
         parts.append("static camera, characters facing camera")
-
-    # Character descriptions
-    for char_id in characters:
-        char = bible.get("characters", {}).get(char_id)
-        if char:
-            if is_dialogue:
-                parts.append(f"{char.get('name', char_id)}: {_char_brief(char)}")
-            else:
-                parts.append(f"character: {char['visual']}")
 
     # Location — skip for close-ups
     loc_id = scene.get("location")
