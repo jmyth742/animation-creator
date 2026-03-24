@@ -18,10 +18,16 @@ import shutil
 import sys
 import threading
 import types
+import uuid
 from contextlib import redirect_stdout
 from pathlib import Path
 import datetime
 import time
+
+
+# ── In-memory reference regeneration job registry ─────────────────────────────
+# { job_id: { status, progress, total, items: [{label, status, error?}], error } }
+_ref_regen_jobs: dict[str, dict] = {}
 
 # ── Bootstrap showrunner import ───────────────────────────────────────────────
 
@@ -727,3 +733,119 @@ def generate_scene_reference(scene_id: int, db) -> list[str]:
         db.commit()
 
     return saved_paths
+
+
+# ── Bulk reference regeneration ───────────────────────────────────────────────
+
+def get_ref_regen_job(job_id: str) -> dict | None:
+    return _ref_regen_jobs.get(job_id)
+
+
+def start_regenerate_all_references(project_id: int) -> str:
+    """
+    Start a background thread that regenerates all character portraits and
+    location reference images for the project.
+
+    Returns a job_id that callers can poll via get_ref_regen_job().
+    """
+    job_id = str(uuid.uuid4())
+    _ref_regen_jobs[job_id] = {
+        "status": "running",
+        "progress": 0,
+        "total": 0,
+        "items": [],
+        "error": None,
+    }
+    thread = threading.Thread(
+        target=_regenerate_all_references_bg,
+        args=(project_id, job_id),
+        daemon=True,
+    )
+    thread.start()
+    return job_id
+
+
+def _regenerate_all_references_bg(project_id: int, job_id: str) -> None:
+    """
+    Background worker for bulk reference regeneration.
+
+    For each character and location:
+      1. Generates 3 FLUX candidates (using updated style-first prompts).
+      2. Auto-canonicalises the first candidate to char_{id}.png / loc_{id}.png
+         so get_scene_seed_image() picks it up immediately on the next production run.
+
+    Users can still visit Portrait Studio / Location Studio afterwards to pick a
+    different candidate as their preferred canonical.
+    """
+    from models import Project
+
+    db = SessionLocal()
+    job = _ref_regen_jobs[job_id]
+
+    try:
+        project = db.get(Project, project_id)
+        if project is None:
+            job["status"] = "error"
+            job["error"] = "Project not found"
+            return
+
+        series_slug = project.series_slug
+        ref_dir = settings.SERIES_DIR / series_slug / "reference_images"
+        ref_dir.mkdir(parents=True, exist_ok=True)
+
+        chars = list(project.characters)
+        locs = list(project.locations)
+        job["total"] = len(chars) + len(locs)
+        done = 0
+
+        # ── Characters ────────────────────────────────────────────────────────
+        for char in chars:
+            item: dict = {"label": f"Portrait — {char.name}", "status": "running"}
+            job["items"].append(item)
+            try:
+                saved_paths = generate_character_portrait(char.id, db)
+                if saved_paths:
+                    # Auto-canonicalise: copy first candidate to char_{id}.png
+                    src = settings.SERIES_DIR / saved_paths[0]
+                    canonical = ref_dir / f"char_{char.id}.png"
+                    if src.exists():
+                        shutil.copy2(src, canonical)
+                    item["status"] = "done"
+                else:
+                    item["status"] = "error"
+                    item["error"] = "No candidates generated"
+            except Exception as exc:
+                item["status"] = "error"
+                item["error"] = str(exc)
+            done += 1
+            job["progress"] = done
+
+        # ── Locations ─────────────────────────────────────────────────────────
+        for loc in locs:
+            item = {"label": f"Location — {loc.name}", "status": "running"}
+            job["items"].append(item)
+            try:
+                saved_paths = generate_location_reference(loc.id, db)
+                if saved_paths:
+                    # Auto-canonicalise: copy first candidate to loc_{id}.png
+                    src = settings.SERIES_DIR / saved_paths[0]
+                    canonical = ref_dir / f"loc_{loc.id}.png"
+                    if src.exists():
+                        shutil.copy2(src, canonical)
+                    item["status"] = "done"
+                else:
+                    item["status"] = "error"
+                    item["error"] = "No candidates generated"
+            except Exception as exc:
+                item["status"] = "error"
+                item["error"] = str(exc)
+            done += 1
+            job["progress"] = done
+
+        job["status"] = "complete"
+
+    except Exception as exc:
+        job["status"] = "error"
+        job["error"] = str(exc)
+    finally:
+        db.close()

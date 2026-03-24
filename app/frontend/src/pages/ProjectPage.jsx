@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Users, Tv, MapPin, Settings } from 'lucide-react'
+import { ArrowLeft, Users, Tv, MapPin, Settings, RefreshCw } from 'lucide-react'
 import { get } from '../api/client'
 import CharactersTab from '../components/CharactersTab'
 import EpisodesTab from '../components/EpisodesTab'
 import LocationsTab from '../components/LocationsTab'
 import ProjectSettingsForm from '../components/ProjectSettingsForm'
 import ProductionPanel from '../components/ProductionPanel'
+import RebuildRefsModal from '../components/RebuildRefsModal'
 
 const TABS = [
   { key: 'characters', label: 'PARTY',     Icon: Users   },
@@ -24,6 +25,7 @@ export default function ProjectPage() {
   const [activeTab, setActiveTab] = useState('characters')
   const [activeJobId, setActiveJobId] = useState(null)
   const [activeJobMeta, setActiveJobMeta] = useState(null)
+  const [rebuildRefsOpen, setRebuildRefsOpen] = useState(false)
 
   const fetchProject = async () => {
     try {
@@ -94,8 +96,8 @@ export default function ProjectPage() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="max-w-7xl mx-auto px-6">
+        {/* Tabs + rebuild button */}
+        <div className="max-w-7xl mx-auto px-6 flex items-end justify-between">
           <nav className="flex gap-0 -mb-px">
             {TABS.map(({ key, label, Icon }) => (
               <button
@@ -108,6 +110,14 @@ export default function ProjectPage() {
               </button>
             ))}
           </nav>
+          <button
+            onClick={() => setRebuildRefsOpen(true)}
+            className="btn-pixel-ghost flex items-center gap-1.5 mb-1"
+            title="Regenerate all character and location reference images"
+          >
+            <RefreshCw className="w-3 h-3" />
+            REBUILD ALL REFS
+          </button>
         </div>
       </header>
 
@@ -141,6 +151,14 @@ export default function ProjectPage() {
           <ProjectSettingsForm project={project} onUpdate={handleProjectUpdate} />
         )}
       </main>
+
+      {rebuildRefsOpen && (
+        <RebuildRefsModal
+          projectId={id}
+          onClose={() => setRebuildRefsOpen(false)}
+          onComplete={fetchProject}
+        />
+      )}
 
       {activeJobId && activeJobMeta && (
         <ProductionPanel

@@ -9,7 +9,12 @@ from auth import get_current_user
 from config import settings
 from database import get_db
 from models import Character, Episode, Location, Project, User
+import requests as _requests
+
+import pipeline
 from pipeline import slugify
+
+COMFYUI_BASE = "http://localhost:8188"
 from schemas import (
     CharacterRead,
     EpisodeRead,
@@ -156,6 +161,45 @@ def update_project(
     db.commit()
     db.refresh(project)
     return _project_read(project)
+
+
+# ── POST /projects/{id}/regenerate-references ────────────────────────────────
+
+@router.post("/{project_id}/regenerate-references")
+def start_regen_references(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """Start a background job that regenerates all char portraits + location refs."""
+    project = _get_project_or_404(project_id, db)
+    _assert_owner(project, current_user)
+
+    try:
+        resp = _requests.get(COMFYUI_BASE, timeout=3)
+        resp.raise_for_status()
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ComfyUI is not reachable at http://localhost:8188. Start ComfyUI and retry.",
+        )
+
+    job_id = pipeline.start_regenerate_all_references(project_id)
+    total = len(project.characters) + len(project.locations)
+    return {"job_id": job_id, "total": total}
+
+
+@router.get("/{project_id}/regenerate-references/{job_id}")
+def get_regen_references_status(
+    project_id: int,
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """Poll the status of a running bulk reference regeneration job."""
+    job = pipeline.get_ref_regen_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found.")
+    return job
 
 
 # ── DELETE /projects/{id} ─────────────────────────────────────────────────────
