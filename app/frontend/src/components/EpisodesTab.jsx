@@ -333,10 +333,10 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
     catch { alert('Failed to delete episode.') }
   }
 
-  const handleProduce = async (quality) => {
+  const handleProduce = async (quality, force = false) => {
     setProducing(true)
     try {
-      const result = await post(`/episodes/${episode.id}/produce?quality=${quality}`)
+      const result = await post(`/episodes/${episode.id}/produce?quality=${quality}&force=${force}`)
       onProduce(result.job_id, { episodeTitle: episode.title, seriesSlug: project.series_slug, episodeNumber: episode.number })
     } catch (err) {
       alert(err.response?.data?.detail || 'Failed to start production.')
@@ -369,13 +369,22 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
             <button onClick={() => handleProduce('draft')} disabled={producing} className="btn-pixel-sm">
               <Play className="w-2.5 h-2.5" />{producing ? 'STARTING...' : 'PRODUCE'}
             </button>
-            <div className="absolute right-0 top-full mt-1 bg-zinc-800 border-2 border-zinc-600 z-10 hidden group-hover/produce:block min-w-36"
+            <div className="absolute right-0 top-full mt-1 bg-zinc-800 border-2 border-zinc-600 z-10 hidden group-hover/produce:block min-w-48"
               style={{ boxShadow: '3px 3px 0 0 #000' }}>
               <button onClick={() => handleProduce('draft')} className="w-full text-left px-3 py-2 text-retro text-zinc-300 hover:bg-zinc-700 border-b border-zinc-700" style={{ fontSize: '16px' }}>
                 ▶ DRAFT (FAST)
               </button>
-              <button onClick={() => handleProduce('quality')} className="w-full text-left px-3 py-2 text-retro text-zinc-300 hover:bg-zinc-700" style={{ fontSize: '16px' }}>
+              <button onClick={() => handleProduce('quality')} className="w-full text-left px-3 py-2 text-retro text-zinc-300 hover:bg-zinc-700 border-b border-zinc-700" style={{ fontSize: '16px' }}>
                 ★ QUALITY (SLOW)
+              </button>
+              <div className="px-3 pt-2 pb-1">
+                <p className="font-pixel text-zinc-600 mb-1" style={{ fontSize: '5px' }}>FORCE REGENERATE (rebuilds chain)</p>
+              </div>
+              <button onClick={() => handleProduce('draft', true)} className="w-full text-left px-3 py-2 text-retro text-amber-400 hover:bg-zinc-700 border-b border-zinc-700" style={{ fontSize: '16px' }}>
+                ↺ DRAFT + REGEN ALL
+              </button>
+              <button onClick={() => handleProduce('quality', true)} className="w-full text-left px-3 py-2 text-retro text-amber-400 hover:bg-zinc-700" style={{ fontSize: '16px' }}>
+                ↺ QUALITY + REGEN ALL
               </button>
             </div>
           </div>

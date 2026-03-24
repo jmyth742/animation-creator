@@ -204,6 +204,7 @@ def produce_episode_job(
     job_id: int,
     episode_id: int,
     quality: str = "draft",
+    force: bool = False,
 ) -> None:
     """
     Intended to run in a background threading.Thread.
@@ -261,7 +262,7 @@ def produce_episode_job(
             steps=showrunner.QUALITY_STEPS.get(quality, 15),
             image=None,
             seed_base=1000,
-            resume=True,
+            resume=not force,
             no_audio=False,
             no_crossfade=False,
             no_grade=False,

@@ -257,6 +257,7 @@ def create_scene(
 def produce_episode(
     episode_id: int,
     quality: str = "draft",
+    force: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ProduceResponse:
@@ -279,7 +280,7 @@ def produce_episode(
 
     thread = threading.Thread(
         target=produce_episode_job,
-        args=(job.id, episode_id, quality),
+        args=(job.id, episode_id, quality, force),
         daemon=True,
     )
     thread.start()
