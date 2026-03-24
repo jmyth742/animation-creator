@@ -2010,6 +2010,17 @@ def cmd_produce(args):
     if use_enhance:
         print(f"\n  Prompt enhancement enabled (Claude will rewrite each scene prompt)")
 
+    # ── Cross-episode continuity ──────────────────────────────────
+    # If the previous episode has a saved end-frame, use it as the I2V seed
+    # for this episode's first scene so visual style carries over seamlessly.
+    continuity_dir = sp / "continuity"
+    continuity_dir.mkdir(exist_ok=True)
+    prev_endframe = continuity_dir / f"ep{ep_num - 1:02d}_endframe.png"
+    carry_over_image: str | None = None
+    if not args.image and prev_endframe.exists():
+        carry_over_image = copy_to_input(str(prev_endframe))
+        print(f"\n  Cross-episode carry-over: using ep{ep_num - 1:02d} end-frame as scene-1 seed")
+
     print(f"\n  Generating video clips...")
     current_image = None
     if args.image:
@@ -2059,8 +2070,16 @@ def cmd_produce(args):
         scene_label = "dialogue" if scene.get("dialogue") else ("narration" if scene.get("narration") else "visual")
         print(f"    [{i+1}/{n}] {clip_prefix} [{loc}] {cl['seconds']}s [{scene_label}]")
 
-        # Choose seed image: prefer character/location reference over raw chain
-        seed_image = get_scene_seed_image(scene, args.series, current_image)
+        # Choose seed image.
+        # For the first scene of episode N+1: use the carry-over end-frame from
+        # episode N so the visual style continues directly instead of jumping
+        # back to a static reference image. For all other scenes keep the
+        # normal priority (scene-ref > char/loc ref > chain).
+        if i == 0 and carry_over_image:
+            seed_image = carry_over_image
+            print(f"      Using cross-episode carry-over as seed")
+        else:
+            seed_image = get_scene_seed_image(scene, args.series, current_image)
 
         if seed_image:
             wf = build_i2v_workflow(prompt, seed_image, seed, clip_prefix, frames, negative_prompt=neg, steps=args.steps)
@@ -2083,6 +2102,16 @@ def cmd_produce(args):
                     current_image = f"chain_{clip_prefix}.png"
         else:
             print(f"\n      WARNING: May have failed")
+
+    # ─── Save end-frame for next episode's carry-over ────────────
+    # current_image is the last chain frame filename (relative to COMFYUI_INPUT).
+    # Copy it into the continuity directory so ep N+1 can use it as its scene-1 seed.
+    if current_image:
+        last_chain_src = COMFYUI_INPUT / current_image
+        if last_chain_src.exists():
+            ep_endframe = continuity_dir / f"ep{ep_num:02d}_endframe.png"
+            shutil.copy2(last_chain_src, ep_endframe)
+            print(f"\n  End-frame saved → continuity/ep{ep_num:02d}_endframe.png")
 
     # ─── Validate clips ──────────────────────────────────────────
     print(f"\n  Validating clips...")
