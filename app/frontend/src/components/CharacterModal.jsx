@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { X, Wand2, Check } from 'lucide-react'
+import { X, Wand2, Check, Star } from 'lucide-react'
 import { post, put } from '../api/client'
 
 const VOICES = [
@@ -30,9 +30,12 @@ export default function CharacterModal({ projectId, character, onSave, onClose }
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const [generating, setGenerating] = useState(false)
+  // portraitOptions: list of relative paths returned from generate-portrait
   const [portraitOptions, setPortraitOptions] = useState([])
-  const [selectedPortrait, setSelectedPortrait] = useState(character?.reference_image_path ?? null)
+  // canonicalPath: the relative path stored in reference_image_path (no /static/series/ prefix)
+  const [canonicalPath, setCanonicalPath] = useState(character?.reference_image_path ?? null)
   const [portraitError, setPortraitError] = useState('')
+  const [selecting, setSelecting] = useState(null) // which path is being confirmed
 
   const handleChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
 
@@ -59,7 +62,12 @@ export default function CharacterModal({ projectId, character, onSave, onClose }
     setPortraitOptions([])
     try {
       const data = await post(`/characters/${character.id}/generate-portrait`)
-      setPortraitOptions(data.portrait_urls || [])
+      // portrait_urls come back as "/static/series/{relative_path}"
+      // Store relative paths by stripping the prefix so we can pass to select-portrait
+      const relativePaths = (data.portrait_urls || []).map((url) =>
+        url.replace(/^\/static\/series\//, '')
+      )
+      setPortraitOptions(relativePaths)
     } catch (err) {
       setPortraitError(err.response?.data?.detail || 'Portrait generation failed.')
     } finally {
@@ -67,12 +75,26 @@ export default function CharacterModal({ projectId, character, onSave, onClose }
     }
   }
 
-  const handleSelectPortrait = async (url) => {
-    setSelectedPortrait(url)
+  const handleSelectPortrait = async (relativePath) => {
+    setSelecting(relativePath)
     try {
-      await put(`/characters/${character.id}`, { reference_image_path: url })
-    } catch {}
+      const updated = await post(`/characters/${character.id}/select-portrait`, {
+        portrait_path: relativePath,
+      })
+      setCanonicalPath(updated.reference_image_path)
+    } catch (err) {
+      setPortraitError(err.response?.data?.detail || 'Failed to set portrait.')
+    } finally {
+      setSelecting(null)
+    }
   }
+
+  // All portrait candidates to show — combine existing canonical + newly generated
+  const allCandidates = portraitOptions.length > 0
+    ? portraitOptions
+    : canonicalPath
+      ? [canonicalPath]
+      : []
 
   return (
     <div className="modal-overlay">
@@ -93,43 +115,89 @@ export default function CharacterModal({ projectId, character, onSave, onClose }
           {/* Portrait section */}
           {isEditing && (
             <div className="pixel-panel-sm p-4 space-y-3">
-              <div className="label-pixel">CHARACTER PORTRAIT</div>
+              <div className="flex items-center justify-between">
+                <div className="label-pixel">CHARACTER PORTRAIT</div>
+                {canonicalPath && (
+                  <span className="font-pixel text-px-green flex items-center gap-1" style={{ fontSize: '7px' }}>
+                    <Star className="w-2.5 h-2.5 fill-current" /> CANONICAL SET
+                  </span>
+                )}
+              </div>
+
               <div className="flex items-start gap-4">
+                {/* Current canonical portrait preview */}
                 <div className="w-20 h-20 bg-zinc-700 border-2 border-zinc-600 flex-shrink-0 flex items-center justify-center overflow-hidden"
                   style={{ boxShadow: '2px 2px 0 0 #000', imageRendering: 'pixelated' }}>
-                  {character.portrait_url ? (
-                    <img src={character.portrait_url} alt={character.name} className="w-full h-full object-cover" />
+                  {canonicalPath ? (
+                    <img src={`/static/series/${canonicalPath}`} alt={character.name} className="w-full h-full object-cover" />
                   ) : (
                     <span className="font-pixel text-accent-400" style={{ fontSize: '16px' }}>
                       {getInitials(character.name)}
                     </span>
                   )}
                 </div>
-                <div>
+                <div className="space-y-2">
                   <button onClick={handleGeneratePortrait} disabled={generating} className="btn-pixel-sm">
                     {generating ? <span className="pixel-spinner" /> : <Wand2 className="w-3 h-3" />}
-                    {generating ? 'GENERATING...' : 'GEN PORTRAIT'}
+                    {generating ? 'GENERATING...' : 'GEN PORTRAITS'}
                   </button>
-                  {portraitError && <p className="text-retro text-px-red mt-2" style={{ fontSize: '15px' }}>{portraitError}</p>}
+                  <p className="text-retro text-zinc-600" style={{ fontSize: '14px' }}>
+                    Generates 3 candidates — click one to make it canonical.
+                    Canonical portrait feeds into video generation for visual consistency.
+                  </p>
+                  {portraitError && (
+                    <p className="text-retro text-px-red" style={{ fontSize: '15px' }}>{portraitError}</p>
+                  )}
                 </div>
               </div>
-              {portraitOptions.length > 0 && (
-                <div className="flex gap-3 flex-wrap pt-1">
-                  {portraitOptions.map((url, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleSelectPortrait(url)}
-                      className={`relative w-20 h-20 border-2 overflow-hidden ${selectedPortrait === url ? 'border-accent-400' : 'border-zinc-600 hover:border-zinc-400'}`}
-                      style={{ boxShadow: '2px 2px 0 0 #000' }}
-                    >
-                      <img src={url} alt={`Portrait ${i + 1}`} className="w-full h-full object-cover" />
-                      {selectedPortrait === url && (
-                        <div className="absolute inset-0 bg-accent-500/30 flex items-center justify-center">
-                          <Check className="w-5 h-5 text-white drop-shadow-lg" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
+
+              {/* Portrait candidates grid */}
+              {allCandidates.length > 0 && (
+                <div className="space-y-2">
+                  <div className="font-pixel text-zinc-500" style={{ fontSize: '7px' }}>
+                    {portraitOptions.length > 0 ? 'SELECT CANONICAL PORTRAIT:' : 'CURRENT PORTRAIT:'}
+                  </div>
+                  <div className="flex gap-3 flex-wrap">
+                    {allCandidates.map((relPath, i) => {
+                      const isCanonical = relPath === canonicalPath
+                      const isSelecting = selecting === relPath
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => handleSelectPortrait(relPath)}
+                          disabled={isSelecting || isCanonical}
+                          className={`relative w-24 h-24 border-2 overflow-hidden transition-all ${
+                            isCanonical
+                              ? 'border-px-green cursor-default'
+                              : 'border-zinc-600 hover:border-accent-400'
+                          }`}
+                          style={{ boxShadow: '2px 2px 0 0 #000' }}
+                          title={isCanonical ? 'Canonical portrait' : 'Set as canonical'}
+                        >
+                          <img
+                            src={`/static/series/${relPath}`}
+                            alt={`Portrait ${i + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          {isCanonical && (
+                            <div className="absolute inset-0 bg-px-green/20 flex items-center justify-center">
+                              <Star className="w-5 h-5 text-px-green drop-shadow-lg fill-current" />
+                            </div>
+                          )}
+                          {isSelecting && (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                              <span className="pixel-spinner" />
+                            </div>
+                          )}
+                          {!isCanonical && !isSelecting && (
+                            <div className="absolute inset-0 bg-black/0 hover:bg-accent-500/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                              <Check className="w-5 h-5 text-white drop-shadow-lg" />
+                            </div>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -155,7 +223,9 @@ export default function CharacterModal({ projectId, character, onSave, onClose }
 
           <div>
             <label className="label-pixel">VISUAL DESCRIPTION</label>
-            <p className="text-retro text-zinc-500 mb-1" style={{ fontSize: '15px' }}>How this character looks for AI generation</p>
+            <p className="text-retro text-zinc-500 mb-1" style={{ fontSize: '15px' }}>
+              How this character looks — used in both portrait generation and video prompts
+            </p>
             <textarea name="visual_description" value={form.visual_description} onChange={handleChange} rows={3}
               className="input-pixel resize-none" placeholder="Tall man in his 40s, weathered face, dark coat..." />
           </div>

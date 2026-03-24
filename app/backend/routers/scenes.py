@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -11,6 +12,7 @@ from sqlalchemy.orm import Session
 from auth import get_current_user
 from database import get_db
 from models import Character, Episode, Location, Scene, SceneCharacter, User
+from pipeline import generate_single_scene_job
 from schemas import CharacterRead, SceneRead, SceneReorderItem, SceneUpdate
 
 router = APIRouter()
@@ -126,6 +128,33 @@ def delete_scene(
     db.delete(scene)
     db.commit()
     return {"ok": True}
+
+
+# ── POST /scenes/{id}/regenerate ──────────────────────────────────────────────
+
+@router.post("/scenes/{scene_id}/regenerate")
+def regenerate_scene(
+    scene_id: int,
+    quality: str = "draft",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """Re-generate a single scene clip without re-running the full episode pipeline."""
+    scene = _get_scene_or_404(scene_id, current_user, db)
+
+    if scene.status == "generating":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Scene is already generating.",
+        )
+
+    threading.Thread(
+        target=generate_single_scene_job,
+        args=(scene_id, quality),
+        daemon=True,
+    ).start()
+
+    return {"ok": True, "scene_id": scene_id}
 
 
 # ── POST /episodes/{episode_id}/scenes/reorder ────────────────────────────────

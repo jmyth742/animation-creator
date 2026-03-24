@@ -148,6 +148,40 @@ def export_project_to_files(project_id: int, db) -> tuple[str, Path]:
     return series_slug, series_path
 
 
+# ── Scene clip back-fill ──────────────────────────────────────────────────────
+
+def _backfill_scene_clips(episode_id: int, db) -> None:
+    """
+    After a full episode production run, match generated clip files to scene
+    rows and update output_clip_path + status so the UI can show previews.
+    """
+    from models import Episode, Scene
+
+    if not settings.COMFYUI_OUTPUT.exists():
+        return
+
+    episode = db.get(Episode, episode_id)
+    if episode is None:
+        return
+
+    ep_id = f"ep{episode.number:02d}"
+    for scene in episode.scenes:
+        clip_prefix = f"{ep_id}_s{scene.order_idx + 1:02d}"
+        clip_path = showrunner.find_latest_clip(clip_prefix)
+        if clip_path:
+            try:
+                rel = str(Path(clip_path).relative_to(settings.COMFYUI_OUTPUT))
+                scene.output_clip_path = rel
+                scene.status = "done"
+            except ValueError:
+                pass
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+
+
 # ── Background episode production ─────────────────────────────────────────────
 
 def produce_episode_job(
@@ -284,6 +318,12 @@ def produce_episode_job(
 
         db.commit()
 
+        # Back-fill scene clip paths so preview_url works in the UI
+        if not error_msg:
+            _backfill_scene_clips(episode_id, db)
+
+
+
     except Exception as exc:
         try:
             job = db.get(GenerationJob, job_id)
@@ -291,6 +331,104 @@ def produce_episode_job(
                 job.status = "error"
                 job.log_text += f"\n\n[FATAL] {exc}"
                 job.completed_at = datetime.datetime.now(datetime.timezone.utc)
+                db.commit()
+        except Exception:
+            pass
+    finally:
+        db.close()
+
+
+# ── Single-scene regeneration ─────────────────────────────────────────────────
+
+def generate_single_scene_job(scene_id: int, quality: str = "draft") -> None:
+    """
+    Intended to run in a background threading.Thread.
+
+    Generates (or re-generates) a single scene clip without touching the rest
+    of the episode.  Updates scene.status and scene.output_clip_path on completion.
+    """
+    from models import Scene
+
+    db = SessionLocal()
+    try:
+        scene = db.get(Scene, scene_id)
+        if scene is None:
+            return
+
+        scene.status = "generating"
+        db.commit()
+
+        episode = scene.episode
+        project = episode.project
+
+        # Export current project state to JSON (bible + episode files)
+        series_slug, series_path_dir = export_project_to_files(project.id, db)
+
+        # Load bible dict that showrunner functions expect
+        bible = json.loads((series_path_dir / "bible.json").read_text())
+
+        # Build a scene dict matching the showrunner JSON format
+        ep_id = f"ep{episode.number:02d}"
+        char_ids = [f"char_{sc.character_id}" for sc in scene.scene_characters]
+        try:
+            raw_dialogue = json.loads(scene.dialogue or "[]")
+        except (json.JSONDecodeError, TypeError):
+            raw_dialogue = []
+
+        scene_dict: dict = {
+            "id": f"{ep_id}_s{scene.order_idx + 1:02d}",
+            "location": f"loc_{scene.location_id}" if scene.location_id else "loc_unknown",
+            "characters": char_ids,
+            "clip_length": scene.clip_length,
+            "visual": scene.visual,
+            "narration": scene.narration,
+            "dialogue": raw_dialogue,
+        }
+
+        prompt = showrunner.build_scene_prompt(scene_dict, bible)
+        # No chaining for single-scene — use character portrait ref if available
+        seed_image = showrunner.get_scene_seed_image(scene_dict, series_slug, None)
+
+        cl = showrunner.CLIP_LENGTHS.get(scene.clip_length, showrunner.CLIP_LENGTHS["medium"])
+        frames = cl["frames"]
+        steps = showrunner.QUALITY_STEPS.get(quality, 15)
+        clip_prefix = scene_dict["id"]
+        seed = 1000 + scene.order_idx + 1
+
+        if seed_image:
+            wf = showrunner.build_i2v_workflow(
+                prompt, seed_image, seed, clip_prefix, frames, steps
+            )
+        else:
+            wf = showrunner.build_t2v_workflow(prompt, seed, clip_prefix, frames, steps)
+
+        prompt_id = showrunner.queue_prompt(wf)
+        success = showrunner.poll_until_done(prompt_id)
+
+        # Re-fetch scene in case DB session is stale
+        scene = db.get(Scene, scene_id)
+        if scene is None:
+            return
+
+        if success:
+            clip_path = showrunner.find_latest_clip(clip_prefix)
+            if clip_path:
+                rel = Path(clip_path).relative_to(settings.COMFYUI_OUTPUT)
+                scene.output_clip_path = str(rel)
+                scene.status = "done"
+            else:
+                scene.status = "error"
+        else:
+            scene.status = "error"
+
+        db.commit()
+
+    except Exception as exc:
+        try:
+            db.rollback()
+            scene = db.get(Scene, scene_id)
+            if scene:
+                scene.status = "error"
                 db.commit()
         except Exception:
             pass

@@ -236,6 +236,10 @@ class GenerationJobRead(BaseModel):
     completed_at: datetime.datetime | None = None
 
 
+class SelectPortraitRequest(BaseModel):
+    portrait_path: Annotated[str, Field(max_length=1024)]
+
+
 class PortraitGenerateResponse(BaseModel):
     portrait_urls: list[str]
     message: str

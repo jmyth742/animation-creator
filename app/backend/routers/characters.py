@@ -2,15 +2,23 @@
 
 from __future__ import annotations
 
+import shutil
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from auth import get_current_user
+from config import settings
 from database import get_db
 from models import Character, Project, User
-from pipeline import generate_character_portrait
-from pipeline import slugify
-from schemas import CharacterCreate, CharacterRead, CharacterUpdate, PortraitGenerateResponse
+from pipeline import generate_character_portrait, slugify
+from schemas import (
+    CharacterCreate,
+    CharacterRead,
+    CharacterUpdate,
+    PortraitGenerateResponse,
+    SelectPortraitRequest,
+)
 
 router = APIRouter()
 
@@ -162,3 +170,44 @@ def generate_portrait(
         portrait_urls=portrait_urls,
         message=f"Generated {len(portrait_urls)} portrait(s).",
     )
+
+
+# ── POST /characters/{id}/select-portrait ─────────────────────────────────────
+
+@router.post("/characters/{character_id}/select-portrait", response_model=CharacterRead)
+def select_portrait(
+    character_id: int,
+    payload: SelectPortraitRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> CharacterRead:
+    """
+    Set the canonical portrait for a character.
+
+    Copies the chosen portrait to the path showrunner expects:
+        series/{slug}/reference_images/char_{id}.png
+
+    This is the file get_scene_seed_image() looks for when deciding
+    whether to use I2V seeding for scenes featuring this character.
+    """
+    char = _get_character_or_404(character_id, current_user, db)
+
+    src = settings.SERIES_DIR / payload.portrait_path
+    if not src.exists():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Portrait file not found.",
+        )
+
+    # Copy to canonical path showrunner looks for
+    series_slug = char.project.series_slug
+    canonical = (
+        settings.SERIES_DIR / series_slug / "reference_images" / f"char_{char.id}.png"
+    )
+    canonical.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, canonical)
+
+    char.reference_image_path = payload.portrait_path
+    db.commit()
+    db.refresh(char)
+    return _character_read(char)

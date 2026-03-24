@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Plus, ChevronDown, ChevronRight, Trash2, Pencil, Play, X, Check, Eye, Film } from 'lucide-react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { Plus, ChevronDown, ChevronRight, Trash2, Pencil, Play, X, Eye, Film, RefreshCw } from 'lucide-react'
 import { get, post, put, del } from '../api/client'
 
 // ── Scene modal ─────────────────────────────────────────────────────────────
@@ -129,56 +129,132 @@ function SceneModal({ episodeId, scene, locations, characters, onSave, onClose }
   )
 }
 
-// ── Scene row ────────────────────────────────────────────────────────────────
+// ── Scene preview modal ───────────────────────────────────────────────────────
 
-function SceneRow({ scene, onEdit, onDelete }) {
-  let dialogue = []
-  try { dialogue = JSON.parse(scene.dialogue) } catch {}
-
-  const statusColor = scene.status === 'done' ? 'text-px-green' : scene.status === 'error' ? 'text-px-red'
-    : scene.status === 'generating' ? 'text-accent-400' : 'text-zinc-500'
-
+function ScenePreviewModal({ url, onClose }) {
   return (
-    <div className="bg-zinc-900 border-2 border-zinc-700 p-3 group hover:border-zinc-600 transition-colors"
-      style={{ boxShadow: '2px 2px 0 0 #000' }}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap gap-2 mb-1.5">
-            {scene.location_name && <span className="badge-pixel">📍 {scene.location_name}</span>}
-            <span className="badge-pixel">{scene.clip_length?.toUpperCase()}</span>
-            <span className={`font-pixel ${statusColor}`} style={{ fontSize: '7px' }}>{scene.status?.toUpperCase()}</span>
-          </div>
-          {scene.visual && (
-            <p className="text-retro text-zinc-300 line-clamp-2 mb-1" style={{ fontSize: '16px' }}>
-              <Eye className="w-3 h-3 inline mr-1 text-zinc-600" />{scene.visual}
-            </p>
-          )}
-          {dialogue.length > 0 && (
-            <div className="mt-1 space-y-0.5">
-              {dialogue.slice(0, 2).map((d, i) => (
-                <p key={i} className="text-retro text-zinc-500" style={{ fontSize: '14px' }}>
-                  <span className="text-zinc-400">{d.character}:</span> {d.line}
-                </p>
-              ))}
-            </div>
-          )}
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-pixel max-w-lg" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <span className="heading-pixel-sm text-accent-400">▶ SCENE PREVIEW</span>
+          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-200 font-pixel text-sm p-1">✕</button>
         </div>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-          {scene.preview_url && (
-            <a href={scene.preview_url} target="_blank" rel="noopener noreferrer"
-              className="p-1.5 border border-zinc-600 text-zinc-400 hover:text-accent-400 hover:border-accent-600">
-              <Film className="w-3 h-3" />
-            </a>
-          )}
-          <button onClick={onEdit} className="p-1.5 border border-zinc-600 text-zinc-400 hover:text-accent-400 hover:border-accent-600">
-            <Pencil className="w-3 h-3" />
-          </button>
-          <button onClick={onDelete} className="p-1.5 border border-zinc-600 text-zinc-400 hover:text-px-red hover:border-px-red">
-            <Trash2 className="w-3 h-3" />
-          </button>
+        <div className="p-4">
+          <video
+            src={url}
+            controls
+            autoPlay
+            loop
+            className="w-full border-2 border-zinc-700"
+            style={{ background: '#000', imageRendering: 'pixelated' }}
+          />
         </div>
       </div>
     </div>
+  )
+}
+
+// ── Scene row ────────────────────────────────────────────────────────────────
+
+function SceneRow({ scene, onEdit, onDelete, onRegenerate }) {
+  const [previewOpen, setPreviewOpen] = useState(false)
+  let dialogue = []
+  try { dialogue = JSON.parse(scene.dialogue) } catch {}
+
+  const isGenerating = scene.status === 'generating'
+  const statusColor = scene.status === 'done' ? 'text-px-green' : scene.status === 'error' ? 'text-px-red'
+    : isGenerating ? 'text-accent-400' : 'text-zinc-500'
+
+  return (
+    <>
+      <div className="bg-zinc-900 border-2 border-zinc-700 p-3 group hover:border-zinc-600 transition-colors"
+        style={{ boxShadow: '2px 2px 0 0 #000' }}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap gap-2 mb-1.5">
+              {scene.location_name && <span className="badge-pixel">📍 {scene.location_name}</span>}
+              <span className="badge-pixel">{scene.clip_length?.toUpperCase()}</span>
+              <span className={`font-pixel flex items-center gap-1 ${statusColor}`} style={{ fontSize: '7px' }}>
+                {isGenerating && <span className="pixel-spinner" style={{ width: '8px', height: '8px' }} />}
+                {scene.status?.toUpperCase()}
+              </span>
+            </div>
+            {scene.visual && (
+              <p className="text-retro text-zinc-300 line-clamp-2 mb-1" style={{ fontSize: '16px' }}>
+                <Eye className="w-3 h-3 inline mr-1 text-zinc-600" />{scene.visual}
+              </p>
+            )}
+            {dialogue.length > 0 && (
+              <div className="mt-1 space-y-0.5">
+                {dialogue.slice(0, 2).map((d, i) => (
+                  <p key={i} className="text-retro text-zinc-500" style={{ fontSize: '14px' }}>
+                    <span className="text-zinc-400">{d.character}:</span> {d.line}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            {/* Inline clip preview strip */}
+            {scene.preview_url && (
+              <div className="mt-2">
+                <video
+                  src={scene.preview_url}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="h-16 border border-zinc-700 cursor-pointer hover:border-accent-500 transition-colors"
+                  style={{ aspectRatio: '16/9', objectFit: 'cover' }}
+                  onClick={() => setPreviewOpen(true)}
+                  title="Click to expand"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            {scene.preview_url && (
+              <button onClick={() => setPreviewOpen(true)}
+                className="p-1.5 border border-zinc-600 text-zinc-400 hover:text-accent-400 hover:border-accent-600"
+                title="Preview clip">
+                <Film className="w-3 h-3" />
+              </button>
+            )}
+            <div className="relative group/regen">
+              <button
+                onClick={() => onRegenerate(scene, 'draft')}
+                disabled={isGenerating}
+                className="p-1.5 border border-zinc-600 text-zinc-400 hover:text-px-green hover:border-px-green disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Regenerate clip">
+                <RefreshCw className={`w-3 h-3 ${isGenerating ? 'animate-spin' : ''}`} />
+              </button>
+              {/* Quality dropdown */}
+              <div className="absolute right-0 top-full mt-1 bg-zinc-800 border-2 border-zinc-600 z-20 hidden group-hover/regen:block min-w-36"
+                style={{ boxShadow: '3px 3px 0 0 #000' }}>
+                <button onClick={() => onRegenerate(scene, 'draft')}
+                  className="w-full text-left px-3 py-2 text-retro text-zinc-300 hover:bg-zinc-700 border-b border-zinc-700" style={{ fontSize: '16px' }}>
+                  ⟳ DRAFT (FAST)
+                </button>
+                <button onClick={() => onRegenerate(scene, 'quality')}
+                  className="w-full text-left px-3 py-2 text-retro text-zinc-300 hover:bg-zinc-700" style={{ fontSize: '16px' }}>
+                  ★ QUALITY (SLOW)
+                </button>
+              </div>
+            </div>
+            <button onClick={onEdit} className="p-1.5 border border-zinc-600 text-zinc-400 hover:text-accent-400 hover:border-accent-600">
+              <Pencil className="w-3 h-3" />
+            </button>
+            <button onClick={onDelete} className="p-1.5 border border-zinc-600 text-zinc-400 hover:text-px-red hover:border-px-red">
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {previewOpen && scene.preview_url && (
+        <ScenePreviewModal url={scene.preview_url} onClose={() => setPreviewOpen(false)} />
+      )}
+    </>
   )
 }
 
@@ -190,6 +266,7 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
   const [loadingScenes, setLoadingScenes] = useState(false)
   const [sceneModal, setSceneModal] = useState(false)
   const [producing, setProducing] = useState(false)
+  const pollRef = useRef(null)
 
   const locations = project.locations || []
   const characters = project.characters || []
@@ -202,17 +279,42 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
     finally { setLoadingScenes(false) }
   }
 
-  const handleExpand = () => { setExpanded((v) => !v); if (!expanded) loadScenes() }
-
-  const refreshScenes = async () => {
+  const refreshScenes = useCallback(async () => {
     try { const data = await get(`/episodes/${episode.id}`); setScenes(data.scenes || []) }
     catch {}
-  }
+  }, [episode.id])
+
+  const handleExpand = () => { setExpanded((v) => !v); if (!expanded) loadScenes() }
+
+  // Poll every 3s while any scene is generating
+  useEffect(() => {
+    if (!scenes) return
+    const anyGenerating = scenes.some((s) => s.status === 'generating')
+    if (anyGenerating && !pollRef.current) {
+      pollRef.current = setInterval(refreshScenes, 3000)
+    } else if (!anyGenerating && pollRef.current) {
+      clearInterval(pollRef.current)
+      pollRef.current = null
+    }
+    return () => {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+    }
+  }, [scenes, refreshScenes])
 
   const handleSceneDelete = async (scene) => {
     if (!window.confirm(`DELETE scene ${scene.order_idx + 1}?`)) return
     try { await del(`/scenes/${scene.id}`); refreshScenes() }
     catch { alert('Failed to delete scene.') }
+  }
+
+  const handleRegenerate = async (scene, quality) => {
+    try {
+      await post(`/scenes/${scene.id}/regenerate?quality=${quality}`)
+      // Optimistically mark as generating so the spinner appears immediately
+      setScenes((prev) => prev.map((s) => s.id === scene.id ? { ...s, status: 'generating' } : s))
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to start regeneration.')
+    }
   }
 
   const handleDelete = async () => {
@@ -296,7 +398,9 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
             <div className="space-y-2">
               {(scenes || []).map((scene, idx) => (
                 <SceneRow key={scene.id} scene={{ ...scene, order_idx: idx }}
-                  onEdit={() => setSceneModal(scene)} onDelete={() => handleSceneDelete(scene)} />
+                  onEdit={() => setSceneModal(scene)}
+                  onDelete={() => handleSceneDelete(scene)}
+                  onRegenerate={handleRegenerate} />
               ))}
             </div>
           )}

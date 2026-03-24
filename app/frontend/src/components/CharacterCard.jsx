@@ -1,5 +1,5 @@
 import React from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Star, Trash2 } from 'lucide-react'
 
 function getInitials(name = '') {
   return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
@@ -37,6 +37,14 @@ export default function CharacterCard({ character, onEdit, onDelete, deleting })
               style={{ fontSize: '20px', textShadow: '2px 2px 0 #000' }}>
               {getInitials(character.name)}
             </span>
+          </div>
+        )}
+
+        {/* Canonical portrait badge */}
+        {character.reference_image_path && (
+          <div className="absolute top-1 right-1 bg-black/70 border border-px-green p-0.5"
+            title="Canonical portrait set — used for visual consistency in video generation">
+            <Star className="w-2.5 h-2.5 text-px-green fill-current" />
           </div>
         )}
 
