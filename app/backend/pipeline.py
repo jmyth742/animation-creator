@@ -122,6 +122,14 @@ def export_project_to_files(project_id: int, db) -> tuple[str, Path]:
             except (json.JSONDecodeError, TypeError):
                 raw_dialogue = []
 
+            # Resolve scene-level reference image to an absolute path so
+            # showrunner.get_scene_seed_image() can find it without knowing SERIES_DIR.
+            scene_ref: str | None = None
+            if scene.reference_image_path:
+                candidate = settings.SERIES_DIR / scene.reference_image_path
+                if candidate.exists():
+                    scene_ref = str(candidate)
+
             scene_dict: dict = {
                 "id": f"{ep_id}_s{scene.order_idx + 1:02d}",
                 "location": (
@@ -132,6 +140,7 @@ def export_project_to_files(project_id: int, db) -> tuple[str, Path]:
                 "visual": scene.visual,
                 "narration": scene.narration,
                 "dialogue": raw_dialogue,
+                "reference_image": scene_ref,  # None when not set
             }
             scenes_list.append(scene_dict)
 
@@ -387,13 +396,14 @@ def generate_single_scene_job(scene_id: int, quality: str = "draft") -> None:
 
         prompt = showrunner.build_scene_prompt(scene_dict, bible)
 
-        # Scene-specific reference takes highest priority;
-        # fall back to the char/location heuristic from showrunner.
+        # Scene-specific reference takes highest priority.
+        # Must call copy_to_input() so build_i2v_workflow's LoadImage node
+        # can find the file by name in ComfyUI's input directory.
         seed_image: str | None = None
         if scene.reference_image_path:
             candidate = settings.SERIES_DIR / scene.reference_image_path
             if candidate.exists():
-                seed_image = str(candidate)
+                seed_image = showrunner.copy_to_input(str(candidate))
         if seed_image is None:
             seed_image = showrunner.get_scene_seed_image(scene_dict, series_slug, None)
 

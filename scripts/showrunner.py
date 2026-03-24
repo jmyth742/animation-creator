@@ -1264,27 +1264,39 @@ def generate_reference_images(series_name: str, bible: dict, force: bool = False
 
 def get_scene_seed_image(scene: dict, series_name: str, current_chain: str | None) -> str | None:
     """
-    Choose the best I2V seed image for a scene:
-    - Dialogue/close-up of a character → use that character's reference image
-    - Establishing/wide shot → use the location reference image
-    - Everything else → chain from previous clip (current_chain)
+    Choose the best I2V seed image for a scene, in priority order:
+    1. Scene-specific FLUX reference (highest quality, set via Scene Studio)
+    2. Character portrait ref (for dialogue/close-up scenes)
+    3. Location reference (for establishing/wide shots)
+    4. Chain from previous clip
     """
     ref_dir = series_path(series_name) / "reference_images"
     visual_lower = scene.get("visual", "").lower()
+
+    # 1. Scene-specific reference — set explicitly via Scene Studio UI
+    scene_ref_path = scene.get("reference_image")
+    if scene_ref_path and Path(scene_ref_path).exists():
+        return copy_to_input(scene_ref_path)
 
     is_close = any(w in visual_lower for w in ["close-up", "extreme close", "ecu"])
     is_establishing = any(w in visual_lower for w in ["wide shot", "establishing", "aerial", "wide establishing", "long shot"])
     is_dialogue = bool(scene.get("dialogue"))
 
-    # Close-up or dialogue → prefer character reference
+    # 2. Dialogue/close-up → character reference
+    # Characters are keyed as "char_1" in scene dicts; strip prefix to get the file ID.
     if (is_close or is_dialogue) and scene.get("characters"):
-        char_ref = ref_dir / f"char_{scene['characters'][0]}.png"
+        char_key = scene["characters"][0]                          # e.g. "char_1"
+        char_id  = char_key.removeprefix("char_")                  # e.g. "1"
+        char_ref = ref_dir / f"char_{char_id}.png"
         if char_ref.exists():
             return copy_to_input(str(char_ref))
 
-    # Establishing shot → prefer location reference
+    # 3. Establishing/wide → location reference
+    # Locations are keyed as "loc_1" in scene dicts; strip prefix similarly.
     if is_establishing and scene.get("location"):
-        loc_ref = ref_dir / f"loc_{scene['location']}.png"
+        loc_key = scene["location"]                                # e.g. "loc_1"
+        loc_id  = loc_key.removeprefix("loc_")                    # e.g. "1"
+        loc_ref = ref_dir / f"loc_{loc_id}.png"
         if loc_ref.exists():
             return copy_to_input(str(loc_ref))
 
