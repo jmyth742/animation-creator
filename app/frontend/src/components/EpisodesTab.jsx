@@ -157,7 +157,7 @@ function ScenePreviewModal({ url, onClose }) {
 
 // ── Scene row ────────────────────────────────────────────────────────────────
 
-function SceneRow({ scene, onEdit, onDelete, onRegenerate }) {
+function SceneRow({ scene, onEdit, onDelete, onRegenerate, onOpenSceneStudio }) {
   const [previewOpen, setPreviewOpen] = useState(false)
   let dialogue = []
   try { dialogue = JSON.parse(scene.dialogue) } catch {}
@@ -170,7 +170,26 @@ function SceneRow({ scene, onEdit, onDelete, onRegenerate }) {
     <>
       <div className="bg-zinc-900 border-2 border-zinc-700 p-3 group hover:border-zinc-600 transition-colors"
         style={{ boxShadow: '2px 2px 0 0 #000' }}>
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+
+          {/* Reference image thumbnail — clickable shortcut to Scene Studio */}
+          <div
+            className={`flex-shrink-0 border overflow-hidden cursor-pointer mt-0.5 ${
+              scene.reference_url ? 'border-px-green' : 'border-dashed border-zinc-700 hover:border-zinc-500'
+            }`}
+            style={{ width: '48px', height: '27px', background: '#111' }}
+            onClick={onOpenSceneStudio}
+            title={scene.reference_url ? 'Scene reference set — click to edit' : 'Add scene reference'}
+          >
+            {scene.reference_url ? (
+              <img src={scene.reference_url} alt="ref" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <Camera className="w-2.5 h-2.5 text-zinc-700" />
+              </div>
+            )}
+          </div>
+
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap gap-2 mb-1.5">
               {scene.location_name && <span className="badge-pixel">📍 {scene.location_name}</span>}
@@ -179,6 +198,11 @@ function SceneRow({ scene, onEdit, onDelete, onRegenerate }) {
                 {isGenerating && <span className="pixel-spinner" style={{ width: '8px', height: '8px' }} />}
                 {scene.status?.toUpperCase()}
               </span>
+              {scene.reference_url && (
+                <span className="font-pixel text-px-green flex items-center gap-0.5" style={{ fontSize: '6px' }}>
+                  <Star className="w-2 h-2 fill-current" /> SCENE REF
+                </span>
+              )}
             </div>
             {scene.visual && (
               <p className="text-retro text-zinc-300 line-clamp-2 mb-1" style={{ fontSize: '16px' }}>
@@ -200,10 +224,7 @@ function SceneRow({ scene, onEdit, onDelete, onRegenerate }) {
               <div className="mt-2">
                 <video
                   src={scene.preview_url}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
+                  autoPlay loop muted playsInline
                   className="h-16 border border-zinc-700 cursor-pointer hover:border-accent-500 transition-colors"
                   style={{ aspectRatio: '16/9', objectFit: 'cover' }}
                   onClick={() => setPreviewOpen(true)}
@@ -221,15 +242,20 @@ function SceneRow({ scene, onEdit, onDelete, onRegenerate }) {
                 <Film className="w-3 h-3" />
               </button>
             )}
+            <button
+              onClick={onOpenSceneStudio}
+              className="p-1.5 border border-zinc-600 text-zinc-400 hover:text-px-green hover:border-px-green"
+              title="Scene Studio — generate reference image">
+              <Camera className="w-3 h-3" />
+            </button>
             <div className="relative group/regen">
               <button
                 onClick={() => onRegenerate(scene, 'draft')}
                 disabled={isGenerating}
-                className="p-1.5 border border-zinc-600 text-zinc-400 hover:text-px-green hover:border-px-green disabled:opacity-40 disabled:cursor-not-allowed"
+                className="p-1.5 border border-zinc-600 text-zinc-400 hover:text-accent-400 hover:border-accent-600 disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Regenerate clip">
                 <RefreshCw className={`w-3 h-3 ${isGenerating ? 'animate-spin' : ''}`} />
               </button>
-              {/* Quality dropdown */}
               <div className="absolute right-0 top-full mt-1 bg-zinc-800 border-2 border-zinc-600 z-20 hidden group-hover/regen:block min-w-36"
                 style={{ boxShadow: '3px 3px 0 0 #000' }}>
                 <button onClick={() => onRegenerate(scene, 'draft')}
@@ -266,6 +292,7 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
   const [scenes, setScenes] = useState(null)
   const [loadingScenes, setLoadingScenes] = useState(false)
   const [sceneModal, setSceneModal] = useState(false)
+  const [sceneStudio, setSceneStudio] = useState(null) // scene object or null
   const [producing, setProducing] = useState(false)
   const pollRef = useRef(null)
 
@@ -401,7 +428,8 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
                 <SceneRow key={scene.id} scene={{ ...scene, order_idx: idx }}
                   onEdit={() => setSceneModal(scene)}
                   onDelete={() => handleSceneDelete(scene)}
-                  onRegenerate={handleRegenerate} />
+                  onRegenerate={handleRegenerate}
+                  onOpenSceneStudio={() => setSceneStudio({ ...scene, order_idx: idx })} />
               ))}
             </div>
           )}
@@ -411,6 +439,22 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
       {sceneModal !== false && (
         <SceneModal episodeId={episode.id} scene={sceneModal} locations={locations} characters={characters}
           onSave={() => { setSceneModal(false); refreshScenes() }} onClose={() => setSceneModal(false)} />
+      )}
+
+      {sceneStudio && (
+        <SceneStudioModal
+          scene={sceneStudio}
+          project={project}
+          locations={locations}
+          onClose={() => setSceneStudio(null)}
+          onReferenceSelected={(updated) => {
+            setSceneStudio(updated)
+            setScenes((prev) => prev
+              ? prev.map((s) => s.id === updated.id ? { ...s, ...updated } : s)
+              : prev
+            )
+          }}
+        />
       )}
     </div>
   )
