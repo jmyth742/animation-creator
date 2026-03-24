@@ -12,7 +12,7 @@ from auth import (
     verify_password,
 )
 from database import get_db
-from main import limiter
+from limiter import limiter
 from models import User
 from schemas import LoginRequest, TokenResponse, UserCreate, UserRead
 

@@ -7,15 +7,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
 
 from config import settings
 from database import init_db
+from limiter import limiter
 from routers import auth, characters, episodes, generate, jobs, locations, projects, scenes
-
-limiter = Limiter(key_func=get_remote_address)
 
 
 # ── Lifespan ──────────────────────────────────────────────────────────────────
