@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Users, Tv, MapPin, Settings, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Users, Tv, MapPin, Settings, RefreshCw, Film } from 'lucide-react'
 import { get } from '../api/client'
 import CharactersTab from '../components/CharactersTab'
 import EpisodesTab from '../components/EpisodesTab'
@@ -26,6 +26,7 @@ export default function ProjectPage() {
   const [activeJobId, setActiveJobId] = useState(null)
   const [activeJobMeta, setActiveJobMeta] = useState(null)
   const [rebuildRefsOpen, setRebuildRefsOpen] = useState(false)
+  const [rebuildClipsOpen, setRebuildClipsOpen] = useState(false)
 
   const fetchProject = async () => {
     try {
@@ -110,14 +111,24 @@ export default function ProjectPage() {
               </button>
             ))}
           </nav>
-          <button
-            onClick={() => setRebuildRefsOpen(true)}
-            className="btn-pixel-ghost flex items-center gap-1.5 mb-1"
-            title="Regenerate all character and location reference images"
-          >
-            <RefreshCw className="w-3 h-3" />
-            REBUILD ALL REFS
-          </button>
+          <div className="flex items-center gap-2 mb-1">
+            <button
+              onClick={() => setRebuildRefsOpen(true)}
+              className="btn-pixel-ghost flex items-center gap-1.5"
+              title="Regenerate all character + location reference images with FLUX"
+            >
+              <RefreshCw className="w-3 h-3" />
+              REBUILD REFS
+            </button>
+            <button
+              onClick={() => setRebuildClipsOpen(true)}
+              className="btn-pixel-ghost flex items-center gap-1.5"
+              title="Regenerate all scene clips using updated references as I2V seeds"
+            >
+              <Film className="w-3 h-3" />
+              REGEN ALL CLIPS
+            </button>
+          </div>
         </div>
       </header>
 
@@ -155,7 +166,17 @@ export default function ProjectPage() {
       {rebuildRefsOpen && (
         <RebuildRefsModal
           projectId={id}
+          mode="refs"
           onClose={() => setRebuildRefsOpen(false)}
+          onComplete={fetchProject}
+        />
+      )}
+
+      {rebuildClipsOpen && (
+        <RebuildRefsModal
+          projectId={id}
+          mode="clips"
+          onClose={() => setRebuildClipsOpen(false)}
           onComplete={fetchProject}
         />
       )}

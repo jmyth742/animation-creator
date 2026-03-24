@@ -202,6 +202,46 @@ def get_regen_references_status(
     return job
 
 
+# ── POST /projects/{id}/regenerate-clips ──────────────────────────────────────
+
+@router.post("/{project_id}/regenerate-clips")
+def start_regen_clips(
+    project_id: int,
+    quality: str = "draft",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """Start a background job that regenerates every scene clip across all episodes."""
+    project = _get_project_or_404(project_id, db)
+    _assert_owner(project, current_user)
+
+    try:
+        resp = _requests.get(COMFYUI_BASE, timeout=3)
+        resp.raise_for_status()
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ComfyUI is not reachable at http://localhost:8188. Start ComfyUI and retry.",
+        )
+
+    total = sum(len(ep.scenes) for ep in project.episodes)
+    job_id = pipeline.start_regenerate_all_clips(project_id, quality)
+    return {"job_id": job_id, "total": total}
+
+
+@router.get("/{project_id}/regenerate-clips/{job_id}")
+def get_regen_clips_status(
+    project_id: int,
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """Poll the status of a running bulk clip regeneration job."""
+    job = pipeline.get_clip_regen_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found.")
+    return job
+
+
 # ── DELETE /projects/{id} ─────────────────────────────────────────────────────
 
 @router.delete("/{project_id}")

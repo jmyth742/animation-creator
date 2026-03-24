@@ -735,6 +735,94 @@ def generate_scene_reference(scene_id: int, db) -> list[str]:
     return saved_paths
 
 
+# ── Bulk clip regeneration ────────────────────────────────────────────────────
+
+_clip_regen_jobs: dict[str, dict] = {}
+
+
+def get_clip_regen_job(job_id: str) -> dict | None:
+    return _clip_regen_jobs.get(job_id)
+
+
+def start_regenerate_all_clips(project_id: int, quality: str = "draft") -> str:
+    """
+    Start a background thread that regenerates every scene clip across all episodes
+    in the project, sequentially, using the current reference images as I2V seeds.
+    """
+    job_id = str(uuid.uuid4())
+    _clip_regen_jobs[job_id] = {
+        "status": "running",
+        "progress": 0,
+        "total": 0,
+        "items": [],
+        "error": None,
+    }
+    thread = threading.Thread(
+        target=_regenerate_all_clips_bg,
+        args=(project_id, job_id, quality),
+        daemon=True,
+    )
+    thread.start()
+    return job_id
+
+
+def _regenerate_all_clips_bg(project_id: int, job_id: str, quality: str) -> None:
+    """
+    Background worker: regenerates every scene clip in the project, in episode/scene order.
+
+    Calls generate_single_scene_job() for each scene so that all the same logic
+    applies — reference image priority, prompt building, I2V seeding, etc.
+    """
+    from models import Project, Scene
+
+    db = SessionLocal()
+    job = _clip_regen_jobs[job_id]
+
+    try:
+        project = db.get(Project, project_id)
+        if project is None:
+            job["status"] = "error"
+            job["error"] = "Project not found"
+            return
+
+        # Collect all scenes across all episodes, ordered
+        # Collect scene IDs + labels while DB is open
+        all_scenes: list[tuple[str, int]] = []
+        for episode in sorted(project.episodes, key=lambda e: e.number):
+            for scene in sorted(episode.scenes, key=lambda s: s.order_idx):
+                ep_label = f"EP{episode.number:02d} · SC{scene.order_idx + 1:02d}"
+                visual_preview = (scene.visual or "")[:50] + ("…" if len(scene.visual or "") > 50 else "")
+                all_scenes.append((f"{ep_label} — {visual_preview}", scene.id))
+
+        job["total"] = len(all_scenes)
+        db.close()  # release before long-running loop
+
+        done = 0
+        for label, scene_id in all_scenes:
+            item: dict = {"label": label, "status": "running"}
+            job["items"].append(item)
+            try:
+                # generate_single_scene_job opens and closes its own session
+                generate_single_scene_job(scene_id, quality)
+                item["status"] = "done"
+            except Exception as exc:
+                item["status"] = "error"
+                item["error"] = str(exc)
+            done += 1
+            job["progress"] = done
+
+        job["status"] = "complete"
+
+    except Exception as exc:
+        job["status"] = "error"
+        job["error"] = str(exc)
+    finally:
+        try:
+            db.close()
+        except Exception:
+            pass
+
+
 # ── Bulk reference regeneration ───────────────────────────────────────────────
 
 def get_ref_regen_job(job_id: str) -> dict | None:
