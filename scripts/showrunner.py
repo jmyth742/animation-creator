@@ -1206,39 +1206,53 @@ def build_ref_workflow(prompt: str, seed: int, prefix: str) -> dict:
 
 
 def generate_reference_images(series_name: str, bible: dict, force: bool = False):
-    """Generate canonical reference images for all characters and locations in the bible."""
+    """
+    Generate canonical reference images for all characters and locations in the bible
+    using FLUX.1-schnell T2I (replaces the old HunyuanVideo single-frame approach).
+
+    Character keys in the bible are already prefixed ("char_1", "char_2", …) as are
+    location keys ("loc_1", …).  The prefix is used directly as the output filename
+    so get_scene_seed_image() can find them without double-prefixing.
+    """
     ref_dir = series_path(series_name) / "reference_images"
     ref_dir.mkdir(exist_ok=True)
-    style = bible["series"]["style"]
 
-    items: list[tuple[str, str, str]] = []  # (prefix, label, prompt)
+    style   = bible["series"].get("style", "")
+    setting = bible.get("world", {}).get("setting", "")
 
-    # Characters
+    # (prefix, label, prompt, width, height)
+    items: list[tuple[str, str, str, int, int]] = []
+
+    # Characters — portrait orientation (480×640)
     for char_id, char in bible.get("characters", {}).items():
-        items.append((
-            f"char_{char_id}",
-            f"Character: {char.get('name', char_id)}",
-            f"Portrait of {char['visual']} Facing camera directly, neutral expression, standing still. {style}",
-        ))
+        # char_id already contains the "char_" prefix from the bible JSON
+        prompt_parts = [f"Portrait of {char['visual']}",
+                        "Facing camera directly, neutral expression, upper body visible."]
+        if style:   prompt_parts.append(style)
+        if setting: prompt_parts.append(f"Setting: {setting}")
+        items.append((char_id, f"Character: {char.get('name', char_id)}",
+                       " ".join(prompt_parts), 480, 640))
 
-    # Locations
+    # Locations — landscape orientation (640×360)
     for loc_id, loc_desc in bible.get("world", {}).get("locations", {}).items():
-        items.append((
-            f"loc_{loc_id}",
-            f"Location: {loc_id}",
-            f"Establishing shot. {loc_desc} No people present. Static camera. {style}",
-        ))
+        # loc_id already contains the "loc_" prefix
+        prompt_parts = [loc_desc, "Establishing shot, cinematic wide angle, no people, empty scene."]
+        if style:   prompt_parts.append(style)
+        if setting: prompt_parts.append(f"Setting: {setting}")
+        items.append((loc_id, f"Location: {loc_id}",
+                       ". ".join(filter(None, prompt_parts)), 640, 360))
 
-    print(f"  Generating {len(items)} reference images...")
-    for prefix, label, prompt in items:
+    refs_out = COMFYUI_DIR / "output" / "refs"
+    print(f"  Generating {len(items)} reference images with FLUX T2I...")
+
+    for prefix, label, prompt, width, height in items:
         out_png = ref_dir / f"{prefix}.png"
         if out_png.exists() and not force:
             print(f"    {label} — exists, skipping")
             continue
 
-        print(f"    {label}...")
-        # Queue single-frame generation
-        wf = build_ref_workflow(prompt, seed=999, prefix=prefix)
+        print(f"    {label} ({width}×{height})...")
+        wf = build_t2i_workflow(prompt, seed=999, prefix=prefix, width=width, height=height)
         try:
             prompt_id = queue_prompt(wf)
         except requests.ConnectionError:
@@ -1250,9 +1264,9 @@ def generate_reference_images(series_name: str, bible: dict, force: bool = False
             print(f"      WARNING: generation may have failed")
             continue
 
-        # Find the generated PNG in ComfyUI output
-        refs_out = COMFYUI_DIR / "output" / "refs"
-        candidates = sorted(refs_out.glob(f"{prefix}*.png"), key=lambda p: p.stat().st_mtime, reverse=True) if refs_out.exists() else []
+        candidates = (sorted(refs_out.glob(f"{prefix}*.png"),
+                             key=lambda p: p.stat().st_mtime, reverse=True)
+                      if refs_out.exists() else [])
         if candidates:
             shutil.copy2(candidates[0], out_png)
             print(f"      Saved: {out_png}")
