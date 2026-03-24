@@ -209,6 +209,25 @@ def create_scene(
     current_user: User = Depends(get_current_user),
 ) -> SceneRead:
     ep = _get_episode_or_404(episode_id, current_user, db)
+    project_id = ep.project_id
+
+    # Validate location belongs to this project
+    if payload.location_id is not None:
+        loc = db.get(Location, payload.location_id)
+        if loc is None or loc.project_id != project_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Location not found in this project.",
+            )
+
+    # Validate all character IDs belong to this project
+    for char_id in payload.character_ids:
+        char = db.get(Character, char_id)
+        if char is None or char.project_id != project_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Character {char_id} not found in this project.",
+            )
 
     scene = Scene(
         episode_id=episode_id,

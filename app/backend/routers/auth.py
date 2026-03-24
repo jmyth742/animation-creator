@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from auth import (
@@ -12,6 +12,7 @@ from auth import (
     verify_password,
 )
 from database import get_db
+from main import limiter
 from models import User
 from schemas import LoginRequest, TokenResponse, UserCreate, UserRead
 
@@ -21,7 +22,8 @@ router = APIRouter()
 # ── POST /auth/register ───────────────────────────────────────────────────────
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def register(payload: UserCreate, db: Session = Depends(get_db)) -> TokenResponse:
+@limiter.limit("10/hour")
+def register(request: Request, payload: UserCreate, db: Session = Depends(get_db)) -> TokenResponse:
     existing = db.query(User).filter(User.email == payload.email).first()
     if existing:
         raise HTTPException(
@@ -44,7 +46,8 @@ def register(payload: UserCreate, db: Session = Depends(get_db)) -> TokenRespons
 # ── POST /auth/login ──────────────────────────────────────────────────────────
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
+@limiter.limit("20/hour")
+def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
     user = db.query(User).filter(User.email == payload.email).first()
     if user is None or not verify_password(payload.password, user.password_hash):
         raise HTTPException(

@@ -32,7 +32,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 def create_access_token(user_id: int) -> str:
     """Return a signed JWT encoding the user's ID."""
-    expire = datetime.datetime.utcnow() + datetime.timedelta(
+    expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
     payload = {"sub": str(user_id), "exp": expire}

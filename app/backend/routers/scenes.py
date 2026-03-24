@@ -72,9 +72,19 @@ def update_scene(
 ) -> SceneRead:
     scene = _get_scene_or_404(scene_id, current_user, db)
 
+    project_id = scene.episode.project_id
     updates = payload.model_dump(exclude_unset=True)
     character_ids: list[int] | None = updates.pop("character_ids", None)
     dialogue = updates.pop("dialogue", None)
+
+    # Validate location belongs to this project before applying
+    if "location_id" in updates and updates["location_id"] is not None:
+        loc = db.get(Location, updates["location_id"])
+        if loc is None or loc.project_id != project_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Location not found in this project.",
+            )
 
     for field, value in updates.items():
         setattr(scene, field, value)
@@ -86,6 +96,14 @@ def update_scene(
         )
 
     if character_ids is not None:
+        # Validate all character IDs belong to this project
+        for char_id in character_ids:
+            char = db.get(Character, char_id)
+            if char is None or char.project_id != project_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Character {char_id} not found in this project.",
+                )
         # Rebuild join table rows
         db.query(SceneCharacter).filter(SceneCharacter.scene_id == scene.id).delete()
         for char_id in character_ids:

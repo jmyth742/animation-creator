@@ -4,13 +4,18 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from config import settings
 from database import init_db
 from routers import auth, characters, episodes, generate, jobs, locations, projects, scenes
+
+limiter = Limiter(key_func=get_remote_address)
 
 
 # ── Lifespan ──────────────────────────────────────────────────────────────────
@@ -34,6 +39,8 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
 
@@ -41,8 +48,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://localhost:4173"],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # ── Static file mounts ────────────────────────────────────────────────────────

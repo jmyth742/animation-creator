@@ -26,7 +26,7 @@ from database import Base
 
 
 def _now() -> datetime.datetime:
-    return datetime.datetime.utcnow()
+    return datetime.datetime.now(datetime.timezone.utc)
 
 
 # ── User ──────────────────────────────────────────────────────────────────────

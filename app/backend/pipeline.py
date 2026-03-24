@@ -230,23 +230,33 @@ def produce_episode_job(
         ep_prefix = f"ep{episode.number:02d}"
 
         def _progress_thread() -> None:
-            """Lightweight poller that updates progress_pct by watching output files."""
-            while True:
-                time.sleep(5)
-                try:
-                    j = db.get(GenerationJob, job_id)
-                    if j is None or j.status in ("complete", "error"):
-                        break
-                    if expected_clips > 0 and settings.COMFYUI_OUTPUT.exists():
-                        found = len(
-                            list(settings.COMFYUI_OUTPUT.glob(f"{ep_prefix}_s*.mp4"))
-                        )
-                        pct = min(int(found / expected_clips * 95), 95)
-                        j.progress_pct = pct
-                    _flush_log(log_buf, j)
-                    db.commit()
-                except Exception:
-                    pass
+            """Lightweight poller — uses its own DB session to avoid contention."""
+            pdb = SessionLocal()
+            try:
+                while True:
+                    time.sleep(5)
+                    try:
+                        j = pdb.get(GenerationJob, job_id)
+                        pdb.refresh(j)
+                        if j is None or j.status in ("complete", "error"):
+                            break
+                        if expected_clips > 0 and settings.COMFYUI_OUTPUT.exists():
+                            found = len(
+                                list(settings.COMFYUI_OUTPUT.glob(f"{ep_prefix}_s*.mp4"))
+                            )
+                            pct = min(int(found / expected_clips * 95), 95)
+                            j.progress_pct = pct
+                        content = log_buf.getvalue()
+                        if content:
+                            j.log_text = content
+                        pdb.commit()
+                    except Exception:
+                        try:
+                            pdb.rollback()
+                        except Exception:
+                            pass
+            finally:
+                pdb.close()
 
         progress_t = threading.Thread(target=_progress_thread, daemon=True)
         progress_t.start()
@@ -263,7 +273,7 @@ def produce_episode_job(
             return
 
         job.log_text = log_buf.getvalue()
-        job.completed_at = datetime.datetime.utcnow()
+        job.completed_at = datetime.datetime.now(datetime.timezone.utc)
 
         if error_msg:
             job.status = "error"
@@ -280,7 +290,7 @@ def produce_episode_job(
             if job:
                 job.status = "error"
                 job.log_text += f"\n\n[FATAL] {exc}"
-                job.completed_at = datetime.datetime.utcnow()
+                job.completed_at = datetime.datetime.now(datetime.timezone.utc)
                 db.commit()
         except Exception:
             pass

@@ -6,7 +6,9 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    SECRET_KEY: str = "changeme-in-production-use-openssl-rand-hex-32"
+    # Required — no default. Set via environment variable or .env file.
+    # Generate with: openssl rand -hex 32
+    SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
     DATABASE_URL: str = "sqlite:///./storybuilder.db"

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { X, CheckCircle, AlertCircle } from 'lucide-react'
+import { useAuthStore } from '../store/authStore'
 
 export default function ProductionPanel({ jobId, episodeTitle, onClose }) {
   const [progress, setProgress] = useState(0)
@@ -7,9 +8,11 @@ export default function ProductionPanel({ jobId, episodeTitle, onClose }) {
   const [jobStatus, setJobStatus] = useState('running')
   const [finalPath, setFinalPath] = useState(null)
   const logRef = useRef(null)
+  const token = useAuthStore((s) => s.token)
 
   useEffect(() => {
-    const wsUrl = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/${jobId}`
+    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
+    const wsUrl = `${proto}://${window.location.host}/ws/${jobId}?token=${encodeURIComponent(token ?? '')}`
     const ws = new WebSocket(wsUrl)
     ws.onmessage = (e) => {
       const data = JSON.parse(e.data)

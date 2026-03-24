@@ -38,9 +38,14 @@ def get_job(
 # ── WebSocket /ws/{job_id} ────────────────────────────────────────────────────
 
 @router.websocket("/ws/{job_id}")
-async def job_websocket(websocket: WebSocket, job_id: int) -> None:
+async def job_websocket(websocket: WebSocket, job_id: int, token: str | None = None) -> None:
     """
     Stream job progress to the client.
+
+    Authentication
+    --------------
+    Pass the bearer token as a query parameter:
+        ws://host/ws/123?token=<jwt>
 
     Protocol
     --------
@@ -52,6 +57,26 @@ async def job_websocket(websocket: WebSocket, job_id: int) -> None:
 
       {"done": true, "status": "complete", "final_path": "/static/output/..."}
     """
+    # Authenticate before accepting the connection
+    if not token:
+        await websocket.close(code=4001)
+        return
+
+    user_id = decode_token(token)
+    if user_id is None:
+        await websocket.close(code=4001)
+        return
+
+    # Verify job ownership
+    auth_db: Session = SessionLocal()
+    try:
+        job_check: GenerationJob | None = auth_db.get(GenerationJob, job_id)
+        if job_check is None or job_check.episode.project.user_id != user_id:
+            await websocket.close(code=4003)
+            return
+    finally:
+        auth_db.close()
+
     await websocket.accept()
 
     try:
@@ -98,10 +123,10 @@ async def job_websocket(websocket: WebSocket, job_id: int) -> None:
     except WebSocketDisconnect:
         # Client disconnected — nothing to do.
         pass
-    except Exception as exc:
+    except Exception:
         try:
             await websocket.send_text(
-                json.dumps({"done": True, "status": "error", "detail": str(exc)})
+                json.dumps({"done": True, "status": "error", "detail": "An internal error occurred."})
             )
         except Exception:
             pass
