@@ -777,7 +777,11 @@ def validate_episode_clips(scenes: list) -> dict[str, tuple[bool, str]]:
 def queue_prompt(workflow: dict) -> str:
     client_id = str(uuid.uuid4())
     r = requests.post(f"{SERVER}/prompt", json={"prompt": workflow, "client_id": client_id})
-    r.raise_for_status()
+    if not r.ok:
+        raise requests.HTTPError(
+            f"{r.status_code} {r.reason} — {r.text[:500]}",
+            response=r,
+        )
     return r.json()["prompt_id"]
 
 
