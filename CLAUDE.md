@@ -1,307 +1,143 @@
-# HunyuanVideo 1.5 × ComfyUI Workspace
+# CLAUDE.md
 
-## Host Machine
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-| Component | Spec |
-|-----------|------|
-| GPU | NVIDIA GeForce RTX 4070 Laptop |
-| VRAM | **8GB** |
-| RAM | 31GB |
-| Disk free | ~170GB |
-| CUDA driver | 12.2 |
-| PyTorch | 2.5.1+cu121 (pip install, not conda) |
-| OS | Ubuntu 24.04 |
+## What This Project Is
+
+An end-to-end automated animated series production pipeline. Given a `concept.json`, it uses Claude to write episode scripts, ComfyUI (HunyuanVideo 1.5) to generate video clips, Edge-TTS for voiceover, and FFmpeg to stitch everything into finished MP4 episodes. A full-stack web UI (FastAPI + React) lets users manage projects without touching the CLI.
 
 ---
 
-## Model Choice: HunyuanVideo 1.5 GGUF
+## Running the System
 
-**HunyuanVideo 1.5** (8.3B params) replaces v1.0 (13B params) — smaller, better quality,
-and much more practical on 8GB VRAM. Uses GGUF quantization via
-[jayn7/HunyuanVideo-1.5_T2V_480p-GGUF](https://huggingface.co/jayn7/HunyuanVideo-1.5_T2V_480p-GGUF).
-
-| Quant | File size | Est. VRAM | Quality | Verdict |
-|-------|-----------|-----------|---------|---------|
-| Q8_0 | ~9.0GB | ~9GB | Best | ❌ OOM |
-| Q6_K | ~7.0GB | ~7GB | Very good | ⚠️ Borderline |
-| Q5_K_S | ~5.9GB | ~6GB | Good | ✅ Alt option |
-| Q4_K_S | ~4.9GB | ~5GB | OK | ✅ Recommended |
-
-**Use `Q4_K_S` CFG-distilled as default.** More VRAM headroom than v1.0.
-
-Text encoders:
-- Qwen2.5-VL-7B FP8: ~9.4GB on disk, offloads to CPU RAM
-- Glyph-ByT5: ~440MB on disk, offloads to CPU RAM
-- 31GB RAM handles both comfortably
-
----
-
-## Resolution & Frame Limits for 8GB
-
-**Default configuration (480p distilled):**
-- Resolution: **848×480** (16:9) or **480×848** (9:16)
-- Frame count: **25–33 frames** (≈1–1.4 seconds at 24fps)
-- Inference steps: **20** for drafts, **30–50** for finals
-
-**Frame count rule:** must be a multiple of 4 + 1. Valid values: 1, 5, 9, 13, 17, 21, 25, 29, 33.
-
-**Aspect ratios at 480p:**
-- 16:9 → 848×480
-- 9:16 → 480×848
-- 4:3 → 640×480
-- 1:1 → 480×480
-
----
-
-## Web UI (Story Builder)
-
-Full-stack web interface for managing series through a browser.
-
-### Stack
-- **Backend**: FastAPI + SQLAlchemy (SQLite) — `app/backend/`
-- **Frontend**: React 18 + Vite + Tailwind — `app/frontend/`
-
-### Running
-```bash
-# Terminal 1 — backend
-cd app/backend && uvicorn main:app --reload
-
-# Terminal 2 — frontend dev server
-cd app/frontend && npm run dev
-# → http://localhost:5173
-```
-
-### Features (as of 2026-03)
-| Tab | What you can do |
-|-----|----------------|
-| Characters | Add/edit/delete characters, set voice, visual description, backstory |
-| Locations | Add/edit/delete filming locations with visual descriptions |
-| Episodes | Add episodes manually or generate full scripts via Claude; expand to view/edit/delete scenes; produce episodes (draft or quality) |
-| Settings | Edit project metadata; **Generate Scripts with AI** — calls Claude to write full episode scripts and imports them into the DB |
-
-### API routes
-- `POST /projects/{id}/generate-scripts` — generate episode scripts via Claude, import to DB
-- `POST /episodes/{id}/produce?quality=draft|quality` — start background production job
-- `GET /ws/{job_id}` (WebSocket) — stream job progress to UI
-
-### Architecture
-```
-React UI → FastAPI → pipeline.py → showrunner.py → ComfyUI + FFmpeg
-                   → routers/generate.py → Claude API (script gen)
-                   → SQLite (project/episode/scene data)
-```
-
----
-
-## Repository Layout
-
-```
-.
-├── app/
-│   ├── backend/            # FastAPI app
-│   │   ├── main.py
-│   │   ├── routers/        # auth, characters, episodes, generate, jobs, locations, projects, scenes
-│   │   ├── pipeline.py     # DB ↔ showrunner bridge
-│   │   └── schemas.py
-│   └── frontend/           # React + Vite
-│       └── src/
-│           ├── components/ # CharactersTab, EpisodesTab, LocationsTab, ProductionPanel, ProjectSettingsForm
-│           └── pages/      # Dashboard, Project, Login, Register
-│
-├── ComfyUI/
-│   ├── custom_nodes/
-│   │   ├── ComfyUI-HunyuanVideoWrapper/   # Kijai's wrapper (legacy v1.0 support)
-│   │   ├── ComfyUI-GGUF/                  # REQUIRED for GGUF weight loading
-│   │   └── ComfyUI-Manager/               # Node manager UI
-│   ├── models/
-│   │   ├── unet/                          # DiT GGUF weights
-│   │   │   └── hunyuanvideo1.5_480p_t2v_cfg_distilled-Q4_K_S.gguf
-│   │   ├── vae/
-│   │   │   └── hunyuanvideo15_vae_fp16.safetensors
-│   │   └── text_encoders/
-│   │       ├── qwen_2.5_vl_7b_fp8_scaled.safetensors
-│   │       └── byt5_small_glyphxl_fp16.safetensors
-│   └── workflows/
-│       └── hunyuan/
-│
-├── scripts/
-│   ├── setup_env.sh
-│   ├── install_comfyui.sh
-│   ├── download_models.sh              # v1.0 models (legacy)
-│   ├── download_models_v15.sh          # v1.5 models (active)
-│   ├── comfyui_api_gen.py
-│   └── launch.sh
-│
-└── workflows/
-    ├── t2v_v15_480p.json               # Main workflow: v1.5, 30 steps, 33 frames
-    ├── t2v_v15_480p_fast.json          # Draft workflow: v1.5, 20 steps, 25 frames
-    ├── t2v_gguf_540p.json              # Legacy v1.0 workflow
-    └── t2v_gguf_540p_fast.json         # Legacy v1.0 draft workflow
-```
-
----
-
-## Installation
-
-### 1. Conda environment
+Three services must be running for full functionality:
 
 ```bash
-conda create -n hunyuan-comfy python=3.10.9 -y
+# Terminal 1: ComfyUI video generation server
 conda activate hunyuan-comfy
+bash scripts/launch.sh                  # → http://localhost:8188
 
-# PyTorch via pip (not conda — avoids MKL/iJIT conflicts)
-python -m pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 \
-  --index-url https://download.pytorch.org/whl/cu121
+# Terminal 2: FastAPI backend
+cd app/backend
+export ANTHROPIC_API_KEY="sk-ant-..."
+uvicorn main:app --reload               # → http://localhost:8000
 
-# Verify
-python -c "import torch; print(torch.cuda.get_device_name(0))"
+# Terminal 3: React frontend dev server
+cd app/frontend
+npm run dev                             # → http://localhost:5173
+
+# Build frontend for production
+cd app/frontend && npm run build        # output → dist/
 ```
 
-### 2. ComfyUI + Custom Nodes
+### CLI Production Pipeline (standalone, no web UI needed)
 
 ```bash
-bash scripts/install_comfyui.sh
-```
+# Create a new series directory scaffold
+python scripts/showrunner.py create my_series
 
-### 3. Model Downloads (v1.5)
+# Generate series bible + episode scripts via Claude
+python scripts/showrunner.py write my_series
+python scripts/showrunner.py write my_series --episode 5   # single episode
+python scripts/showrunner.py write my_series --force       # overwrite existing
 
-```bash
-bash scripts/download_models_v15.sh
-```
+# Produce a video episode (requires ComfyUI running)
+python scripts/showrunner.py produce my_series --episode 1 --image ref.png
+python scripts/showrunner.py produce my_series --episode 1 --no-audio
+python scripts/showrunner.py produce my_series --episode 1 --resume  # continue interrupted
 
-Downloads:
-- DiT GGUF Q4_K_S (~5GB) from jayn7
-- VAE (~size) from Comfy-Org repackaged
-- Qwen2.5-VL FP8 (~9.4GB) from Comfy-Org repackaged
-- Glyph-ByT5 (~440MB) from Comfy-Org repackaged
+# Batch produce all episodes
+python scripts/showrunner.py produce-all my_series
 
----
+# Check series status
+python scripts/showrunner.py status my_series
 
-## ComfyUI Node Configuration (v1.5)
-
-HunyuanVideo 1.5 uses **native ComfyUI nodes** (not Kijai's wrapper).
-
-**`UnetLoaderGGUF` (from ComfyUI-GGUF):**
-- `unet_name`: `hunyuanvideo1.5_480p_t2v_cfg_distilled-Q4_K_S.gguf`
-
-**`DualCLIPLoaderGGUF`:**
-- `clip_name1`: `qwen_2.5_vl_7b_fp8_scaled.safetensors`
-- `clip_name2`: `byt5_small_glyphxl_fp16.safetensors`
-- `type`: `hunyuan_video_15`
-
-**`VAELoader`:**
-- `vae_name`: `hunyuanvideo15_vae_fp16.safetensors`
-
-**`ModelSamplingSD3`:**
-- `shift`: 5.0 (for 480p), 9.0 (for 720p)
-
-**`CFGGuider`:**
-- `cfg`: 1.0 (distilled model — must be 1.0)
-- `cfg`: 6.0 (full/non-distilled model)
-
-**`BasicScheduler`:**
-- `scheduler`: `simple`
-- `steps`: 20–50
-- `denoise`: 1.0
-
-**`KSamplerSelect`:**
-- `sampler_name`: `euler`
-
-**`EmptyHunyuanVideo15Latent`:**
-- `width`: 848, `height`: 480
-- `length`: 25 (draft) or 33 (quality)
-- `batch_size`: 1
-
----
-
-## Inference Parameters Reference
-
-| Parameter | This machine | Notes |
-|-----------|-------------|-------|
-| Resolution | 848×480 | Default for 480p model |
-| `length` | 25–33 | 25 = fast, 33 = quality |
-| `steps` | 20–30 | 50 for finals |
-| `cfg` | 1.0 | **Must be 1.0 for distilled model** |
-| `shift` | 5.0 | 480p default |
-| `sampler` | euler | Default |
-| `scheduler` | simple | Default |
-
----
-
-## VRAM Monitoring
-
-```bash
-watch -n 1 nvidia-smi --query-gpu=memory.used,memory.free,utilization.gpu --format=csv
-```
-
----
-
-## Launching ComfyUI
-
-```bash
-conda activate hunyuan-comfy
-bash scripts/launch.sh
-```
-
-Open: http://localhost:8188
-
----
-
-## ComfyUI API Automation
-
-```bash
-# Quick generation with prompt override
+# Quick single-clip generation test (bypasses showrunner)
 python scripts/comfyui_api_gen.py workflows/t2v_v15_480p_fast.json \
-  -p "A drone shot over Berlin at golden hour, cinematic, 35mm" \
-  -s 42
-
-# Full quality run
-python scripts/comfyui_api_gen.py workflows/t2v_v15_480p.json \
-  -p "A cat sitting on a windowsill watching rain" \
-  --steps 50 --frames 33
+  -p "A cat on a windowsill, cinematic" -s 42
 ```
 
 ---
 
-## Performance Optimizations
+## Architecture
 
-### Draft → Final workflow
-1. Generate at 20 steps, 25 frames to validate prompt and composition
-2. Re-run at 30–50 steps, 33 frames once happy with the result
-3. Fix the seed between runs for consistent composition
-
-### Flash Attention
-```bash
-python -m pip install flash-attn --no-build-isolation
 ```
-Optional, reduces VRAM ~10–15%.
+React UI (Vite/Tailwind)
+    ↓  Axios + WebSocket
+FastAPI Backend (app/backend/)
+    ├── routers/           CRUD for projects, characters, locations, episodes, scenes
+    ├── pipeline.py        Bridges DB ↔ showrunner: exports JSON, spawns production jobs
+    ├── routers/generate.py  Calls showrunner.cmd_write() → Claude API for script gen
+    └── SQLite (SQLAlchemy ORM)
+         ↓
+showrunner.py (scripts/)   Main orchestrator — write mode calls Claude; produce mode calls:
+    ├── ComfyUI API (localhost:8188)   T2V + I2V video clip generation
+    ├── Edge-TTS                       Per-scene voiceover synthesis
+    └── FFmpeg                         Audio mux + clip stitching → final MP4
+```
+
+### Data Flow for Episode Production
+
+1. Web UI triggers `POST /episodes/{id}/produce` → `pipeline.py::produce_episode_job()`
+2. `pipeline.py` exports the project DB to JSON files (`series/{slug}/bible.json`, `episodes/ep*.json`)
+3. A background `threading.Thread` runs `showrunner.cmd_produce()`
+4. `showrunner` calls ComfyUI for each scene: first scene = T2V, subsequent scenes = I2V using last frame of previous clip (visual chaining)
+5. Edge-TTS generates per-scene audio; FFmpeg stitches clips + audio
+6. Progress is written to `GenerationJob.log_text` and streamed to the UI via WebSocket (`/ws/{job_id}`)
+
+### Key Source Files
+
+| File | Role |
+|------|------|
+| `scripts/showrunner.py` | ~95KB main orchestrator; all Claude calls, ComfyUI calls, FFmpeg logic |
+| `app/backend/pipeline.py` | DB→JSON export, background job runner, progress tracking |
+| `app/backend/models.py` | SQLAlchemy ORM: User, Project, Character, Location, Episode, Scene, GenerationJob |
+| `app/backend/routers/generate.py` | `POST /projects/{id}/generate-scripts` → Claude |
+| `app/backend/routers/episodes.py` | `POST /episodes/{id}/produce` → background job |
+| `workflows/t2v_v15_480p_fast.json` | Default ComfyUI workflow (draft quality) |
+| `workflows/i2v_v15_480p.json` | Image-to-video workflow for chained scenes |
+
+### Series File Format
+
+```
+series/{slug}/
+├── concept.json      # User-authored: title, premise, tone, visual_style, characters, setting
+├── bible.json        # Claude-generated: character visuals/voices, locations, world rules
+└── episodes/
+    ├── ep01.json     # Claude-generated: scenes with visual prompts, narration, dialogue
+    └── ep02.json
+```
+
+Each scene in an episode JSON has: `location`, `characters[]`, `clip_length` (short/medium/long), `visual` (T2V prompt), `narration`, `dialogue[]`.
 
 ---
 
-## Prompt Engineering
+## Hardware Constraints (RTX 4070 Laptop, 8GB VRAM)
 
-HunyuanVideo 1.5 uses Qwen2.5-VL which understands natural language well.
+These constraints are baked into the codebase — don't change them without testing:
 
-**Tips:**
-- Describe subject, environment, motion, and camera separately
-- Be explicit about camera movement: "slow push-in", "static shot", "handheld"
-- Specify lighting: "golden hour", "overcast diffused light", "neon-lit night"
-- End with style: "cinematic, 35mm film grain" or "photorealistic, 8K"
+| Parameter | Value | Reason |
+|-----------|-------|--------|
+| Resolution | 848×480 or 480×848 | Max for 8GB with Q4_K_S |
+| `cfg` | **1.0** | Distilled model — any other value breaks output |
+| `shift` | 5.0 | 480p default (use 9.0 for 720p) |
+| Frame count | 49/65/81 (short/medium/long) | Must be `4n + 1`; max ~81 for 8GB |
+| Clip duration | 2.0s / 2.7s / 3.4s | Corresponds to above frame counts |
 
-**Example:**
-```
-A woman in a red coat walks slowly through an empty Berlin train station at dawn.
-The camera tracks alongside her at eye level. Warm morning light streams through
-tall windows. Cinematic, 35mm film grain, shallow depth of field.
-```
+**Model**: `hunyuanvideo1.5_480p_t2v_cfg_distilled-Q4_K_S.gguf` (Q4_K_S = recommended for 8GB)
 
 ---
 
-## References
+## Environment
 
-- HunyuanVideo 1.5: https://github.com/Tencent-Hunyuan/HunyuanVideo-1.5
-- GGUF weights (jayn7): https://huggingface.co/jayn7/HunyuanVideo-1.5_T2V_480p-GGUF
-- Comfy-Org repackaged: https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged
-- ComfyUI-GGUF: https://github.com/city96/ComfyUI-GGUF
-- ComfyUI native HunyuanVideo 1.5: https://blog.comfy.org/p/hunyuanvideo-15-native-support
-- ComfyUI examples: https://comfyanonymous.github.io/ComfyUI_examples/hunyuan_video/
+- **Python env**: `conda activate hunyuan-comfy` (Python 3.10.9, PyTorch 2.5.1+cu121)
+- **ANTHROPIC_API_KEY**: required for `showrunner.py write` and `/generate-scripts` endpoint
+- **ComfyUI**: must be running on `localhost:8188` for any video production
+- **Database**: SQLite at `app/backend/storybuilder.db` (auto-created on first run via `init_db()`)
+- **Claude model in use**: `claude-sonnet-4-20250514` (set in `showrunner.py`)
+
+---
+
+## ComfyUI Node Notes
+
+HunyuanVideo 1.5 uses **native ComfyUI nodes** (not the legacy Kijai wrapper). The `ComfyUI-GGUF` custom node is required for `UnetLoaderGGUF`. The `DualCLIPLoader` type must be `hunyuan_video_15`. See `workflows/t2v_v15_480p.json` for the canonical node graph.
