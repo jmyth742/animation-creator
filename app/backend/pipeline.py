@@ -30,6 +30,9 @@ import time
 _ref_regen_jobs: dict[str, dict] = {}
 
 # ── Bootstrap showrunner import ───────────────────────────────────────────────
+# NOTE: showrunner.py lives outside app/backend/ so uvicorn's --reload does not
+# watch it.  Any change to showrunner.py must be accompanied by a trivial touch
+# of this file to force a reload, or the backend will use stale bytecode.
 
 sys.path.insert(0, str(Path("/workspace/text-to-video/scripts")))
 import showrunner  # noqa: E402  (side-effects intentional)
