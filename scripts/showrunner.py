@@ -625,6 +625,15 @@ def build_scene_prompt(scene: dict, bible: dict) -> str:
             parts.append(f"Setting: {loc_desc}")
 
     parts.append(bible["series"]["style"])
+
+    # Anchor to project's world setting and tone for full aesthetic coherence
+    setting = bible.get("world", {}).get("setting", "")
+    if setting:
+        parts.append(f"World: {setting}")
+    tone = bible.get("series", {}).get("tone", "")
+    if tone:
+        parts.append(f"Mood: {tone}")
+
     return " ".join(parts)
 
 

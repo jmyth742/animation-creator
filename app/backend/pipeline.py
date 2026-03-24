@@ -83,6 +83,7 @@ def export_project_to_files(project_id: int, db) -> tuple[str, Path]:
         "series": {
             "title": project.title,
             "style": project.visual_style,
+            "tone": project.tone,
             "format": {"resolution": [480, 320], "fps": 24},
         },
         "characters": characters_dict,
@@ -491,6 +492,8 @@ def generate_character_portrait(character_id: int, db) -> list[str]:
         prompt_parts.append(style)
     if project.setting:
         prompt_parts.append(f"Setting: {project.setting}")
+    if project.tone:
+        prompt_parts.append(f"Mood: {project.tone}")
     prompt = " ".join(prompt_parts)
     prefix = f"char_{char.id}"
 
