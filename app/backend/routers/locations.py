@@ -2,14 +2,23 @@
 
 from __future__ import annotations
 
+import shutil
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from auth import get_current_user
+from config import settings
 from database import get_db
 from models import Location, Project, User
-from pipeline import slugify
-from schemas import LocationCreate, LocationRead, LocationUpdate
+from pipeline import generate_location_reference, slugify
+from schemas import (
+    LocationCreate,
+    LocationRead,
+    LocationUpdate,
+    ReferenceGenerateResponse,
+    SelectReferenceRequest,
+)
 
 router = APIRouter()
 
@@ -118,3 +127,57 @@ def delete_location(
     db.delete(loc)
     db.commit()
     return {"ok": True}
+
+
+# ── POST /locations/{id}/generate-reference ───────────────────────────────────
+
+@router.post("/locations/{location_id}/generate-reference", response_model=ReferenceGenerateResponse)
+def generate_reference(
+    location_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ReferenceGenerateResponse:
+    loc = _get_location_or_404(location_id, current_user, db)
+    if not loc.description:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Location needs a visual description before generating reference images.",
+        )
+    try:
+        rel_paths = generate_location_reference(location_id, db)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+
+    urls = [f"/static/series/{p}" for p in rel_paths]
+    return ReferenceGenerateResponse(
+        reference_urls=urls,
+        message=f"Generated {len(urls)} reference image(s).",
+    )
+
+
+# ── POST /locations/{id}/select-reference ─────────────────────────────────────
+
+@router.post("/locations/{location_id}/select-reference", response_model=LocationRead)
+def select_reference(
+    location_id: int,
+    payload: SelectReferenceRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> LocationRead:
+    loc = _get_location_or_404(location_id, current_user, db)
+
+    src = settings.SERIES_DIR / payload.reference_path
+    if not src.exists():
+        raise HTTPException(status_code=404, detail="Reference image file not found.")
+
+    # Copy to the canonical path showrunner.get_scene_seed_image() expects
+    series_slug = loc.project.series_slug
+    ref_dir = settings.SERIES_DIR / series_slug / "reference_images"
+    ref_dir.mkdir(parents=True, exist_ok=True)
+    canonical = ref_dir / f"loc_{loc.id}.png"
+    shutil.copy2(src, canonical)
+
+    loc.reference_image_path = payload.reference_path
+    db.commit()
+    db.refresh(loc)
+    return _location_read(loc)

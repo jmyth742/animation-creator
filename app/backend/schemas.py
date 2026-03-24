@@ -245,6 +245,15 @@ class PortraitGenerateResponse(BaseModel):
     message: str
 
 
+class SelectReferenceRequest(BaseModel):
+    reference_path: Annotated[str, Field(max_length=1024)]
+
+
+class ReferenceGenerateResponse(BaseModel):
+    reference_urls: list[str]
+    message: str
+
+
 class ProduceResponse(BaseModel):
     job_id: int
     message: str

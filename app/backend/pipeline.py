@@ -510,3 +510,83 @@ def generate_character_portrait(character_id: int, db) -> list[str]:
         db.commit()
 
     return saved_paths
+
+
+# ── Location reference image generation ───────────────────────────────────────
+
+def generate_location_reference(location_id: int, db) -> list[str]:
+    """
+    Generate 3 reference image candidates for a location (different seeds).
+
+    The prompt is grounded in the project's visual_style, setting, and tone so
+    every location looks consistent with the overall series aesthetic.
+
+    The canonical file (loc_{id}.png) is what showrunner.get_scene_seed_image()
+    uses as the I2V seed for establishing/wide shots in that location.
+
+    Returns a list of paths relative to settings.SERIES_DIR.
+    """
+    import requests as _requests
+    from models import Location
+
+    loc = db.get(Location, location_id)
+    if loc is None:
+        raise ValueError(f"Location {location_id} not found")
+
+    project = loc.project
+    series_slug = project.series_slug
+
+    ref_dir = settings.SERIES_DIR / series_slug / "reference_images"
+    ref_dir.mkdir(parents=True, exist_ok=True)
+
+    comfy_refs_out = settings.COMFYUI_DIR / "output" / "refs"
+
+    # Build a prompt that incorporates the project's overall visual aesthetic
+    prompt_parts = [loc.description or loc.name]
+    if project.visual_style:
+        prompt_parts.append(project.visual_style)
+    if project.setting:
+        prompt_parts.append(f"Setting: {project.setting}")
+    if project.tone:
+        prompt_parts.append(f"Mood: {project.tone}")
+    prompt_parts.append("Establishing shot, cinematic wide angle, no people, empty scene.")
+    prompt = ". ".join(filter(None, prompt_parts))
+
+    prefix = f"loc_{loc.id}"
+    seeds = [111, 2222, 33333]
+    saved_paths: list[str] = []
+
+    for i, seed in enumerate(seeds):
+        candidate_label = f"{prefix}_v{i + 1}"
+        out_png = ref_dir / f"{candidate_label}.png"
+
+        wf = showrunner.build_ref_workflow(prompt, seed=seed, prefix=candidate_label)
+
+        try:
+            prompt_id = showrunner.queue_prompt(wf)
+        except _requests.ConnectionError:
+            raise RuntimeError("ComfyUI not reachable at http://localhost:8188")
+
+        success = showrunner.poll_until_done(prompt_id)
+        if not success:
+            continue
+
+        candidates = (
+            sorted(
+                comfy_refs_out.glob(f"{candidate_label}*.png"),
+                key=lambda p: p.stat().st_mtime,
+                reverse=True,
+            )
+            if comfy_refs_out.exists()
+            else []
+        )
+        if candidates:
+            shutil.copy2(candidates[0], out_png)
+            rel_path = f"{series_slug}/reference_images/{candidate_label}.png"
+            saved_paths.append(rel_path)
+
+    if saved_paths:
+        loc.reference_image_path = saved_paths[0]
+        db.commit()
+
+    return saved_paths

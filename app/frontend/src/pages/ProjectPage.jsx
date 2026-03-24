@@ -123,6 +123,7 @@ export default function ProjectPage() {
         {activeTab === 'locations' && (
           <LocationsTab
             projectId={id}
+            project={project}
             locations={project.locations || []}
             onLocationsChange={handleLocationsChange}
           />

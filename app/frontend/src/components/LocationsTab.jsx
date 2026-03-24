@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
+import { Camera, Check, MapPin, Pencil, Plus, Star, Trash2, X } from 'lucide-react'
 import { post, put, del } from '../api/client'
+import LocationStudioModal from './LocationStudioModal'
 
-function LocationRow({ location, onEdit, onDelete, deleting }) {
+function LocationRow({ location, onEdit, onDelete, onOpenLocationStudio, deleting }) {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(location.name)
   const [description, setDescription] = useState(location.description)
@@ -35,15 +36,47 @@ function LocationRow({ location, onEdit, onDelete, deleting }) {
   return (
     <div className="bg-zinc-800 border-2 border-zinc-700 p-4 flex items-start gap-4 group hover:border-zinc-600 transition-colors"
       style={{ boxShadow: '3px 3px 0 0 #000' }}>
-      <div className="text-xl shrink-0 mt-1">📍</div>
+
+      {/* Reference image thumbnail or placeholder */}
+      <div
+        className={`flex-shrink-0 border-2 overflow-hidden cursor-pointer ${
+          location.reference_image_path ? 'border-px-green' : 'border-dashed border-zinc-600 hover:border-zinc-400'
+        }`}
+        style={{ width: '80px', height: '54px', background: '#1c1c38' }}
+        onClick={onOpenLocationStudio}
+        title={location.reference_image_path ? 'Open Location Studio' : 'Add reference image'}
+      >
+        {location.reference_url ? (
+          <img src={location.reference_url} alt={location.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+            <Camera className="w-3.5 h-3.5 text-zinc-600" />
+            <span className="font-pixel text-zinc-600" style={{ fontSize: '5px' }}>ADD REF</span>
+          </div>
+        )}
+      </div>
+
       <div className="flex-1 min-w-0">
-        <p className="font-pixel text-zinc-100 mb-1" style={{ fontSize: '9px' }}>{location.name}</p>
+        <div className="flex items-center gap-2 mb-1">
+          <p className="font-pixel text-zinc-100" style={{ fontSize: '9px' }}>{location.name}</p>
+          {location.reference_image_path && (
+            <Star className="w-2.5 h-2.5 text-px-green fill-current flex-shrink-0" title="Canonical reference set" />
+          )}
+        </div>
         {location.description && (
           <p className="text-retro text-zinc-400 line-clamp-2" style={{ fontSize: '16px' }}>{location.description}</p>
         )}
         <p className="font-mono text-zinc-600 text-xs mt-1">{location.slug}</p>
       </div>
+
       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <button
+          onClick={onOpenLocationStudio}
+          className="p-1.5 border border-zinc-600 text-zinc-400 hover:text-px-green hover:border-px-green"
+          title="Location Studio"
+        >
+          <Camera className="w-3 h-3" />
+        </button>
         <button onClick={() => setEditing(true)} className="p-1.5 border border-zinc-600 text-zinc-400 hover:text-accent-400 hover:border-accent-600">
           <Pencil className="w-3 h-3" />
         </button>
@@ -55,12 +88,13 @@ function LocationRow({ location, onEdit, onDelete, deleting }) {
   )
 }
 
-export default function LocationsTab({ projectId, locations, onLocationsChange }) {
+export default function LocationsTab({ projectId, project, locations, onLocationsChange }) {
   const [showAdd, setShowAdd] = useState(false)
   const [newName, setNewName] = useState('')
   const [newDesc, setNewDesc] = useState('')
   const [adding, setAdding] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
+  const [locationStudio, setLocationStudio] = useState(null) // location object or null
 
   const handleAdd = async () => {
     if (!newName.trim()) return
@@ -115,9 +149,28 @@ export default function LocationsTab({ projectId, locations, onLocationsChange }
       ) : (
         <div className="flex flex-col gap-3">
           {locations.map((loc) => (
-            <LocationRow key={loc.id} location={loc} deleting={deletingId === loc.id} onEdit={onLocationsChange} onDelete={handleDelete} />
+            <LocationRow
+              key={loc.id}
+              location={loc}
+              deleting={deletingId === loc.id}
+              onEdit={onLocationsChange}
+              onDelete={handleDelete}
+              onOpenLocationStudio={() => setLocationStudio(loc)}
+            />
           ))}
         </div>
+      )}
+
+      {locationStudio && (
+        <LocationStudioModal
+          location={locationStudio}
+          project={project}
+          onClose={() => setLocationStudio(null)}
+          onReferenceSelected={(updated) => {
+            setLocationStudio(updated)
+            onLocationsChange()
+          }}
+        />
       )}
     </div>
   )
