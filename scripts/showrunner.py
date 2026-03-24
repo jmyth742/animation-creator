@@ -1144,15 +1144,11 @@ def burn_subtitles(input_path: Path, srt_path: Path, output_path: Path):
 # ─── Reference image generation ──────────────────────────────────────
 
 # FLUX.1-schnell GGUF — high-quality T2I model for reference image generation.
-# Download these into your ComfyUI models directories:
-#   unet/  → flux1-schnell-q4_k_s.gguf          (~5.8 GB, from city96/FLUX.1-schnell-gguf)
-#   clip/  → t5xxl_fp8_e4m3fn.safetensors        (from comfyanonymous/flux_text_encoders)
-#   clip/  → clip_l.safetensors                  (from comfyanonymous/flux_text_encoders)
-#   vae/   → ae.safetensors                      (from black-forest-labs/FLUX.1-schnell)
-T2I_UNET  = "flux1-schnell-q4_k_s.gguf"
-T2I_CLIP1 = "t5xxl_fp8_e4m3fn.safetensors"
-T2I_CLIP2 = "clip_l.safetensors"
-T2I_VAE   = "ae.safetensors"
+# Run scripts/download_flux.py to download all required files.
+T2I_UNET  = "flux1-schnell-Q4_K_S.gguf"           # → ComfyUI/models/unet/
+T2I_CLIP1 = "t5xxl_fp8_e4m3fn.safetensors"         # → ComfyUI/models/text_encoders/
+T2I_CLIP2 = "clip_l.safetensors"                   # → ComfyUI/models/text_encoders/
+T2I_VAE   = "ae.safetensors"                       # → ComfyUI/models/vae/
 
 
 def build_t2i_workflow(
