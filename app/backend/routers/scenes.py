@@ -12,11 +12,12 @@ from sqlalchemy.orm import Session
 
 from auth import get_current_user
 from database import get_db
-from models import Character, Episode, Location, Scene, SceneCharacter, User
+from models import Character, Episode, Location, Scene, SceneCharacter, SceneClipVersion, User
 from config import settings
 from pipeline import generate_scene_reference, generate_single_scene_job
 from schemas import (
     CharacterRead,
+    SceneClipVersionRead,
     SceneRead,
     SceneReorderItem,
     SceneReferenceGenerateResponse,
@@ -223,6 +224,24 @@ def select_reference(
     db.commit()
     db.refresh(scene)
     return _scene_read(scene, db)
+
+
+# ── GET /scenes/{scene_id}/versions ──────────────────────────────────────────
+
+@router.get("/scenes/{scene_id}/versions", response_model=list[SceneClipVersionRead])
+def list_scene_versions(
+    scene_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[SceneClipVersionRead]:
+    scene = _get_scene_or_404(scene_id, current_user, db)
+    results = []
+    for v in scene.clip_versions:
+        r = SceneClipVersionRead.model_validate(v)
+        clip_file = settings.COMFYUI_OUTPUT / v.clip_path
+        r.preview_url = f"/static/clips/{v.clip_path}" if clip_file.exists() else None
+        results.append(r)
+    return results
 
 
 # ── POST /episodes/{episode_id}/scenes/reorder ────────────────────────────────

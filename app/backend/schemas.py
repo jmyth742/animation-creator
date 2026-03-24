@@ -261,6 +261,21 @@ class SceneReferenceGenerateResponse(BaseModel):
     message: str
 
 
+class SceneClipVersionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    scene_id: int
+    clip_path: str
+    quality: str | None = None
+    visual_style: str | None = None
+    tone: str | None = None
+    prompt: str | None = None
+    seed_image: str | None = None
+    created_at: datetime.datetime
+    preview_url: str | None = None
+
+
 class ProduceResponse(BaseModel):
     job_id: int
     message: str

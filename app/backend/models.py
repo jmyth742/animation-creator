@@ -155,6 +155,12 @@ class Scene(Base):
         back_populates="scene",
         cascade="all, delete-orphan",
     )
+    clip_versions = relationship(
+        "SceneClipVersion",
+        back_populates="scene",
+        cascade="all, delete-orphan",
+        order_by="SceneClipVersion.created_at.desc()",
+    )
 
 
 # ── SceneCharacter (join table) ───────────────────────────────────────────────
@@ -186,3 +192,32 @@ class GenerationJob(Base):
     completed_at: datetime.datetime | None = Column(DateTime, nullable=True)
 
     episode = relationship("Episode", back_populates="generation_jobs")
+
+
+# ── SceneClipVersion ──────────────────────────────────────────────────────────
+
+class SceneClipVersion(Base):
+    """
+    Archives a previous generation of a scene clip before it is overwritten.
+
+    Captures enough context to understand *what settings produced this clip*
+    so versions can be meaningfully compared.
+    """
+    __tablename__ = "scene_clip_versions"
+
+    id: int = Column(Integer, primary_key=True, index=True)
+    scene_id: int = Column(Integer, ForeignKey("scenes.id"), nullable=False, index=True)
+
+    # Path relative to COMFYUI_OUTPUT — same format as scene.output_clip_path
+    clip_path: str = Column(String(1024), nullable=False)
+
+    # Generation settings snapshot
+    quality: str | None = Column(String(32), nullable=True)       # draft | quality | final
+    visual_style: str | None = Column(Text, nullable=True)        # project.visual_style at gen time
+    tone: str | None = Column(Text, nullable=True)                # project.tone at gen time
+    prompt: str | None = Column(Text, nullable=True)              # full prompt sent to model
+    seed_image: str | None = Column(String(1024), nullable=True)  # reference image used
+
+    created_at: datetime.datetime = Column(DateTime, default=_now, nullable=False)
+
+    scene = relationship("Scene", back_populates="clip_versions")

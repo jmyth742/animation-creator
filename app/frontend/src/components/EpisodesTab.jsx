@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Plus, Camera, ChevronDown, ChevronRight, Trash2, Pencil, Play, X, Eye, Film, RefreshCw, Star, MapPin, Users } from 'lucide-react'
+import { Plus, Camera, ChevronDown, ChevronRight, Trash2, Pencil, Play, X, Eye, Film, RefreshCw, Star, MapPin, Users, History } from 'lucide-react'
 import { get, post, put, del } from '../api/client'
 import SceneStudioModal from './SceneStudioModal'
 import SceneComposerModal from './SceneComposerModal'
+import SceneVersionsModal from './SceneVersionsModal'
 
 // ── Scene timeline strip ──────────────────────────────────────────────────────
 

@@ -44,6 +44,17 @@ def _migrate_db() -> None:
     """Add columns introduced after the initial schema. Safe to run repeatedly."""
     migrations = [
         "ALTER TABLE scenes ADD COLUMN reference_image_path VARCHAR(1024)",
+        """CREATE TABLE IF NOT EXISTS scene_clip_versions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            scene_id INTEGER NOT NULL REFERENCES scenes(id) ON DELETE CASCADE,
+            clip_path VARCHAR(1024) NOT NULL,
+            quality VARCHAR(32),
+            visual_style TEXT,
+            tone TEXT,
+            prompt TEXT,
+            seed_image VARCHAR(1024),
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )""",
     ]
     with engine.connect() as conn:
         for stmt in migrations:

@@ -354,6 +354,45 @@ def produce_episode_job(
         db.close()
 
 
+# ── Clip version archiving ────────────────────────────────────────────────────
+
+def _archive_existing_clip(scene, project, prompt: str, quality: str, seed_image: str | None, db) -> None:
+    """
+    If the scene already has a generated clip, copy it to an archive filename
+    and record a SceneClipVersion row before it gets overwritten.
+    """
+    from models import SceneClipVersion
+
+    if not scene.output_clip_path:
+        return
+
+    src = settings.COMFYUI_OUTPUT / scene.output_clip_path
+    if not src.exists():
+        return
+
+    # Archive filename: same stem + timestamp suffix
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    archive_name = f"{src.stem}_v{ts}{src.suffix}"
+    archive_dir = settings.COMFYUI_OUTPUT / "archive"
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    archive_path = archive_dir / archive_name
+
+    shutil.copy2(src, archive_path)
+    rel = f"archive/{archive_name}"
+
+    version = SceneClipVersion(
+        scene_id=scene.id,
+        clip_path=rel,
+        quality=quality,
+        visual_style=project.visual_style,
+        tone=project.tone,
+        prompt=prompt,
+        seed_image=seed_image,
+    )
+    db.add(version)
+    db.commit()
+
+
 # ── Single-scene regeneration ─────────────────────────────────────────────────
 
 def generate_single_scene_job(scene_id: int, quality: str = "draft") -> None:
@@ -413,6 +452,9 @@ def generate_single_scene_job(scene_id: int, quality: str = "draft") -> None:
                 seed_image = showrunner.copy_to_input(str(candidate))
         if seed_image is None:
             seed_image = showrunner.get_scene_seed_image(scene_dict, series_slug, None)
+
+        # Archive the current clip (if any) before overwriting it
+        _archive_existing_clip(scene, project, prompt, quality, seed_image, db)
 
         cl = showrunner.CLIP_LENGTHS.get(scene.clip_length, showrunner.CLIP_LENGTHS["medium"])
         frames = cl["frames"]
