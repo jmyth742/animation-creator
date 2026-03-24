@@ -132,7 +132,7 @@ function ScenePreviewModal({ url, onClose }) {
 
 // ── Scene row ────────────────────────────────────────────────────────────────
 
-function SceneRow({ scene, onEdit, onDelete, onRegenerate, onOpenSceneStudio }) {
+function SceneRow({ scene, onEdit, onDelete, onRegenerate, onOpenSceneStudio, onOpenHistory }) {
   const [previewOpen, setPreviewOpen] = useState(false)
   let dialogue = []
   try { dialogue = JSON.parse(scene.dialogue) } catch {}
@@ -218,6 +218,12 @@ function SceneRow({ scene, onEdit, onDelete, onRegenerate, onOpenSceneStudio }) 
               </button>
             )}
             <button
+              onClick={onOpenHistory}
+              className="p-1.5 border border-zinc-600 text-zinc-400 hover:text-amber-400 hover:border-amber-600"
+              title="Clip history — compare previous versions">
+              <History className="w-3 h-3" />
+            </button>
+            <button
               onClick={onOpenSceneStudio}
               className="p-1.5 border border-zinc-600 text-zinc-400 hover:text-px-green hover:border-px-green"
               title="Scene Studio — generate reference image">
@@ -267,7 +273,8 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
   const [scenes, setScenes] = useState(null)
   const [loadingScenes, setLoadingScenes] = useState(false)
   const [sceneModal, setSceneModal] = useState(false)
-  const [sceneStudio, setSceneStudio] = useState(null) // scene object or null
+  const [sceneStudio, setSceneStudio] = useState(null)
+  const [sceneHistory, setSceneHistory] = useState(null)
   const [producing, setProducing] = useState(false)
   const pollRef = useRef(null)
 
@@ -416,7 +423,8 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
                     onEdit={() => setSceneModal({ ...scene, order_idx: idx })}
                     onDelete={() => handleSceneDelete(scene)}
                     onRegenerate={handleRegenerate}
-                    onOpenSceneStudio={() => setSceneStudio({ ...scene, order_idx: idx })} />
+                    onOpenSceneStudio={() => setSceneStudio({ ...scene, order_idx: idx })}
+                    onOpenHistory={() => setSceneHistory({ ...scene, order_idx: idx })} />
                 ))}
               </div>
             )}
@@ -432,6 +440,13 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
           characters={characters}
           onSave={() => { setSceneModal(false); refreshScenes() }}
           onClose={() => setSceneModal(false)}
+        />
+      )}
+
+      {sceneHistory && (
+        <SceneVersionsModal
+          scene={sceneHistory}
+          onClose={() => setSceneHistory(null)}
         />
       )}
 
