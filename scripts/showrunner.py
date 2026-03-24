@@ -1227,6 +1227,7 @@ def generate_reference_images(series_name: str, bible: dict, force: bool = False
     ref_dir.mkdir(exist_ok=True)
 
     style   = bible["series"].get("style", "")
+    tone    = bible["series"].get("tone", "")
     setting = bible.get("world", {}).get("setting", "")
 
     # (prefix, label, prompt, width, height)
@@ -1239,6 +1240,7 @@ def generate_reference_images(series_name: str, bible: dict, force: bool = False
                         "Facing camera directly, neutral expression, upper body visible."]
         if style:   prompt_parts.append(style)
         if setting: prompt_parts.append(f"Setting: {setting}")
+        if tone:    prompt_parts.append(f"Mood: {tone}")
         items.append((char_id, f"Character: {char.get('name', char_id)}",
                        " ".join(prompt_parts), 480, 640))
 
@@ -1248,6 +1250,7 @@ def generate_reference_images(series_name: str, bible: dict, force: bool = False
         prompt_parts = [loc_desc, "Establishing shot, cinematic wide angle, no people, empty scene."]
         if style:   prompt_parts.append(style)
         if setting: prompt_parts.append(f"Setting: {setting}")
+        if tone:    prompt_parts.append(f"Mood: {tone}")
         items.append((loc_id, f"Location: {loc_id}",
                        ". ".join(filter(None, prompt_parts)), 640, 360))
 
