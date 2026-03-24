@@ -1,6 +1,6 @@
 """Database engine, session factory, and FastAPI dependency."""
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import DeclarativeBase, scoped_session, sessionmaker
 
 from config import settings
@@ -40,9 +40,24 @@ def get_db():
 
 # ── Startup helper ────────────────────────────────────────────────────────────
 
+def _migrate_db() -> None:
+    """Add columns introduced after the initial schema. Safe to run repeatedly."""
+    migrations = [
+        "ALTER TABLE scenes ADD COLUMN reference_image_path VARCHAR(1024)",
+    ]
+    with engine.connect() as conn:
+        for stmt in migrations:
+            try:
+                conn.execute(text(stmt))
+                conn.commit()
+            except Exception:
+                pass  # Column already exists — ignore
+
+
 def init_db() -> None:
     """Create all tables defined on Base.metadata (called at app startup)."""
     # Import models so their Table objects are registered on Base.metadata
     import models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
+    _migrate_db()

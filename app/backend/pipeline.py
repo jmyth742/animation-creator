@@ -386,8 +386,16 @@ def generate_single_scene_job(scene_id: int, quality: str = "draft") -> None:
         }
 
         prompt = showrunner.build_scene_prompt(scene_dict, bible)
-        # No chaining for single-scene — use character portrait ref if available
-        seed_image = showrunner.get_scene_seed_image(scene_dict, series_slug, None)
+
+        # Scene-specific reference takes highest priority;
+        # fall back to the char/location heuristic from showrunner.
+        seed_image: str | None = None
+        if scene.reference_image_path:
+            candidate = settings.SERIES_DIR / scene.reference_image_path
+            if candidate.exists():
+                seed_image = str(candidate)
+        if seed_image is None:
+            seed_image = showrunner.get_scene_seed_image(scene_dict, series_slug, None)
 
         cl = showrunner.CLIP_LENGTHS.get(scene.clip_length, showrunner.CLIP_LENGTHS["medium"])
         frames = cl["frames"]
@@ -465,10 +473,15 @@ def generate_character_portrait(character_id: int, db) -> list[str]:
     # ComfyUI saves images to ComfyUI/output/refs/<prefix>_*.png
     comfy_refs_out = settings.COMFYUI_DIR / "output" / "refs"
 
-    prompt = (
-        f"Portrait of {char.visual_description} "
-        f"Facing camera directly, neutral expression, standing still. {style}"
-    )
+    prompt_parts = [
+        f"Portrait of {char.visual_description}",
+        "Facing camera directly, neutral expression, upper body visible.",
+    ]
+    if style:
+        prompt_parts.append(style)
+    if project.setting:
+        prompt_parts.append(f"Setting: {project.setting}")
+    prompt = " ".join(prompt_parts)
     prefix = f"char_{char.id}"
 
     seeds = [999, 1234, 5678]
@@ -478,7 +491,8 @@ def generate_character_portrait(character_id: int, db) -> list[str]:
         candidate_label = f"{prefix}_v{i+1}"
         out_png = ref_dir / f"{candidate_label}.png"
 
-        wf = showrunner.build_ref_workflow(prompt, seed=seed, prefix=candidate_label)
+        # Use FLUX T2I (portrait orientation — 480×640)
+        wf = showrunner.build_t2i_workflow(prompt, seed=seed, prefix=candidate_label, width=480, height=640)
 
         try:
             prompt_id = showrunner.queue_prompt(wf)
@@ -560,7 +574,8 @@ def generate_location_reference(location_id: int, db) -> list[str]:
         candidate_label = f"{prefix}_v{i + 1}"
         out_png = ref_dir / f"{candidate_label}.png"
 
-        wf = showrunner.build_ref_workflow(prompt, seed=seed, prefix=candidate_label)
+        # Use FLUX T2I (landscape orientation — 640×360 matches video aspect ratio)
+        wf = showrunner.build_t2i_workflow(prompt, seed=seed, prefix=candidate_label, width=640, height=360)
 
         try:
             prompt_id = showrunner.queue_prompt(wf)
@@ -587,6 +602,109 @@ def generate_location_reference(location_id: int, db) -> list[str]:
 
     if saved_paths:
         loc.reference_image_path = saved_paths[0]
+        db.commit()
+
+    return saved_paths
+
+
+# ── Scene reference image generation ──────────────────────────────────────────
+
+def generate_scene_reference(scene_id: int, db) -> list[str]:
+    """
+    Generate 3 reference still candidates for a specific scene using FLUX T2I.
+
+    The prompt is assembled from the scene's visual description, characters,
+    location, and the project's overall visual aesthetic — giving the T2I model
+    full context to produce an accurate composition still.
+
+    When selected as canonical, the still is stored at:
+        series/{slug}/reference_images/scene_{id}.png
+    and used as the I2V seed for that scene's clip in generate_single_scene_job,
+    taking priority over the generic char/location ref lookup.
+
+    Returns a list of paths relative to settings.SERIES_DIR.
+    """
+    import requests as _requests
+    from models import Scene
+
+    scene = db.get(Scene, scene_id)
+    if scene is None:
+        raise ValueError(f"Scene {scene_id} not found")
+
+    episode = scene.episode
+    project = episode.project
+    series_slug = project.series_slug
+
+    ref_dir = settings.SERIES_DIR / series_slug / "reference_images"
+    ref_dir.mkdir(parents=True, exist_ok=True)
+
+    comfy_refs_out = settings.COMFYUI_DIR / "output" / "refs"
+
+    # Build a rich prompt: scene composition + character descriptions + location + project style
+    prompt_parts: list[str] = []
+
+    if scene.visual:
+        prompt_parts.append(scene.visual)
+
+    # Location description
+    if scene.location:
+        loc_desc = scene.location.description or scene.location.name
+        if loc_desc:
+            prompt_parts.append(f"Location: {loc_desc}")
+
+    # Characters visible in this scene
+    for sc in scene.scene_characters:
+        char = sc.character
+        if char.visual_description:
+            prompt_parts.append(char.visual_description)
+
+    # Project aesthetic
+    if project.visual_style:
+        prompt_parts.append(project.visual_style)
+    if project.setting:
+        prompt_parts.append(f"Setting: {project.setting}")
+    if project.tone:
+        prompt_parts.append(f"Mood: {project.tone}")
+
+    prompt_parts.append("Cinematic still frame, high detail.")
+    prompt = ". ".join(filter(None, prompt_parts))
+
+    prefix = f"scene_{scene_id}"
+    seeds = [42, 777, 9999]
+    saved_paths: list[str] = []
+
+    for i, seed in enumerate(seeds):
+        candidate_label = f"{prefix}_v{i + 1}"
+        out_png = ref_dir / f"{candidate_label}.png"
+
+        # 640×360 landscape — matches video clip aspect ratio
+        wf = showrunner.build_t2i_workflow(prompt, seed=seed, prefix=candidate_label, width=640, height=360)
+
+        try:
+            prompt_id = showrunner.queue_prompt(wf)
+        except _requests.ConnectionError:
+            raise RuntimeError("ComfyUI not reachable at http://localhost:8188")
+
+        success = showrunner.poll_until_done(prompt_id)
+        if not success:
+            continue
+
+        candidates = (
+            sorted(
+                comfy_refs_out.glob(f"{candidate_label}*.png"),
+                key=lambda p: p.stat().st_mtime,
+                reverse=True,
+            )
+            if comfy_refs_out.exists()
+            else []
+        )
+        if candidates:
+            shutil.copy2(candidates[0], out_png)
+            rel_path = f"{series_slug}/reference_images/{candidate_label}.png"
+            saved_paths.append(rel_path)
+
+    if saved_paths:
+        scene.reference_image_path = saved_paths[0]
         db.commit()
 
     return saved_paths

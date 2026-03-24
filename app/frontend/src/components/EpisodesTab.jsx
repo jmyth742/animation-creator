@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Plus, ChevronDown, ChevronRight, Trash2, Pencil, Play, X, Eye, Film, RefreshCw } from 'lucide-react'
+import { Plus, Camera, ChevronDown, ChevronRight, Trash2, Pencil, Play, X, Eye, Film, RefreshCw, Star } from 'lucide-react'
 import { get, post, put, del } from '../api/client'
+import SceneStudioModal from './SceneStudioModal'
 
 // ── Scene modal ─────────────────────────────────────────────────────────────
 

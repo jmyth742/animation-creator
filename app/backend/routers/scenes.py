@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import threading
 from typing import Any
 
@@ -12,8 +13,16 @@ from sqlalchemy.orm import Session
 from auth import get_current_user
 from database import get_db
 from models import Character, Episode, Location, Scene, SceneCharacter, User
-from pipeline import generate_single_scene_job
-from schemas import CharacterRead, SceneRead, SceneReorderItem, SceneUpdate
+from config import settings
+from pipeline import generate_scene_reference, generate_single_scene_job
+from schemas import (
+    CharacterRead,
+    SceneRead,
+    SceneReorderItem,
+    SceneReferenceGenerateResponse,
+    SceneUpdate,
+    SelectReferenceRequest,
+)
 
 router = APIRouter()
 
@@ -35,6 +44,9 @@ def _scene_read(scene: Scene, db: Session) -> SceneRead:
     r.characters = [_character_read(sc.character) for sc in scene.scene_characters]
     r.preview_url = (
         f"/static/clips/{scene.output_clip_path}" if scene.output_clip_path else None
+    )
+    r.reference_url = (
+        f"/static/series/{scene.reference_image_path}" if scene.reference_image_path else None
     )
     if scene.location_id:
         loc: Location | None = db.get(Location, scene.location_id)
@@ -155,6 +167,62 @@ def regenerate_scene(
     ).start()
 
     return {"ok": True, "scene_id": scene_id}
+
+
+# ── POST /scenes/{id}/generate-reference ─────────────────────────────────────
+
+@router.post("/scenes/{scene_id}/generate-reference", response_model=SceneReferenceGenerateResponse)
+def generate_reference(
+    scene_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> SceneReferenceGenerateResponse:
+    """Generate 3 FLUX T2I reference stills for this scene's composition."""
+    scene = _get_scene_or_404(scene_id, current_user, db)
+    if not scene.visual:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Scene needs a visual description before generating reference images.",
+        )
+    try:
+        rel_paths = generate_scene_reference(scene_id, db)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+
+    urls = [f"/static/series/{p}" for p in rel_paths]
+    return SceneReferenceGenerateResponse(
+        reference_urls=urls,
+        message=f"Generated {len(urls)} reference image(s).",
+    )
+
+
+# ── POST /scenes/{id}/select-reference ───────────────────────────────────────
+
+@router.post("/scenes/{scene_id}/select-reference", response_model=SceneRead)
+def select_reference(
+    scene_id: int,
+    payload: SelectReferenceRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> SceneRead:
+    """Set the canonical reference image for this scene. Copied to scene_{id}.png."""
+    scene = _get_scene_or_404(scene_id, current_user, db)
+
+    src = settings.SERIES_DIR / payload.reference_path
+    if not src.exists():
+        raise HTTPException(status_code=404, detail="Reference image file not found.")
+
+    # Copy to the canonical path used in generate_single_scene_job
+    series_slug = scene.episode.project.series_slug
+    ref_dir = settings.SERIES_DIR / series_slug / "reference_images"
+    ref_dir.mkdir(parents=True, exist_ok=True)
+    canonical = ref_dir / f"scene_{scene.id}.png"
+    shutil.copy2(src, canonical)
+
+    scene.reference_image_path = payload.reference_path
+    db.commit()
+    db.refresh(scene)
+    return _scene_read(scene, db)
 
 
 # ── POST /episodes/{episode_id}/scenes/reorder ────────────────────────────────

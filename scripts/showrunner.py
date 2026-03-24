@@ -1143,6 +1143,52 @@ def burn_subtitles(input_path: Path, srt_path: Path, output_path: Path):
 
 # ─── Reference image generation ──────────────────────────────────────
 
+# FLUX.1-schnell GGUF — high-quality T2I model for reference image generation.
+# Download these into your ComfyUI models directories:
+#   unet/  → flux1-schnell-q4_k_s.gguf          (~5.8 GB, from city96/FLUX.1-schnell-gguf)
+#   clip/  → t5xxl_fp8_e4m3fn.safetensors        (from comfyanonymous/flux_text_encoders)
+#   clip/  → clip_l.safetensors                  (from comfyanonymous/flux_text_encoders)
+#   vae/   → ae.safetensors                      (from black-forest-labs/FLUX.1-schnell)
+T2I_UNET  = "flux1-schnell-q4_k_s.gguf"
+T2I_CLIP1 = "t5xxl_fp8_e4m3fn.safetensors"
+T2I_CLIP2 = "clip_l.safetensors"
+T2I_VAE   = "ae.safetensors"
+
+
+def build_t2i_workflow(
+    prompt: str,
+    seed: int,
+    prefix: str,
+    width: int = 640,
+    height: int = 360,
+) -> dict:
+    """
+    FLUX.1-schnell GGUF T2I workflow.
+
+    Generates a high-quality still image for use as an I2V seed in HunyuanVideo.
+    4 inference steps (distilled model) — fast and sharp.
+
+    width/height defaults:
+      640×360  landscape (scenes, locations)
+      480×640  portrait  (character headshots — pass explicitly)
+    """
+    return {
+        "1":  {"class_type": "UnetLoaderGGUF",     "inputs": {"unet_name": T2I_UNET}},
+        "2":  {"class_type": "DualCLIPLoader",      "inputs": {"clip_name1": T2I_CLIP1, "clip_name2": T2I_CLIP2, "type": "flux"}},
+        "3":  {"class_type": "VAELoader",           "inputs": {"vae_name": T2I_VAE}},
+        "4":  {"class_type": "CLIPTextEncode",      "inputs": {"clip": ["2", 0], "text": prompt}},
+        "5":  {"class_type": "EmptySD3LatentImage", "inputs": {"width": width, "height": height, "batch_size": 1}},
+        "6":  {"class_type": "ModelSamplingFlux",   "inputs": {"model": ["1", 0], "max_shift": 1.15, "base_shift": 0.5, "width": width, "height": height}},
+        "7":  {"class_type": "RandomNoise",         "inputs": {"noise_seed": seed}},
+        "8":  {"class_type": "BasicGuider",         "inputs": {"model": ["6", 0], "conditioning": ["4", 0]}},
+        "9":  {"class_type": "KSamplerSelect",      "inputs": {"sampler_name": "euler"}},
+        "10": {"class_type": "BasicScheduler",      "inputs": {"model": ["6", 0], "scheduler": "simple", "steps": 4, "denoise": 1.0}},
+        "11": {"class_type": "SamplerCustomAdvanced","inputs": {"noise": ["7", 0], "guider": ["8", 0], "sampler": ["9", 0], "sigmas": ["10", 0], "latent_image": ["5", 0]}},
+        "12": {"class_type": "VAEDecode",           "inputs": {"samples": ["11", 0], "vae": ["3", 0]}},
+        "13": {"class_type": "SaveImage",           "inputs": {"images": ["12", 0], "filename_prefix": f"refs/{prefix}"}},
+    }
+
+
 def build_ref_workflow(prompt: str, seed: int, prefix: str) -> dict:
     """T2V workflow that generates a single frame — used for character/location reference images."""
     return {

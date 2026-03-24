@@ -212,8 +212,10 @@ class SceneRead(BaseModel):
     dialogue: str  # raw JSON string; callers parse as list[DialogueLine]
     status: str
     output_clip_path: str | None = None
+    reference_image_path: str | None = None
     characters: list[CharacterRead] = []
     preview_url: str | None = None
+    reference_url: str | None = None
     location_name: str | None = None
 
 
@@ -250,6 +252,11 @@ class SelectReferenceRequest(BaseModel):
 
 
 class ReferenceGenerateResponse(BaseModel):
+    reference_urls: list[str]
+    message: str
+
+
+class SceneReferenceGenerateResponse(BaseModel):
     reference_urls: list[str]
     message: str
 

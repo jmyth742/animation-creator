@@ -146,6 +146,7 @@ class Scene(Base):
     status: str = Column(String(32), nullable=False, default="pending")
 
     output_clip_path: str | None = Column(String(1024), nullable=True)
+    reference_image_path: str | None = Column(String(1024), nullable=True)
 
     episode = relationship("Episode", back_populates="scenes")
     location = relationship("Location", back_populates="scenes")
