@@ -1,130 +1,104 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Plus, Camera, ChevronDown, ChevronRight, Trash2, Pencil, Play, X, Eye, Film, RefreshCw, Star } from 'lucide-react'
+import { Plus, Camera, ChevronDown, ChevronRight, Trash2, Pencil, Play, X, Eye, Film, RefreshCw, Star, MapPin, Users } from 'lucide-react'
 import { get, post, put, del } from '../api/client'
 import SceneStudioModal from './SceneStudioModal'
+import SceneComposerModal from './SceneComposerModal'
 
-// ── Scene modal ─────────────────────────────────────────────────────────────
+// ── Scene timeline strip ──────────────────────────────────────────────────────
 
-function SceneModal({ episodeId, scene, locations, characters, onSave, onClose }) {
-  const isNew = !scene
-  const [form, setForm] = useState({
-    visual: scene?.visual || '',
-    narration: scene?.narration || '',
-    clip_length: scene?.clip_length || 'medium',
-    location_id: scene?.location_id || '',
-    character_ids: scene?.characters?.map((c) => c.id) || [],
-    dialogue: scene ? (() => { try { return JSON.parse(scene.dialogue) } catch { return [] } })() : [],
-  })
-  const [saving, setSaving] = useState(false)
-
-  const setField = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
-  const toggleChar = (id) => setForm((f) => ({
-    ...f,
-    character_ids: f.character_ids.includes(id) ? f.character_ids.filter((c) => c !== id) : [...f.character_ids, id]
-  }))
-  const addLine = () => setForm((f) => ({ ...f, dialogue: [...f.dialogue, { character: '', line: '' }] }))
-  const updateLine = (idx, key, val) => setForm((f) => {
-    const d = [...f.dialogue]; d[idx] = { ...d[idx], [key]: val }; return { ...f, dialogue: d }
-  })
-  const removeLine = (idx) => setForm((f) => ({ ...f, dialogue: f.dialogue.filter((_, i) => i !== idx) }))
-
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      const payload = { ...form, location_id: form.location_id ? Number(form.location_id) : null,
-        dialogue: form.dialogue.filter((d) => d.character || d.line) }
-      isNew ? await post(`/episodes/${episodeId}/scenes`, payload) : await put(`/scenes/${scene.id}`, payload)
-      onSave()
-    } catch { alert('Failed to save scene.') }
-    finally { setSaving(false) }
-  }
+function SceneTimeline({ scenes, locations, characters, onSelectScene, onAddScene }) {
+  const locMap = Object.fromEntries((locations || []).map((l) => [l.id, l]))
+  const charMap = Object.fromEntries((characters || []).map((c) => [c.id, c]))
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-pixel max-w-2xl">
-        <div className="modal-header">
-          <span className="heading-pixel-sm text-accent-400">{isNew ? '+ NEW SCENE' : '✎ EDIT SCENE'}</span>
-          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-200 font-pixel text-sm p-1">✕</button>
-        </div>
+    <div className="border-b-2 border-zinc-700 bg-zinc-900 px-4 py-3">
+      <div className="flex items-center gap-1 overflow-x-auto pb-1" style={{ scrollbarWidth: 'thin' }}>
+        {(scenes || []).map((scene, idx) => {
+          const loc = locMap[scene.location_id]
+          const sceneChars = (scene.characters || []).map((c) => charMap[c.id]).filter(Boolean)
+          const isGenerating = scene.status === 'generating'
+          const isDone = scene.status === 'done'
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-5">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label-pixel">LOCATION</label>
-              <select className="input-pixel" value={form.location_id} onChange={setField('location_id')}>
-                <option value="">— none —</option>
-                {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label-pixel">CLIP LENGTH</label>
-              <select className="input-pixel" value={form.clip_length} onChange={setField('clip_length')}>
-                <option value="short">SHORT (~1s)</option>
-                <option value="medium">MEDIUM (~1.5s)</option>
-                <option value="long">LONG (~2s)</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="label-pixel">VISUAL PROMPT <span className="text-zinc-600">(sent to video AI)</span></label>
-            <textarea className="input-pixel resize-none" rows={3} value={form.visual} onChange={setField('visual')}
-              placeholder="Describe what the camera sees..." />
-          </div>
-
-          <div>
-            <label className="label-pixel">NARRATION</label>
-            <textarea className="input-pixel resize-none" rows={2} value={form.narration || ''} onChange={setField('narration')}
-              placeholder="Optional narrator voiceover..." />
-          </div>
-
-          {characters.length > 0 && (
-            <div>
-              <label className="label-pixel mb-2">CHARACTERS IN SCENE</label>
-              <div className="flex flex-wrap gap-2">
-                {characters.map((c) => (
-                  <button key={c.id} onClick={() => toggleChar(c.id)}
-                    className={`font-pixel border-2 px-3 py-1 transition-colors ${form.character_ids.includes(c.id) ? 'bg-accent-700 border-accent-400 text-white' : 'bg-zinc-800 border-zinc-600 text-zinc-400 hover:border-zinc-400'}`}
-                    style={{ fontSize: '7px', boxShadow: '2px 2px 0 0 #000' }}>
-                    {c.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="label-pixel">DIALOGUE</label>
-              <button onClick={addLine} className="font-pixel text-accent-400 hover:text-accent-300" style={{ fontSize: '7px' }}>
-                + ADD LINE
-              </button>
-            </div>
-            {form.dialogue.length === 0
-              ? <p className="text-retro text-zinc-600 italic" style={{ fontSize: '15px' }}>No dialogue — visual/narration only.</p>
-              : <div className="space-y-2">
-                {form.dialogue.map((d, idx) => (
-                  <div key={idx} className="flex gap-2 items-start">
-                    <input className="input-pixel w-32 shrink-0" value={d.character}
-                      onChange={(e) => updateLine(idx, 'character', e.target.value)} placeholder="Character" />
-                    <input className="input-pixel flex-1" value={d.line}
-                      onChange={(e) => updateLine(idx, 'line', e.target.value)} placeholder="Line..." />
-                    <button onClick={() => removeLine(idx)} className="text-zinc-600 hover:text-px-red p-2 shrink-0 border border-zinc-700">
-                      <X className="w-3 h-3" />
-                    </button>
+          return (
+            <React.Fragment key={scene.id}>
+              {idx > 0 && (
+                <div className="flex-shrink-0 text-zinc-700" style={{ fontSize: '10px' }}>▶</div>
+              )}
+              <button
+                onClick={() => onSelectScene(scene, idx)}
+                className="flex-shrink-0 flex flex-col border-2 overflow-hidden transition-all hover:border-accent-500 group/card"
+                style={{
+                  width: '72px',
+                  minHeight: '56px',
+                  background: '#111',
+                  borderColor: isDone ? '#22c55e33' : isGenerating ? '#818cf8' : '#3f3f46',
+                  boxShadow: '2px 2px 0 0 #000',
+                }}
+                title={scene.visual || `Scene ${idx + 1}`}
+              >
+                {/* Location thumbnail */}
+                <div className="relative w-full flex-shrink-0 overflow-hidden" style={{ height: '38px' }}>
+                  {loc?.reference_url ? (
+                    <img src={loc.reference_url} alt={loc.name} className="w-full h-full object-cover opacity-80 group-hover/card:opacity-100" />
+                  ) : scene.reference_url ? (
+                    <img src={scene.reference_url} alt="ref" className="w-full h-full object-cover opacity-80 group-hover/card:opacity-100" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-zinc-800">
+                      <Film className="w-3 h-3 text-zinc-600" />
+                    </div>
+                  )}
+                  {/* Scene number badge */}
+                  <div className="absolute top-0.5 left-0.5 bg-black/70 px-1">
+                    <span className="font-pixel text-zinc-300" style={{ fontSize: '5px' }}>S{idx + 1}</span>
                   </div>
-                ))}
-              </div>
-            }
-          </div>
-        </div>
+                  {isGenerating && (
+                    <div className="absolute inset-0 bg-accent-500/20 flex items-center justify-center">
+                      <span className="pixel-spinner" style={{ width: '8px', height: '8px' }} />
+                    </div>
+                  )}
+                </div>
 
-        <div className="flex justify-end gap-3 px-6 py-4 border-t-2 border-zinc-700">
-          <button onClick={onClose} className="btn-pixel-ghost">CANCEL</button>
-          <button onClick={handleSave} disabled={saving || !form.visual.trim()} className="btn-pixel">
-            {saving ? 'SAVING...' : isNew ? '+ ADD SCENE' : '▶ SAVE SCENE'}
-          </button>
-        </div>
+                {/* Character avatars */}
+                <div className="flex items-center gap-0.5 px-1 py-0.5 flex-wrap">
+                  {sceneChars.slice(0, 4).map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex-shrink-0 border border-zinc-600 overflow-hidden flex items-center justify-center"
+                      style={{ width: '12px', height: '16px', background: '#0d1117' }}
+                      title={c.name}
+                    >
+                      {c.portrait_url ? (
+                        <img src={c.portrait_url} alt={c.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="font-pixel text-zinc-500" style={{ fontSize: '5px' }}>
+                          {c.name.slice(0, 1)}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  {sceneChars.length === 0 && (
+                    <Users className="w-2.5 h-2.5 text-zinc-700" />
+                  )}
+                  {sceneChars.length > 4 && (
+                    <span className="font-pixel text-zinc-600" style={{ fontSize: '5px' }}>+{sceneChars.length - 4}</span>
+                  )}
+                </div>
+              </button>
+            </React.Fragment>
+          )
+        })}
+
+        {/* Add scene button */}
+        <div className="flex-shrink-0 text-zinc-700 ml-1" style={{ fontSize: '10px' }}>▶</div>
+        <button
+          onClick={onAddScene}
+          className="flex-shrink-0 border-2 border-dashed border-zinc-700 hover:border-accent-500 flex flex-col items-center justify-center gap-1 transition-colors"
+          style={{ width: '72px', minHeight: '56px' }}
+          title="Add new scene"
+        >
+          <Plus className="w-3 h-3 text-zinc-600" />
+          <span className="font-pixel text-zinc-600" style={{ fontSize: '5px' }}>ADD</span>
+        </button>
       </div>
     </div>
   )
@@ -401,44 +375,63 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
       </div>
 
       {expanded && (
-        <div className="border-t-2 border-zinc-700 px-4 pb-4 pt-3">
-          <div className="flex items-center justify-between mb-3">
-            <span className="font-pixel text-zinc-500" style={{ fontSize: '7px' }}>
-              SCENES {scenes ? `(${scenes.length})` : ''}
-            </span>
-            <button onClick={() => setSceneModal(null)} className="font-pixel text-accent-400 hover:text-accent-300" style={{ fontSize: '7px' }}>
-              + ADD SCENE
-            </button>
-          </div>
+        <>
+          {/* Timeline strip — shown once scenes are loaded */}
+          {scenes && (
+            <SceneTimeline
+              scenes={scenes}
+              locations={locations}
+              characters={characters}
+              onSelectScene={(scene, idx) => setSceneModal({ ...scene, order_idx: idx })}
+              onAddScene={() => setSceneModal(null)}
+            />
+          )}
 
-          {loadingScenes ? (
-            <div className="flex items-center justify-center py-6 gap-3">
-              <span className="pixel-spinner" /><span className="text-retro text-zinc-500">LOADING SCENES...</span>
-            </div>
-          ) : scenes && scenes.length === 0 ? (
-            <div className="text-center py-6">
-              <p className="text-retro text-zinc-600 mb-2">NO SCENES YET</p>
+          <div className="border-t-2 border-zinc-700 px-4 pb-4 pt-3">
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-pixel text-zinc-500" style={{ fontSize: '7px' }}>
+                SCENES {scenes ? `(${scenes.length})` : ''}
+              </span>
               <button onClick={() => setSceneModal(null)} className="font-pixel text-accent-400 hover:text-accent-300" style={{ fontSize: '7px' }}>
-                + ADD FIRST SCENE
+                + ADD SCENE
               </button>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {(scenes || []).map((scene, idx) => (
-                <SceneRow key={scene.id} scene={{ ...scene, order_idx: idx }}
-                  onEdit={() => setSceneModal(scene)}
-                  onDelete={() => handleSceneDelete(scene)}
-                  onRegenerate={handleRegenerate}
-                  onOpenSceneStudio={() => setSceneStudio({ ...scene, order_idx: idx })} />
-              ))}
-            </div>
-          )}
-        </div>
+
+            {loadingScenes ? (
+              <div className="flex items-center justify-center py-6 gap-3">
+                <span className="pixel-spinner" /><span className="text-retro text-zinc-500">LOADING SCENES...</span>
+              </div>
+            ) : scenes && scenes.length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-retro text-zinc-600 mb-2">NO SCENES YET</p>
+                <button onClick={() => setSceneModal(null)} className="font-pixel text-accent-400 hover:text-accent-300" style={{ fontSize: '7px' }}>
+                  + ADD FIRST SCENE
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {(scenes || []).map((scene, idx) => (
+                  <SceneRow key={scene.id} scene={{ ...scene, order_idx: idx }}
+                    onEdit={() => setSceneModal({ ...scene, order_idx: idx })}
+                    onDelete={() => handleSceneDelete(scene)}
+                    onRegenerate={handleRegenerate}
+                    onOpenSceneStudio={() => setSceneStudio({ ...scene, order_idx: idx })} />
+                ))}
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {sceneModal !== false && (
-        <SceneModal episodeId={episode.id} scene={sceneModal} locations={locations} characters={characters}
-          onSave={() => { setSceneModal(false); refreshScenes() }} onClose={() => setSceneModal(false)} />
+        <SceneComposerModal
+          episodeId={episode.id}
+          scene={sceneModal}
+          locations={locations}
+          characters={characters}
+          onSave={() => { setSceneModal(false); refreshScenes() }}
+          onClose={() => setSceneModal(false)}
+        />
       )}
 
       {sceneStudio && (
