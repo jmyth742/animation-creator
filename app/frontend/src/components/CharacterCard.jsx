@@ -1,5 +1,5 @@
 import React from 'react'
-import { Pencil, Star, Trash2 } from 'lucide-react'
+import { Camera, Pencil, Star, Trash2 } from 'lucide-react'
 
 function getInitials(name = '') {
   return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
@@ -15,7 +15,7 @@ const VOICE_LABELS = {
   'en-AU-NatashaNeural': 'NATASHA-AU',
 }
 
-export default function CharacterCard({ character, onEdit, onDelete, deleting }) {
+export default function CharacterCard({ character, onEdit, onDelete, onOpenPortraitStudio, deleting }) {
   return (
     <div
       className="group relative bg-zinc-800 border-2 border-zinc-700 flex flex-col overflow-hidden"
@@ -31,11 +31,16 @@ export default function CharacterCard({ character, onEdit, onDelete, deleting })
             style={{ imageRendering: 'pixelated' }}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #1c1c38 0%, #2a2a50 100%)' }}>
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2 cursor-pointer"
+            style={{ background: 'linear-gradient(135deg, #1c1c38 0%, #2a2a50 100%)' }}
+            onClick={onOpenPortraitStudio}
+            title="Open Portrait Studio">
             <span className="font-pixel text-accent-400 select-none"
               style={{ fontSize: '20px', textShadow: '2px 2px 0 #000' }}>
               {getInitials(character.name)}
+            </span>
+            <span className="font-pixel text-zinc-500 flex items-center gap-1" style={{ fontSize: '6px' }}>
+              <Camera className="w-2.5 h-2.5" /> ADD PORTRAIT
             </span>
           </div>
         )}
@@ -49,11 +54,20 @@ export default function CharacterCard({ character, onEdit, onDelete, deleting })
         )}
 
         {/* Action overlay */}
-        <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+        <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+          <button
+            onClick={onOpenPortraitStudio}
+            className="p-2 bg-zinc-900 border-2 border-px-green text-px-green hover:bg-green-900 transition-colors"
+            style={{ boxShadow: '2px 2px 0 0 #000' }}
+            title="Portrait Studio"
+          >
+            <Camera className="w-3.5 h-3.5" />
+          </button>
           <button
             onClick={onEdit}
             className="p-2 bg-zinc-900 border-2 border-accent-600 text-accent-400 hover:bg-accent-800 transition-colors"
             style={{ boxShadow: '2px 2px 0 0 #000' }}
+            title="Edit character"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
@@ -62,6 +76,7 @@ export default function CharacterCard({ character, onEdit, onDelete, deleting })
             disabled={deleting}
             className="p-2 bg-zinc-900 border-2 border-px-red text-px-red hover:bg-red-900 transition-colors disabled:opacity-50"
             style={{ boxShadow: '2px 2px 0 0 #000' }}
+            title="Delete character"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>

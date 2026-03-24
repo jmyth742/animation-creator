@@ -2,10 +2,12 @@ import React, { useState } from 'react'
 import { Plus } from 'lucide-react'
 import CharacterCard from './CharacterCard'
 import CharacterModal from './CharacterModal'
+import PortraitStudioModal from './PortraitStudioModal'
 import { del } from '../api/client'
 
 export default function CharactersTab({ projectId, characters, onCharactersChange }) {
   const [showModal, setShowModal] = useState(false)
+  const [portraitStudio, setPortraitStudio] = useState(null) // character object or null
   const [deletingId, setDeletingId] = useState(null)
 
   const handleDelete = async (character) => {
@@ -57,6 +59,7 @@ export default function CharactersTab({ projectId, characters, onCharactersChang
               deleting={deletingId === char.id}
               onEdit={() => setShowModal(char)}
               onDelete={() => handleDelete(char)}
+              onOpenPortraitStudio={() => setPortraitStudio(char)}
             />
           ))}
         </div>
@@ -68,6 +71,18 @@ export default function CharactersTab({ projectId, characters, onCharactersChang
           character={showModal}
           onSave={() => { setShowModal(false); onCharactersChange() }}
           onClose={() => setShowModal(false)}
+          onOpenPortraitStudio={(char) => { setShowModal(false); setPortraitStudio(char) }}
+        />
+      )}
+
+      {portraitStudio && (
+        <PortraitStudioModal
+          character={portraitStudio}
+          onClose={() => setPortraitStudio(null)}
+          onPortraitSelected={(updated) => {
+            setPortraitStudio(updated)
+            onCharactersChange()
+          }}
         />
       )}
     </div>
