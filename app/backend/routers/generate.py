@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+import os
 import types
 from pathlib import Path
 
+import anthropic
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -17,6 +19,128 @@ from models import Episode, Project, Scene, SceneCharacter, User
 from pipeline import slugify
 
 router = APIRouter()
+
+
+# ── Enhance endpoint ──────────────────────────────────────────────────────────
+
+_ENHANCE_SYSTEM = """\
+You are an expert prompt engineer for AI video generation pipelines.
+The user is building an animated series using FLUX (text-to-image) for reference images
+and HunyuanVideo (image-to-video) for clip generation.
+
+When asked to enhance a field, return exactly 3 numbered suggestions separated by "---".
+Each suggestion should be concise but specific, optimized for AI generation.
+
+Rules per field type:
+- visual_style: comma-separated style keywords (e.g. "2D cel animation, bold black outlines, flat color fills, warm earthy palette"). NO full sentences.
+- tone: short descriptor phrase (e.g. "bittersweet nostalgia, dry wit, grounded drama"). Keep under 10 words.
+- setting: vivid time+place description useful for world-building and scene prompts.
+- premise: 2-3 sentences, punchy logline style.
+- character_visual: comma-separated physical descriptors used directly in image prompts (clothes, build, face, colours). Specific, visual-only.
+- backstory: 2-4 sentences, emotionally grounded, informs how Claude writes the character.
+- location: comma-separated visual descriptors for the location (architecture, lighting, mood, era). Used in image generation.
+- scene_visual: what is visually happening in the frame — action, composition, character positions, lighting. Cinematic language.
+- narration: voiceover text spoken over the scene. Matches series tone.
+
+Format your response as exactly 3 options, like:
+1. [suggestion text]
+---
+2. [suggestion text]
+---
+3. [suggestion text]
+"""
+
+_ENHANCE_FIELD_HINTS = {
+    "visual_style": "The user's series visual style field — used in every FLUX and HunyuanVideo prompt.",
+    "tone": "The series tone/mood field — shapes how Claude writes dialogue and scene descriptions.",
+    "setting": "The series setting field — time period and world context.",
+    "premise": "The series premise — 2-3 sentence core concept.",
+    "character_visual": "Character visual description — used in portrait generation and every scene prompt.",
+    "backstory": "Character backstory — informs how Claude writes the character.",
+    "location": "Location visual description — used in FLUX reference image generation.",
+    "scene_visual": "Scene visual description — what is happening visually, used in video generation.",
+    "narration": "Scene narration/voiceover — spoken text over the scene clip.",
+}
+
+
+class EnhanceRequest(BaseModel):
+    field_type: str
+    current_text: str
+    context: dict = {}
+
+
+class EnhanceResponse(BaseModel):
+    suggestions: list[str]
+
+
+@router.post("/enhance", response_model=EnhanceResponse)
+def enhance_text(
+    payload: EnhanceRequest,
+    current_user: User = Depends(get_current_user),
+) -> EnhanceResponse:
+    """Use Claude to generate 2-3 improved suggestions for a description field."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY not set.")
+
+    hint = _ENHANCE_FIELD_HINTS.get(payload.field_type, "A text field in an animated series project.")
+    ctx = payload.context
+
+    context_lines = []
+    if ctx.get("series_title"):
+        context_lines.append(f"Series title: {ctx['series_title']}")
+    if ctx.get("visual_style"):
+        context_lines.append(f"Visual style: {ctx['visual_style']}")
+    if ctx.get("tone"):
+        context_lines.append(f"Tone: {ctx['tone']}")
+    if ctx.get("setting"):
+        context_lines.append(f"Setting: {ctx['setting']}")
+    if ctx.get("premise"):
+        context_lines.append(f"Premise: {ctx['premise']}")
+    if ctx.get("character_name"):
+        context_lines.append(f"Character name: {ctx['character_name']}")
+    if ctx.get("character_role"):
+        context_lines.append(f"Character role: {ctx['character_role']}")
+
+    context_block = "\n".join(context_lines)
+    current = payload.current_text.strip() or "(empty — write something from scratch)"
+
+    user_message = f"""Field type: {payload.field_type}
+Field purpose: {hint}
+
+{"Project context:\n" + context_block if context_block else ""}
+
+Current text:
+{current}
+
+Generate 3 enhanced versions of this field."""
+
+    client = anthropic.Anthropic(api_key=api_key)
+    message = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=1024,
+        system=_ENHANCE_SYSTEM,
+        messages=[{"role": "user", "content": user_message}],
+    )
+
+    raw = message.content[0].text.strip()
+
+    # Parse the 3 suggestions split by ---
+    parts = [p.strip() for p in raw.split("---") if p.strip()]
+    suggestions = []
+    for part in parts[:3]:
+        # Strip leading "1. " / "2. " / "3. "
+        lines = part.strip().splitlines()
+        first = lines[0].strip()
+        if first and first[0].isdigit() and len(first) > 2 and first[1] in ".):":
+            first = first[2:].strip()
+            lines[0] = first
+        suggestions.append("\n".join(lines).strip())
+
+    if not suggestions:
+        raise HTTPException(status_code=500, detail="Claude returned no suggestions.")
+
+    return EnhanceResponse(suggestions=suggestions)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

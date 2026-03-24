@@ -2,8 +2,9 @@ import React, { useState } from 'react'
 import { Camera, Check, MapPin, Pencil, Plus, Star, Trash2, X } from 'lucide-react'
 import { post, put, del } from '../api/client'
 import LocationStudioModal from './LocationStudioModal'
+import EnhanceButton from './EnhanceButton'
 
-function LocationRow({ location, onEdit, onDelete, onOpenLocationStudio, deleting }) {
+function LocationRow({ location, projectContext, onEdit, onDelete, onOpenLocationStudio, deleting }) {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(location.name)
   const [description, setDescription] = useState(location.description)
@@ -26,6 +27,15 @@ function LocationRow({ location, onEdit, onDelete, onOpenLocationStudio, deletin
           <input className="input-pixel flex-1" value={name} onChange={(e) => setName(e.target.value)} placeholder="Location name" />
           <button onClick={() => { setName(location.name); setDescription(location.description); setEditing(false) }} className="btn-pixel-ghost px-2"><X className="w-3 h-3" /></button>
           <button onClick={handleSave} disabled={saving} className="btn-pixel px-2"><Check className="w-3 h-3" /></button>
+        </div>
+        <div className="flex items-center justify-between mb-1">
+          <span className="label-pixel" style={{ fontSize: '6px' }}>DESCRIPTION</span>
+          <EnhanceButton
+            fieldType="location"
+            currentText={description}
+            context={{ ...projectContext, location_name: name }}
+            onSelect={setDescription}
+          />
         </div>
         <textarea className="input-pixel resize-none w-full" rows={2} value={description}
           onChange={(e) => setDescription(e.target.value)} placeholder="Visual description for video generation..." />
@@ -130,6 +140,20 @@ export default function LocationsTab({ projectId, project, locations, onLocation
           <div className="label-pixel mb-3">NEW LOCATION</div>
           <input className="input-pixel w-full mb-2" value={newName} onChange={(e) => setNewName(e.target.value)}
             placeholder="Location name (e.g. Alleyway, Rooftop)" autoFocus />
+          <div className="flex items-center justify-between mb-1">
+            <span className="label-pixel" style={{ fontSize: '6px' }}>DESCRIPTION</span>
+            <EnhanceButton
+              fieldType="location"
+              currentText={newDesc}
+              context={{
+                series_title: project?.title,
+                visual_style: project?.visual_style,
+                tone: project?.tone,
+                location_name: newName,
+              }}
+              onSelect={setNewDesc}
+            />
+          </div>
           <textarea className="input-pixel w-full resize-none mb-3" rows={2} value={newDesc}
             onChange={(e) => setNewDesc(e.target.value)} placeholder="Visual description for video generation..." />
           <div className="flex gap-2 justify-end">
@@ -152,6 +176,12 @@ export default function LocationsTab({ projectId, project, locations, onLocation
             <LocationRow
               key={loc.id}
               location={loc}
+              projectContext={{
+                series_title: project?.title,
+                visual_style: project?.visual_style,
+                tone: project?.tone,
+                setting: project?.setting,
+              }}
               deleting={deletingId === loc.id}
               onEdit={onLocationsChange}
               onDelete={handleDelete}

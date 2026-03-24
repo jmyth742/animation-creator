@@ -137,6 +137,7 @@ export default function ProjectPage() {
         {activeTab === 'characters' && (
           <CharactersTab
             projectId={id}
+            project={project}
             characters={project.characters || []}
             onCharactersChange={handleCharactersChange}
           />

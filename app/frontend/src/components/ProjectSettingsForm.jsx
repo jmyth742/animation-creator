@@ -1,11 +1,15 @@
 import React, { useState } from 'react'
 import { Save, Wand2 } from 'lucide-react'
 import { put, post } from '../api/client'
+import EnhanceButton from './EnhanceButton'
 
-function Field({ label, hint, children }) {
+function Field({ label, hint, enhance, children }) {
   return (
     <div>
-      <label className="label-pixel">{label}</label>
+      <div className="flex items-center justify-between mb-0.5">
+        <label className="label-pixel">{label}</label>
+        {enhance}
+      </div>
       {hint && <p className="text-retro text-zinc-500 mb-1" style={{ fontSize: '15px' }}>{hint}</p>}
       {children}
     </div>
@@ -60,16 +64,60 @@ export default function ProjectSettingsForm({ project, onUpdate }) {
           <Field label="TITLE">
             <input className="input-pixel" value={form.title} onChange={setField('title')} placeholder="Series title" />
           </Field>
-          <Field label="PREMISE" hint="2-3 sentences describing the core concept.">
+          <Field
+            label="PREMISE"
+            hint="2-3 sentences describing the core concept."
+            enhance={
+              <EnhanceButton
+                fieldType="premise"
+                currentText={form.premise}
+                context={{ series_title: form.title, tone: form.tone, setting: form.setting }}
+                onSelect={(v) => setForm((f) => ({ ...f, premise: v }))}
+              />
+            }
+          >
             <textarea className="input-pixel resize-none" rows={3} value={form.premise} onChange={setField('premise')} placeholder="What is this series about?" />
           </Field>
-          <Field label="TONE" hint="e.g. dark comedy, heartfelt drama, whimsical adventure">
+          <Field
+            label="TONE"
+            hint="e.g. dark comedy, heartfelt drama, whimsical adventure"
+            enhance={
+              <EnhanceButton
+                fieldType="tone"
+                currentText={form.tone}
+                context={{ series_title: form.title, premise: form.premise }}
+                onSelect={(v) => setForm((f) => ({ ...f, tone: v }))}
+              />
+            }
+          >
             <input className="input-pixel" value={form.tone} onChange={setField('tone')} placeholder="Series tone and mood" />
           </Field>
-          <Field label="VISUAL STYLE" hint="e.g. anime, cyberpunk, watercolor, studio ghibli">
+          <Field
+            label="VISUAL STYLE"
+            hint="e.g. anime, cyberpunk, watercolor, studio ghibli"
+            enhance={
+              <EnhanceButton
+                fieldType="visual_style"
+                currentText={form.visual_style}
+                context={{ series_title: form.title, tone: form.tone, setting: form.setting }}
+                onSelect={(v) => setForm((f) => ({ ...f, visual_style: v }))}
+              />
+            }
+          >
             <input className="input-pixel" value={form.visual_style} onChange={setField('visual_style')} placeholder="Art style for video generation" />
           </Field>
-          <Field label="SETTING" hint="Where and when the series takes place.">
+          <Field
+            label="SETTING"
+            hint="Where and when the series takes place."
+            enhance={
+              <EnhanceButton
+                fieldType="setting"
+                currentText={form.setting}
+                context={{ series_title: form.title, premise: form.premise, tone: form.tone }}
+                onSelect={(v) => setForm((f) => ({ ...f, setting: v }))}
+              />
+            }
+          >
             <textarea className="input-pixel resize-none" rows={2} value={form.setting} onChange={setField('setting')} placeholder="Setting description" />
           </Field>
         </div>

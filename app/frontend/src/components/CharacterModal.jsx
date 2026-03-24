@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Camera, Star } from 'lucide-react'
 import { post, put } from '../api/client'
+import EnhanceButton from './EnhanceButton'
 
 const VOICES = [
   { value: 'en-GB-RyanNeural',    label: 'Ryan — British Male' },
@@ -16,7 +17,7 @@ function getInitials(name = '') {
   return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 }
 
-export default function CharacterModal({ projectId, character, onSave, onClose, onOpenPortraitStudio }) {
+export default function CharacterModal({ projectId, character, projectContext = {}, onSave, onClose, onOpenPortraitStudio }) {
   const isEditing = !!character
 
   const [form, setForm] = useState({
@@ -116,13 +117,29 @@ export default function CharacterModal({ projectId, character, onSave, onClose, 
           </div>
 
           <div>
-            <label className="label-pixel">BACKSTORY</label>
+            <div className="flex items-center justify-between mb-0.5">
+              <label className="label-pixel">BACKSTORY</label>
+              <EnhanceButton
+                fieldType="backstory"
+                currentText={form.backstory}
+                context={{ ...projectContext, character_name: form.name, character_role: form.role }}
+                onSelect={(v) => setForm((f) => ({ ...f, backstory: v }))}
+              />
+            </div>
             <textarea name="backstory" value={form.backstory} onChange={handleChange} rows={3}
               className="input-pixel resize-none" placeholder="Character history, motivations..." />
           </div>
 
           <div>
-            <label className="label-pixel">VISUAL DESCRIPTION</label>
+            <div className="flex items-center justify-between mb-0.5">
+              <label className="label-pixel">VISUAL DESCRIPTION</label>
+              <EnhanceButton
+                fieldType="character_visual"
+                currentText={form.visual_description}
+                context={{ ...projectContext, character_name: form.name, character_role: form.role }}
+                onSelect={(v) => setForm((f) => ({ ...f, visual_description: v }))}
+              />
+            </div>
             <p className="text-retro text-zinc-500 mb-1" style={{ fontSize: '15px' }}>
               How this character looks — used in both portrait generation and video prompts
             </p>

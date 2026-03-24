@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { MapPin, Users, Film, X, ChevronRight, Clock } from 'lucide-react'
 import { post, put } from '../api/client'
+import EnhanceButton from './EnhanceButton'
 
 const CLIP_LABELS = { short: 'SHORT ~2s', medium: 'MED ~2.7s', long: 'LONG ~3.4s' }
 
-export default function SceneComposerModal({ episodeId, scene, locations, characters, onSave, onClose }) {
+export default function SceneComposerModal({ episodeId, scene, locations, characters, projectContext = {}, onSave, onClose }) {
   const isNew = !scene
   const [form, setForm] = useState({
     visual: scene?.visual || '',
@@ -305,9 +306,21 @@ export default function SceneComposerModal({ episodeId, scene, locations, charac
             {/* ── VISUAL + NARRATION ───────────────────────────────────────────── */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="label-pixel mb-1">
-                  WHAT HAPPENS <span className="text-zinc-600 normal-case font-pixel" style={{ fontSize: '7px' }}>(sent to video AI)</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="label-pixel">
+                    WHAT HAPPENS <span className="text-zinc-600 normal-case font-pixel" style={{ fontSize: '7px' }}>(sent to video AI)</span>
+                  </label>
+                  <EnhanceButton
+                    fieldType="scene_visual"
+                    currentText={form.visual}
+                    context={{
+                      ...projectContext,
+                      location: selectedLoc?.name,
+                      characters: selectedChars.map((c) => c.name).join(', '),
+                    }}
+                    onSelect={(v) => setForm((f) => ({ ...f, visual: v }))}
+                  />
+                </div>
                 <textarea
                   className="input-pixel resize-none"
                   rows={4}
@@ -318,9 +331,21 @@ export default function SceneComposerModal({ episodeId, scene, locations, charac
                 />
               </div>
               <div>
-                <label className="label-pixel mb-1">
-                  NARRATION <span className="text-zinc-600 normal-case font-pixel" style={{ fontSize: '7px' }}>(optional voiceover)</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="label-pixel">
+                    NARRATION <span className="text-zinc-600 normal-case font-pixel" style={{ fontSize: '7px' }}>(optional voiceover)</span>
+                  </label>
+                  <EnhanceButton
+                    fieldType="narration"
+                    currentText={form.narration || ''}
+                    context={{
+                      ...projectContext,
+                      location: selectedLoc?.name,
+                      scene_visual: form.visual,
+                    }}
+                    onSelect={(v) => setForm((f) => ({ ...f, narration: v }))}
+                  />
+                </div>
                 <textarea
                   className="input-pixel resize-none"
                   rows={4}

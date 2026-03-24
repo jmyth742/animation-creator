@@ -5,7 +5,7 @@ import CharacterModal from './CharacterModal'
 import PortraitStudioModal from './PortraitStudioModal'
 import { del } from '../api/client'
 
-export default function CharactersTab({ projectId, characters, onCharactersChange }) {
+export default function CharactersTab({ projectId, project = {}, characters, onCharactersChange }) {
   const [showModal, setShowModal] = useState(false)
   const [portraitStudio, setPortraitStudio] = useState(null) // character object or null
   const [deletingId, setDeletingId] = useState(null)
@@ -69,6 +69,13 @@ export default function CharactersTab({ projectId, characters, onCharactersChang
         <CharacterModal
           projectId={projectId}
           character={showModal}
+          projectContext={{
+            series_title: project.title,
+            visual_style: project.visual_style,
+            tone: project.tone,
+            setting: project.setting,
+            premise: project.premise,
+          }}
           onSave={() => { setShowModal(false); onCharactersChange() }}
           onClose={() => setShowModal(false)}
           onOpenPortraitStudio={(char) => { setShowModal(false); setPortraitStudio(char) }}

@@ -438,6 +438,13 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
           scene={sceneModal}
           locations={locations}
           characters={characters}
+          projectContext={{
+            series_title: project.title,
+            visual_style: project.visual_style,
+            tone: project.tone,
+            setting: project.setting,
+            premise: project.premise,
+          }}
           onSave={() => { setSceneModal(false); refreshScenes() }}
           onClose={() => setSceneModal(false)}
         />
