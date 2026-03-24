@@ -484,17 +484,19 @@ def generate_character_portrait(character_id: int, db) -> list[str]:
     # ComfyUI saves images to ComfyUI/output/refs/<prefix>_*.png
     comfy_refs_out = settings.COMFYUI_DIR / "output" / "refs"
 
-    prompt_parts = [
-        f"Portrait of {char.visual_description}",
-        "Facing camera directly, neutral expression, upper body visible.",
-    ]
+    # Style goes FIRST — earliest tokens carry most weight in diffusion models.
+    # "Video frame" anchors FLUX toward something HunyuanVideo will naturally extend.
+    prompt_parts: list[str] = []
     if style:
         prompt_parts.append(style)
     if project.setting:
-        prompt_parts.append(f"Setting: {project.setting}")
+        prompt_parts.append(project.setting)
     if project.tone:
-        prompt_parts.append(f"Mood: {project.tone}")
-    prompt = " ".join(prompt_parts)
+        prompt_parts.append(project.tone)
+    prompt_parts.append("cinematic video frame")
+    prompt_parts.append(f"portrait of {char.visual_description}")
+    prompt_parts.append("facing camera, neutral expression, upper body visible")
+    prompt = ", ".join(filter(None, prompt_parts))
     prefix = f"char_{char.id}"
 
     seeds = [999, 1234, 5678]
@@ -568,16 +570,18 @@ def generate_location_reference(location_id: int, db) -> list[str]:
 
     comfy_refs_out = settings.COMFYUI_DIR / "output" / "refs"
 
-    # Build a prompt that incorporates the project's overall visual aesthetic
-    prompt_parts = [loc.description or loc.name]
+    # Style goes FIRST — earliest tokens carry most weight in diffusion models.
+    prompt_parts: list[str] = []
     if project.visual_style:
         prompt_parts.append(project.visual_style)
     if project.setting:
-        prompt_parts.append(f"Setting: {project.setting}")
+        prompt_parts.append(project.setting)
     if project.tone:
-        prompt_parts.append(f"Mood: {project.tone}")
-    prompt_parts.append("Establishing shot, cinematic wide angle, no people, empty scene.")
-    prompt = ". ".join(filter(None, prompt_parts))
+        prompt_parts.append(project.tone)
+    prompt_parts.append("cinematic video frame")
+    prompt_parts.append(loc.description or loc.name)
+    prompt_parts.append("establishing shot, wide angle, no people, empty scene")
+    prompt = ", ".join(filter(None, prompt_parts))
 
     prefix = f"loc_{loc.id}"
     seeds = [111, 2222, 33333]
@@ -653,9 +657,19 @@ def generate_scene_reference(scene_id: int, db) -> list[str]:
 
     comfy_refs_out = settings.COMFYUI_DIR / "output" / "refs"
 
-    # Build a rich prompt: scene composition + character descriptions + location + project style
+    # Build a rich prompt: style FIRST for maximum influence, then scene content.
     prompt_parts: list[str] = []
 
+    # Project aesthetic anchors the whole image
+    if project.visual_style:
+        prompt_parts.append(project.visual_style)
+    if project.setting:
+        prompt_parts.append(project.setting)
+    if project.tone:
+        prompt_parts.append(project.tone)
+    prompt_parts.append("cinematic video frame")
+
+    # Scene content
     if scene.visual:
         prompt_parts.append(scene.visual)
 
@@ -663,7 +677,7 @@ def generate_scene_reference(scene_id: int, db) -> list[str]:
     if scene.location:
         loc_desc = scene.location.description or scene.location.name
         if loc_desc:
-            prompt_parts.append(f"Location: {loc_desc}")
+            prompt_parts.append(loc_desc)
 
     # Characters visible in this scene
     for sc in scene.scene_characters:
@@ -671,15 +685,7 @@ def generate_scene_reference(scene_id: int, db) -> list[str]:
         if char.visual_description:
             prompt_parts.append(char.visual_description)
 
-    # Project aesthetic
-    if project.visual_style:
-        prompt_parts.append(project.visual_style)
-    if project.setting:
-        prompt_parts.append(f"Setting: {project.setting}")
-    if project.tone:
-        prompt_parts.append(f"Mood: {project.tone}")
-
-    prompt_parts.append("Cinematic still frame, high detail.")
+    prompt_parts.append("high detail, sharp focus")
     prompt = ". ".join(filter(None, prompt_parts))
 
     prefix = f"scene_{scene_id}"

@@ -599,42 +599,44 @@ def build_scene_prompt(scene: dict, bible: dict) -> str:
     has_narration = bool(scene.get("narration"))
     characters = scene.get("characters", [])
 
-    parts = [scene["visual"]]
-
-    # For dialogue scenes: add a stable-camera, conversation framing hint if not
-    # already implied by the visual description.
     visual_lower = scene["visual"].lower()
-    if is_dialogue and not any(w in visual_lower for w in ["static", "close-up", "two-shot", "medium shot", "facing"]):
-        parts.append("Static camera. Characters facing camera.")
 
-    # Character descriptions — use brief form for dialogue (just identifying features),
-    # full form for establishing/atmospheric shots where the style matters more.
+    # Style goes FIRST — anchors the whole generation toward the project aesthetic.
+    parts: list[str] = []
+    series_style = bible["series"].get("style", "")
+    if series_style:
+        parts.append(series_style)
+    setting = bible.get("world", {}).get("setting", "")
+    if setting:
+        parts.append(setting)
+    tone = bible.get("series", {}).get("tone", "")
+    if tone:
+        parts.append(tone)
+
+    # Scene visual description
+    parts.append(scene["visual"])
+
+    # For dialogue scenes: add a stable-camera hint if not already implied.
+    if is_dialogue and not any(w in visual_lower for w in ["static", "close-up", "two-shot", "medium shot", "facing"]):
+        parts.append("static camera, characters facing camera")
+
+    # Character descriptions
     for char_id in characters:
         char = bible.get("characters", {}).get(char_id)
         if char:
             if is_dialogue:
                 parts.append(f"{char.get('name', char_id)}: {_char_brief(char)}")
             else:
-                parts.append(f"Character: {char['visual']}")
+                parts.append(f"character: {char['visual']}")
 
-    # Location — skip for close-ups (background is blurred/irrelevant)
+    # Location — skip for close-ups
     loc_id = scene.get("location")
     if loc_id and not (is_dialogue and "close-up" in visual_lower):
         loc_desc = bible.get("world", {}).get("locations", {}).get(loc_id)
         if loc_desc:
-            parts.append(f"Setting: {loc_desc}")
+            parts.append(loc_desc)
 
-    parts.append(bible["series"]["style"])
-
-    # Anchor to project's world setting and tone for full aesthetic coherence
-    setting = bible.get("world", {}).get("setting", "")
-    if setting:
-        parts.append(f"World: {setting}")
-    tone = bible.get("series", {}).get("tone", "")
-    if tone:
-        parts.append(f"Mood: {tone}")
-
-    return " ".join(parts)
+    return ", ".join(filter(None, parts))
 
 
 def build_negative_prompt(scene: dict) -> str:
@@ -1234,25 +1236,29 @@ def generate_reference_images(series_name: str, bible: dict, force: bool = False
     items: list[tuple[str, str, str, int, int]] = []
 
     # Characters — portrait orientation (480×640)
+    # Style goes FIRST — earliest tokens carry most weight in diffusion models.
     for char_id, char in bible.get("characters", {}).items():
-        # char_id already contains the "char_" prefix from the bible JSON
-        prompt_parts = [f"Portrait of {char['visual']}",
-                        "Facing camera directly, neutral expression, upper body visible."]
+        prompt_parts: list[str] = []
         if style:   prompt_parts.append(style)
-        if setting: prompt_parts.append(f"Setting: {setting}")
-        if tone:    prompt_parts.append(f"Mood: {tone}")
+        if setting: prompt_parts.append(setting)
+        if tone:    prompt_parts.append(tone)
+        prompt_parts.append("cinematic video frame")
+        prompt_parts.append(f"portrait of {char['visual']}")
+        prompt_parts.append("facing camera, neutral expression, upper body visible")
         items.append((char_id, f"Character: {char.get('name', char_id)}",
-                       " ".join(prompt_parts), 480, 640))
+                       ", ".join(filter(None, prompt_parts)), 480, 640))
 
     # Locations — landscape orientation (640×360)
     for loc_id, loc_desc in bible.get("world", {}).get("locations", {}).items():
-        # loc_id already contains the "loc_" prefix
-        prompt_parts = [loc_desc, "Establishing shot, cinematic wide angle, no people, empty scene."]
+        prompt_parts = []
         if style:   prompt_parts.append(style)
-        if setting: prompt_parts.append(f"Setting: {setting}")
-        if tone:    prompt_parts.append(f"Mood: {tone}")
+        if setting: prompt_parts.append(setting)
+        if tone:    prompt_parts.append(tone)
+        prompt_parts.append("cinematic video frame")
+        prompt_parts.append(loc_desc)
+        prompt_parts.append("establishing shot, wide angle, no people, empty scene")
         items.append((loc_id, f"Location: {loc_id}",
-                       ". ".join(filter(None, prompt_parts)), 640, 360))
+                       ", ".join(filter(None, prompt_parts)), 640, 360))
 
     refs_out = COMFYUI_DIR / "output" / "refs"
     print(f"  Generating {len(items)} reference images with FLUX T2I...")
