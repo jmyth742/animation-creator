@@ -152,6 +152,7 @@ def delete_scene(
 def regenerate_scene(
     scene_id: int,
     quality: str = "draft",
+    denoise: float = 0.82,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> dict:
@@ -166,7 +167,7 @@ def regenerate_scene(
 
     threading.Thread(
         target=generate_single_scene_job,
-        args=(scene_id, quality),
+        args=(scene_id, quality, denoise),
         daemon=True,
     ).start()
 

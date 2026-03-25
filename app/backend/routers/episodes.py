@@ -263,6 +263,7 @@ def produce_episode(
     episode_id: int,
     quality: str = "draft",
     force: bool = False,
+    denoise: float = 0.82,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ProduceResponse:
@@ -285,7 +286,7 @@ def produce_episode(
 
     thread = threading.Thread(
         target=produce_episode_job,
-        args=(job.id, episode_id, quality, force),
+        args=(job.id, episode_id, quality, force, denoise),
         daemon=True,
     )
     thread.start()

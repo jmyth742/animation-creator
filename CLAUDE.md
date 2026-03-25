@@ -135,7 +135,9 @@ Character `visual_description` is injected into every scene prompt via `build_sc
 | `build_scene_prompt(scene, bible)` | ~596 | Builds video prompt with character descriptions injected |
 | `get_scene_seed_image(scene, series, chain)` | ~1223 | Picks I2V seed: char ref → location ref → previous frame chain |
 | `build_t2v_workflow(prompt, seed, prefix, frames, steps)` | ~542 | T2V ComfyUI workflow dict |
-| `build_i2v_workflow(prompt, img, seed, prefix, frames, steps)` | ~562 | I2V ComfyUI workflow dict |
+| `build_i2v_workflow(prompt, img, seed, prefix, frames, steps, denoise)` | ~562 | I2V ComfyUI workflow dict with ImageScale + denoise control |
+| `build_negative_prompt(scene)` | ~645 | Universal negatives for all scenes; extra for dialogue |
+| `DENOISE_PRESETS` / `DEFAULT_DENOISE` | ~76 | Faithful (0.70), Balanced (0.82), Creative (1.0) |
 | `queue_prompt(workflow)` | ~766 | POST to ComfyUI, returns prompt_id |
 | `poll_until_done(prompt_id)` | ~773 | Polls until complete (30min timeout) |
 | `find_latest_clip(prefix)` | ~814 | Finds most recent MP4 matching prefix in COMFYUI_OUTPUT |
@@ -171,7 +173,7 @@ Scene JSON fields: `id`, `location`, `characters[]` (keys like `char_1`), `clip_
 | `POST /scenes/{id}/regenerate?quality=draft\|quality` | Regenerate single clip; polls via scene.status |
 | `POST /characters/{id}/generate-portrait` | Generate 3 portrait candidates via ComfyUI |
 | `POST /characters/{id}/select-portrait` | Set canonical portrait; copies to `char_{id}.png` |
-| `POST /episodes/{id}/produce?quality=draft\|quality` | Full episode production job |
+| `POST /episodes/{id}/produce?quality=draft\|quality&denoise=0.82` | Full episode production; denoise controls reference fidelity |
 | `POST /jobs/{id}/cancel` | Cancel a running production job; interrupts ComfyUI |
 | `GET /ws/{job_id}?token=<jwt>` | WebSocket: streams job progress |
 | `POST /projects/{id}/generate-scripts` | Claude writes all episode scripts |

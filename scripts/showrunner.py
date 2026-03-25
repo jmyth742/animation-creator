@@ -73,6 +73,14 @@ QUALITY_STEPS = {
     "final": 50,   # ~5min per clip — maximum quality
 }
 
+# I2V denoise presets — lower = closer to reference image
+DENOISE_PRESETS = {
+    "faithful": 0.70,   # Strong reference adherence
+    "balanced": 0.82,   # Good fidelity + natural motion
+    "creative": 1.0,    # Full freedom (legacy behavior)
+}
+DEFAULT_DENOISE = 0.82
+
 # ─── Ambient audio system ─────────────────────────────────────────────
 #
 # Each location type maps to an FFmpeg filter chain that synthesises a
@@ -559,24 +567,30 @@ def build_t2v_workflow(prompt: str, seed: int, clip_prefix: str, frames: int, ne
     }
 
 
-def build_i2v_workflow(prompt: str, image_name: str, seed: int, clip_prefix: str, frames: int, negative_prompt: str = "", steps: int = 15) -> dict:
+def build_i2v_workflow(prompt: str, image_name: str, seed: int, clip_prefix: str, frames: int, negative_prompt: str = "", steps: int = 15, denoise: float = DEFAULT_DENOISE) -> dict:
     return {
         "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": "hunyuanvideo1.5_480p_i2v_cfg_distilled-Q4_K_S.gguf"}},
         "2": {"class_type": "DualCLIPLoader", "inputs": {"clip_name1": "qwen_2.5_vl_7b_fp8_scaled.safetensors", "clip_name2": "byt5_small_glyphxl_fp16.safetensors", "type": "hunyuan_video_15"}},
         "3": {"class_type": "VAELoader", "inputs": {"vae_name": "hunyuanvideo15_vae_fp16.safetensors"}},
         "4": {"class_type": "CLIPVisionLoader", "inputs": {"clip_name": "sigclip_vision_patch14_384.safetensors"}},
         "5": {"class_type": "LoadImage", "inputs": {"image": image_name}},
-        "6": {"class_type": "CLIPVisionEncode", "inputs": {"clip_vision": ["4", 0], "image": ["5", 0], "crop": "center"}},
+        # Rescale reference image to output resolution so CLIPVision and I2V
+        # conditioning receive the same aspect ratio as the generated video.
+        "20": {"class_type": "ImageScale", "inputs": {
+            "image": ["5", 0], "upscale_method": "lanczos",
+            "width": 480, "height": 320, "crop": "center"
+        }},
+        "6": {"class_type": "CLIPVisionEncode", "inputs": {"clip_vision": ["4", 0], "image": ["20", 0], "crop": "center"}},
         "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
         "8": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": negative_prompt}},
         "9": {"class_type": "HunyuanVideo15ImageToVideo", "inputs": {
             "positive": ["7", 0], "negative": ["8", 0], "vae": ["3", 0],
             "width": 480, "height": 320, "length": frames, "batch_size": 1,
-            "start_image": ["5", 0], "clip_vision_output": ["6", 0]
+            "start_image": ["20", 0], "clip_vision_output": ["6", 0]
         }},
         "10": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": 5.0}},
         "11": {"class_type": "CFGGuider", "inputs": {"model": ["10", 0], "positive": ["9", 0], "negative": ["9", 1], "cfg": 1.0}},
-        "12": {"class_type": "BasicScheduler", "inputs": {"model": ["10", 0], "scheduler": "simple", "steps": steps, "denoise": 1.0}},
+        "12": {"class_type": "BasicScheduler", "inputs": {"model": ["10", 0], "scheduler": "simple", "steps": steps, "denoise": denoise}},
         "13": {"class_type": "RandomNoise", "inputs": {"noise_seed": seed}},
         "14": {"class_type": "KSamplerSelect", "inputs": {"sampler_name": "euler"}},
         "15": {"class_type": "SamplerCustomAdvanced", "inputs": {"noise": ["13", 0], "guider": ["11", 0], "sampler": ["14", 0], "sigmas": ["12", 0], "latent_image": ["9", 2]}},
@@ -644,11 +658,11 @@ def build_scene_prompt(scene: dict, bible: dict) -> str:
 
 def build_negative_prompt(scene: dict) -> str:
     """Return a negative prompt appropriate for the scene type."""
+    base = "low quality, blurry, distorted, deformed, ugly, watermark, text overlay"
     is_dialogue = bool(scene.get("dialogue"))
     if is_dialogue:
-        # Suppress motion artefacts that make dialogue clips hard to read
-        return "fast movement, shaky camera, motion blur, erratic motion, camera shake, blurry faces, extreme camera movement"
-    return ""
+        return f"{base}, fast movement, shaky camera, motion blur, erratic motion, camera shake, blurry faces, extreme camera movement"
+    return base
 
 
 # ─── Prompt enhancement via Claude ───────────────────────────────────
@@ -2089,7 +2103,7 @@ def cmd_produce(args):
             seed_image = get_scene_seed_image(scene, args.series, current_image)
 
         if seed_image:
-            wf = build_i2v_workflow(prompt, seed_image, seed, clip_prefix, frames, negative_prompt=neg, steps=args.steps)
+            wf = build_i2v_workflow(prompt, seed_image, seed, clip_prefix, frames, negative_prompt=neg, steps=args.steps, denoise=getattr(args, 'denoise', DEFAULT_DENOISE))
         else:
             wf = build_t2v_workflow(prompt, seed, clip_prefix, frames, negative_prompt=neg, steps=args.steps)
 

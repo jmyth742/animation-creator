@@ -224,6 +224,7 @@ def produce_episode_job(
     episode_id: int,
     quality: str = "draft",
     force: bool = False,
+    denoise: float = showrunner.DEFAULT_DENOISE,
 ) -> None:
     """
     Intended to run in a background threading.Thread.
@@ -290,6 +291,7 @@ def produce_episode_job(
             no_music=False,
             flagged_only=False,
             enhance=True,
+            denoise=denoise,
         )
 
         log_buf = io.StringIO()
@@ -437,7 +439,7 @@ def _archive_existing_clip(scene, project, prompt: str, quality: str, seed_image
 
 # ── Single-scene regeneration ─────────────────────────────────────────────────
 
-def generate_single_scene_job(scene_id: int, quality: str = "draft") -> None:
+def generate_single_scene_job(scene_id: int, quality: str = "draft", denoise: float = showrunner.DEFAULT_DENOISE) -> None:
     """
     Intended to run in a background threading.Thread.
 
@@ -506,10 +508,10 @@ def generate_single_scene_job(scene_id: int, quality: str = "draft") -> None:
 
         if seed_image:
             wf = showrunner.build_i2v_workflow(
-                prompt, seed_image, seed, clip_prefix, frames, steps
+                prompt, seed_image, seed, clip_prefix, frames, steps=steps, denoise=denoise
             )
         else:
-            wf = showrunner.build_t2v_workflow(prompt, seed, clip_prefix, frames, steps)
+            wf = showrunner.build_t2v_workflow(prompt, seed, clip_prefix, frames, steps=steps)
 
         prompt_id = showrunner.queue_prompt(wf)
         success = showrunner.poll_until_done(prompt_id)
@@ -681,8 +683,8 @@ def generate_location_reference(location_id: int, db) -> list[str]:
         candidate_label = f"{prefix}_v{i + 1}"
         out_png = ref_dir / f"{candidate_label}.png"
 
-        # Use FLUX T2I (landscape orientation — 640×360 matches video aspect ratio)
-        wf = showrunner.build_t2i_workflow(prompt, seed=seed, prefix=candidate_label, width=640, height=360)
+        # Use FLUX T2I (landscape — matches video output resolution 480×320)
+        wf = showrunner.build_t2i_workflow(prompt, seed=seed, prefix=candidate_label, width=480, height=320)
 
         try:
             prompt_id = showrunner.queue_prompt(wf)
@@ -786,8 +788,8 @@ def generate_scene_reference(scene_id: int, db) -> list[str]:
         candidate_label = f"{prefix}_v{i + 1}"
         out_png = ref_dir / f"{candidate_label}.png"
 
-        # 640×360 landscape — matches video clip aspect ratio
-        wf = showrunner.build_t2i_workflow(prompt, seed=seed, prefix=candidate_label, width=640, height=360)
+        # 480×320 landscape — matches video output resolution exactly
+        wf = showrunner.build_t2i_workflow(prompt, seed=seed, prefix=candidate_label, width=480, height=320)
 
         try:
             prompt_id = showrunner.queue_prompt(wf)

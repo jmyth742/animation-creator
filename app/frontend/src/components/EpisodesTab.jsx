@@ -231,21 +231,43 @@ function SceneRow({ scene, onEdit, onDelete, onRegenerate, onOpenSceneStudio, on
             </button>
             <div className="relative group/regen">
               <button
-                onClick={() => onRegenerate(scene, 'draft')}
+                onClick={() => onRegenerate(scene, 'draft', 0.82)}
                 disabled={isGenerating}
                 className="p-1.5 border border-zinc-600 text-zinc-400 hover:text-accent-400 hover:border-accent-600 disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Regenerate clip">
                 <RefreshCw className={`w-3 h-3 ${isGenerating ? 'animate-spin' : ''}`} />
               </button>
-              <div className="absolute right-0 top-full mt-1 bg-zinc-800 border-2 border-zinc-600 z-20 hidden group-hover/regen:block min-w-36"
+              <div className="absolute right-0 top-full mt-1 bg-zinc-800 border-2 border-zinc-600 z-20 hidden group-hover/regen:block min-w-48"
                 style={{ boxShadow: '3px 3px 0 0 #000' }}>
-                <button onClick={() => onRegenerate(scene, 'draft')}
-                  className="w-full text-left px-3 py-2 text-retro text-zinc-300 hover:bg-zinc-700 border-b border-zinc-700" style={{ fontSize: '16px' }}>
-                  ⟳ DRAFT (FAST)
+                <div className="px-3 pt-2 pb-1">
+                  <p className="font-pixel text-zinc-600" style={{ fontSize: '5px' }}>DRAFT (FAST)</p>
+                </div>
+                <button onClick={() => onRegenerate(scene, 'draft', 0.70)}
+                  className="w-full text-left px-3 py-1.5 text-retro text-zinc-300 hover:bg-zinc-700" style={{ fontSize: '15px' }}>
+                  ⟳ FAITHFUL
                 </button>
-                <button onClick={() => onRegenerate(scene, 'quality')}
-                  className="w-full text-left px-3 py-2 text-retro text-zinc-300 hover:bg-zinc-700" style={{ fontSize: '16px' }}>
-                  ★ QUALITY (SLOW)
+                <button onClick={() => onRegenerate(scene, 'draft', 0.82)}
+                  className="w-full text-left px-3 py-1.5 text-retro text-zinc-300 hover:bg-zinc-700" style={{ fontSize: '15px' }}>
+                  ⟳ BALANCED
+                </button>
+                <button onClick={() => onRegenerate(scene, 'draft', 1.0)}
+                  className="w-full text-left px-3 py-1.5 text-retro text-zinc-300 hover:bg-zinc-700 border-b border-zinc-700" style={{ fontSize: '15px' }}>
+                  ⟳ CREATIVE
+                </button>
+                <div className="px-3 pt-2 pb-1">
+                  <p className="font-pixel text-zinc-600" style={{ fontSize: '5px' }}>QUALITY (SLOW)</p>
+                </div>
+                <button onClick={() => onRegenerate(scene, 'quality', 0.70)}
+                  className="w-full text-left px-3 py-1.5 text-retro text-zinc-300 hover:bg-zinc-700" style={{ fontSize: '15px' }}>
+                  ★ FAITHFUL
+                </button>
+                <button onClick={() => onRegenerate(scene, 'quality', 0.82)}
+                  className="w-full text-left px-3 py-1.5 text-retro text-zinc-300 hover:bg-zinc-700" style={{ fontSize: '15px' }}>
+                  ★ BALANCED
+                </button>
+                <button onClick={() => onRegenerate(scene, 'quality', 1.0)}
+                  className="w-full text-left px-3 py-1.5 text-retro text-zinc-300 hover:bg-zinc-700" style={{ fontSize: '15px' }}>
+                  ★ CREATIVE
                 </button>
               </div>
             </div>
@@ -317,10 +339,9 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
     catch { alert('Failed to delete scene.') }
   }
 
-  const handleRegenerate = async (scene, quality) => {
+  const handleRegenerate = async (scene, quality, denoise = 0.82) => {
     try {
-      await post(`/scenes/${scene.id}/regenerate?quality=${quality}`)
-      // Optimistically mark as generating so the spinner appears immediately
+      await post(`/scenes/${scene.id}/regenerate?quality=${quality}&denoise=${denoise}`)
       setScenes((prev) => prev.map((s) => s.id === scene.id ? { ...s, status: 'generating' } : s))
     } catch (err) {
       alert(err.response?.data?.detail || 'Failed to start regeneration.')
@@ -333,10 +354,10 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
     catch { alert('Failed to delete episode.') }
   }
 
-  const handleProduce = async (quality, force = false) => {
+  const handleProduce = async (quality, force = false, denoise = 0.82) => {
     setProducing(true)
     try {
-      const result = await post(`/episodes/${episode.id}/produce?quality=${quality}&force=${force}`)
+      const result = await post(`/episodes/${episode.id}/produce?quality=${quality}&force=${force}&denoise=${denoise}`)
       onProduce(result.job_id, { episodeTitle: episode.title, seriesSlug: project.series_slug, episodeNumber: episode.number })
     } catch (err) {
       alert(err.response?.data?.detail || 'Failed to start production.')
@@ -369,21 +390,39 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
             <button onClick={() => handleProduce('draft')} disabled={producing} className="btn-pixel-sm">
               <Play className="w-2.5 h-2.5" />{producing ? 'STARTING...' : 'PRODUCE'}
             </button>
-            <div className="absolute right-0 top-full mt-1 bg-zinc-800 border-2 border-zinc-600 z-10 hidden group-hover/produce:block min-w-48"
+            <div className="absolute right-0 top-full mt-1 bg-zinc-800 border-2 border-zinc-600 z-10 hidden group-hover/produce:block min-w-56"
               style={{ boxShadow: '3px 3px 0 0 #000' }}>
-              <button onClick={() => handleProduce('draft')} className="w-full text-left px-3 py-2 text-retro text-zinc-300 hover:bg-zinc-700 border-b border-zinc-700" style={{ fontSize: '16px' }}>
-                ▶ DRAFT (FAST)
+              <div className="px-3 pt-2 pb-1">
+                <p className="font-pixel text-zinc-600 mb-1" style={{ fontSize: '5px' }}>DRAFT (FAST)</p>
+              </div>
+              <button onClick={() => handleProduce('draft', false, 0.70)} className="w-full text-left px-3 py-1.5 text-retro text-zinc-300 hover:bg-zinc-700" style={{ fontSize: '15px' }}>
+                ▶ FAITHFUL <span className="text-zinc-600 ml-1">— close to refs</span>
               </button>
-              <button onClick={() => handleProduce('quality')} className="w-full text-left px-3 py-2 text-retro text-zinc-300 hover:bg-zinc-700 border-b border-zinc-700" style={{ fontSize: '16px' }}>
-                ★ QUALITY (SLOW)
+              <button onClick={() => handleProduce('draft', false, 0.82)} className="w-full text-left px-3 py-1.5 text-retro text-zinc-300 hover:bg-zinc-700" style={{ fontSize: '15px' }}>
+                ▶ BALANCED <span className="text-zinc-600 ml-1">— default</span>
+              </button>
+              <button onClick={() => handleProduce('draft', false, 1.0)} className="w-full text-left px-3 py-1.5 text-retro text-zinc-300 hover:bg-zinc-700 border-b border-zinc-700" style={{ fontSize: '15px' }}>
+                ▶ CREATIVE <span className="text-zinc-600 ml-1">— full freedom</span>
+              </button>
+              <div className="px-3 pt-2 pb-1">
+                <p className="font-pixel text-zinc-600 mb-1" style={{ fontSize: '5px' }}>QUALITY (SLOW)</p>
+              </div>
+              <button onClick={() => handleProduce('quality', false, 0.70)} className="w-full text-left px-3 py-1.5 text-retro text-zinc-300 hover:bg-zinc-700" style={{ fontSize: '15px' }}>
+                ★ FAITHFUL <span className="text-zinc-600 ml-1">— close to refs</span>
+              </button>
+              <button onClick={() => handleProduce('quality', false, 0.82)} className="w-full text-left px-3 py-1.5 text-retro text-zinc-300 hover:bg-zinc-700" style={{ fontSize: '15px' }}>
+                ★ BALANCED <span className="text-zinc-600 ml-1">— default</span>
+              </button>
+              <button onClick={() => handleProduce('quality', false, 1.0)} className="w-full text-left px-3 py-1.5 text-retro text-zinc-300 hover:bg-zinc-700 border-b border-zinc-700" style={{ fontSize: '15px' }}>
+                ★ CREATIVE <span className="text-zinc-600 ml-1">— full freedom</span>
               </button>
               <div className="px-3 pt-2 pb-1">
                 <p className="font-pixel text-zinc-600 mb-1" style={{ fontSize: '5px' }}>FORCE REGENERATE (rebuilds chain)</p>
               </div>
-              <button onClick={() => handleProduce('draft', true)} className="w-full text-left px-3 py-2 text-retro text-amber-400 hover:bg-zinc-700 border-b border-zinc-700" style={{ fontSize: '16px' }}>
+              <button onClick={() => handleProduce('draft', true, 0.82)} className="w-full text-left px-3 py-1.5 text-retro text-amber-400 hover:bg-zinc-700 border-b border-zinc-700" style={{ fontSize: '15px' }}>
                 ↺ DRAFT + REGEN ALL
               </button>
-              <button onClick={() => handleProduce('quality', true)} className="w-full text-left px-3 py-2 text-retro text-amber-400 hover:bg-zinc-700" style={{ fontSize: '16px' }}>
+              <button onClick={() => handleProduce('quality', true, 0.82)} className="w-full text-left px-3 py-1.5 text-retro text-amber-400 hover:bg-zinc-700" style={{ fontSize: '15px' }}>
                 ↺ QUALITY + REGEN ALL
               </button>
             </div>
