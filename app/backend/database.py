@@ -55,6 +55,7 @@ def _migrate_db() -> None:
             seed_image VARCHAR(1024),
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )""",
+        "ALTER TABLE generation_jobs ADD COLUMN cancelled_at DATETIME",
     ]
     with engine.connect() as conn:
         for stmt in migrations:

@@ -167,6 +167,22 @@ def export_project_to_files(project_id: int, db) -> tuple[str, Path]:
     return series_slug, series_path
 
 
+# ── Background export (auto-sync on save) ────────────────────────────────────
+
+def export_project_in_background(project_id: int) -> None:
+    """Fire-and-forget export so DB → JSON files stay in sync after every save."""
+    def _run():
+        db = SessionLocal()
+        try:
+            export_project_to_files(project_id, db)
+        except Exception:
+            pass  # Best-effort; next production run will export anyway
+        finally:
+            db.close()
+
+    threading.Thread(target=_run, daemon=True).start()
+
+
 # ── Scene clip back-fill ──────────────────────────────────────────────────────
 
 def _backfill_scene_clips(episode_id: int, db) -> None:
@@ -283,6 +299,9 @@ def produce_episode_job(
         # We update progress_pct by counting clips that appear in COMFYUI_OUTPUT.
         ep_prefix = f"ep{episode.number:02d}"
 
+        # Event to signal cancellation from progress thread to main thread
+        cancel_event = threading.Event()
+
         def _progress_thread() -> None:
             """Lightweight poller — uses its own DB session to avoid contention."""
             pdb = SessionLocal()
@@ -293,6 +312,16 @@ def produce_episode_job(
                         j = pdb.get(GenerationJob, job_id)
                         pdb.refresh(j)
                         if j is None or j.status in ("complete", "error"):
+                            break
+                        # Check if job was cancelled
+                        if j.status == "cancelled" or j.cancelled_at is not None:
+                            cancel_event.set()
+                            # Interrupt ComfyUI
+                            try:
+                                import requests as _requests
+                                _requests.post("http://localhost:8188/interrupt", timeout=3)
+                            except Exception:
+                                pass
                             break
                         if expected_clips > 0 and settings.COMFYUI_OUTPUT.exists():
                             found = len(
@@ -324,6 +353,15 @@ def produce_episode_job(
         # Final flush
         job = db.get(GenerationJob, job_id)
         if job is None:
+            return
+
+        # If cancelled, leave the cancelled status and don't overwrite
+        if cancel_event.is_set() or job.status == "cancelled":
+            job.log_text = log_buf.getvalue() + "\n\n[CANCELLED] Job cancelled by user."
+            if not job.completed_at:
+                job.completed_at = datetime.datetime.now(datetime.timezone.utc)
+            job.status = "cancelled"
+            db.commit()
             return
 
         job.log_text = log_buf.getvalue()

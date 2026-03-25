@@ -11,7 +11,7 @@ from auth import get_current_user
 from config import settings
 from database import get_db
 from models import Character, Project, User
-from pipeline import generate_character_portrait, slugify
+from pipeline import generate_character_portrait, export_project_in_background, slugify
 from schemas import (
     CharacterCreate,
     CharacterRead,
@@ -93,6 +93,7 @@ def create_character(
     db.add(char)
     db.commit()
     db.refresh(char)
+    export_project_in_background(project_id)
     return _character_read(char)
 
 
@@ -124,6 +125,7 @@ def update_character(
 
     db.commit()
     db.refresh(char)
+    export_project_in_background(char.project_id)
     return _character_read(char)
 
 
@@ -136,8 +138,10 @@ def delete_character(
     current_user: User = Depends(get_current_user),
 ) -> dict:
     char = _get_character_or_404(character_id, current_user, db)
+    project_id = char.project_id
     db.delete(char)
     db.commit()
+    export_project_in_background(project_id)
     return {"ok": True}
 
 

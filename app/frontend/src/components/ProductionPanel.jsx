@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { X, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Copy } from 'lucide-react'
+import { X, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Copy, Square } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
-import { get } from '../api/client'
+import { get, post } from '../api/client'
 
 export default function ProductionPanel({ jobId, episodeTitle, onClose }) {
   const [progress, setProgress] = useState(0)
@@ -11,6 +11,7 @@ export default function ProductionPanel({ jobId, episodeTitle, onClose }) {
   const [wsError, setWsError] = useState(null)   // distinct from job error
   const [logExpanded, setLogExpanded] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
   const logRef = useRef(null)
   const token = useAuthStore((s) => s.token)
 
@@ -61,8 +62,21 @@ export default function ProductionPanel({ jobId, episodeTitle, onClose }) {
     return () => ws.close()
   }, [jobId, token])
 
-  const isDone = jobStatus === 'complete' || jobStatus === 'error'
+  const handleCancel = async () => {
+    if (cancelling) return
+    setCancelling(true)
+    try {
+      await post(`/jobs/${jobId}/cancel`)
+      setJobStatus('cancelled')
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to cancel job.')
+      setCancelling(false)
+    }
+  }
+
+  const isDone = jobStatus === 'complete' || jobStatus === 'error' || jobStatus === 'cancelled'
   const isError = jobStatus === 'error'
+  const isCancelled = jobStatus === 'cancelled'
 
   // Extract the most relevant error line from the log for a summary
   const errorSummary = (() => {
@@ -82,10 +96,11 @@ export default function ProductionPanel({ jobId, episodeTitle, onClose }) {
   }
 
   const barClass = jobStatus === 'complete' ? 'hp-bar-fill-green'
-    : jobStatus === 'error' ? 'hp-bar-fill-red' : 'hp-bar-fill'
+    : jobStatus === 'error' ? 'hp-bar-fill-red'
+    : isCancelled ? 'hp-bar-fill-amber' : 'hp-bar-fill'
 
   return (
-    <div className={`fixed bottom-0 left-0 right-0 z-50 bg-zinc-900 border-t-2 ${isError ? 'border-px-red' : 'border-accent-700'}`}
+    <div className={`fixed bottom-0 left-0 right-0 z-50 bg-zinc-900 border-t-2 ${isError ? 'border-px-red' : isCancelled ? 'border-amber-500' : 'border-accent-700'}`}
       style={{ boxShadow: '0 -4px 0 0 #000' }}>
       <div className="max-w-7xl mx-auto px-6 py-4">
 
@@ -94,17 +109,30 @@ export default function ProductionPanel({ jobId, episodeTitle, onClose }) {
           <div className="flex items-center gap-3">
             {jobStatus === 'complete' ? <CheckCircle className="w-4 h-4 text-px-green shrink-0" />
               : jobStatus === 'error' ? <AlertCircle className="w-4 h-4 text-px-red shrink-0" />
+              : isCancelled ? <Square className="w-4 h-4 text-amber-400 shrink-0" />
               : <span className="pixel-spinner shrink-0" />}
             <div>
-              <p className={`font-pixel ${isError ? 'text-px-red' : 'text-zinc-100'}`} style={{ fontSize: '8px' }}>
+              <p className={`font-pixel ${isError ? 'text-px-red' : isCancelled ? 'text-amber-400' : 'text-zinc-100'}`} style={{ fontSize: '8px' }}>
                 {jobStatus === 'complete' ? '✔ PRODUCTION COMPLETE'
                   : jobStatus === 'error' ? '✖ PRODUCTION FAILED'
+                  : isCancelled ? '■ PRODUCTION CANCELLED'
                   : '▶▶ PRODUCING...'}
               </p>
               <p className="text-retro text-zinc-500" style={{ fontSize: '15px' }}>{episodeTitle}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {!isDone && (
+              <button
+                onClick={handleCancel}
+                disabled={cancelling}
+                className="flex items-center gap-1.5 font-pixel text-px-red hover:text-red-300 border border-px-red/50 hover:border-px-red px-2 py-1 disabled:opacity-40"
+                style={{ fontSize: '6px' }}
+              >
+                <Square className="w-2.5 h-2.5" />
+                {cancelling ? 'STOPPING...' : 'STOP'}
+              </button>
+            )}
             {finalPath && (
               <a href={finalPath} target="_blank" rel="noopener noreferrer" className="btn-pixel-sm">
                 ▶ WATCH

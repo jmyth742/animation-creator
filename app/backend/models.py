@@ -183,13 +183,14 @@ class GenerationJob(Base):
     id: int = Column(Integer, primary_key=True, index=True)
     episode_id: int = Column(Integer, ForeignKey("episodes.id"), nullable=False, index=True)
 
-    # "pending" | "running" | "complete" | "error"
+    # "pending" | "running" | "complete" | "error" | "cancelled"
     status: str = Column(String(32), nullable=False, default="pending")
     progress_pct: int = Column(Integer, nullable=False, default=0)
     log_text: str = Column(Text, nullable=False, default="")
 
     created_at: datetime.datetime = Column(DateTime, default=_now, nullable=False)
     completed_at: datetime.datetime | None = Column(DateTime, nullable=True)
+    cancelled_at: datetime.datetime | None = Column(DateTime, nullable=True)
 
     episode = relationship("Episode", back_populates="generation_jobs")
 

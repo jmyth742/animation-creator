@@ -82,6 +82,11 @@ showrunner.py (scripts/)
 4. Edge-TTS + FFmpeg stitch audio and clips
 5. `_backfill_scene_clips()` updates every `scene.output_clip_path` + `scene.status` in the DB after completion so previews appear in the UI
 6. Progress streamed to UI via `GET /ws/{job_id}?token=<jwt>`
+7. **Cancel**: `POST /jobs/{id}/cancel` sets `cancelled_at`, progress thread detects it, sends `/interrupt` to ComfyUI, job ends with status `"cancelled"`
+
+### Auto-Export (DB → JSON sync)
+
+Every create/update/delete on characters, locations, scenes, and episodes triggers `export_project_in_background()` — a fire-and-forget thread that writes `bible.json` + episode JSONs. This keeps the on-disk files in sync with the DB at all times, eliminating the previous dual source-of-truth issue where files could go stale between production runs.
 
 ### Single-Scene Regeneration Data Flow
 
@@ -117,7 +122,9 @@ Character `visual_description` is injected into every scene prompt via `build_sc
 | `app/backend/routers/jobs.py` | Job status REST + WebSocket (`/ws/{job_id}?token=`) |
 | `app/frontend/src/components/EpisodesTab.jsx` | Episode/scene list, per-scene regenerate button, inline preview player, 3s polling |
 | `app/frontend/src/components/CharacterModal.jsx` | Character form + portrait generation + canonical portrait selection |
+| `app/frontend/src/components/TheaterTab.jsx` | Episode viewer — lists finished episodes with inline video player |
 | `app/frontend/src/components/CharacterCard.jsx` | Character card with canonical portrait star badge |
+| `app/backend/templates.py` | Pre-seeded project templates (noir-detective, space-frontier, folklore-horror) |
 | `workflows/t2v_v15_480p_fast.json` | Default ComfyUI T2V workflow |
 | `workflows/i2v_v15_480p.json` | I2V workflow (used for chaining + character ref seeding) |
 
@@ -165,8 +172,12 @@ Scene JSON fields: `id`, `location`, `characters[]` (keys like `char_1`), `clip_
 | `POST /characters/{id}/generate-portrait` | Generate 3 portrait candidates via ComfyUI |
 | `POST /characters/{id}/select-portrait` | Set canonical portrait; copies to `char_{id}.png` |
 | `POST /episodes/{id}/produce?quality=draft\|quality` | Full episode production job |
+| `POST /jobs/{id}/cancel` | Cancel a running production job; interrupts ComfyUI |
 | `GET /ws/{job_id}?token=<jwt>` | WebSocket: streams job progress |
 | `POST /projects/{id}/generate-scripts` | Claude writes all episode scripts |
+| `GET /projects/templates` | List available project templates |
+| `POST /projects/from-template?template_id=X` | Create project pre-seeded from template |
+| `GET /projects/{id}/theater` | List episodes with final video paths for viewing |
 
 ---
 

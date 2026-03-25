@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
@@ -33,6 +34,42 @@ def get_job(
     if job.episode.project.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden.")
     return GenerationJobRead.model_validate(job)
+
+
+# ── POST /jobs/{id}/cancel ───────────────────────────────────────────────────
+
+@router.post("/jobs/{job_id}/cancel")
+def cancel_job(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """Request cancellation of a running production job."""
+    job = db.get(GenerationJob, job_id)
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found.")
+    if job.episode.project.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden.")
+    if job.status not in ("pending", "running"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Job is already {job.status}.",
+        )
+
+    job.cancelled_at = datetime.datetime.now(datetime.timezone.utc)
+    job.status = "cancelled"
+    job.completed_at = datetime.datetime.now(datetime.timezone.utc)
+    job.log_text = (job.log_text or "") + "\n\n[CANCELLED] Job cancelled by user."
+    db.commit()
+
+    # Try to interrupt the current ComfyUI generation
+    import requests as _requests
+    try:
+        _requests.post("http://localhost:8188/interrupt", timeout=3)
+    except Exception:
+        pass  # ComfyUI may not be running — that's fine
+
+    return {"ok": True, "status": "cancelled"}
 
 
 # ── WebSocket /ws/{job_id} ────────────────────────────────────────────────────
@@ -93,7 +130,7 @@ async def job_websocket(websocket: WebSocket, job_id: int, token: str | None = N
                     )
                     break
 
-                is_terminal = job.status in ("complete", "error")
+                is_terminal = job.status in ("complete", "error", "cancelled")
 
                 # Build a compact log excerpt (last 40 lines) to avoid huge payloads.
                 log_lines = job.log_text.splitlines() if job.log_text else []

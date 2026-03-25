@@ -1,19 +1,21 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Users, Tv, MapPin, Settings, RefreshCw, Film } from 'lucide-react'
+import { ArrowLeft, Users, Tv, MapPin, Settings, RefreshCw, Film, Clapperboard } from 'lucide-react'
 import { get } from '../api/client'
 import CharactersTab from '../components/CharactersTab'
 import EpisodesTab from '../components/EpisodesTab'
 import LocationsTab from '../components/LocationsTab'
+import TheaterTab from '../components/TheaterTab'
 import ProjectSettingsForm from '../components/ProjectSettingsForm'
 import ProductionPanel from '../components/ProductionPanel'
 import RebuildRefsModal from '../components/RebuildRefsModal'
 
 const TABS = [
-  { key: 'characters', label: 'PARTY',     Icon: Users   },
-  { key: 'locations',  label: 'WORLD MAP', Icon: MapPin  },
-  { key: 'episodes',   label: 'QUEST LOG', Icon: Tv      },
-  { key: 'settings',   label: 'OPTIONS',   Icon: Settings },
+  { key: 'characters', label: 'PARTY',     Icon: Users       },
+  { key: 'locations',  label: 'WORLD MAP', Icon: MapPin      },
+  { key: 'episodes',   label: 'QUEST LOG', Icon: Tv          },
+  { key: 'theater',    label: 'THEATER',   Icon: Clapperboard },
+  { key: 'settings',   label: 'OPTIONS',   Icon: Settings    },
 ]
 
 export default function ProjectPage() {
@@ -158,6 +160,9 @@ export default function ProjectPage() {
             onEpisodesChange={handleEpisodesChange}
             onProduce={handleProduce}
           />
+        )}
+        {activeTab === 'theater' && (
+          <TheaterTab projectId={id} />
         )}
         {activeTab === 'settings' && (
           <ProjectSettingsForm project={project} onUpdate={handleProjectUpdate} />

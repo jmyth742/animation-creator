@@ -11,7 +11,7 @@ from auth import get_current_user
 from config import settings
 from database import get_db
 from models import Location, Project, User
-from pipeline import generate_location_reference, slugify
+from pipeline import generate_location_reference, export_project_in_background, slugify
 from schemas import (
     LocationCreate,
     LocationRead,
@@ -90,6 +90,7 @@ def create_location(
     db.add(loc)
     db.commit()
     db.refresh(loc)
+    export_project_in_background(project_id)
     return _location_read(loc)
 
 
@@ -112,6 +113,7 @@ def update_location(
 
     db.commit()
     db.refresh(loc)
+    export_project_in_background(loc.project_id)
     return _location_read(loc)
 
 
@@ -124,8 +126,10 @@ def delete_location(
     current_user: User = Depends(get_current_user),
 ) -> dict:
     loc = _get_location_or_404(location_id, current_user, db)
+    project_id = loc.project_id
     db.delete(loc)
     db.commit()
+    export_project_in_background(project_id)
     return {"ok": True}
 
 

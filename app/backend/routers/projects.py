@@ -23,7 +23,9 @@ from schemas import (
     ProjectDetail,
     ProjectRead,
     ProjectUpdate,
+    TemplateListItem,
 )
+from templates import TEMPLATES
 
 router = APIRouter()
 
@@ -120,6 +122,81 @@ def create_project(
     # Create the series directory on disk
     (settings.SERIES_DIR / slug / "episodes").mkdir(parents=True, exist_ok=True)
 
+    return _project_read(project)
+
+
+# ── GET /projects/templates ──────────────────────────────────────────────────
+
+@router.get("/templates", response_model=list[TemplateListItem])
+def list_templates() -> list[TemplateListItem]:
+    """Return available project templates."""
+    return [
+        TemplateListItem(
+            id=t["id"],
+            title=t["title"],
+            description=t["description"],
+            genre=t["genre"],
+            character_count=len(t["characters"]),
+            location_count=len(t["locations"]),
+        )
+        for t in TEMPLATES
+    ]
+
+
+# ── POST /projects/from-template ────────────────────────────────────────────
+
+@router.post("/from-template", response_model=ProjectRead, status_code=status.HTTP_201_CREATED)
+def create_from_template(
+    template_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ProjectRead:
+    """Create a new project pre-seeded from a template."""
+    tpl = next((t for t in TEMPLATES if t["id"] == template_id), None)
+    if tpl is None:
+        raise HTTPException(status_code=404, detail="Template not found.")
+
+    base_slug = slugify(tpl["title"])
+    slug = base_slug
+    counter = 1
+    while db.query(Project).filter(Project.series_slug == slug).first():
+        slug = f"{base_slug}-{counter}"
+        counter += 1
+
+    project = Project(
+        user_id=current_user.id,
+        title=tpl["title"],
+        premise=tpl["premise"],
+        tone=tpl["tone"],
+        visual_style=tpl["visual_style"],
+        setting=tpl["setting"],
+        series_slug=slug,
+    )
+    db.add(project)
+    db.flush()
+
+    for char_data in tpl["characters"]:
+        db.add(Character(
+            project_id=project.id,
+            name=char_data["name"],
+            role=char_data.get("role", ""),
+            backstory=char_data.get("backstory", ""),
+            visual_description=char_data.get("visual_description", ""),
+            voice=char_data.get("voice", "en-GB-SoniaNeural"),
+            voice_notes=char_data.get("voice_notes", ""),
+        ))
+
+    for loc_data in tpl["locations"]:
+        db.add(Location(
+            project_id=project.id,
+            name=loc_data["name"],
+            slug=slugify(loc_data["name"]),
+            description=loc_data.get("description", ""),
+        ))
+
+    db.commit()
+    db.refresh(project)
+    (settings.SERIES_DIR / slug / "episodes").mkdir(parents=True, exist_ok=True)
     return _project_read(project)
 
 
@@ -240,6 +317,44 @@ def get_regen_clips_status(
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found.")
     return job
+
+
+# ── GET /projects/{id}/theater ────────────────────────────────────────────────
+
+@router.get("/{project_id}/theater")
+def get_theater(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[dict]:
+    """Return finished episodes with their final video paths for the Theater view."""
+    project = _get_project_or_404(project_id, db)
+    _assert_owner(project, current_user)
+
+    series_slug = project.series_slug
+    results = []
+    for ep in sorted(project.episodes, key=lambda e: e.number):
+        ep_dir = settings.OUTPUT_DIR / series_slug / f"ep{ep.number:02d}"
+        video_path = None
+        for candidate_name in [
+            f"ep{ep.number:02d}_final_graded.mp4",
+            f"ep{ep.number:02d}_final.mp4",
+        ]:
+            candidate = ep_dir / candidate_name
+            if candidate.exists():
+                rel = candidate.relative_to(settings.OUTPUT_DIR)
+                video_path = f"/static/output/{rel}"
+                break
+
+        results.append({
+            "id": ep.id,
+            "number": ep.number,
+            "title": ep.title,
+            "summary": ep.summary,
+            "video_path": video_path,
+            "scene_count": len(ep.scenes),
+        })
+    return results
 
 
 # ── DELETE /projects/{id} ─────────────────────────────────────────────────────

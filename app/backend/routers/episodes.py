@@ -22,7 +22,7 @@ from models import (
     SceneCharacter,
     User,
 )
-from pipeline import produce_episode_job
+from pipeline import produce_episode_job, export_project_in_background
 from schemas import (
     CharacterRead,
     EpisodeCreate,
@@ -135,6 +135,7 @@ def create_episode(
     db.add(ep)
     db.commit()
     db.refresh(ep)
+    export_project_in_background(project_id)
     return _episode_read_no_scenes(ep)
 
 
@@ -166,6 +167,7 @@ def update_episode(
 
     db.commit()
     db.refresh(ep)
+    export_project_in_background(ep.project_id)
     return _episode_read_no_scenes(ep)
 
 
@@ -178,8 +180,10 @@ def delete_episode(
     current_user: User = Depends(get_current_user),
 ) -> dict:
     ep = _get_episode_or_404(episode_id, current_user, db)
+    project_id = ep.project_id
     db.delete(ep)
     db.commit()
+    export_project_in_background(project_id)
     return {"ok": True}
 
 
@@ -248,6 +252,7 @@ def create_scene(
 
     db.commit()
     db.refresh(scene)
+    export_project_in_background(ep.project_id)
     return _scene_read(scene, db)
 
 

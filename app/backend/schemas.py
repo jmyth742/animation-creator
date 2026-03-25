@@ -281,6 +281,15 @@ class ProduceResponse(BaseModel):
     message: str
 
 
+class TemplateListItem(BaseModel):
+    id: str
+    title: str
+    description: str
+    genre: str
+    character_count: int
+    location_count: int
+
+
 # ── Forward-ref resolution ────────────────────────────────────────────────────
 # These must come after all classes are defined.
 

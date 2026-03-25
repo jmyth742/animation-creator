@@ -14,7 +14,7 @@ from auth import get_current_user
 from database import get_db
 from models import Character, Episode, Location, Scene, SceneCharacter, SceneClipVersion, User
 from config import settings
-from pipeline import generate_scene_reference, generate_single_scene_job
+from pipeline import generate_scene_reference, generate_single_scene_job, export_project_in_background
 from schemas import (
     CharacterRead,
     SceneClipVersionRead,
@@ -126,6 +126,7 @@ def update_scene(
 
     db.commit()
     db.refresh(scene)
+    export_project_in_background(scene.episode.project_id)
     return _scene_read(scene, db)
 
 
@@ -138,8 +139,10 @@ def delete_scene(
     current_user: User = Depends(get_current_user),
 ) -> dict:
     scene = _get_scene_or_404(scene_id, current_user, db)
+    project_id = scene.episode.project_id
     db.delete(scene)
     db.commit()
+    export_project_in_background(project_id)
     return {"ok": True}
 
 
@@ -267,4 +270,5 @@ def reorder_scenes(
             scene.order_idx = id_to_order[scene.id]
 
     db.commit()
+    export_project_in_background(ep.project_id)
     return {"ok": True, "updated": len(id_to_order)}
