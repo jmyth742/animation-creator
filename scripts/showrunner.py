@@ -100,11 +100,13 @@ MODEL_CONFIGS = {
         "lora_loader": "LoraLoaderModelOnly",
     },
     "wan": {
-        "label": "WAN 2.1 (14B)",
+        "label": "WAN 2.2 (A14B dual-model)",
         "fps": 16,
         "cfg": 5.0,
         "sampler": "uni_pc_bh2",
         "scheduler": "simple",
+        "dual_model": True,  # WAN 2.2 uses high-noise + low-noise model switching
+        "timestep_boundary": 0.875,  # Switch from high→low noise model at this % of steps
         "clip_lengths": {
             "short":  {"frames": 33, "seconds": 2.1},
             "medium": {"frames": 49, "seconds": 3.1},
@@ -113,15 +115,19 @@ MODEL_CONFIGS = {
         "quality_steps": {"draft": 15, "good": 25, "final": 40},
         "resolutions": {
             "480p": {
-                "width": 832, "height": 480, "shift": 8.0,
-                "t2v_unet": "wan2.1-t2v-14b-Q5_K_S.gguf",
-                "i2v_unet": "wan2.1-i2v-14b-480p-Q5_K_S.gguf",
+                "width": 832, "height": 480, "shift": 12.0,
+                "t2v_unet": "wan2.2_t2v_high_noise_14B_Q4_K_S.gguf",
+                "t2v_unet_low": "wan2.2_t2v_low_noise_14B_Q4_K_S.gguf",
+                "i2v_unet": "wan2.2_i2v_high_noise_14B_Q4_K_S.gguf",
+                "i2v_unet_low": "wan2.2_i2v_low_noise_14B_Q4_K_S.gguf",
                 "min_vram_gb": 12, "label": "480p (832×480)",
             },
             "720p": {
-                "width": 1280, "height": 720, "shift": 8.0,
-                "t2v_unet": "wan2.1-t2v-14b-Q5_K_S.gguf",
-                "i2v_unet": "wan2.1-i2v-14b-480p-Q5_K_S.gguf",
+                "width": 1280, "height": 720, "shift": 12.0,
+                "t2v_unet": "wan2.2_t2v_high_noise_14B_Q4_K_S.gguf",
+                "t2v_unet_low": "wan2.2_t2v_low_noise_14B_Q4_K_S.gguf",
+                "i2v_unet": "wan2.2_i2v_high_noise_14B_Q4_K_S.gguf",
+                "i2v_unet_low": "wan2.2_i2v_low_noise_14B_Q4_K_S.gguf",
                 "min_vram_gb": 24, "label": "720p (1280×720)",
             },
         },
@@ -130,7 +136,7 @@ MODEL_CONFIGS = {
             "clip_type": "wan",
         },
         "vae": "Wan2.1_VAE.pth",
-        "clip_vision": "sigclip_vision_patch14_384.safetensors",  # Reuse existing
+        "clip_vision": "sigclip_vision_patch14_384.safetensors",
         "lora_loader": "LoraLoaderModelOnly",
     },
 }
@@ -853,34 +859,65 @@ def build_wan_t2v_workflow(prompt: str, seed: int, clip_prefix: str, frames: int
                             loras: list[tuple[str, float]] | None = None,
                             res_config: dict | None = None,
                             model_config: dict | None = None) -> dict:
-    """Build a WAN 2.1 T2V workflow for ComfyUI.
+    """Build a WAN 2.2 T2V workflow with dual-model (high/low noise) architecture.
 
-    Uses CLIPLoaderGGUF for the GGUF-quantized UMT5-XXL text encoder,
-    UnetLoaderGGUF for the GGUF-quantized DiT, and standard VAELoader.
+    WAN 2.2 uses two DiT models:
+      - High-noise model: handles early denoising steps (coarse structure)
+      - Low-noise model: handles later steps (fine detail refinement)
+    The switch happens at timestep_boundary (default 87.5% of steps).
+
+    This produces significantly better quality than single-model WAN 2.1
+    because each model is specialized for its noise level range.
     """
     mc = model_config or MODEL_CONFIGS["wan"]
     rc = res_config or list(mc["resolutions"].values())[0]
     te = mc["text_encoders"]
+    boundary = mc.get("timestep_boundary", 0.875)
+    boundary_step = int(steps * boundary)
 
     wf = {
-        "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc["t2v_unet"]}},
+        # Shared: text encoder, VAE, prompts
         "2": {"class_type": "CLIPLoaderGGUF", "inputs": {"clip_name": te["clip1"], "type": te["clip_type"]}},
         "3": {"class_type": "VAELoader", "inputs": {"vae_name": mc["vae"]}},
         "4": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
         "5": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": negative_prompt}},
-        "6": {"class_type": "EmptySD3LatentImage", "inputs": {"width": rc["width"], "height": rc["height"], "batch_size": 1}},
-        "7": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": rc["shift"]}},
-        "8": {"class_type": "CFGGuider", "inputs": {"model": ["7", 0], "positive": ["4", 0], "negative": ["5", 0], "cfg": mc["cfg"]}},
-        "9": {"class_type": "BasicScheduler", "inputs": {"model": ["7", 0], "scheduler": mc["scheduler"], "steps": steps, "denoise": 1.0}},
+
+        # High-noise model (early steps: structure, composition)
+        "1":  {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc["t2v_unet"]}},
+        "7":  {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": rc["shift"]}},
+        "8":  {"class_type": "CFGGuider", "inputs": {"model": ["7", 0], "positive": ["4", 0], "negative": ["5", 0], "cfg": mc["cfg"]}},
+        "9":  {"class_type": "BasicScheduler", "inputs": {"model": ["7", 0], "scheduler": mc["scheduler"], "steps": steps, "denoise": 1.0}},
+        "30": {"class_type": "SplitSigmas", "inputs": {"sigmas": ["9", 0], "step": boundary_step}},
+
+        # Low-noise model (later steps: detail, refinement)
+        "31": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc.get("t2v_unet_low", rc["t2v_unet"])}},
+        "32": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["31", 0], "shift": rc["shift"]}},
+        "33": {"class_type": "CFGGuider", "inputs": {"model": ["32", 0], "positive": ["4", 0], "negative": ["5", 0], "cfg": mc["cfg"]}},
+
+        # Latent, noise, sampler
+        "6":  {"class_type": "EmptySD3LatentImage", "inputs": {"width": rc["width"], "height": rc["height"], "batch_size": 1}},
         "10": {"class_type": "RandomNoise", "inputs": {"noise_seed": seed}},
         "11": {"class_type": "KSamplerSelect", "inputs": {"sampler_name": mc["sampler"]}},
-        "12": {"class_type": "SamplerCustomAdvanced", "inputs": {"noise": ["10", 0], "guider": ["8", 0], "sampler": ["11", 0], "sigmas": ["9", 0], "latent_image": ["6", 0]}},
-        "13": {"class_type": "VAEDecode", "inputs": {"samples": ["12", 0], "vae": ["3", 0]}},
+
+        # Two-stage sampling: high-noise → low-noise
+        "34": {"class_type": "SamplerCustomAdvanced", "inputs": {
+            "noise": ["10", 0], "guider": ["8", 0], "sampler": ["11", 0],
+            "sigmas": ["30", 0], "latent_image": ["6", 0]
+        }},
+        "35": {"class_type": "SamplerCustomAdvanced", "inputs": {
+            "noise": ["10", 0], "guider": ["33", 0], "sampler": ["11", 0],
+            "sigmas": ["30", 1], "latent_image": ["34", 0]
+        }},
+
+        # Decode and save
+        "13": {"class_type": "VAEDecode", "inputs": {"samples": ["35", 0], "vae": ["3", 0]}},
         "14": {"class_type": "CreateVideo", "inputs": {"images": ["13", 0], "fps": float(mc["fps"])}},
         "15": {"class_type": "SaveVideo", "inputs": {"video": ["14", 0], "filename_prefix": f"video/{clip_prefix}", "format": "mp4", "codec": "h264"}},
     }
     if loras:
         _insert_lora_chain(wf, loras, unet_node="1", sampler_model_node="7")
+        # Also apply LoRAs to the low-noise model
+        _insert_lora_chain(wf, loras, unet_node="31", sampler_model_node="32")
     return wf
 
 
@@ -890,47 +927,74 @@ def build_wan_i2v_workflow(prompt: str, image_name: str, seed: int, clip_prefix:
                             loras: list[tuple[str, float]] | None = None,
                             res_config: dict | None = None,
                             model_config: dict | None = None) -> dict:
-    """Build a WAN 2.1 I2V workflow for ComfyUI.
+    """Build a WAN 2.2 I2V workflow with dual-model architecture.
 
-    Uses WanImageToVideo node which conditions on a start image.
-    The start_image is passed directly — WAN's I2V model handles the
-    image conditioning internally via its 36-dim input (16 latent + 20 image).
-    CLIP vision is optional but improves results.
+    Same dual high/low noise approach as T2V, but uses Wan22ImageToVideoLatent
+    for start image conditioning and the I2V-specific model checkpoints.
     """
     mc = model_config or MODEL_CONFIGS["wan"]
     rc = res_config or list(mc["resolutions"].values())[0]
     te = mc["text_encoders"]
+    boundary = mc.get("timestep_boundary", 0.875)
+    boundary_step = int(steps * boundary)
 
     wf = {
-        "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc["i2v_unet"]}},
+        # Shared
         "2": {"class_type": "CLIPLoaderGGUF", "inputs": {"clip_name": te["clip1"], "type": te["clip_type"]}},
         "3": {"class_type": "VAELoader", "inputs": {"vae_name": mc["vae"]}},
-        "4": {"class_type": "CLIPVisionLoader", "inputs": {"clip_name": mc["clip_vision"]}},
-        "5": {"class_type": "LoadImage", "inputs": {"image": image_name}},
+
+        # Image conditioning
+        "5":  {"class_type": "LoadImage", "inputs": {"image": image_name}},
         "20": {"class_type": "ImageScale", "inputs": {
             "image": ["5", 0], "upscale_method": "lanczos",
             "width": rc["width"], "height": rc["height"], "crop": "center"
         }},
-        "6": {"class_type": "CLIPVisionEncode", "inputs": {"clip_vision": ["4", 0], "image": ["20", 0], "crop": "center"}},
+
+        # Text conditioning
         "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
         "8": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": negative_prompt}},
-        "9": {"class_type": "WanImageToVideo", "inputs": {
-            "positive": ["7", 0], "negative": ["8", 0], "vae": ["3", 0],
+
+        # WAN 2.2 I2V latent — uses Wan22ImageToVideoLatent for proper inpainting-style conditioning
+        "9": {"class_type": "Wan22ImageToVideoLatent", "inputs": {
+            "vae": ["3", 0],
             "width": rc["width"], "height": rc["height"], "length": frames, "batch_size": 1,
-            "start_image": ["20", 0], "clip_vision_output": ["6", 0]
+            "start_image": ["20", 0],
         }},
+
+        # High-noise model
+        "1":  {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc["i2v_unet"]}},
         "10": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": rc["shift"]}},
-        "11": {"class_type": "CFGGuider", "inputs": {"model": ["10", 0], "positive": ["9", 0], "negative": ["9", 1], "cfg": mc["cfg"]}},
+        "11": {"class_type": "CFGGuider", "inputs": {"model": ["10", 0], "positive": ["7", 0], "negative": ["8", 0], "cfg": mc["cfg"]}},
         "12": {"class_type": "BasicScheduler", "inputs": {"model": ["10", 0], "scheduler": mc["scheduler"], "steps": steps, "denoise": denoise}},
+        "30": {"class_type": "SplitSigmas", "inputs": {"sigmas": ["12", 0], "step": boundary_step}},
+
+        # Low-noise model
+        "31": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc.get("i2v_unet_low", rc["i2v_unet"])}},
+        "32": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["31", 0], "shift": rc["shift"]}},
+        "33": {"class_type": "CFGGuider", "inputs": {"model": ["32", 0], "positive": ["7", 0], "negative": ["8", 0], "cfg": mc["cfg"]}},
+
+        # Noise + sampler
         "13": {"class_type": "RandomNoise", "inputs": {"noise_seed": seed}},
         "14": {"class_type": "KSamplerSelect", "inputs": {"sampler_name": mc["sampler"]}},
-        "15": {"class_type": "SamplerCustomAdvanced", "inputs": {"noise": ["13", 0], "guider": ["11", 0], "sampler": ["14", 0], "sigmas": ["12", 0], "latent_image": ["9", 2]}},
-        "16": {"class_type": "VAEDecode", "inputs": {"samples": ["15", 0], "vae": ["3", 0]}},
+
+        # Two-stage sampling
+        "34": {"class_type": "SamplerCustomAdvanced", "inputs": {
+            "noise": ["13", 0], "guider": ["11", 0], "sampler": ["14", 0],
+            "sigmas": ["30", 0], "latent_image": ["9", 0]
+        }},
+        "35": {"class_type": "SamplerCustomAdvanced", "inputs": {
+            "noise": ["13", 0], "guider": ["33", 0], "sampler": ["14", 0],
+            "sigmas": ["30", 1], "latent_image": ["34", 0]
+        }},
+
+        # Decode and save
+        "16": {"class_type": "VAEDecode", "inputs": {"samples": ["35", 0], "vae": ["3", 0]}},
         "17": {"class_type": "CreateVideo", "inputs": {"images": ["16", 0], "fps": float(mc["fps"])}},
         "18": {"class_type": "SaveVideo", "inputs": {"video": ["17", 0], "filename_prefix": f"video/{clip_prefix}", "format": "mp4", "codec": "h264"}},
     }
     if loras:
         _insert_lora_chain(wf, loras, unet_node="1", sampler_model_node="10")
+        _insert_lora_chain(wf, loras, unet_node="31", sampler_model_node="32")
     return wf
 
 

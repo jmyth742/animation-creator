@@ -467,7 +467,7 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
                       <select value={advOpts.video_model} onChange={(e) => setAdvOpts(o => ({...o, video_model: e.target.value}))}
                         className="bg-zinc-900 border border-zinc-600 text-zinc-300 text-retro px-2 py-0.5" style={{ fontSize: '13px' }}>
                         <option value="hunyuan">HunyuanVideo 1.5</option>
-                        <option value="wan">WAN 2.1 (14B)</option>
+                        <option value="wan">WAN 2.2 (A14B)</option>
                       </select>
                     </div>
 
