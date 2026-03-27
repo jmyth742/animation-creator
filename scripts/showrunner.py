@@ -2636,9 +2636,15 @@ def cmd_produce(args):
     print(f"{'=' * 60}")
 
     # ─── Generate TTS audio ───────────────────────────────────────
+    tts_engine = getattr(args, "tts_engine", "edge")
     if not args.no_audio:
-        print(f"\n  Generating voiceover audio...")
-        audio_files = generate_episode_audio(ep, bible, ep_out)
+        if tts_engine == "xtts":
+            print(f"\n  Generating voiceover audio (XTTS v2 with voice cloning)...")
+            voice_dir = sp / "voice_samples"
+            audio_files = generate_episode_audio_xtts(ep, bible, ep_out, voice_samples_dir=voice_dir)
+        else:
+            print(f"\n  Generating voiceover audio (Edge-TTS)...")
+            audio_files = generate_episode_audio(ep, bible, ep_out)
         audio_count = sum(1 for a in audio_files if a)
         print(f"    Generated {audio_count}/{n} audio clips")
     else:
@@ -2802,6 +2808,27 @@ def cmd_produce(args):
     else:
         print(f"    All {len(val_results)} clips OK")
 
+    # ─── Lip sync (dialogue scenes only) ─────────────────────────
+    use_lip_sync = getattr(args, "lip_sync", False)
+    if use_lip_sync:
+        print(f"\n  Applying lip sync to dialogue scenes...")
+        synced = 0
+        for i, scene in enumerate(scenes):
+            if not scene.get("dialogue"):
+                continue
+            clip_path = find_latest_clip(scene["id"])
+            audio = audio_files[i] if i < len(audio_files) else None
+            if not clip_path or not audio or not Path(str(audio)).exists():
+                continue
+
+            synced_path = Path(clip_path).with_suffix(".lipsync.mp4")
+            print(f"    {scene['id']}...")
+            if apply_lip_sync(Path(clip_path), Path(str(audio)), synced_path):
+                # Replace the original clip with the lip-synced version
+                shutil.move(str(synced_path), clip_path)
+                synced += 1
+        print(f"    Lip-synced {synced} dialogue scene(s)")
+
     # ─── Stitch ──────────────────────────────────────────────────
     print(f"\n  Stitching episode...")
     stitched = ep_out / f"ep{ep_num:02d}_stitched.mp4"
@@ -2924,6 +2951,338 @@ def cmd_status(args):
     print()
 
 
+# ─── Storyboard preview ──────────────────────────────────────────────
+
+def cmd_storyboard(args):
+    """Generate a storyboard: one still frame per scene for quick review before video production."""
+    sp = series_path(args.series)
+    bible = load_json(sp / "bible.json")
+    ep_num = args.episode
+    ep = load_json(episode_path(args.series, ep_num))
+    scenes = ep["scenes"]
+    n = len(scenes)
+
+    resolution = getattr(args, "resolution", "auto")
+    res_config = get_resolution_config(resolution)
+    engine = getattr(args, "engine", "flux")
+
+    sb_dir = OUTPUT_DIR / args.series / f"ep{ep_num:02d}" / "storyboard"
+    sb_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"\n{'=' * 60}")
+    print(f"  Storyboard: {bible['series']['title']} — {ep['title']}")
+    print(f"  {n} scenes, engine={engine}, resolution={res_config['label']}")
+    print(f"{'=' * 60}\n")
+
+    generated = 0
+    for i, scene in enumerate(scenes):
+        frame_path = sb_dir / f"{scene['id']}.png"
+
+        if frame_path.exists() and not args.force:
+            print(f"  [{i+1}/{n}] {scene['id']} — exists, skipping")
+            continue
+
+        prompt = build_scene_prompt(scene, bible)
+        neg = build_negative_prompt(scene)
+        seed = args.seed_base + i + 1
+        prefix = f"storyboard/{scene['id']}"
+
+        print(f"  [{i+1}/{n}] {scene['id']}: {prompt[:80]}...")
+
+        # Generate a single still frame
+        if engine == "hunyuan":
+            wf = build_ref_workflow(prompt, seed=seed, prefix=prefix,
+                                    width=res_config["width"], height=res_config["height"], steps=30)
+        else:
+            wf = build_t2i_workflow(prompt, seed=seed, prefix=prefix,
+                                    width=res_config["width"], height=res_config["height"])
+
+        # Inject LoRAs if available
+        scene_loras = get_scene_loras(scene, bible)
+        if engine == "hunyuan" and scene_loras:
+            _insert_lora_chain(wf, scene_loras, unet_node="1", sampler_model_node="7")
+
+        try:
+            prompt_id = queue_prompt(wf)
+        except requests.ConnectionError:
+            print(f"    ERROR: ComfyUI not running at {SERVER}")
+            return
+
+        success = poll_until_done(prompt_id)
+        if success:
+            # Find and copy the generated frame
+            if engine == "hunyuan":
+                refs_out = COMFYUI_DIR / "output" / "storyboard"
+            else:
+                refs_out = COMFYUI_DIR / "output" / "refs"
+            # Try both output dirs
+            for out_dir in [COMFYUI_DIR / "output" / "storyboard", COMFYUI_DIR / "output" / "refs"]:
+                if out_dir.exists():
+                    candidates = sorted(
+                        out_dir.glob(f"{scene['id']}*.png"),
+                        key=lambda p: p.stat().st_mtime, reverse=True,
+                    )
+                    if candidates:
+                        shutil.copy2(candidates[0], frame_path)
+                        generated += 1
+                        print(f"    Done → {frame_path.name}")
+                        break
+            else:
+                print(f"    WARNING: frame not found in output")
+        else:
+            print(f"    WARNING: generation may have failed")
+
+    # Generate HTML contact sheet
+    html_path = sb_dir / "storyboard.html"
+    _generate_storyboard_html(scenes, bible, sb_dir, html_path)
+
+    print(f"\n{'=' * 60}")
+    print(f"  Generated {generated}/{n} storyboard frames")
+    print(f"  HTML preview: {html_path}")
+    print(f"{'=' * 60}\n")
+
+
+def _generate_storyboard_html(scenes: list, bible: dict, sb_dir: Path, output_path: Path):
+    """Generate an HTML contact sheet from storyboard frames."""
+    title = bible["series"]["title"]
+
+    rows = []
+    for i, scene in enumerate(scenes):
+        frame_file = f"{scene['id']}.png"
+        frame_exists = (sb_dir / frame_file).exists()
+        img_tag = f'<img src="{frame_file}" />' if frame_exists else '<div class="missing">No frame</div>'
+
+        loc = scene.get("location", "—")
+        chars = ", ".join(scene.get("characters", []))
+        clip_len = scene.get("clip_length", "medium")
+        visual = scene.get("visual", "")
+        narration = scene.get("narration", "")
+        dialogue_lines = []
+        for d in scene.get("dialogue", []):
+            char = bible.get("characters", {}).get(d["character"], {})
+            name = char.get("name", d["character"])
+            dialogue_lines.append(f"<b>{name}:</b> {d['line']}")
+        dialogue_html = "<br>".join(dialogue_lines)
+
+        rows.append(f"""
+        <div class="scene">
+            <div class="frame">{img_tag}</div>
+            <div class="info">
+                <div class="scene-id">{scene['id']} [{clip_len}]</div>
+                <div class="location">📍 {loc} | 👤 {chars}</div>
+                <div class="visual">{visual}</div>
+                {f'<div class="narration">🎙 {narration}</div>' if narration else ''}
+                {f'<div class="dialogue">{dialogue_html}</div>' if dialogue_html else ''}
+            </div>
+        </div>""")
+
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Storyboard — {title}</title>
+<style>
+body {{ font-family: -apple-system, sans-serif; background: #1a1a2e; color: #eee; padding: 20px; }}
+h1 {{ color: #e94560; }}
+.scene {{ display: flex; gap: 16px; margin: 12px 0; padding: 12px; background: #16213e; border-radius: 8px; }}
+.frame {{ flex: 0 0 320px; }}
+.frame img {{ width: 320px; border-radius: 4px; }}
+.missing {{ width: 320px; height: 180px; background: #333; display: flex; align-items: center; justify-content: center; border-radius: 4px; color: #666; }}
+.info {{ flex: 1; }}
+.scene-id {{ font-weight: bold; color: #e94560; font-size: 14px; }}
+.location {{ color: #0f3460; font-size: 12px; margin: 4px 0; color: #a8a8a8; }}
+.visual {{ margin: 6px 0; font-size: 13px; }}
+.narration {{ color: #53d8fb; font-size: 12px; margin: 4px 0; font-style: italic; }}
+.dialogue {{ color: #f0d43a; font-size: 12px; margin: 4px 0; }}
+</style></head>
+<body>
+<h1>Storyboard — {title}</h1>
+<p>{len(scenes)} scenes</p>
+{''.join(rows)}
+</body></html>"""
+
+    output_path.write_text(html, encoding="utf-8")
+
+
+# ─── Lip sync (Wav2Lip) ─────────────────────────────────────────────
+
+def apply_lip_sync(video_path: Path, audio_path: Path, output_path: Path) -> bool:
+    """
+    Apply lip sync to a video clip using Wav2Lip.
+
+    Requires: wav2lip inference script or wav2lip binary in PATH.
+    Falls back gracefully if not installed.
+
+    Args:
+        video_path: Input video clip (dialogue scene).
+        audio_path: TTS audio for this scene.
+        output_path: Output video with synced lips.
+
+    Returns True if lip sync succeeded.
+    """
+    wav2lip_bin = shutil.which("wav2lip")
+    wav2lip_script = Path("/workspace/Wav2Lip/inference.py")
+
+    if wav2lip_bin:
+        # Use standalone binary
+        try:
+            subprocess.run([
+                wav2lip_bin,
+                "--face", str(video_path),
+                "--audio", str(audio_path),
+                "--outfile", str(output_path),
+            ], capture_output=True, timeout=300)
+            return output_path.exists()
+        except (subprocess.TimeoutExpired, Exception) as e:
+            print(f"      Wav2Lip failed: {e}")
+            return False
+
+    elif wav2lip_script.exists():
+        # Use Python inference script
+        checkpoint = Path("/workspace/Wav2Lip/checkpoints/wav2lip_gan.pth")
+        if not checkpoint.exists():
+            print(f"      Wav2Lip checkpoint not found at {checkpoint}")
+            return False
+        try:
+            subprocess.run([
+                sys.executable, str(wav2lip_script),
+                "--checkpoint_path", str(checkpoint),
+                "--face", str(video_path),
+                "--audio", str(audio_path),
+                "--outfile", str(output_path),
+                "--resize_factor", "1",
+                "--nosmooth",
+            ], capture_output=True, timeout=300)
+            return output_path.exists()
+        except (subprocess.TimeoutExpired, Exception) as e:
+            print(f"      Wav2Lip inference failed: {e}")
+            return False
+
+    else:
+        print(f"      Wav2Lip not found — skipping lip sync")
+        return False
+
+
+# ─── XTTS v2 TTS ────────────────────────────────────────────────────
+
+async def generate_tts_xtts(text: str, voice_sample: str, output_path: str,
+                             language: str = "en"):
+    """
+    Generate TTS audio using XTTS v2 (Coqui) with voice cloning.
+
+    Args:
+        text: Text to speak.
+        voice_sample: Path to a 6+ second WAV sample of the target voice.
+        output_path: Where to save the generated audio.
+        language: Language code (default: "en").
+    """
+    try:
+        from TTS.api import TTS
+    except ImportError:
+        raise RuntimeError("XTTS not installed. Install: pip install TTS")
+
+    tts = TTS(model_name="tts_models/multilingual/multi-dataset/xtts_v2", gpu=True)
+    tts.tts_to_file(
+        text=text,
+        speaker_wav=voice_sample,
+        language=language,
+        file_path=output_path,
+    )
+
+
+def generate_episode_audio_xtts(episode: dict, bible: dict, output_dir: Path,
+                                 voice_samples_dir: Path | None = None) -> list[Path]:
+    """Generate TTS audio using XTTS v2 with voice cloning for character dialogue.
+
+    Falls back to Edge-TTS for narration or if voice samples don't exist.
+    Voice samples should be WAV files named: {char_key}.wav (e.g. char_1.wav)
+    in the voice_samples_dir (defaults to series/{slug}/voice_samples/).
+
+    Args:
+        episode: Episode JSON dict.
+        bible: Series bible dict.
+        output_dir: Output directory for audio files.
+        voice_samples_dir: Directory containing voice sample WAVs.
+
+    Returns list of audio file paths (one per scene, None for silent scenes).
+    """
+    audio_dir = output_dir / "audio"
+    audio_dir.mkdir(parents=True, exist_ok=True)
+
+    narrator_voice = bible.get("narrator", {}).get("voice", "en-US-GuyNeural")
+    audio_files = []
+
+    # Check if XTTS is available
+    xtts_available = False
+    try:
+        import TTS  # noqa: F401
+        xtts_available = True
+    except ImportError:
+        pass
+
+    for scene in episode["scenes"]:
+        audio_path = audio_dir / f"{scene['id']}.mp3"
+
+        if audio_path.exists():
+            audio_files.append(audio_path)
+            continue
+
+        spoken_parts = []
+        if scene.get("narration"):
+            spoken_parts.append(scene["narration"])
+        if scene.get("dialogue"):
+            has_narration = bool(scene.get("narration"))
+            for d in scene["dialogue"]:
+                if has_narration:
+                    char = bible.get("characters", {}).get(d["character"], {})
+                    name = char.get("name", d["character"])
+                    spoken_parts.append(f"{name}: {d['line']}")
+                else:
+                    spoken_parts.append(d["line"])
+
+        if not spoken_parts:
+            audio_files.append(None)
+            continue
+
+        full_text = " ".join(spoken_parts)
+
+        # Decide which TTS engine to use
+        use_xtts = False
+        voice_sample_path = None
+
+        if xtts_available and not scene.get("narration") and scene.get("dialogue"):
+            # Pure dialogue: try XTTS with character voice clone
+            first_char = scene["dialogue"][0]["character"]
+            if voice_samples_dir:
+                sample = voice_samples_dir / f"{first_char}.wav"
+                if sample.exists():
+                    voice_sample_path = str(sample)
+                    use_xtts = True
+
+        try:
+            if use_xtts and voice_sample_path:
+                # Use XTTS v2 with voice cloning
+                wav_path = audio_dir / f"{scene['id']}.wav"
+                asyncio.run(generate_tts_xtts(full_text, voice_sample_path, str(wav_path)))
+                # Convert WAV to MP3 for consistency
+                subprocess.run([
+                    "ffmpeg", "-y", "-i", str(wav_path),
+                    "-b:a", "128k", str(audio_path),
+                ], capture_output=True, timeout=30)
+                wav_path.unlink(missing_ok=True)
+            else:
+                # Fallback to Edge-TTS
+                voice = narrator_voice
+                if not scene.get("narration") and scene.get("dialogue"):
+                    first_char = scene["dialogue"][0]["character"]
+                    voice = bible.get("characters", {}).get(first_char, {}).get("voice", narrator_voice)
+                asyncio.run(generate_tts_scene(full_text, voice, str(audio_path)))
+
+            audio_files.append(audio_path)
+        except Exception as e:
+            print(f"    TTS failed for {scene['id']}: {e}")
+            audio_files.append(None)
+
+    return audio_files
+
+
 # ─── CLI ──────────────────────────────────────────────────────────────
 
 def main():
@@ -2973,6 +3332,10 @@ def main():
                            help="Use IP-Adapter for character consistency in dialogue/close-up scenes (requires ComfyUI-IPAdapter-plus)")
     p_produce.add_argument("--ip-adapter-strength", type=float, default=IP_ADAPTER_DEFAULT_STRENGTH,
                            help=f"IP-Adapter conditioning strength 0.0–1.0 (default: {IP_ADAPTER_DEFAULT_STRENGTH})")
+    p_produce.add_argument("--lip-sync", action="store_true",
+                           help="Apply Wav2Lip lip sync to dialogue scenes (requires Wav2Lip)")
+    p_produce.add_argument("--tts-engine", choices=["edge", "xtts"], default="edge",
+                           help="TTS engine: edge (Edge-TTS, fast) or xtts (XTTS v2, voice cloning) (default: edge)")
 
     p_all = sub.add_parser("produce-all", help="Produce all episodes")
     p_all.add_argument("series")
@@ -2999,6 +3362,10 @@ def main():
     p_all.add_argument("--ip-adapter", action="store_true",
                        help="Use IP-Adapter for character consistency")
     p_all.add_argument("--ip-adapter-strength", type=float, default=IP_ADAPTER_DEFAULT_STRENGTH)
+    p_all.add_argument("--lip-sync", action="store_true",
+                       help="Apply Wav2Lip lip sync to dialogue scenes")
+    p_all.add_argument("--tts-engine", choices=["edge", "xtts"], default="edge",
+                       help="TTS engine: edge or xtts (default: edge)")
 
     p_amb = sub.add_parser("setup-ambience", help="Generate synthetic ambient audio files")
     p_amb.add_argument("--duration", type=int, default=60, help="Loop duration in seconds (default: 60)")
@@ -3035,6 +3402,16 @@ def main():
     p_status = sub.add_parser("status", help="Show series status")
     p_status.add_argument("series")
 
+    p_storyboard = sub.add_parser("storyboard", help="Generate a storyboard (one frame per scene) for quick review before production")
+    p_storyboard.add_argument("series")
+    p_storyboard.add_argument("--episode", type=int, required=True)
+    p_storyboard.add_argument("--seed-base", type=int, default=1000)
+    p_storyboard.add_argument("--force", action="store_true", help="Regenerate existing storyboard frames")
+    p_storyboard.add_argument("--engine", choices=["flux", "hunyuan"], default="flux",
+                              help="Image engine: flux (fast T2I) or hunyuan (matches video model) (default: flux)")
+    p_storyboard.add_argument("--resolution", choices=["480p", "720p", "auto"], default="auto",
+                              help="Resolution for HunyuanVideo engine (default: auto)")
+
     args = parser.parse_args()
 
     if not args.command:
@@ -3054,6 +3431,7 @@ def main():
         "compile": cmd_compile,
         "validate": cmd_validate,
         "analyse": cmd_analyse,
+        "storyboard": cmd_storyboard,
     }
     cmds[args.command](args)
 

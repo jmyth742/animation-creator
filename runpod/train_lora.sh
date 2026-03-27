@@ -30,21 +30,25 @@ TRAIN_MODELS="$VOLUME/training_models"
 DATASET_DIR="${1:?Usage: train_lora.sh /path/to/dataset character_name}"
 CHARACTER_NAME="${2:?Usage: train_lora.sh /path/to/dataset character_name}"
 
-# Training config
-RANK=32
-ALPHA=32
-LR="1e-4"
-EPOCHS=150
-SAVE_EVERY=25
-RESOLUTION="480,320"
-BLOCKS_TO_SWAP=32  # Adjust based on GPU VRAM: 32 for 24GB, 20 for 48GB
+# Training config — tuneable via environment variables
+RANK="${LORA_RANK:-32}"
+ALPHA="${LORA_ALPHA:-32}"
+LR="${LORA_LR:-1e-4}"
+EPOCHS="${LORA_EPOCHS:-100}"           # Reduced from 150; early stopping recommended
+SAVE_EVERY="${LORA_SAVE_EVERY:-25}"
+RESOLUTION="${LORA_RESOLUTION:-480,320}"
+BLOCKS_TO_SWAP="${LORA_BLOCKS:-32}"    # 32 for 24GB, 20 for 48GB
+OPTIMIZER="${LORA_OPTIMIZER:-prodigy}" # prodigy (auto-LR) or adamw8bit (manual LR)
+REG_DIR="${LORA_REG_DIR:-}"           # Optional: path to regularization images
 
 source "$VOLUME/venv/bin/activate"
 
 echo "═══════════════════════════════════════════════"
 echo "  LoRA Training: $CHARACTER_NAME"
 echo "  Dataset: $DATASET_DIR"
-echo "  Rank: $RANK, LR: $LR, Epochs: $EPOCHS"
+echo "  Rank: $RANK, Alpha: $ALPHA, Epochs: $EPOCHS"
+echo "  Optimizer: $OPTIMIZER, LR: $LR"
+echo "  Regularization: ${REG_DIR:-none}"
 echo "═══════════════════════════════════════════════"
 
 # ─── Check full-precision model exists ────────────────────────────
@@ -97,6 +101,21 @@ frame_extraction = "head"
 EOF
 fi
 
+# Add regularization images if provided (prevents concept bleeding)
+if [ -n "$REG_DIR" ] && [ -d "$REG_DIR" ]; then
+    REG_COUNT=$(ls "$REG_DIR"/*.{png,jpg,jpeg,webp} 2>/dev/null | wc -l)
+    echo "  Regularization images: $REG_COUNT from $REG_DIR"
+    mkdir -p "$CACHE_DIR/latents_reg"
+    cat >> "$CONFIG_PATH" << EOF
+
+[[datasets]]
+image_directory = "$REG_DIR"
+cache_directory = "$CACHE_DIR/latents_reg"
+num_repeats = 1
+is_regularization = true
+EOF
+fi
+
 echo ""
 echo "=== [1/4] Caching latents ==="
 cd "$MUSUBI"
@@ -116,6 +135,19 @@ python hv_1_5_cache_text_encoder_outputs.py \
 
 echo ""
 echo "=== [3/4] Training LoRA ==="
+
+# Build optimizer-specific args
+OPTIMIZER_ARGS=""
+if [ "$OPTIMIZER" = "prodigy" ]; then
+    # Prodigy auto-tunes learning rate — no manual LR schedule needed
+    # Set LR=1.0 as Prodigy uses it as a scaling factor, not absolute rate
+    OPTIMIZER_ARGS="--optimizer_type prodigy --learning_rate 1.0"
+    echo "  Using Prodigy optimizer (auto-tuning LR)"
+else
+    OPTIMIZER_ARGS="--optimizer_type adamw8bit --learning_rate $LR"
+    echo "  Using AdamW8bit optimizer (LR=$LR)"
+fi
+
 accelerate launch --num_cpu_threads_per_process 1 --mixed_precision bf16 \
     hv_1_5_train_network.py \
     --dit "$DIT_PATH" \
@@ -123,8 +155,7 @@ accelerate launch --num_cpu_threads_per_process 1 --mixed_precision bf16 \
     --network_module networks.lora_hv_1_5 \
     --network_dim "$RANK" \
     --network_alpha "$ALPHA" \
-    --learning_rate "$LR" \
-    --optimizer_type adamw8bit \
+    $OPTIMIZER_ARGS \
     --mixed_precision bf16 \
     --max_train_epochs "$EPOCHS" \
     --save_every_n_epochs "$SAVE_EVERY" \
@@ -136,8 +167,11 @@ accelerate launch --num_cpu_threads_per_process 1 --mixed_precision bf16 \
     --weighting_scheme none \
     --sdpa \
     --split_attn \
+    --flip_aug \
     --output_dir "$OUTPUT_DIR" \
-    --output_name "$CHARACTER_NAME"
+    --output_name "$CHARACTER_NAME" \
+    --log_with tensorboard \
+    --logging_dir "$OUTPUT_DIR/logs"
 
 echo ""
 echo "=== [4/4] Converting for ComfyUI ==="
