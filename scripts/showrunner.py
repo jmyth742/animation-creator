@@ -136,6 +136,30 @@ MODEL_CONFIGS = {
 }
 DEFAULT_VIDEO_MODEL = "hunyuan"
 
+# ─── Optimization presets ────────────────────────────────────────────
+# EasyCache (TeaCache) skips redundant diffusion steps by reusing cached
+# intermediate results when the change rate is below a threshold.
+# Lower threshold = more aggressive caching = faster but lower quality.
+
+OPTIMIZATION_PRESETS = {
+    "none": {
+        "label": "No optimization",
+        "easycache": None,
+    },
+    "balanced": {
+        "label": "Balanced (EasyCache 0.15)",
+        "easycache": {"reuse_threshold": 0.15, "start_percent": 0.0, "end_percent": 0.85},
+    },
+    "fast": {
+        "label": "Fast (EasyCache 0.25)",
+        "easycache": {"reuse_threshold": 0.25, "start_percent": 0.0, "end_percent": 0.90},
+    },
+    "turbo": {
+        "label": "Turbo (EasyCache 0.40)",
+        "easycache": {"reuse_threshold": 0.40, "start_percent": 0.0, "end_percent": 0.95},
+    },
+}
+
 # Inference quality presets — these are overridden by model config but kept for backward compat
 QUALITY_STEPS = MODEL_CONFIGS["hunyuan"]["quality_steps"]
 
@@ -678,6 +702,55 @@ def build_lora_node(model_output: list, lora_filename: str, strength: float = 0.
     }
 
 
+def _insert_easycache(wf: dict, preset: dict, model_node: str) -> None:
+    """Insert an EasyCache node for step-skipping optimization.
+
+    EasyCache (the ComfyUI native TeaCache implementation) monitors the change
+    rate between diffusion steps and skips computation when the intermediate
+    result is similar enough to the cached version. This can speed up generation
+    by 30-60% with minimal quality loss.
+
+    Args:
+        wf: Workflow dict to modify in-place.
+        preset: Dict with reuse_threshold, start_percent, end_percent.
+        model_node: Node ID whose model output should be wrapped with caching.
+    """
+    if preset is None:
+        return
+
+    # Get the current model output from the target node
+    current_model = wf[model_node]["inputs"]["model"]
+
+    # Insert EasyCache between the model source and the target node
+    wf["70"] = {
+        "class_type": "EasyCache",
+        "inputs": {
+            "model": current_model,
+            "reuse_threshold": preset["reuse_threshold"],
+            "start_percent": preset["start_percent"],
+            "end_percent": preset["end_percent"],
+            "verbose": False,
+        },
+    }
+
+    # Point the target node to the EasyCache output
+    wf[model_node]["inputs"]["model"] = ["70", 0]
+
+
+def _insert_optimizations(wf: dict, optimization: str, model_node: str) -> None:
+    """Insert all optimization nodes based on the selected preset.
+
+    Args:
+        wf: Workflow dict to modify in-place.
+        optimization: Preset name from OPTIMIZATION_PRESETS.
+        model_node: The ModelSamplingSD3 node ID.
+    """
+    preset = OPTIMIZATION_PRESETS.get(optimization, OPTIMIZATION_PRESETS["none"])
+
+    if preset.get("easycache"):
+        _insert_easycache(wf, preset["easycache"], model_node)
+
+
 def _insert_lora_chain(wf: dict, loras: list[tuple[str, float]], unet_node: str, sampler_model_node: str) -> None:
     """Insert a chain of LoRA nodes between the UNet loader and the sampler model node.
 
@@ -868,35 +941,43 @@ def build_video_workflow(video_model: str, mode: str, prompt: str, seed: int,
                           negative_prompt: str = "", steps: int = 25,
                           denoise: float = DEFAULT_DENOISE,
                           loras: list[tuple[str, float]] | None = None,
-                          image_name: str | None = None) -> dict:
+                          image_name: str | None = None,
+                          optimization: str = "none") -> dict:
     """Dispatch to the correct workflow builder based on video model and mode.
 
     Args:
         video_model: "hunyuan" or "wan"
         mode: "t2v" or "i2v"
+        optimization: "none", "balanced", "fast", or "turbo" (EasyCache presets)
         Other args passed through to the model-specific builder.
     """
     mc = get_model_config(video_model)
 
     if video_model == "wan":
         if mode == "i2v" and image_name:
-            return build_wan_i2v_workflow(prompt, image_name, seed, clip_prefix, frames,
-                                          negative_prompt=negative_prompt, steps=steps,
-                                          denoise=denoise, loras=loras,
-                                          res_config=res_config, model_config=mc)
+            wf = build_wan_i2v_workflow(prompt, image_name, seed, clip_prefix, frames,
+                                         negative_prompt=negative_prompt, steps=steps,
+                                         denoise=denoise, loras=loras,
+                                         res_config=res_config, model_config=mc)
+            _insert_optimizations(wf, optimization, model_node="10")
         else:
-            return build_wan_t2v_workflow(prompt, seed, clip_prefix, frames,
-                                          negative_prompt=negative_prompt, steps=steps,
-                                          loras=loras, res_config=res_config, model_config=mc)
+            wf = build_wan_t2v_workflow(prompt, seed, clip_prefix, frames,
+                                         negative_prompt=negative_prompt, steps=steps,
+                                         loras=loras, res_config=res_config, model_config=mc)
+            _insert_optimizations(wf, optimization, model_node="7")
     else:  # hunyuan (default)
         if mode == "i2v" and image_name:
-            return build_i2v_workflow(prompt, image_name, seed, clip_prefix, frames,
-                                      negative_prompt=negative_prompt, steps=steps,
-                                      denoise=denoise, loras=loras, res_config=res_config)
+            wf = build_i2v_workflow(prompt, image_name, seed, clip_prefix, frames,
+                                     negative_prompt=negative_prompt, steps=steps,
+                                     denoise=denoise, loras=loras, res_config=res_config)
+            _insert_optimizations(wf, optimization, model_node="10")
         else:
-            return build_t2v_workflow(prompt, seed, clip_prefix, frames,
-                                      negative_prompt=negative_prompt, steps=steps,
-                                      loras=loras, res_config=res_config)
+            wf = build_t2v_workflow(prompt, seed, clip_prefix, frames,
+                                     negative_prompt=negative_prompt, steps=steps,
+                                     loras=loras, res_config=res_config)
+            _insert_optimizations(wf, optimization, model_node="7")
+
+    return wf
 
 
 # ─── IP-Adapter for character consistency ────────────────────────────
@@ -2935,10 +3016,11 @@ def cmd_produce(args):
             scene_denoise = base_denoise
 
         mode = "i2v" if seed_image else "t2v"
+        optimization = getattr(args, "optimization", "none")
         wf = build_video_workflow(
             video_model, mode, prompt, seed, clip_prefix, frames, res_config,
             negative_prompt=neg, steps=args.steps, denoise=scene_denoise,
-            loras=scene_loras, image_name=seed_image,
+            loras=scene_loras, image_name=seed_image, optimization=optimization,
         )
 
         # IP-Adapter: not compatible with HunyuanVideo DiT architecture.
@@ -3510,6 +3592,8 @@ def main():
                            help="Interpolate frames with RIFE for smoother motion (2x, requires rife-ncnn-vulkan)")
     p_produce.add_argument("--video-model", choices=["hunyuan", "wan"], default="hunyuan",
                            help="Video generation model: hunyuan (HunyuanVideo 1.5) or wan (WAN 2.1 14B) (default: hunyuan)")
+    p_produce.add_argument("--optimization", choices=["none", "balanced", "fast", "turbo"], default="none",
+                           help="Speed optimization: none, balanced (30%% faster), fast (50%% faster), turbo (60%% faster, lower quality)")
     p_produce.add_argument("--resolution", choices=["480p", "720p", "auto"], default="auto",
                            help="Generation resolution: 480p (8GB), 720p (24GB+), auto (detect VRAM) (default: auto)")
     p_produce.add_argument("--ip-adapter", action="store_true",
@@ -3543,6 +3627,8 @@ def main():
                        help="Interpolate frames with RIFE (2x smoother motion)")
     p_all.add_argument("--video-model", choices=["hunyuan", "wan"], default="hunyuan",
                        help="Video generation model (default: hunyuan)")
+    p_all.add_argument("--optimization", choices=["none", "balanced", "fast", "turbo"], default="none",
+                       help="Speed optimization preset")
     p_all.add_argument("--resolution", choices=["480p", "720p", "auto"], default="auto",
                        help="Generation resolution (default: auto)")
     p_all.add_argument("--ip-adapter", action="store_true",

@@ -301,6 +301,7 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [advOpts, setAdvOpts] = useState({
     video_model: 'hunyuan',
+    optimization: 'none',
     resolution: 'auto',
     enhance: true,
     upscale: false,
@@ -371,6 +372,7 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
       const params = new URLSearchParams({
         quality, force, denoise,
         video_model: advOpts.video_model,
+        optimization: advOpts.optimization,
         resolution: advOpts.resolution,
         enhance: advOpts.enhance,
         upscale: advOpts.upscale,
@@ -454,7 +456,7 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
                   className="w-full text-left px-3 py-2 text-retro text-zinc-500 hover:bg-zinc-700 flex items-center justify-between" style={{ fontSize: '15px' }}>
                   <span>{showAdvanced ? '▾' : '▸'} ADVANCED OPTIONS</span>
                   <span className="text-zinc-700" style={{ fontSize: '11px' }}>
-                    {[advOpts.video_model === 'wan' && 'WAN', advOpts.upscale && '4K', advOpts.interpolate && '48fps', advOpts.lip_sync && 'LIP', advOpts.tts_engine === 'xtts' && 'XTTS'].filter(Boolean).join(' ') || ''}
+                    {[advOpts.video_model === 'wan' && 'WAN', advOpts.optimization !== 'none' && advOpts.optimization.toUpperCase(), advOpts.upscale && '4K', advOpts.interpolate && '48fps', advOpts.lip_sync && 'LIP', advOpts.tts_engine === 'xtts' && 'XTTS'].filter(Boolean).join(' ') || ''}
                   </span>
                 </button>
                 {showAdvanced && (
@@ -466,6 +468,18 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
                         className="bg-zinc-900 border border-zinc-600 text-zinc-300 text-retro px-2 py-0.5" style={{ fontSize: '13px' }}>
                         <option value="hunyuan">HunyuanVideo 1.5</option>
                         <option value="wan">WAN 2.1 (14B)</option>
+                      </select>
+                    </div>
+
+                    {/* Speed Optimization */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-retro text-zinc-400" style={{ fontSize: '13px' }}>Speed</span>
+                      <select value={advOpts.optimization} onChange={(e) => setAdvOpts(o => ({...o, optimization: e.target.value}))}
+                        className="bg-zinc-900 border border-zinc-600 text-zinc-300 text-retro px-2 py-0.5" style={{ fontSize: '13px' }}>
+                        <option value="none">No optimization</option>
+                        <option value="balanced">Balanced (~30% faster)</option>
+                        <option value="fast">Fast (~50% faster)</option>
+                        <option value="turbo">Turbo (~60% faster)</option>
                       </select>
                     </div>
 

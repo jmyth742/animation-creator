@@ -265,6 +265,7 @@ def produce_episode(
     force: bool = False,
     denoise: float = 0.82,
     video_model: str = "hunyuan",
+    optimization: str = "none",
     resolution: str = "auto",
     enhance: bool = True,
     upscale: bool = False,
@@ -308,6 +309,7 @@ def produce_episode(
         args=(job.id, episode_id, quality, force, denoise),
         kwargs=dict(
             video_model=video_model,
+            optimization=optimization,
             resolution=resolution,
             enhance=enhance,
             upscale=upscale,
