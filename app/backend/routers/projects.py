@@ -45,7 +45,17 @@ def _assert_owner(project: Project, user: User) -> None:
 
 
 def _get_project_or_404(project_id: int, db: Session) -> Project:
-    project = db.get(Project, project_id)
+    from sqlalchemy.orm import joinedload
+    project = (
+        db.query(Project)
+        .options(
+            joinedload(Project.characters),
+            joinedload(Project.locations),
+            joinedload(Project.episodes),
+        )
+        .filter(Project.id == project_id)
+        .first()
+    )
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found.")
     return project
@@ -245,10 +255,17 @@ def update_project(
 @router.post("/{project_id}/regenerate-references")
 def start_regen_references(
     project_id: int,
+    engine: str = "flux",
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> dict:
-    """Start a background job that regenerates all char portraits + location refs."""
+    """Start a background job that regenerates all char portraits + location refs.
+
+    engine: "flux" (default, FLUX T2I) or "hunyuan" (HunyuanVideo single-frame,
+    matches video model style for better I2V seeding).
+    """
+    if engine not in ("flux", "hunyuan"):
+        engine = "flux"
     project = _get_project_or_404(project_id, db)
     _assert_owner(project, current_user)
 
@@ -261,7 +278,7 @@ def start_regen_references(
             detail="ComfyUI is not reachable at http://localhost:8188. Start ComfyUI and retry.",
         )
 
-    job_id = pipeline.start_regenerate_all_references(project_id)
+    job_id = pipeline.start_regenerate_all_references(project_id, engine=engine)
     total = len(project.characters) + len(project.locations)
     return {"job_id": job_id, "total": total}
 

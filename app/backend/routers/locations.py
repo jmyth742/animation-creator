@@ -138,9 +138,16 @@ def delete_location(
 @router.post("/locations/{location_id}/generate-reference", response_model=ReferenceGenerateResponse)
 def generate_reference(
     location_id: int,
+    engine: str = "flux",
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ReferenceGenerateResponse:
+    """
+    engine: "flux" (default, FLUX T2I) or "hunyuan" (HunyuanVideo single-frame,
+    matches video model style for better I2V seeding).
+    """
+    if engine not in ("flux", "hunyuan"):
+        engine = "flux"
     loc = _get_location_or_404(location_id, current_user, db)
     if not loc.description:
         raise HTTPException(
@@ -148,7 +155,7 @@ def generate_reference(
             detail="Location needs a visual description before generating reference images.",
         )
     try:
-        rel_paths = generate_location_reference(location_id, db)
+        rel_paths = generate_location_reference(location_id, db, engine=engine)
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc))
 

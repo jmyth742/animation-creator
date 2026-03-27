@@ -150,17 +150,23 @@ def delete_character(
 @router.post("/characters/{character_id}/generate-portrait", response_model=PortraitGenerateResponse)
 def generate_portrait(
     character_id: int,
+    engine: str = "flux",
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> PortraitGenerateResponse:
     """
     Synchronously generate up to 3 portrait candidates via ComfyUI
     (takes ~30 s per candidate).  Returns the URL list when complete.
+
+    engine: "flux" (default, FLUX T2I) or "hunyuan" (HunyuanVideo single-frame,
+    matches video model style for better I2V seeding).
     """
+    if engine not in ("flux", "hunyuan"):
+        engine = "flux"
     _get_character_or_404(character_id, current_user, db)
 
     try:
-        paths = generate_character_portrait(character_id, db)
+        paths = generate_character_portrait(character_id, db, engine=engine)
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
     except Exception as exc:

@@ -68,7 +68,7 @@ CLIP_LENGTHS = {
 
 # Inference quality presets (steps)
 QUALITY_STEPS = {
-    "draft": 15,   # ~90s per clip — quick iteration
+    "draft": 20,   # ~2min per clip — quick iteration
     "good":  30,   # ~3min per clip — solid quality
     "final": 50,   # ~5min per clip — maximum quality
 }
@@ -80,6 +80,83 @@ DENOISE_PRESETS = {
     "creative": 1.0,    # Full freedom (legacy behavior)
 }
 DEFAULT_DENOISE = 0.82
+
+# ─── Resolution presets ──────────────────────────────────────────────
+# Each preset defines the generation resolution, model shift, and UNet model.
+# Higher resolutions need more VRAM — auto-detected or set via --resolution.
+
+RESOLUTION_PRESETS = {
+    "480p": {
+        "width": 848, "height": 480,
+        "shift": 5.0,
+        "t2v_unet": "hunyuanvideo1.5_480p_t2v_cfg_distilled-Q5_K_S.gguf",
+        "i2v_unet": "hunyuanvideo1.5_480p_i2v_cfg_distilled-Q5_K_S.gguf",
+        "min_vram_gb": 8,
+        "label": "480p (848×480)",
+    },
+    "720p": {
+        "width": 1280, "height": 720,
+        "shift": 9.0,
+        "t2v_unet": "hunyuanvideo1.5_480p_t2v_cfg_distilled-Q5_K_S.gguf",
+        "i2v_unet": "hunyuanvideo1.5_480p_i2v_cfg_distilled-Q5_K_S.gguf",
+        "min_vram_gb": 24,
+        "label": "720p (1280×720)",
+    },
+}
+DEFAULT_RESOLUTION = "480p"
+
+
+def detect_vram_gb() -> float:
+    """Query ComfyUI system info for available GPU VRAM in GB.
+    Returns 0 if ComfyUI is unreachable or no GPU is detected.
+    """
+    try:
+        r = requests.get(f"{SERVER}/system_stats", timeout=5)
+        if r.status_code == 200:
+            data = r.json()
+            devices = data.get("devices", [])
+            if devices:
+                # Return VRAM of first GPU in bytes → GB
+                vram = devices[0].get("vram_total", 0)
+                return vram / (1024 ** 3)
+    except Exception:
+        pass
+    return 0.0
+
+
+def auto_detect_resolution() -> str:
+    """Auto-select the best resolution preset based on available VRAM."""
+    vram = detect_vram_gb()
+    if vram >= 24:
+        return "720p"
+    return "480p"
+
+
+def get_resolution_config(resolution: str | None = None) -> dict:
+    """Get resolution configuration, auto-detecting if resolution is 'auto' or None."""
+    if resolution == "auto" or resolution is None:
+        resolution = auto_detect_resolution()
+    return RESOLUTION_PRESETS.get(resolution, RESOLUTION_PRESETS[DEFAULT_RESOLUTION])
+
+
+# Frame count constraints for HunyuanVideo (must be 4n+1)
+MIN_FRAMES = 33   # ~1.4s — minimum viable clip
+MAX_FRAMES = 97   # ~4.0s — maximum before VRAM issues at 480p
+FPS = 24
+
+
+def frames_for_duration(seconds: float) -> int:
+    """Compute the nearest valid HunyuanVideo frame count for a given duration.
+
+    HunyuanVideo requires frame counts of the form 4n+1 (1, 5, 9, ..., 49, 65, 81, 97).
+    Returns the closest valid count within MIN_FRAMES..MAX_FRAMES, with a small
+    buffer (+0.3s) to ensure audio fits comfortably within the clip.
+    """
+    target = int(round((seconds + 0.3) * FPS))  # Add 0.3s breathing room
+    # Round to nearest 4n+1
+    n = round((target - 1) / 4)
+    frames = 4 * n + 1
+    return max(MIN_FRAMES, min(MAX_FRAMES, frames))
 
 # ─── Ambient audio system ─────────────────────────────────────────────
 #
@@ -547,15 +624,58 @@ def generate_episode_audio(episode: dict, bible: dict, output_dir: Path) -> list
 
 # ─── Video generation ────────────────────────────────────────────────
 
-def build_t2v_workflow(prompt: str, seed: int, clip_prefix: str, frames: int, negative_prompt: str = "", steps: int = 15) -> dict:
+def build_lora_node(model_output: list, lora_filename: str, strength: float = 0.7) -> dict:
+    """Return a LoraLoaderModelOnly node dict for insertion into ComfyUI workflows."""
     return {
-        "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": "hunyuanvideo1.5_480p_t2v_cfg_distilled-Q4_K_S.gguf"}},
+        "class_type": "LoraLoaderModelOnly",
+        "inputs": {
+            "model": model_output,
+            "lora_name": lora_filename,
+            "strength_model": strength,
+        },
+    }
+
+
+def _insert_lora_chain(wf: dict, loras: list[tuple[str, float]], unet_node: str, sampler_model_node: str) -> None:
+    """Insert a chain of LoRA nodes between the UNet loader and the sampler model node.
+
+    Each LoRA feeds into the next, forming a chain:
+      UnetLoaderGGUF → LoRA_1 → LoRA_2 → LoRA_3 → ModelSamplingSD3
+
+    Args:
+        wf: The workflow dict to modify in-place.
+        loras: List of (lora_filename, strength) tuples. Max 3 recommended.
+        unet_node: Node ID of UnetLoaderGGUF (e.g. "1").
+        sampler_model_node: Node ID that consumes the model (e.g. "7" for T2V, "10" for I2V).
+    """
+    if not loras:
+        return
+
+    prev_output = [unet_node, 0]  # Start from UNet output
+
+    for idx, (lora_name, lora_strength) in enumerate(loras):
+        node_id = str(50 + idx)  # "50", "51", "52"
+        wf[node_id] = build_lora_node(prev_output, lora_name, lora_strength)
+        prev_output = [node_id, 0]
+
+    # Point the sampler model node to the last LoRA output
+    wf[sampler_model_node]["inputs"]["model"] = prev_output
+
+
+def build_t2v_workflow(prompt: str, seed: int, clip_prefix: str, frames: int,
+                       negative_prompt: str = "", steps: int = 15,
+                       lora_name: str | None = None, lora_strength: float = 0.7,
+                       loras: list[tuple[str, float]] | None = None,
+                       res_config: dict | None = None) -> dict:
+    rc = res_config or RESOLUTION_PRESETS[DEFAULT_RESOLUTION]
+    wf = {
+        "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc["t2v_unet"]}},
         "2": {"class_type": "DualCLIPLoader", "inputs": {"clip_name1": "qwen_2.5_vl_7b_fp8_scaled.safetensors", "clip_name2": "byt5_small_glyphxl_fp16.safetensors", "type": "hunyuan_video_15"}},
         "3": {"class_type": "VAELoader", "inputs": {"vae_name": "hunyuanvideo15_vae_fp16.safetensors"}},
         "4": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
         "5": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": negative_prompt}},
-        "6": {"class_type": "EmptyHunyuanVideo15Latent", "inputs": {"width": 480, "height": 320, "length": frames, "batch_size": 1}},
-        "7": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": 5.0}},
+        "6": {"class_type": "EmptyHunyuanVideo15Latent", "inputs": {"width": rc["width"], "height": rc["height"], "length": frames, "batch_size": 1}},
+        "7": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": rc["shift"]}},
         "8": {"class_type": "CFGGuider", "inputs": {"model": ["7", 0], "positive": ["4", 0], "negative": ["5", 0], "cfg": 1.0}},
         "9": {"class_type": "BasicScheduler", "inputs": {"model": ["7", 0], "scheduler": "simple", "steps": steps, "denoise": 1.0}},
         "10": {"class_type": "RandomNoise", "inputs": {"noise_seed": seed}},
@@ -565,30 +685,38 @@ def build_t2v_workflow(prompt: str, seed: int, clip_prefix: str, frames: int, ne
         "14": {"class_type": "CreateVideo", "inputs": {"images": ["13", 0], "fps": 24.0}},
         "15": {"class_type": "SaveVideo", "inputs": {"video": ["14", 0], "filename_prefix": f"video/{clip_prefix}", "format": "mp4", "codec": "h264"}},
     }
+    # Build LoRA list: prefer new `loras` param, fall back to legacy single lora
+    lora_list = loras or ([(lora_name, lora_strength)] if lora_name else [])
+    _insert_lora_chain(wf, lora_list, unet_node="1", sampler_model_node="7")
+    return wf
 
 
-def build_i2v_workflow(prompt: str, image_name: str, seed: int, clip_prefix: str, frames: int, negative_prompt: str = "", steps: int = 15, denoise: float = DEFAULT_DENOISE) -> dict:
-    return {
-        "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": "hunyuanvideo1.5_480p_i2v_cfg_distilled-Q4_K_S.gguf"}},
+def build_i2v_workflow(prompt: str, image_name: str, seed: int, clip_prefix: str, frames: int,
+                       negative_prompt: str = "", steps: int = 15,
+                       denoise: float = DEFAULT_DENOISE,
+                       lora_name: str | None = None, lora_strength: float = 0.7,
+                       loras: list[tuple[str, float]] | None = None,
+                       res_config: dict | None = None) -> dict:
+    rc = res_config or RESOLUTION_PRESETS[DEFAULT_RESOLUTION]
+    wf = {
+        "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc["i2v_unet"]}},
         "2": {"class_type": "DualCLIPLoader", "inputs": {"clip_name1": "qwen_2.5_vl_7b_fp8_scaled.safetensors", "clip_name2": "byt5_small_glyphxl_fp16.safetensors", "type": "hunyuan_video_15"}},
         "3": {"class_type": "VAELoader", "inputs": {"vae_name": "hunyuanvideo15_vae_fp16.safetensors"}},
         "4": {"class_type": "CLIPVisionLoader", "inputs": {"clip_name": "sigclip_vision_patch14_384.safetensors"}},
         "5": {"class_type": "LoadImage", "inputs": {"image": image_name}},
-        # Rescale reference image to output resolution so CLIPVision and I2V
-        # conditioning receive the same aspect ratio as the generated video.
         "20": {"class_type": "ImageScale", "inputs": {
             "image": ["5", 0], "upscale_method": "lanczos",
-            "width": 480, "height": 320, "crop": "center"
+            "width": rc["width"], "height": rc["height"], "crop": "center"
         }},
         "6": {"class_type": "CLIPVisionEncode", "inputs": {"clip_vision": ["4", 0], "image": ["20", 0], "crop": "center"}},
         "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
         "8": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": negative_prompt}},
         "9": {"class_type": "HunyuanVideo15ImageToVideo", "inputs": {
             "positive": ["7", 0], "negative": ["8", 0], "vae": ["3", 0],
-            "width": 480, "height": 320, "length": frames, "batch_size": 1,
+            "width": rc["width"], "height": rc["height"], "length": frames, "batch_size": 1,
             "start_image": ["20", 0], "clip_vision_output": ["6", 0]
         }},
-        "10": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": 5.0}},
+        "10": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": rc["shift"]}},
         "11": {"class_type": "CFGGuider", "inputs": {"model": ["10", 0], "positive": ["9", 0], "negative": ["9", 1], "cfg": 1.0}},
         "12": {"class_type": "BasicScheduler", "inputs": {"model": ["10", 0], "scheduler": "simple", "steps": steps, "denoise": denoise}},
         "13": {"class_type": "RandomNoise", "inputs": {"noise_seed": seed}},
@@ -598,6 +726,99 @@ def build_i2v_workflow(prompt: str, image_name: str, seed: int, clip_prefix: str
         "17": {"class_type": "CreateVideo", "inputs": {"images": ["16", 0], "fps": 24.0}},
         "18": {"class_type": "SaveVideo", "inputs": {"video": ["17", 0], "filename_prefix": f"video/{clip_prefix}", "format": "mp4", "codec": "h264"}},
     }
+    lora_list = loras or ([(lora_name, lora_strength)] if lora_name else [])
+    _insert_lora_chain(wf, lora_list, unet_node="1", sampler_model_node="10")
+    return wf
+
+
+# ─── IP-Adapter for character consistency ────────────────────────────
+#
+# IP-Adapter conditions the model on a reference image at inference time,
+# providing much stronger appearance/face consistency than LoRAs alone.
+# Requires: ComfyUI-IPAdapter-plus custom node + IP-Adapter model files.
+
+# Default IP-Adapter model for video (works with HunyuanVideo via SD1.5 adapter)
+IP_ADAPTER_MODEL = "ip-adapter-plus_sd15.safetensors"
+IP_ADAPTER_CLIP_VISION = "sigclip_vision_patch14_384.safetensors"  # Reuse existing CLIP vision
+IP_ADAPTER_DEFAULT_STRENGTH = 0.5
+
+
+def _insert_ip_adapter(wf: dict, ref_image: str, strength: float = IP_ADAPTER_DEFAULT_STRENGTH,
+                        model_input_node: str = "10") -> None:
+    """Insert IP-Adapter nodes into a workflow for character appearance conditioning.
+
+    Adds nodes:
+      60: IPAdapterModelLoader — loads the IP-Adapter model
+      61: LoadImage — loads the character reference portrait
+      62: IPAdapterApply — applies reference conditioning to the model
+
+    The IP-Adapter output replaces the model input to the sampler model node,
+    inserting after any LoRA chain.
+
+    Args:
+        wf: Workflow dict to modify in-place.
+        ref_image: Filename of the reference image (must be in ComfyUI/input/).
+        strength: IP-Adapter conditioning strength (0.0–1.0). Default 0.5.
+        model_input_node: Node ID that consumes the model (e.g. "10" for I2V ModelSamplingSD3).
+    """
+    # Get the current model input to the sampling node
+    current_model_input = wf[model_input_node]["inputs"]["model"]
+
+    # Add IP-Adapter nodes with IDs 60-62 (avoids collision with LoRA nodes 50-52)
+    wf["60"] = {
+        "class_type": "IPAdapterModelLoader",
+        "inputs": {"ipadapter_file": IP_ADAPTER_MODEL},
+    }
+    wf["61"] = {
+        "class_type": "LoadImage",
+        "inputs": {"image": ref_image},
+    }
+    wf["62"] = {
+        "class_type": "IPAdapterApply",
+        "inputs": {
+            "ipadapter": ["60", 0],
+            "clip_vision": ["4", 0],  # Reuse the existing CLIPVisionLoader node
+            "image": ["61", 0],
+            "model": current_model_input,  # Chain from LoRA output or UNet
+            "weight": strength,
+            "noise": 0.0,
+            "weight_type": "linear",
+            "start_at": 0.0,
+            "end_at": 1.0,
+        },
+    }
+
+    # Point the ModelSamplingSD3 node to the IP-Adapter output
+    wf[model_input_node]["inputs"]["model"] = ["62", 0]
+
+
+def get_ip_adapter_ref(scene: dict, series_name: str) -> str | None:
+    """Get the IP-Adapter reference image for a scene's primary character.
+
+    Returns the filename (relative to ComfyUI/input/) or None if no reference exists.
+    Only returns a reference for dialogue/close-up scenes where face consistency matters.
+    """
+    visual_lower = scene.get("visual", "").lower()
+    is_dialogue = bool(scene.get("dialogue"))
+    is_close = any(w in visual_lower for w in ["close-up", "extreme close", "ecu", "reaction"])
+
+    # Only use IP-Adapter for scenes where character face is prominent
+    if not (is_dialogue or is_close):
+        return None
+
+    characters = scene.get("characters", [])
+    if not characters:
+        return None
+
+    # Use the first character's canonical portrait
+    char_key = characters[0]
+    char_id = char_key.removeprefix("char_")
+    ref_dir = series_path(series_name) / "reference_images"
+    char_ref = ref_dir / f"char_{char_id}.png"
+
+    if char_ref.exists():
+        return copy_to_input(str(char_ref))
+    return None
 
 
 def _char_brief(char: dict) -> str:
@@ -607,62 +828,193 @@ def _char_brief(char: dict) -> str:
     return first if first else visual[:80]
 
 
+def _infer_shot_type(visual: str) -> str:
+    """Infer the shot type from the scene visual description."""
+    v = visual.lower()
+    if any(w in v for w in ["wide shot", "establishing", "aerial", "panoramic", "long shot"]):
+        return "establishing"
+    if any(w in v for w in ["close-up", "extreme close", "ecu", "reaction"]):
+        return "closeup"
+    if any(w in v for w in ["two-shot", "medium two", "medium shot"]):
+        return "medium"
+    return "general"
+
+
+# Camera motion tokens mapped to shot types for systematic cinematography
+CAMERA_MOTION = {
+    "establishing": "slow camera pan, smooth drift",
+    "closeup": "static camera, locked-off tripod",
+    "medium": "static camera, steady shot",
+    "dialogue": "static camera, locked-off tripod",
+    "action": "handheld camera, tracking shot",
+    "general": "",
+}
+
+
 def build_scene_prompt(scene: dict, bible: dict) -> str:
-    """Build a video generation prompt tailored to the scene type."""
-    is_dialogue = bool(scene.get("dialogue"))
+    """Build a structured video generation prompt optimised for HunyuanVideo.
+
+    Prompt order matters — earlier tokens carry more weight in diffusion models.
+    Structure: shot_type → trigger_words → action/composition → camera_motion → location → lighting → style
+
+    This ordering ensures:
+    - Shot framing is established first (composition anchor)
+    - Character LoRAs activate early (visual identity)
+    - Action/composition is the core of the prompt
+    - Camera motion reinforces scene type
+    - Style comes last as a subtle modifier
+    """
     characters = scene.get("characters", [])
+    visual = scene["visual"]
+    visual_lower = visual.lower()
+    is_dialogue = bool(scene.get("dialogue"))
+    shot_type = _infer_shot_type(visual)
 
-    visual_lower = scene["visual"].lower()
-
-    # Style goes FIRST — anchors the whole generation toward the project aesthetic.
     parts: list[str] = []
-    series_style = bible["series"].get("style", "")
-    if series_style:
-        parts.append(series_style)
-    setting = bible.get("world", {}).get("setting", "")
-    if setting:
-        parts.append(setting)
-    tone = bible.get("series", {}).get("tone", "")
-    if tone:
-        parts.append(tone)
 
-    # Character descriptions come BEFORE the scene visual so they land in high-weight
-    # early tokens and the model knows exactly who is in the shot.
-    char_parts = []
+    # 1. Shot type prefix — anchors the composition early
+    #    Only add if the visual description doesn't already specify one
+    has_shot_type = any(w in visual_lower for w in [
+        "wide shot", "close-up", "medium shot", "two-shot", "establishing",
+        "aerial", "long shot", "extreme close", "over-the-shoulder",
+    ])
+    if not has_shot_type:
+        shot_labels = {
+            "establishing": "Wide establishing shot",
+            "closeup": "Close-up shot",
+            "medium": "Medium shot",
+        }
+        if shot_type in shot_labels:
+            parts.append(shot_labels[shot_type])
+
+    # 2. Character trigger words — LoRAs carry the visual knowledge
     for char_id in characters:
         char = bible.get("characters", {}).get(char_id)
-        if char:
-            name = char.get("name", char_id)
-            visual = char.get("visual", "")
-            # Always use the full visual description so the model has enough signal.
-            char_parts.append(f"{name} ({visual})")
-    if char_parts:
-        parts.append(", ".join(char_parts))
+        if not char:
+            continue
+        trigger = char.get("trigger_word", "") if char.get("lora_path") else ""
+        if trigger:
+            parts.append(trigger)
 
-    # Scene visual description
-    parts.append(scene["visual"])
+    # 3. Scene visual — the action / composition (what the user wrote)
+    parts.append(visual)
 
-    # For dialogue scenes: add a stable-camera hint if not already implied.
-    if is_dialogue and not any(w in visual_lower for w in ["static", "close-up", "two-shot", "medium shot", "facing"]):
-        parts.append("static camera, characters facing camera")
+    # 4. Camera motion — systematic per shot type
+    if is_dialogue:
+        cam = CAMERA_MOTION["dialogue"]
+    elif shot_type == "establishing":
+        cam = CAMERA_MOTION["establishing"]
+    elif shot_type == "closeup":
+        cam = CAMERA_MOTION["closeup"]
+    elif any(w in visual_lower for w in ["runs", "chase", "fight", "action", "explosion"]):
+        cam = CAMERA_MOTION["action"]
+    else:
+        cam = CAMERA_MOTION.get(shot_type, "")
+    # Only add camera motion if not already described in the visual
+    if cam and not any(w in visual_lower for w in ["static", "handheld", "tracking", "pan", "push", "drift"]):
+        parts.append(cam)
 
-    # Location — skip for close-ups
+    # 5. Location trigger (LoRA handles the look; skip for close-up dialogue)
     loc_id = scene.get("location")
-    if loc_id and not (is_dialogue and "close-up" in visual_lower):
-        loc_desc = bible.get("world", {}).get("locations", {}).get(loc_id)
-        if loc_desc:
-            parts.append(loc_desc)
+    if loc_id and not (is_dialogue and shot_type == "closeup"):
+        locations_meta = bible.get("locations_meta", {})
+        loc_meta = locations_meta.get(loc_id) or locations_meta.get(f"loc_{loc_id}") if isinstance(locations_meta, dict) else None
+        if loc_meta and isinstance(loc_meta, dict):
+            loc_trigger = loc_meta.get("trigger_word", "") if loc_meta.get("lora_path") else ""
+            if loc_trigger:
+                parts.append(loc_trigger)
+            else:
+                loc_desc = bible.get("world", {}).get("locations", {}).get(loc_id, "")
+                if loc_desc:
+                    parts.append(loc_desc)
+
+    # 6. Style — one short phrase, not the full user description
+    series_style = bible["series"].get("style", "")
+    if series_style:
+        short_style = series_style.split(",")[0].strip()[:60]
+        parts.append(short_style)
 
     return ", ".join(filter(None, parts))
 
 
 def build_negative_prompt(scene: dict) -> str:
-    """Return a negative prompt appropriate for the scene type."""
-    base = "low quality, blurry, distorted, deformed, ugly, watermark, text overlay"
+    """Return a negative prompt tailored to the scene type.
+
+    Different scene types have different failure modes:
+    - Dialogue: camera shake and face blur ruin lip-sync coherence
+    - Establishing: characters appearing where there should be none
+    - Action: static/frozen frames defeat the purpose
+    - Close-up: multiple faces or merged identities
+    """
+    base = "low quality, blurry, distorted, deformed, ugly, watermark, text overlay, oversaturated"
+    visual_lower = scene.get("visual", "").lower()
     is_dialogue = bool(scene.get("dialogue"))
+    shot_type = _infer_shot_type(scene.get("visual", ""))
+
+    extras = []
     if is_dialogue:
-        return f"{base}, fast movement, shaky camera, motion blur, erratic motion, camera shake, blurry faces, extreme camera movement"
+        extras.extend([
+            "fast movement", "shaky camera", "motion blur", "erratic motion",
+            "camera shake", "blurry faces", "extreme camera movement",
+            "multiple people merging", "face distortion",
+        ])
+    if shot_type == "establishing":
+        extras.extend([
+            "people", "characters", "close-up", "indoor",
+            "portrait", "face",
+        ])
+    if shot_type == "closeup":
+        extras.extend([
+            "multiple faces", "duplicate person", "merged faces",
+            "wide shot", "full body", "crowd",
+        ])
+    if any(w in visual_lower for w in ["runs", "chase", "fight", "action"]):
+        extras.extend([
+            "static", "frozen", "lifeless", "stiff movement",
+            "still image", "no motion",
+        ])
+
+    if extras:
+        return f"{base}, {', '.join(extras)}"
     return base
+
+
+def get_scene_lora(scene: dict, bible: dict) -> tuple[str | None, float]:
+    """Legacy single-LoRA interface. Returns the first character LoRA found."""
+    loras = get_scene_loras(scene, bible)
+    if loras:
+        return loras[0]
+    return None, 0.7
+
+
+def get_scene_loras(scene: dict, bible: dict) -> list[tuple[str, float]]:
+    """Return all LoRAs for a scene: up to 2 character LoRAs + 1 location/style LoRA.
+
+    The LoRAs are chained in order:
+      1. Character LoRAs (up to 2, in scene character order)
+      2. Location style LoRA (if the location has one)
+
+    Each entry is (lora_filename, strength).
+    """
+    loras: list[tuple[str, float]] = []
+
+    # Character LoRAs (max 2)
+    for char_id in scene.get("characters", []):
+        if len(loras) >= 2:
+            break
+        char = bible.get("characters", {}).get(char_id)
+        if char and char.get("lora_path"):
+            loras.append((char["lora_path"], char.get("lora_strength", 0.7)))
+
+    # Location style LoRA
+    loc_id = scene.get("location")
+    if loc_id:
+        locations = bible.get("locations_meta", {})
+        loc = locations.get(loc_id) or locations.get(f"loc_{loc_id}") if isinstance(locations, dict) else None
+        if loc and isinstance(loc, dict) and loc.get("lora_path"):
+            loras.append((loc["lora_path"], loc.get("lora_strength", 0.5)))
+
+    return loras
 
 
 # ─── Prompt enhancement via Claude ───────────────────────────────────
@@ -864,7 +1216,58 @@ def copy_to_input(src: str) -> str:
 
 # ─── Stitching ────────────────────────────────────────────────────────
 
-CROSSFADE_DURATION = 0.3  # seconds of dissolve between clips
+CROSSFADE_DURATION = 0.3  # seconds of transition between clips
+
+# Transition types — maps to FFmpeg xfade filter transition names
+TRANSITIONS = {
+    "dissolve":   "dissolve",      # Default — smooth blend
+    "fade_black": "fade",          # Fade through black — scene changes, time jumps
+    "wipe_left":  "wipeleft",      # Wipe left — action transitions
+    "wipe_right": "wiperight",     # Wipe right — return transitions
+    "hard_cut":   None,            # No transition — instant cut (concat)
+}
+
+
+def _pick_transition(scene_a: dict, scene_b: dict) -> str:
+    """Auto-select a transition type based on the scene context.
+
+    Rules:
+    - Same location, dialogue→dialogue: hard_cut (natural conversation flow)
+    - Different location: fade_black (signals scene change)
+    - Establishing shot incoming: dissolve (atmospheric entry)
+    - Action scene outgoing: wipe_left (energy carry)
+    - Default: dissolve
+    """
+    loc_a = scene_a.get("location", "")
+    loc_b = scene_b.get("location", "")
+    same_location = loc_a == loc_b and loc_a
+
+    is_dialogue_a = bool(scene_a.get("dialogue"))
+    is_dialogue_b = bool(scene_b.get("dialogue"))
+
+    visual_b = scene_b.get("visual", "").lower()
+    is_establishing_b = any(w in visual_b for w in ["wide", "establishing", "aerial", "long shot"])
+
+    visual_a = scene_a.get("visual", "").lower()
+    is_action_a = any(w in visual_a for w in ["runs", "chase", "fight", "action", "explosion"])
+
+    # Same location dialogue: hard cut for naturalism
+    if same_location and is_dialogue_a and is_dialogue_b:
+        return "hard_cut"
+
+    # Location change: fade through black
+    if not same_location:
+        return "fade_black"
+
+    # Entering an establishing shot: dissolve
+    if is_establishing_b:
+        return "dissolve"
+
+    # Coming out of action: wipe
+    if is_action_a:
+        return "wipe_left"
+
+    return "dissolve"
 
 
 def _mux_clip_audio(clip_path: str, audio: Path | None, out: str,
@@ -987,11 +1390,15 @@ def _get_video_duration(path: str) -> float:
 def stitch_clips_with_audio(scenes: list, audio_files: list, output_path: Path,
                              crossfade: bool = True, bible: dict | None = None,
                              use_ambience: bool = True, music_path: Path | None = None):
-    """Stitch video clips with per-scene audio, optional ambient, and optional music bed."""
+    """Stitch video clips with per-scene audio, optional ambient, and optional music bed.
+
+    When crossfade=True, auto-selects transition types per scene boundary:
+    dissolve, fade_black, wipe_left, or hard_cut based on scene context.
+    """
     temp_dir = tempfile.mkdtemp()
     try:
         # Step 1: mux each clip with its audio + ambient layers
-        muxed = []
+        muxed = []        # (file_path, scene_dict) pairs for transition selection
         for i, scene in enumerate(scenes):
             clip_path = find_latest_clip(scene["id"])
             if not clip_path:
@@ -1005,17 +1412,19 @@ def stitch_clips_with_audio(scenes: list, audio_files: list, output_path: Path,
             )
             _mux_clip_audio(clip_path, audio, out, ambient=ambient, music=music_path)
             if os.path.exists(out):
-                muxed.append(out)
+                muxed.append((out, scene))
 
         if not muxed:
             print("    No clips to stitch.")
             return
 
+        muxed_files = [m[0] for m in muxed]
+
         if len(muxed) == 1 or not crossfade:
             # Simple concat — no transitions needed
             concat_file = os.path.join(temp_dir, "concat.txt")
             with open(concat_file, "w") as f:
-                for c in muxed:
+                for c in muxed_files:
                     f.write(f"file '{c}'\n")
             subprocess.run([
                 "ffmpeg", "-y", "-f", "concat", "-safe", "0",
@@ -1024,18 +1433,37 @@ def stitch_clips_with_audio(scenes: list, audio_files: list, output_path: Path,
             return
 
         # Step 2: get actual durations for xfade offset calculation
-        durations = [_get_video_duration(c) for c in muxed]
+        durations = [_get_video_duration(c) for c in muxed_files]
 
-        # Step 3: build xfade + acrossfade filter_complex chain
+        # Step 3: determine transition type per boundary
+        transitions = []
+        for i in range(len(muxed) - 1):
+            t = _pick_transition(muxed[i][1], muxed[i + 1][1])
+            transitions.append(t)
+
+        # Step 4: build xfade + acrossfade filter_complex chain
+        #         Hard cuts are handled by concat (no xfade filter needed)
         n = len(muxed)
         xf = CROSSFADE_DURATION
 
+        # Check if ALL transitions are hard cuts — use simple concat
+        if all(t == "hard_cut" for t in transitions):
+            concat_file = os.path.join(temp_dir, "concat.txt")
+            with open(concat_file, "w") as f:
+                for c in muxed_files:
+                    f.write(f"file '{c}'\n")
+            subprocess.run([
+                "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+                "-i", concat_file, "-c", "copy", str(output_path),
+            ], capture_output=True, timeout=120)
+            return
+
         # Input args
         inputs = []
-        for c in muxed:
+        for c in muxed_files:
             inputs += ["-i", c]
 
-        # Build filter chains
+        # Build filter chains with per-boundary transition types
         v_filters = []
         a_filters = []
         offset = durations[0] - xf
@@ -1044,14 +1472,25 @@ def stitch_clips_with_audio(scenes: list, audio_files: list, output_path: Path,
         for i in range(1, n):
             out_v = "[vout]" if i == n - 1 else f"[xfv{i}]"
             out_a = "[aout]" if i == n - 1 else f"[xfa{i}]"
+
+            trans_name = transitions[i - 1]
+            ffmpeg_trans = TRANSITIONS.get(trans_name, "dissolve")
+
+            if ffmpeg_trans is None:
+                # hard_cut within a mixed chain — use 0-duration dissolve (effectively a cut)
+                ffmpeg_trans = "dissolve"
+                dur = 0.01
+            else:
+                dur = xf
+
             v_filters.append(
-                f"{prev_v}[{i}:v]xfade=transition=dissolve:duration={xf}:offset={offset:.3f}{out_v}"
+                f"{prev_v}[{i}:v]xfade=transition={ffmpeg_trans}:duration={dur}:offset={offset:.3f}{out_v}"
             )
             a_filters.append(
-                f"{prev_a}[{i}:a]acrossfade=d={xf}:c1=tri:c2=tri{out_a}"
+                f"{prev_a}[{i}:a]acrossfade=d={dur}:c1=tri:c2=tri{out_a}"
             )
             if i < n - 1:
-                offset += durations[i] - xf
+                offset += durations[i] - dur
             prev_v, prev_a = out_v, out_a
 
         filter_complex = ";".join(v_filters + a_filters)
@@ -1151,6 +1590,173 @@ def generate_srt(episode: dict, bible: dict, output_path: Path):
     output_path.write_text("\n".join(srt_lines), encoding="utf-8")
 
 
+def upscale_video(input_path: Path, output_path: Path, scale: int = 4) -> bool:
+    """
+    Upscale video using Real-ESRGAN (realesrgan-ncnn-vulkan).
+
+    Falls back to FFmpeg lanczos if the binary is not installed.
+    Returns True if upscaling succeeded.
+    """
+    realesrgan_bin = shutil.which("realesrgan-ncnn-vulkan")
+    if not realesrgan_bin:
+        # Fallback: FFmpeg lanczos upscale (lower quality but always available)
+        print(f"      realesrgan-ncnn-vulkan not found — using FFmpeg lanczos {scale}x")
+        try:
+            subprocess.run([
+                "ffmpeg", "-y", "-i", str(input_path),
+                "-vf", f"scale=iw*{scale}:ih*{scale}:flags=lanczos",
+                "-c:a", "copy",
+                "-preset", "fast", "-crf", "18",
+                str(output_path),
+            ], capture_output=True, timeout=600)
+            return output_path.exists()
+        except (subprocess.TimeoutExpired, Exception) as e:
+            print(f"      FFmpeg upscale failed: {e}")
+            return False
+
+    # Real-ESRGAN frame-by-frame upscaling
+    tmp_dir = Path(tempfile.mkdtemp())
+    frames_in = tmp_dir / "frames_in"
+    frames_out = tmp_dir / "frames_out"
+    frames_in.mkdir()
+    frames_out.mkdir()
+
+    try:
+        # 1. Extract frames
+        subprocess.run([
+            "ffmpeg", "-y", "-i", str(input_path),
+            "-qscale:v", "2",
+            str(frames_in / "frame_%06d.png"),
+        ], capture_output=True, timeout=300)
+
+        frame_count = len(list(frames_in.glob("*.png")))
+        if frame_count == 0:
+            print("      No frames extracted")
+            return False
+
+        # 2. Get source FPS
+        probe = subprocess.run([
+            "ffprobe", "-v", "error", "-select_streams", "v:0",
+            "-show_entries", "stream=r_frame_rate",
+            "-of", "csv=p=0", str(input_path),
+        ], capture_output=True, text=True, timeout=30)
+        fps = probe.stdout.strip() or "24"
+
+        print(f"      Upscaling {frame_count} frames {scale}x with Real-ESRGAN...")
+
+        # 3. Upscale frames
+        subprocess.run([
+            realesrgan_bin,
+            "-i", str(frames_in),
+            "-o", str(frames_out),
+            "-s", str(scale),
+            "-n", "realesrgan-x4plus-anime",  # anime-optimised model
+        ], capture_output=True, timeout=600)
+
+        # 4. Re-encode with audio from original
+        subprocess.run([
+            "ffmpeg", "-y",
+            "-framerate", fps,
+            "-i", str(frames_out / "frame_%06d.png"),
+            "-i", str(input_path),
+            "-map", "0:v", "-map", "1:a?",
+            "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+            "-c:a", "copy",
+            "-pix_fmt", "yuv420p",
+            str(output_path),
+        ], capture_output=True, timeout=300)
+
+        return output_path.exists()
+
+    except (subprocess.TimeoutExpired, Exception) as e:
+        print(f"      Upscaling failed: {e}")
+        return False
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+def interpolate_video(input_path: Path, output_path: Path, multiplier: int = 2) -> bool:
+    """
+    Interpolate video frames using RIFE (rife-ncnn-vulkan) for smoother motion.
+
+    multiplier: 2 = 24fps→48fps, 4 = 24fps→96fps (default: 2)
+    Falls back gracefully if the binary is not installed.
+    """
+    rife_bin = shutil.which("rife-ncnn-vulkan")
+    if not rife_bin:
+        print(f"      rife-ncnn-vulkan not found — skipping interpolation")
+        return False
+
+    tmp_dir = Path(tempfile.mkdtemp())
+    frames_in = tmp_dir / "frames_in"
+    frames_out = tmp_dir / "frames_out"
+    frames_in.mkdir()
+    frames_out.mkdir()
+
+    try:
+        # 1. Extract frames
+        subprocess.run([
+            "ffmpeg", "-y", "-i", str(input_path),
+            "-qscale:v", "2",
+            str(frames_in / "frame_%06d.png"),
+        ], capture_output=True, timeout=300)
+
+        frame_count = len(list(frames_in.glob("*.png")))
+        if frame_count == 0:
+            return False
+
+        # 2. Get source FPS
+        probe = subprocess.run([
+            "ffprobe", "-v", "error", "-select_streams", "v:0",
+            "-show_entries", "stream=r_frame_rate",
+            "-of", "csv=p=0", str(input_path),
+        ], capture_output=True, text=True, timeout=30)
+        fps_str = probe.stdout.strip() or "24"
+        # Parse fractional FPS (e.g. "24000/1001")
+        if "/" in fps_str:
+            num, den = fps_str.split("/")
+            src_fps = float(num) / float(den)
+        else:
+            src_fps = float(fps_str)
+        target_fps = src_fps * multiplier
+
+        print(f"      Interpolating {frame_count} frames {multiplier}x ({src_fps:.1f}→{target_fps:.1f} fps)...")
+
+        # 3. Run RIFE interpolation
+        subprocess.run([
+            rife_bin,
+            "-i", str(frames_in),
+            "-o", str(frames_out),
+            "-m", "rife-v4.6",
+            "-n", str(frame_count * multiplier),
+        ], capture_output=True, timeout=600)
+
+        out_count = len(list(frames_out.glob("*.png")))
+        if out_count == 0:
+            return False
+
+        # 4. Re-encode at target FPS with audio from original
+        subprocess.run([
+            "ffmpeg", "-y",
+            "-framerate", str(target_fps),
+            "-i", str(frames_out / "%08d.png"),
+            "-i", str(input_path),
+            "-map", "0:v", "-map", "1:a?",
+            "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+            "-c:a", "copy",
+            "-pix_fmt", "yuv420p",
+            str(output_path),
+        ], capture_output=True, timeout=300)
+
+        return output_path.exists()
+
+    except (subprocess.TimeoutExpired, Exception) as e:
+        print(f"      Interpolation failed: {e}")
+        return False
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
 def burn_subtitles(input_path: Path, srt_path: Path, output_path: Path):
     """Burn SRT subtitles onto the video with styled white text."""
     style = (
@@ -1217,18 +1823,24 @@ def build_t2i_workflow(
     }
 
 
-def build_ref_workflow(prompt: str, seed: int, prefix: str) -> dict:
-    """T2V workflow that generates a single frame — used for character/location reference images."""
+def build_ref_workflow(prompt: str, seed: int, prefix: str,
+                       width: int = 480, height: int = 320, steps: int = 30) -> dict:
+    """HunyuanVideo 1.5 T2V workflow that generates a single frame.
+
+    Used for character/location reference images when engine='hunyuan'.
+    Produces images that match the video model's visual style exactly,
+    which improves I2V seeding consistency.
+    """
     return {
-        "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": "hunyuanvideo1.5_480p_t2v_cfg_distilled-Q4_K_S.gguf"}},
+        "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": "hunyuanvideo1.5_480p_t2v_cfg_distilled-Q5_K_S.gguf"}},
         "2": {"class_type": "DualCLIPLoader", "inputs": {"clip_name1": "qwen_2.5_vl_7b_fp8_scaled.safetensors", "clip_name2": "byt5_small_glyphxl_fp16.safetensors", "type": "hunyuan_video_15"}},
         "3": {"class_type": "VAELoader", "inputs": {"vae_name": "hunyuanvideo15_vae_fp16.safetensors"}},
         "4": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
         "5": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": "blurry, motion blur, multiple people, duplicate"}},
-        "6": {"class_type": "EmptyHunyuanVideo15Latent", "inputs": {"width": 480, "height": 320, "length": 1, "batch_size": 1}},
+        "6": {"class_type": "EmptyHunyuanVideo15Latent", "inputs": {"width": width, "height": height, "length": 1, "batch_size": 1}},
         "7": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": 5.0}},
         "8": {"class_type": "CFGGuider", "inputs": {"model": ["7", 0], "positive": ["4", 0], "negative": ["5", 0], "cfg": 1.0}},
-        "9": {"class_type": "BasicScheduler", "inputs": {"model": ["7", 0], "scheduler": "simple", "steps": 30, "denoise": 1.0}},
+        "9": {"class_type": "BasicScheduler", "inputs": {"model": ["7", 0], "scheduler": "simple", "steps": steps, "denoise": 1.0}},
         "10": {"class_type": "RandomNoise", "inputs": {"noise_seed": seed}},
         "11": {"class_type": "KSamplerSelect", "inputs": {"sampler_name": "euler"}},
         "12": {"class_type": "SamplerCustomAdvanced", "inputs": {"noise": ["10", 0], "guider": ["8", 0], "sampler": ["11", 0], "sigmas": ["9", 0], "latent_image": ["6", 0]}},
@@ -1237,10 +1849,14 @@ def build_ref_workflow(prompt: str, seed: int, prefix: str) -> dict:
     }
 
 
-def generate_reference_images(series_name: str, bible: dict, force: bool = False):
+def generate_reference_images(series_name: str, bible: dict, force: bool = False,
+                              engine: str = "flux"):
     """
-    Generate canonical reference images for all characters and locations in the bible
-    using FLUX.1-schnell T2I (replaces the old HunyuanVideo single-frame approach).
+    Generate canonical reference images for all characters and locations in the bible.
+
+    engine:
+      "flux"      — FLUX.1-schnell T2I (fast, high quality stills, different style from video model)
+      "hunyuan"   — HunyuanVideo 1.5 single-frame T2V (matches video model style exactly)
 
     Character keys in the bible are already prefixed ("char_1", "char_2", …) as are
     location keys ("loc_1", …).  The prefix is used directly as the output filename
@@ -1282,7 +1898,8 @@ def generate_reference_images(series_name: str, bible: dict, force: bool = False
                        ", ".join(filter(None, prompt_parts)), 640, 360))
 
     refs_out = COMFYUI_DIR / "output" / "refs"
-    print(f"  Generating {len(items)} reference images with FLUX T2I...")
+    engine_label = "HunyuanVideo T2V" if engine == "hunyuan" else "FLUX T2I"
+    print(f"  Generating {len(items)} reference images with {engine_label}...")
 
     for prefix, label, prompt, width, height in items:
         out_png = ref_dir / f"{prefix}.png"
@@ -1290,8 +1907,11 @@ def generate_reference_images(series_name: str, bible: dict, force: bool = False
             print(f"    {label} — exists, skipping")
             continue
 
-        print(f"    {label} ({width}×{height})...")
-        wf = build_t2i_workflow(prompt, seed=999, prefix=prefix, width=width, height=height)
+        print(f"    {label} ({width}×{height}) [{engine_label}]...")
+        if engine == "hunyuan":
+            wf = build_ref_workflow(prompt, seed=999, prefix=prefix)
+        else:
+            wf = build_t2i_workflow(prompt, seed=999, prefix=prefix, width=width, height=height)
         try:
             prompt_id = queue_prompt(wf)
         except requests.ConnectionError:
@@ -1335,8 +1955,9 @@ def get_scene_seed_image(scene: dict, series_name: str, current_chain: str | Non
     is_establishing = any(w in visual_lower for w in ["wide shot", "establishing", "aerial", "wide establishing", "long shot"])
     is_dialogue = bool(scene.get("dialogue"))
 
-    # 2. Dialogue/close-up → character reference
-    # Characters are keyed as "char_1" in scene dicts; strip prefix to get the file ID.
+    # 2. Character portrait seed — only for close-up or dialogue scenes.
+    # For wider/action scenes, LoRAs alone handle character appearance
+    # and T2V produces better results than I2V constrained by a portrait.
     if (is_close or is_dialogue) and scene.get("characters"):
         char_key = scene["characters"][0]                          # e.g. "char_1"
         char_id  = char_key.removeprefix("char_")                  # e.g. "1"
@@ -1473,7 +2094,8 @@ def cmd_gen_refs(args):
     sp = series_path(args.series)
     bible = load_json(sp / "bible.json")
     print(f"\nGenerating reference images for: {bible['series']['title']}")
-    generate_reference_images(args.series, bible, force=args.force)
+    engine = getattr(args, "engine", "flux")
+    generate_reference_images(args.series, bible, force=args.force, engine=engine)
 
 
 def cmd_review(args):
@@ -1988,6 +2610,11 @@ def cmd_produce(args):
     """Produce an episode: generate video + audio + stitch."""
     args.steps = QUALITY_STEPS.get(getattr(args, "quality", "draft"), 15)
 
+    # Resolve generation resolution (auto-detect VRAM or use explicit flag)
+    resolution = getattr(args, "resolution", "auto")
+    res_config = get_resolution_config(resolution)
+    print(f"  Resolution: {res_config['label']} (shift={res_config['shift']})")
+
     sp = series_path(args.series)
     bible = load_json(sp / "bible.json")
     ep_num = args.episode
@@ -2053,6 +2680,14 @@ def cmd_produce(args):
         seed = args.seed_base + i + 1
         cl = CLIP_LENGTHS.get(scene.get("clip_length", "long"), CLIP_LENGTHS["long"])
         frames = cl["frames"]
+
+        # Dynamic clip length: if TTS audio exists, match frame count to audio duration
+        audio_file = audio_files[i] if i < len(audio_files) else None
+        if audio_file and Path(str(audio_file)).exists():
+            audio_dur = _get_video_duration(str(audio_file))
+            if audio_dur > 0:
+                frames = frames_for_duration(audio_dur)
+
         base_prompt = build_scene_prompt(scene, bible)
 
         if use_enhance:
@@ -2102,10 +2737,27 @@ def cmd_produce(args):
         else:
             seed_image = get_scene_seed_image(scene, args.series, current_image)
 
+        # Collect all LoRAs for this scene (up to 2 chars + 1 location)
+        scene_loras = get_scene_loras(scene, bible)
+        if scene_loras:
+            for ln, ls in scene_loras:
+                print(f"      LoRA: {ln} (strength={ls})")
+
         if seed_image:
-            wf = build_i2v_workflow(prompt, seed_image, seed, clip_prefix, frames, negative_prompt=neg, steps=args.steps, denoise=getattr(args, 'denoise', DEFAULT_DENOISE))
+            wf = build_i2v_workflow(prompt, seed_image, seed, clip_prefix, frames, negative_prompt=neg, steps=args.steps, denoise=getattr(args, 'denoise', DEFAULT_DENOISE), loras=scene_loras, res_config=res_config)
         else:
-            wf = build_t2v_workflow(prompt, seed, clip_prefix, frames, negative_prompt=neg, steps=args.steps)
+            wf = build_t2v_workflow(prompt, seed, clip_prefix, frames, negative_prompt=neg, steps=args.steps, loras=scene_loras, res_config=res_config)
+
+        # IP-Adapter: inject character reference conditioning for dialogue/close-up scenes
+        use_ip_adapter = getattr(args, "ip_adapter", False)
+        if use_ip_adapter:
+            ip_ref = get_ip_adapter_ref(scene, args.series)
+            if ip_ref:
+                ip_strength = getattr(args, "ip_adapter_strength", IP_ADAPTER_DEFAULT_STRENGTH)
+                # For I2V workflow, model node is "10"; for T2V, it's "7"
+                model_node = "10" if seed_image else "7"
+                _insert_ip_adapter(wf, ip_ref, strength=ip_strength, model_input_node=model_node)
+                print(f"      IP-Adapter: {ip_ref} (strength={ip_strength})")
 
         try:
             prompt_id = queue_prompt(wf)
@@ -2183,6 +2835,20 @@ def cmd_produce(args):
         stitch_clips_silent(scenes, stitched)
 
     current = stitched
+
+    # ─── Upscale ──────────────────────────────────────────────────
+    if getattr(args, "upscale", False) and current.exists():
+        print(f"  Upscaling video...")
+        upscaled = ep_out / f"ep{ep_num:02d}_upscaled.mp4"
+        if upscale_video(current, upscaled, scale=getattr(args, "upscale_factor", 4)):
+            current = upscaled
+
+    # ─── Frame interpolation ─────────────────────────────────────
+    if getattr(args, "interpolate", False) and current.exists():
+        print(f"  Interpolating frames...")
+        interpolated = ep_out / f"ep{ep_num:02d}_interpolated.mp4"
+        if interpolate_video(current, interpolated, multiplier=2):
+            current = interpolated
 
     # ─── Colour grade ────────────────────────────────────────────
     if not args.no_grade and current.exists():
@@ -2295,6 +2961,18 @@ def main():
                            help="Only regenerate scenes flagged via 'review' command")
     p_produce.add_argument("--enhance", action="store_true",
                            help="Enhance scene prompts via Claude before generation (cached per scene)")
+    p_produce.add_argument("--upscale", action="store_true",
+                           help="Upscale stitched video with Real-ESRGAN (4x, requires realesrgan-ncnn-vulkan; falls back to FFmpeg lanczos)")
+    p_produce.add_argument("--upscale-factor", type=int, default=4, choices=[2, 4],
+                           help="Upscale factor (default: 4)")
+    p_produce.add_argument("--interpolate", action="store_true",
+                           help="Interpolate frames with RIFE for smoother motion (2x, requires rife-ncnn-vulkan)")
+    p_produce.add_argument("--resolution", choices=["480p", "720p", "auto"], default="auto",
+                           help="Generation resolution: 480p (8GB), 720p (24GB+), auto (detect VRAM) (default: auto)")
+    p_produce.add_argument("--ip-adapter", action="store_true",
+                           help="Use IP-Adapter for character consistency in dialogue/close-up scenes (requires ComfyUI-IPAdapter-plus)")
+    p_produce.add_argument("--ip-adapter-strength", type=float, default=IP_ADAPTER_DEFAULT_STRENGTH,
+                           help=f"IP-Adapter conditioning strength 0.0–1.0 (default: {IP_ADAPTER_DEFAULT_STRENGTH})")
 
     p_all = sub.add_parser("produce-all", help="Produce all episodes")
     p_all.add_argument("series")
@@ -2311,6 +2989,16 @@ def main():
     p_all.add_argument("--no-music", action="store_true")
     p_all.add_argument("--enhance", action="store_true",
                        help="Enhance scene prompts via Claude before generation")
+    p_all.add_argument("--upscale", action="store_true",
+                       help="Upscale stitched video with Real-ESRGAN (4x)")
+    p_all.add_argument("--upscale-factor", type=int, default=4, choices=[2, 4])
+    p_all.add_argument("--interpolate", action="store_true",
+                       help="Interpolate frames with RIFE (2x smoother motion)")
+    p_all.add_argument("--resolution", choices=["480p", "720p", "auto"], default="auto",
+                       help="Generation resolution (default: auto)")
+    p_all.add_argument("--ip-adapter", action="store_true",
+                       help="Use IP-Adapter for character consistency")
+    p_all.add_argument("--ip-adapter-strength", type=float, default=IP_ADAPTER_DEFAULT_STRENGTH)
 
     p_amb = sub.add_parser("setup-ambience", help="Generate synthetic ambient audio files")
     p_amb.add_argument("--duration", type=int, default=60, help="Loop duration in seconds (default: 60)")
@@ -2332,6 +3020,8 @@ def main():
     p_refs = sub.add_parser("gen-refs", help="Generate canonical reference images for all characters and locations")
     p_refs.add_argument("series")
     p_refs.add_argument("--force", action="store_true", help="Regenerate even if images already exist")
+    p_refs.add_argument("--engine", choices=["flux", "hunyuan"], default="flux",
+                        help="Portrait engine: flux (FLUX T2I, fast, sharp stills) or hunyuan (HunyuanVideo single-frame, matches video style) (default: flux)")
 
     p_review = sub.add_parser("review", help="Interactively review clips and flag weak ones for regeneration")
     p_review.add_argument("series")
