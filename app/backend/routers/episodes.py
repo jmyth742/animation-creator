@@ -264,9 +264,28 @@ def produce_episode(
     quality: str = "draft",
     force: bool = False,
     denoise: float = 0.82,
+    video_model: str = "hunyuan",
+    resolution: str = "auto",
+    enhance: bool = True,
+    upscale: bool = False,
+    interpolate: bool = False,
+    ip_adapter: bool = False,
+    lip_sync: bool = False,
+    tts_engine: str = "edge",
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ProduceResponse:
+    """Produce an episode with full control over generation options.
+
+    New options:
+      resolution: "480p", "720p", or "auto" (detect VRAM)
+      enhance: Claude-enhanced prompts (default: true)
+      upscale: Real-ESRGAN 4x upscaling post-process
+      interpolate: RIFE 2x frame interpolation (24→48fps)
+      ip_adapter: IP-Adapter character consistency for dialogue scenes
+      lip_sync: Wav2Lip lip sync for dialogue scenes
+      tts_engine: "edge" (default) or "xtts" (voice cloning)
+    """
     ep = _get_episode_or_404(episode_id, current_user, db)
 
     # Check ComfyUI is reachable
@@ -287,6 +306,16 @@ def produce_episode(
     thread = threading.Thread(
         target=produce_episode_job,
         args=(job.id, episode_id, quality, force, denoise),
+        kwargs=dict(
+            video_model=video_model,
+            resolution=resolution,
+            enhance=enhance,
+            upscale=upscale,
+            interpolate=interpolate,
+            ip_adapter=ip_adapter,
+            lip_sync=lip_sync,
+            tts_engine=tts_engine,
+        ),
         daemon=True,
     )
     thread.start()

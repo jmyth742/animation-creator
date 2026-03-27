@@ -198,7 +198,7 @@ function SceneRow({ scene, onEdit, onDelete, onRegenerate, onOpenSceneStudio, on
             {scene.preview_url && (
               <div className="mt-2">
                 <video
-                  src={scene.preview_url}
+                  src={`${scene.preview_url}?v=${encodeURIComponent(scene.output_clip_path || '')}`}
                   autoPlay loop muted playsInline
                   className="h-16 border border-zinc-700 cursor-pointer hover:border-accent-500 transition-colors"
                   style={{ aspectRatio: '16/9', objectFit: 'cover' }}
@@ -282,7 +282,7 @@ function SceneRow({ scene, onEdit, onDelete, onRegenerate, onOpenSceneStudio, on
       </div>
 
       {previewOpen && scene.preview_url && (
-        <ScenePreviewModal url={scene.preview_url} onClose={() => setPreviewOpen(false)} />
+        <ScenePreviewModal url={`${scene.preview_url}?v=${encodeURIComponent(scene.output_clip_path || '')}`} onClose={() => setPreviewOpen(false)} />
       )}
     </>
   )
@@ -298,6 +298,17 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
   const [sceneStudio, setSceneStudio] = useState(null)
   const [sceneHistory, setSceneHistory] = useState(null)
   const [producing, setProducing] = useState(false)
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [advOpts, setAdvOpts] = useState({
+    video_model: 'hunyuan',
+    resolution: 'auto',
+    enhance: true,
+    upscale: false,
+    interpolate: false,
+    ip_adapter: false,
+    lip_sync: false,
+    tts_engine: 'edge',
+  })
   const pollRef = useRef(null)
 
   const locations = project.locations || []
@@ -357,7 +368,18 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
   const handleProduce = async (quality, force = false, denoise = 0.82) => {
     setProducing(true)
     try {
-      const result = await post(`/episodes/${episode.id}/produce?quality=${quality}&force=${force}&denoise=${denoise}`)
+      const params = new URLSearchParams({
+        quality, force, denoise,
+        video_model: advOpts.video_model,
+        resolution: advOpts.resolution,
+        enhance: advOpts.enhance,
+        upscale: advOpts.upscale,
+        interpolate: advOpts.interpolate,
+        ip_adapter: advOpts.ip_adapter,
+        lip_sync: advOpts.lip_sync,
+        tts_engine: advOpts.tts_engine,
+      })
+      const result = await post(`/episodes/${episode.id}/produce?${params}`)
       onProduce(result.job_id, { episodeTitle: episode.title, seriesSlug: project.series_slug, episodeNumber: episode.number })
     } catch (err) {
       alert(err.response?.data?.detail || 'Failed to start production.')
@@ -425,6 +447,71 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
               <button onClick={() => handleProduce('quality', true, 0.82)} className="w-full text-left px-3 py-1.5 text-retro text-amber-400 hover:bg-zinc-700" style={{ fontSize: '15px' }}>
                 ↺ QUALITY + REGEN ALL
               </button>
+
+              {/* ── Advanced options toggle ── */}
+              <div className="border-t border-zinc-700">
+                <button onClick={(e) => { e.stopPropagation(); setShowAdvanced(v => !v) }}
+                  className="w-full text-left px-3 py-2 text-retro text-zinc-500 hover:bg-zinc-700 flex items-center justify-between" style={{ fontSize: '15px' }}>
+                  <span>{showAdvanced ? '▾' : '▸'} ADVANCED OPTIONS</span>
+                  <span className="text-zinc-700" style={{ fontSize: '11px' }}>
+                    {[advOpts.video_model === 'wan' && 'WAN', advOpts.upscale && '4K', advOpts.interpolate && '48fps', advOpts.lip_sync && 'LIP', advOpts.tts_engine === 'xtts' && 'XTTS'].filter(Boolean).join(' ') || ''}
+                  </span>
+                </button>
+                {showAdvanced && (
+                  <div className="px-3 pb-3 space-y-2" onClick={(e) => e.stopPropagation()}>
+                    {/* Video Model */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-retro text-zinc-400" style={{ fontSize: '13px' }}>Video Model</span>
+                      <select value={advOpts.video_model} onChange={(e) => setAdvOpts(o => ({...o, video_model: e.target.value}))}
+                        className="bg-zinc-900 border border-zinc-600 text-zinc-300 text-retro px-2 py-0.5" style={{ fontSize: '13px' }}>
+                        <option value="hunyuan">HunyuanVideo 1.5</option>
+                        <option value="wan">WAN 2.1 (14B)</option>
+                      </select>
+                    </div>
+
+                    {/* Resolution */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-retro text-zinc-400" style={{ fontSize: '13px' }}>Resolution</span>
+                      <select value={advOpts.resolution} onChange={(e) => setAdvOpts(o => ({...o, resolution: e.target.value}))}
+                        className="bg-zinc-900 border border-zinc-600 text-zinc-300 text-retro px-2 py-0.5" style={{ fontSize: '13px' }}>
+                        <option value="auto">Auto-detect</option>
+                        <option value="480p">480p (8GB)</option>
+                        <option value="720p">720p (24GB+)</option>
+                      </select>
+                    </div>
+
+                    {/* Toggle switches */}
+                    {[
+                      { key: 'enhance', label: 'Enhance prompts', desc: 'Claude rewrites prompts' },
+                      { key: 'upscale', label: 'Upscale (4x)', desc: 'Real-ESRGAN post-process' },
+                      { key: 'interpolate', label: 'Interpolate (48fps)', desc: 'RIFE frame smoothing' },
+                      { key: 'ip_adapter', label: 'IP-Adapter', desc: 'Character face consistency' },
+                      { key: 'lip_sync', label: 'Lip sync', desc: 'Wav2Lip for dialogue' },
+                    ].map(({ key, label, desc }) => (
+                      <label key={key} className="flex items-center justify-between cursor-pointer group">
+                        <div>
+                          <span className="text-retro text-zinc-300 group-hover:text-zinc-100" style={{ fontSize: '13px' }}>{label}</span>
+                          <span className="text-retro text-zinc-600 ml-2" style={{ fontSize: '11px' }}>{desc}</span>
+                        </div>
+                        <div className={`w-8 h-4 rounded-sm flex items-center px-0.5 transition-colors cursor-pointer ${advOpts[key] ? 'bg-accent-600' : 'bg-zinc-700'}`}
+                          onClick={() => setAdvOpts(o => ({...o, [key]: !o[key]}))}>
+                          <div className={`w-3 h-3 bg-zinc-200 rounded-sm transition-transform ${advOpts[key] ? 'translate-x-3.5' : 'translate-x-0'}`} />
+                        </div>
+                      </label>
+                    ))}
+
+                    {/* TTS Engine */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-retro text-zinc-400" style={{ fontSize: '13px' }}>TTS Engine</span>
+                      <select value={advOpts.tts_engine} onChange={(e) => setAdvOpts(o => ({...o, tts_engine: e.target.value}))}
+                        className="bg-zinc-900 border border-zinc-600 text-zinc-300 text-retro px-2 py-0.5" style={{ fontSize: '13px' }}>
+                        <option value="edge">Edge-TTS (fast)</option>
+                        <option value="xtts">XTTS v2 (voice clone)</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

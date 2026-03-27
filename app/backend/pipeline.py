@@ -237,6 +237,15 @@ def produce_episode_job(
     quality: str = "draft",
     force: bool = False,
     denoise: float = showrunner.DEFAULT_DENOISE,
+    *,
+    video_model: str = "hunyuan",
+    resolution: str = "auto",
+    enhance: bool = True,
+    upscale: bool = False,
+    interpolate: bool = False,
+    ip_adapter: bool = False,
+    lip_sync: bool = False,
+    tts_engine: str = "edge",
 ) -> None:
     """
     Intended to run in a background threading.Thread.
@@ -302,8 +311,17 @@ def produce_episode_job(
             no_ambience=False,
             no_music=False,
             flagged_only=False,
-            enhance=True,
+            enhance=enhance,
             denoise=denoise,
+            video_model=video_model,
+            resolution=resolution,
+            upscale=upscale,
+            upscale_factor=4,
+            interpolate=interpolate,
+            ip_adapter=ip_adapter,
+            ip_adapter_strength=showrunner.IP_ADAPTER_DEFAULT_STRENGTH,
+            lip_sync=lip_sync,
+            tts_engine=tts_engine,
         )
 
         log_buf = io.StringIO()

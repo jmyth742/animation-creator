@@ -59,64 +59,106 @@ COMFYUI_INPUT = COMFYUI_DIR / "input"
 COMFYUI_OUTPUT = COMFYUI_DIR / "output" / "video"
 SERVER = "http://localhost:8188"
 
-# Clip length constraints for 8GB VRAM at 480×320
-CLIP_LENGTHS = {
-    "short": {"frames": 49, "seconds": 2.0, "use_for": "action, transitions, quick cuts"},
-    "medium": {"frames": 65, "seconds": 2.7, "use_for": "dialogue, character moments"},
-    "long": {"frames": 81, "seconds": 3.4, "use_for": "establishing shots, atmospheric, emotional beats"},
-}
+# ─── Model configurations ────────────────────────────────────────────
+# Each video model has its own resolution presets, clip lengths, quality steps,
+# and workflow structure. Toggle between models via --video-model flag.
 
-# Inference quality presets (steps)
-QUALITY_STEPS = {
-    "draft": 20,   # ~2min per clip — quick iteration
-    "good":  30,   # ~3min per clip — solid quality
-    "final": 50,   # ~5min per clip — maximum quality
+MODEL_CONFIGS = {
+    "hunyuan": {
+        "label": "HunyuanVideo 1.5",
+        "fps": 24,
+        "cfg": 1.0,          # Distilled model — must be 1.0
+        "sampler": "euler",
+        "scheduler": "simple",
+        "clip_lengths": {
+            "short":  {"frames": 49, "seconds": 2.0},
+            "medium": {"frames": 65, "seconds": 2.7},
+            "long":   {"frames": 81, "seconds": 3.4},
+        },
+        "quality_steps": {"draft": 20, "good": 30, "final": 50},
+        "resolutions": {
+            "480p": {
+                "width": 848, "height": 480, "shift": 5.0,
+                "t2v_unet": "hunyuanvideo1.5_480p_t2v_cfg_distilled-Q5_K_S.gguf",
+                "i2v_unet": "hunyuanvideo1.5_480p_i2v_cfg_distilled-Q5_K_S.gguf",
+                "min_vram_gb": 8, "label": "480p (848×480)",
+            },
+            "720p": {
+                "width": 1280, "height": 720, "shift": 9.0,
+                "t2v_unet": "hunyuanvideo1.5_480p_t2v_cfg_distilled-Q5_K_S.gguf",
+                "i2v_unet": "hunyuanvideo1.5_480p_i2v_cfg_distilled-Q5_K_S.gguf",
+                "min_vram_gb": 24, "label": "720p (1280×720)",
+            },
+        },
+        "text_encoders": {
+            "clip1": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+            "clip2": "byt5_small_glyphxl_fp16.safetensors",
+            "clip_type": "hunyuan_video_15",
+        },
+        "vae": "hunyuanvideo15_vae_fp16.safetensors",
+        "clip_vision": "sigclip_vision_patch14_384.safetensors",
+        "lora_loader": "LoraLoaderModelOnly",
+    },
+    "wan": {
+        "label": "WAN 2.1 (14B)",
+        "fps": 16,
+        "cfg": 5.0,
+        "sampler": "uni_pc_bh2",
+        "scheduler": "simple",
+        "clip_lengths": {
+            "short":  {"frames": 33, "seconds": 2.1},
+            "medium": {"frames": 49, "seconds": 3.1},
+            "long":   {"frames": 81, "seconds": 5.1},
+        },
+        "quality_steps": {"draft": 15, "good": 25, "final": 40},
+        "resolutions": {
+            "480p": {
+                "width": 832, "height": 480, "shift": 8.0,
+                "t2v_unet": "wan2.1-t2v-14b-Q5_K_S.gguf",
+                "i2v_unet": "wan2.1-i2v-14b-480p-Q5_K_S.gguf",
+                "min_vram_gb": 12, "label": "480p (832×480)",
+            },
+            "720p": {
+                "width": 1280, "height": 720, "shift": 8.0,
+                "t2v_unet": "wan2.1-t2v-14b-Q5_K_S.gguf",
+                "i2v_unet": "wan2.1-i2v-14b-480p-Q5_K_S.gguf",
+                "min_vram_gb": 24, "label": "720p (1280×720)",
+            },
+        },
+        "text_encoders": {
+            "clip1": "umt5-xxl-encoder-Q8_0.gguf",
+            "clip_type": "wan",
+        },
+        "vae": "Wan2.1_VAE.pth",
+        "clip_vision": "sigclip_vision_patch14_384.safetensors",  # Reuse existing
+        "lora_loader": "LoraLoaderModelOnly",
+    },
 }
+DEFAULT_VIDEO_MODEL = "hunyuan"
+
+# Inference quality presets — these are overridden by model config but kept for backward compat
+QUALITY_STEPS = MODEL_CONFIGS["hunyuan"]["quality_steps"]
+
+# Clip length presets — backward compat alias
+CLIP_LENGTHS = MODEL_CONFIGS["hunyuan"]["clip_lengths"]
 
 # I2V denoise presets — lower = closer to reference image
 DENOISE_PRESETS = {
-    "faithful": 0.70,   # Strong reference adherence
-    "balanced": 0.82,   # Good fidelity + natural motion
-    "creative": 1.0,    # Full freedom (legacy behavior)
+    "faithful": 0.70,
+    "balanced": 0.82,
+    "creative": 1.0,
 }
 DEFAULT_DENOISE = 0.82
 
-# ─── Resolution presets ──────────────────────────────────────────────
-# Each preset defines the generation resolution, model shift, and UNet model.
-# Higher resolutions need more VRAM — auto-detected or set via --resolution.
-
-RESOLUTION_PRESETS = {
-    "480p": {
-        "width": 848, "height": 480,
-        "shift": 5.0,
-        "t2v_unet": "hunyuanvideo1.5_480p_t2v_cfg_distilled-Q5_K_S.gguf",
-        "i2v_unet": "hunyuanvideo1.5_480p_i2v_cfg_distilled-Q5_K_S.gguf",
-        "min_vram_gb": 8,
-        "label": "480p (848×480)",
-    },
-    "720p": {
-        "width": 1280, "height": 720,
-        "shift": 9.0,
-        "t2v_unet": "hunyuanvideo1.5_480p_t2v_cfg_distilled-Q5_K_S.gguf",
-        "i2v_unet": "hunyuanvideo1.5_480p_i2v_cfg_distilled-Q5_K_S.gguf",
-        "min_vram_gb": 24,
-        "label": "720p (1280×720)",
-    },
-}
-DEFAULT_RESOLUTION = "480p"
-
 
 def detect_vram_gb() -> float:
-    """Query ComfyUI system info for available GPU VRAM in GB.
-    Returns 0 if ComfyUI is unreachable or no GPU is detected.
-    """
+    """Query ComfyUI system info for available GPU VRAM in GB."""
     try:
         r = requests.get(f"{SERVER}/system_stats", timeout=5)
         if r.status_code == 200:
             data = r.json()
             devices = data.get("devices", [])
             if devices:
-                # Return VRAM of first GPU in bytes → GB
                 vram = devices[0].get("vram_total", 0)
                 return vram / (1024 ** 3)
     except Exception:
@@ -124,36 +166,36 @@ def detect_vram_gb() -> float:
     return 0.0
 
 
-def auto_detect_resolution() -> str:
-    """Auto-select the best resolution preset based on available VRAM."""
-    vram = detect_vram_gb()
-    if vram >= 24:
-        return "720p"
-    return "480p"
+def get_model_config(video_model: str = DEFAULT_VIDEO_MODEL) -> dict:
+    """Get the full configuration dict for a video model."""
+    return MODEL_CONFIGS.get(video_model, MODEL_CONFIGS[DEFAULT_VIDEO_MODEL])
 
 
-def get_resolution_config(resolution: str | None = None) -> dict:
-    """Get resolution configuration, auto-detecting if resolution is 'auto' or None."""
+def get_resolution_config(resolution: str | None = None, video_model: str = DEFAULT_VIDEO_MODEL) -> dict:
+    """Get resolution configuration, auto-detecting VRAM if resolution is 'auto'."""
+    mc = get_model_config(video_model)
+    resolutions = mc["resolutions"]
+
     if resolution == "auto" or resolution is None:
-        resolution = auto_detect_resolution()
-    return RESOLUTION_PRESETS.get(resolution, RESOLUTION_PRESETS[DEFAULT_RESOLUTION])
+        vram = detect_vram_gb()
+        resolution = "720p" if vram >= 24 else "480p"
+
+    return resolutions.get(resolution, list(resolutions.values())[0])
 
 
-# Frame count constraints for HunyuanVideo (must be 4n+1)
-MIN_FRAMES = 33   # ~1.4s — minimum viable clip
-MAX_FRAMES = 97   # ~4.0s — maximum before VRAM issues at 480p
-FPS = 24
+# Frame count constraints (must be 4n+1 for both HunyuanVideo and WAN)
+MIN_FRAMES = 33   # ~1.4s at 24fps / ~2.1s at 16fps
+MAX_FRAMES = 97   # ~4.0s at 24fps / ~6.1s at 16fps
 
 
-def frames_for_duration(seconds: float) -> int:
-    """Compute the nearest valid HunyuanVideo frame count for a given duration.
+def frames_for_duration(seconds: float, fps: int = 24) -> int:
+    """Compute the nearest valid frame count (4n+1) for a given duration.
 
-    HunyuanVideo requires frame counts of the form 4n+1 (1, 5, 9, ..., 49, 65, 81, 97).
+    Both HunyuanVideo and WAN require frame counts of the form 4n+1.
     Returns the closest valid count within MIN_FRAMES..MAX_FRAMES, with a small
     buffer (+0.3s) to ensure audio fits comfortably within the clip.
     """
-    target = int(round((seconds + 0.3) * FPS))  # Add 0.3s breathing room
-    # Round to nearest 4n+1
+    target = int(round((seconds + 0.3) * fps))
     n = round((target - 1) / 4)
     frames = 4 * n + 1
     return max(MIN_FRAMES, min(MAX_FRAMES, frames))
@@ -729,6 +771,132 @@ def build_i2v_workflow(prompt: str, image_name: str, seed: int, clip_prefix: str
     lora_list = loras or ([(lora_name, lora_strength)] if lora_name else [])
     _insert_lora_chain(wf, lora_list, unet_node="1", sampler_model_node="10")
     return wf
+
+
+# ─── WAN 2.1 workflow builders ──────────────────────────────────────
+
+def build_wan_t2v_workflow(prompt: str, seed: int, clip_prefix: str, frames: int,
+                            negative_prompt: str = "", steps: int = 25,
+                            loras: list[tuple[str, float]] | None = None,
+                            res_config: dict | None = None,
+                            model_config: dict | None = None) -> dict:
+    """Build a WAN 2.1 T2V workflow for ComfyUI.
+
+    Uses CLIPLoaderGGUF for the GGUF-quantized UMT5-XXL text encoder,
+    UnetLoaderGGUF for the GGUF-quantized DiT, and standard VAELoader.
+    """
+    mc = model_config or MODEL_CONFIGS["wan"]
+    rc = res_config or list(mc["resolutions"].values())[0]
+    te = mc["text_encoders"]
+
+    wf = {
+        "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc["t2v_unet"]}},
+        "2": {"class_type": "CLIPLoaderGGUF", "inputs": {"clip_name": te["clip1"], "type": te["clip_type"]}},
+        "3": {"class_type": "VAELoader", "inputs": {"vae_name": mc["vae"]}},
+        "4": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
+        "5": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": negative_prompt}},
+        "6": {"class_type": "EmptySD3LatentImage", "inputs": {"width": rc["width"], "height": rc["height"], "batch_size": 1}},
+        "7": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": rc["shift"]}},
+        "8": {"class_type": "CFGGuider", "inputs": {"model": ["7", 0], "positive": ["4", 0], "negative": ["5", 0], "cfg": mc["cfg"]}},
+        "9": {"class_type": "BasicScheduler", "inputs": {"model": ["7", 0], "scheduler": mc["scheduler"], "steps": steps, "denoise": 1.0}},
+        "10": {"class_type": "RandomNoise", "inputs": {"noise_seed": seed}},
+        "11": {"class_type": "KSamplerSelect", "inputs": {"sampler_name": mc["sampler"]}},
+        "12": {"class_type": "SamplerCustomAdvanced", "inputs": {"noise": ["10", 0], "guider": ["8", 0], "sampler": ["11", 0], "sigmas": ["9", 0], "latent_image": ["6", 0]}},
+        "13": {"class_type": "VAEDecode", "inputs": {"samples": ["12", 0], "vae": ["3", 0]}},
+        "14": {"class_type": "CreateVideo", "inputs": {"images": ["13", 0], "fps": float(mc["fps"])}},
+        "15": {"class_type": "SaveVideo", "inputs": {"video": ["14", 0], "filename_prefix": f"video/{clip_prefix}", "format": "mp4", "codec": "h264"}},
+    }
+    if loras:
+        _insert_lora_chain(wf, loras, unet_node="1", sampler_model_node="7")
+    return wf
+
+
+def build_wan_i2v_workflow(prompt: str, image_name: str, seed: int, clip_prefix: str, frames: int,
+                            negative_prompt: str = "", steps: int = 25,
+                            denoise: float = DEFAULT_DENOISE,
+                            loras: list[tuple[str, float]] | None = None,
+                            res_config: dict | None = None,
+                            model_config: dict | None = None) -> dict:
+    """Build a WAN 2.1 I2V workflow for ComfyUI.
+
+    Uses WanImageToVideo node which conditions on a start image.
+    The start_image is passed directly — WAN's I2V model handles the
+    image conditioning internally via its 36-dim input (16 latent + 20 image).
+    CLIP vision is optional but improves results.
+    """
+    mc = model_config or MODEL_CONFIGS["wan"]
+    rc = res_config or list(mc["resolutions"].values())[0]
+    te = mc["text_encoders"]
+
+    wf = {
+        "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc["i2v_unet"]}},
+        "2": {"class_type": "CLIPLoaderGGUF", "inputs": {"clip_name": te["clip1"], "type": te["clip_type"]}},
+        "3": {"class_type": "VAELoader", "inputs": {"vae_name": mc["vae"]}},
+        "4": {"class_type": "CLIPVisionLoader", "inputs": {"clip_name": mc["clip_vision"]}},
+        "5": {"class_type": "LoadImage", "inputs": {"image": image_name}},
+        "20": {"class_type": "ImageScale", "inputs": {
+            "image": ["5", 0], "upscale_method": "lanczos",
+            "width": rc["width"], "height": rc["height"], "crop": "center"
+        }},
+        "6": {"class_type": "CLIPVisionEncode", "inputs": {"clip_vision": ["4", 0], "image": ["20", 0], "crop": "center"}},
+        "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
+        "8": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": negative_prompt}},
+        "9": {"class_type": "WanImageToVideo", "inputs": {
+            "positive": ["7", 0], "negative": ["8", 0], "vae": ["3", 0],
+            "width": rc["width"], "height": rc["height"], "length": frames, "batch_size": 1,
+            "start_image": ["20", 0], "clip_vision_output": ["6", 0]
+        }},
+        "10": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": rc["shift"]}},
+        "11": {"class_type": "CFGGuider", "inputs": {"model": ["10", 0], "positive": ["9", 0], "negative": ["9", 1], "cfg": mc["cfg"]}},
+        "12": {"class_type": "BasicScheduler", "inputs": {"model": ["10", 0], "scheduler": mc["scheduler"], "steps": steps, "denoise": denoise}},
+        "13": {"class_type": "RandomNoise", "inputs": {"noise_seed": seed}},
+        "14": {"class_type": "KSamplerSelect", "inputs": {"sampler_name": mc["sampler"]}},
+        "15": {"class_type": "SamplerCustomAdvanced", "inputs": {"noise": ["13", 0], "guider": ["11", 0], "sampler": ["14", 0], "sigmas": ["12", 0], "latent_image": ["9", 2]}},
+        "16": {"class_type": "VAEDecode", "inputs": {"samples": ["15", 0], "vae": ["3", 0]}},
+        "17": {"class_type": "CreateVideo", "inputs": {"images": ["16", 0], "fps": float(mc["fps"])}},
+        "18": {"class_type": "SaveVideo", "inputs": {"video": ["17", 0], "filename_prefix": f"video/{clip_prefix}", "format": "mp4", "codec": "h264"}},
+    }
+    if loras:
+        _insert_lora_chain(wf, loras, unet_node="1", sampler_model_node="10")
+    return wf
+
+
+# ─── Model-agnostic workflow dispatch ────────────────────────────────
+
+def build_video_workflow(video_model: str, mode: str, prompt: str, seed: int,
+                          clip_prefix: str, frames: int, res_config: dict,
+                          negative_prompt: str = "", steps: int = 25,
+                          denoise: float = DEFAULT_DENOISE,
+                          loras: list[tuple[str, float]] | None = None,
+                          image_name: str | None = None) -> dict:
+    """Dispatch to the correct workflow builder based on video model and mode.
+
+    Args:
+        video_model: "hunyuan" or "wan"
+        mode: "t2v" or "i2v"
+        Other args passed through to the model-specific builder.
+    """
+    mc = get_model_config(video_model)
+
+    if video_model == "wan":
+        if mode == "i2v" and image_name:
+            return build_wan_i2v_workflow(prompt, image_name, seed, clip_prefix, frames,
+                                          negative_prompt=negative_prompt, steps=steps,
+                                          denoise=denoise, loras=loras,
+                                          res_config=res_config, model_config=mc)
+        else:
+            return build_wan_t2v_workflow(prompt, seed, clip_prefix, frames,
+                                          negative_prompt=negative_prompt, steps=steps,
+                                          loras=loras, res_config=res_config, model_config=mc)
+    else:  # hunyuan (default)
+        if mode == "i2v" and image_name:
+            return build_i2v_workflow(prompt, image_name, seed, clip_prefix, frames,
+                                      negative_prompt=negative_prompt, steps=steps,
+                                      denoise=denoise, loras=loras, res_config=res_config)
+        else:
+            return build_t2v_workflow(prompt, seed, clip_prefix, frames,
+                                      negative_prompt=negative_prompt, steps=steps,
+                                      loras=loras, res_config=res_config)
 
 
 # ─── IP-Adapter for character consistency ────────────────────────────
@@ -1955,10 +2123,12 @@ def get_scene_seed_image(scene: dict, series_name: str, current_chain: str | Non
     is_establishing = any(w in visual_lower for w in ["wide shot", "establishing", "aerial", "wide establishing", "long shot"])
     is_dialogue = bool(scene.get("dialogue"))
 
-    # 2. Character portrait seed — only for close-up or dialogue scenes.
-    # For wider/action scenes, LoRAs alone handle character appearance
-    # and T2V produces better results than I2V constrained by a portrait.
-    if (is_close or is_dialogue) and scene.get("characters"):
+    # 2. Character portrait seed — for any scene with characters that isn't
+    # a wide/establishing shot. This gives HunyuanVideo's CLIP vision encoder
+    # a strong reference for character appearance, which is the primary
+    # consistency mechanism for this model (IP-Adapter is not compatible).
+    has_characters = bool(scene.get("characters"))
+    if has_characters and not is_establishing:
         char_key = scene["characters"][0]                          # e.g. "char_1"
         char_id  = char_key.removeprefix("char_")                  # e.g. "1"
         char_ref = ref_dir / f"char_{char_id}.png"
@@ -2608,11 +2778,15 @@ def cmd_script(args):
 
 def cmd_produce(args):
     """Produce an episode: generate video + audio + stitch."""
-    args.steps = QUALITY_STEPS.get(getattr(args, "quality", "draft"), 15)
+    # Resolve video model and its configuration
+    video_model = getattr(args, "video_model", DEFAULT_VIDEO_MODEL)
+    mc = get_model_config(video_model)
+    args.steps = mc["quality_steps"].get(getattr(args, "quality", "draft"), 15)
 
     # Resolve generation resolution (auto-detect VRAM or use explicit flag)
     resolution = getattr(args, "resolution", "auto")
-    res_config = get_resolution_config(resolution)
+    res_config = get_resolution_config(resolution, video_model=video_model)
+    print(f"  Model: {mc['label']}")
     print(f"  Resolution: {res_config['label']} (shift={res_config['shift']})")
 
     sp = series_path(args.series)
@@ -2684,7 +2858,8 @@ def cmd_produce(args):
     for i, scene in enumerate(scenes):
         clip_prefix = scene["id"]
         seed = args.seed_base + i + 1
-        cl = CLIP_LENGTHS.get(scene.get("clip_length", "long"), CLIP_LENGTHS["long"])
+        model_clip_lengths = mc["clip_lengths"]
+        cl = model_clip_lengths.get(scene.get("clip_length", "long"), model_clip_lengths["long"])
         frames = cl["frames"]
 
         # Dynamic clip length: if TTS audio exists, match frame count to audio duration
@@ -2692,7 +2867,7 @@ def cmd_produce(args):
         if audio_file and Path(str(audio_file)).exists():
             audio_dur = _get_video_duration(str(audio_file))
             if audio_dur > 0:
-                frames = frames_for_duration(audio_dur)
+                frames = frames_for_duration(audio_dur, fps=mc["fps"])
 
         base_prompt = build_scene_prompt(scene, bible)
 
@@ -2749,21 +2924,28 @@ def cmd_produce(args):
             for ln, ls in scene_loras:
                 print(f"      LoRA: {ln} (strength={ls})")
 
-        if seed_image:
-            wf = build_i2v_workflow(prompt, seed_image, seed, clip_prefix, frames, negative_prompt=neg, steps=args.steps, denoise=getattr(args, 'denoise', DEFAULT_DENOISE), loras=scene_loras, res_config=res_config)
+        # Per-scene denoise: use lower denoise for character close-ups/dialogue
+        # so the portrait reference has stronger influence on appearance.
+        base_denoise = getattr(args, 'denoise', DEFAULT_DENOISE)
+        shot = _infer_shot_type(scene.get("visual", ""))
+        is_dialogue = bool(scene.get("dialogue"))
+        if seed_image and (shot == "closeup" or (is_dialogue and len(scene.get("characters", [])) == 1)):
+            scene_denoise = min(base_denoise, 0.70)  # Faithful for solo character scenes
         else:
-            wf = build_t2v_workflow(prompt, seed, clip_prefix, frames, negative_prompt=neg, steps=args.steps, loras=scene_loras, res_config=res_config)
+            scene_denoise = base_denoise
 
-        # IP-Adapter: inject character reference conditioning for dialogue/close-up scenes
-        use_ip_adapter = getattr(args, "ip_adapter", False)
-        if use_ip_adapter:
-            ip_ref = get_ip_adapter_ref(scene, args.series)
-            if ip_ref:
-                ip_strength = getattr(args, "ip_adapter_strength", IP_ADAPTER_DEFAULT_STRENGTH)
-                # For I2V workflow, model node is "10"; for T2V, it's "7"
-                model_node = "10" if seed_image else "7"
-                _insert_ip_adapter(wf, ip_ref, strength=ip_strength, model_input_node=model_node)
-                print(f"      IP-Adapter: {ip_ref} (strength={ip_strength})")
+        mode = "i2v" if seed_image else "t2v"
+        wf = build_video_workflow(
+            video_model, mode, prompt, seed, clip_prefix, frames, res_config,
+            negative_prompt=neg, steps=args.steps, denoise=scene_denoise,
+            loras=scene_loras, image_name=seed_image,
+        )
+
+        # IP-Adapter: not compatible with HunyuanVideo DiT architecture.
+        # Character consistency is handled through I2V seed images instead —
+        # get_scene_seed_image() already feeds character portraits into dialogue/
+        # close-up scenes via the HunyuanVideo15ImageToVideo CLIP vision encoder.
+        # The --ip-adapter flag is kept for future model support.
 
         try:
             prompt_id = queue_prompt(wf)
@@ -3326,6 +3508,8 @@ def main():
                            help="Upscale factor (default: 4)")
     p_produce.add_argument("--interpolate", action="store_true",
                            help="Interpolate frames with RIFE for smoother motion (2x, requires rife-ncnn-vulkan)")
+    p_produce.add_argument("--video-model", choices=["hunyuan", "wan"], default="hunyuan",
+                           help="Video generation model: hunyuan (HunyuanVideo 1.5) or wan (WAN 2.1 14B) (default: hunyuan)")
     p_produce.add_argument("--resolution", choices=["480p", "720p", "auto"], default="auto",
                            help="Generation resolution: 480p (8GB), 720p (24GB+), auto (detect VRAM) (default: auto)")
     p_produce.add_argument("--ip-adapter", action="store_true",
@@ -3357,6 +3541,8 @@ def main():
     p_all.add_argument("--upscale-factor", type=int, default=4, choices=[2, 4])
     p_all.add_argument("--interpolate", action="store_true",
                        help="Interpolate frames with RIFE (2x smoother motion)")
+    p_all.add_argument("--video-model", choices=["hunyuan", "wan"], default="hunyuan",
+                       help="Video generation model (default: hunyuan)")
     p_all.add_argument("--resolution", choices=["480p", "720p", "auto"], default="auto",
                        help="Generation resolution (default: auto)")
     p_all.add_argument("--ip-adapter", action="store_true",
