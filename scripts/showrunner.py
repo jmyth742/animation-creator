@@ -954,9 +954,9 @@ def build_wan_i2v_workflow(prompt: str, image_name: str, seed: int, clip_prefix:
         "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
         "8": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": negative_prompt}},
 
-        # WAN 2.2 I2V latent — uses Wan22ImageToVideoLatent for proper inpainting-style conditioning
-        "9": {"class_type": "Wan22ImageToVideoLatent", "inputs": {
-            "vae": ["3", 0],
+        # I2V conditioning — WanImageToVideo handles start_image (clip_vision optional)
+        "9": {"class_type": "WanImageToVideo", "inputs": {
+            "positive": ["7", 0], "negative": ["8", 0], "vae": ["3", 0],
             "width": rc["width"], "height": rc["height"], "length": frames, "batch_size": 1,
             "start_image": ["20", 0],
         }},
@@ -977,10 +977,10 @@ def build_wan_i2v_workflow(prompt: str, image_name: str, seed: int, clip_prefix:
         "13": {"class_type": "RandomNoise", "inputs": {"noise_seed": seed}},
         "14": {"class_type": "KSamplerSelect", "inputs": {"sampler_name": mc["sampler"]}},
 
-        # Two-stage sampling
+        # Two-stage sampling (WanImageToVideo outputs: [0]=pos_cond, [1]=neg_cond, [2]=latent)
         "34": {"class_type": "SamplerCustomAdvanced", "inputs": {
             "noise": ["13", 0], "guider": ["11", 0], "sampler": ["14", 0],
-            "sigmas": ["30", 0], "latent_image": ["9", 0]
+            "sigmas": ["30", 0], "latent_image": ["9", 2]
         }},
         "35": {"class_type": "SamplerCustomAdvanced", "inputs": {
             "noise": ["13", 0], "guider": ["33", 0], "sampler": ["14", 0],
@@ -1018,16 +1018,22 @@ def build_video_workflow(video_model: str, mode: str, prompt: str, seed: int,
     mc = get_model_config(video_model)
 
     if video_model == "wan":
+        # WAN 2.2 uses WanAttentionBlock — HunyuanVideo LoRAs (MMDoubleStreamBlock)
+        # are incompatible. Only pass LoRAs that were trained for WAN.
+        wan_loras = [l for l in (loras or []) if "wan" in l[0].lower()] or None
+        if loras and not wan_loras:
+            pass  # Silently skip incompatible LoRAs — rely on I2V reference seeding
+
         if mode == "i2v" and image_name:
             wf = build_wan_i2v_workflow(prompt, image_name, seed, clip_prefix, frames,
                                          negative_prompt=negative_prompt, steps=steps,
-                                         denoise=denoise, loras=loras,
+                                         denoise=denoise, loras=wan_loras,
                                          res_config=res_config, model_config=mc)
             _insert_optimizations(wf, optimization, model_node="10")
         else:
             wf = build_wan_t2v_workflow(prompt, seed, clip_prefix, frames,
                                          negative_prompt=negative_prompt, steps=steps,
-                                         loras=loras, res_config=res_config, model_config=mc)
+                                         loras=wan_loras, res_config=res_config, model_config=mc)
             _insert_optimizations(wf, optimization, model_node="7")
     else:  # hunyuan (default)
         if mode == "i2v" and image_name:
