@@ -12,6 +12,9 @@ env/
 .env
 .env.local
 .env.sh
+!.env.example
+!app/backend/.env.example
+!training/.env.example
 
 # Node
 node_modules/
@@ -23,24 +26,24 @@ dist/
 *.sqlite
 
 # Models & large binaries (too large for git)
-ComfyUI/models/
-ComfyUI/output/
-ComfyUI/input/
 *.gguf
 *.safetensors
 *.pt
 *.pth
 *.bin
 
+# ComfyUI (install separately — ~100GB with models)
+ComfyUI/
+
 # Generated output
 output/
 ambience/
-series/*/ep*/
-series/*/bible.json
-series/*/episode_*.json
 
-# ComfyUI runtime
-ComfyUI/__pycache__/
+# Generated series data (keep templates and concept files)
+series/*/continuity/
+series/*/reference_images/
+series/*/bible.json
+series/*/episodes/
 
 # Logs
 *.log
@@ -53,13 +56,13 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+*.swo
 
 # Claude Code
 .claude/
+CLAUDE.md
+PROJECT_OVERVIEW.md
 
-# ComfyUI runtime (install separately — too large for git)
-ComfyUI/
-
-# Training secrets
+# Training
 training/.env
 training/logs/
