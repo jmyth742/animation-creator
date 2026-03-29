@@ -103,6 +103,8 @@ class CharacterUpdate(BaseModel):
     visual_description: Annotated[str, Field(max_length=2000)] | None = None
     voice: Annotated[str, Field(max_length=255)] | None = None
     voice_notes: Annotated[str, Field(max_length=2000)] | None = None
+    lora_strength: Annotated[float, Field(ge=0.0, le=1.0)] | None = None
+    trigger_word: Annotated[str, Field(max_length=255)] | None = None
 
 
 class CharacterRead(BaseModel):
@@ -118,6 +120,9 @@ class CharacterRead(BaseModel):
     voice_notes: str
     reference_image_path: str | None = None
     portrait_url: str | None = None
+    lora_path: str | None = None
+    lora_strength: float = 0.7
+    trigger_word: str | None = None
 
 
 # ── Location ──────────────────────────────────────────────────────────────────
@@ -130,6 +135,8 @@ class LocationCreate(BaseModel):
 class LocationUpdate(BaseModel):
     name: Annotated[str, Field(min_length=1, max_length=255)] | None = None
     description: Annotated[str, Field(max_length=2000)] | None = None
+    lora_strength: Annotated[float, Field(ge=0.0, le=1.0)] | None = None
+    trigger_word: Annotated[str, Field(max_length=255)] | None = None
 
 
 class LocationRead(BaseModel):
@@ -142,6 +149,9 @@ class LocationRead(BaseModel):
     description: str
     reference_image_path: str | None = None
     reference_url: str | None = None
+    lora_path: str | None = None
+    lora_strength: float = 0.5
+    trigger_word: str | None = None
 
 
 # ── Episode ───────────────────────────────────────────────────────────────────
@@ -271,7 +281,13 @@ class SceneClipVersionRead(BaseModel):
     visual_style: str | None = None
     tone: str | None = None
     prompt: str | None = None
+    negative_prompt: str | None = None
     seed_image: str | None = None
+    model_name: str | None = None
+    mode: str | None = None
+    steps: int | None = None
+    denoise: float | None = None
+    loras: str | None = None
     created_at: datetime.datetime
     preview_url: str | None = None
 
@@ -288,6 +304,88 @@ class TemplateListItem(BaseModel):
     genre: str
     character_count: int
     location_count: int
+
+
+# ── Training Job ─────────────────────────────────────────────────────────────
+
+class TrainingJobCreate(BaseModel):
+    character_id: int | None = None
+    location_id: int | None = None
+    subject_name: Annotated[str, Field(min_length=1, max_length=100)]
+    trigger_word: Annotated[str, Field(min_length=1, max_length=50)] = "ohwx person"
+    gpu_type: str = "NVIDIA RTX A6000"
+    rank: Annotated[int, Field(ge=4, le=128)] = 32
+    epochs: Annotated[int, Field(ge=10, le=500)] = 150
+    learning_rate: str = "1e-4"
+    defer_training: bool = False
+
+
+class TrainingJobRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    project_id: int
+    character_id: int | None
+    location_id: int | None = None
+    status: str
+    progress_pct: int
+    log_text: str
+    gpu_type: str
+    dataset_path: str | None
+    character_name: str | None
+    trigger_word: str | None
+    rank: int
+    epochs: int
+    learning_rate: str
+    lora_path: str | None
+    lora_strength: float
+    pod_id: str | None
+    training_loss: float | None
+    parent_id: int | None = None
+    attempt: int = 1
+    created_at: datetime.datetime
+    completed_at: datetime.datetime | None
+
+
+class TrainingStartResponse(BaseModel):
+    job_id: int
+    message: str
+
+
+class LoraInfo(BaseModel):
+    filename: str
+    character_name: str | None = None
+    character_id: int | None = None
+    location_name: str | None = None
+    location_id: int | None = None
+    size_mb: float
+    created_at: str
+
+
+class SetLoraRequest(BaseModel):
+    lora_path: Annotated[str, Field(max_length=1024)]
+    strength: float = 0.7
+
+
+class DatasetGenerateRequest(BaseModel):
+    character_id: int | None = None
+    location_id: int | None = None
+    trigger_word: str = "ohwx person"
+    num_images: Annotated[int, Field(ge=5, le=50)] = 25
+
+
+class DatasetGenerateResponse(BaseModel):
+    dataset_job_id: str
+    message: str
+
+
+class DatasetJobStatus(BaseModel):
+    status: str
+    progress: int
+    total: int
+    generated: int
+    dataset_path: str | None
+    error: str | None
 
 
 # ── Forward-ref resolution ────────────────────────────────────────────────────

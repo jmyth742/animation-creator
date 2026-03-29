@@ -7,12 +7,13 @@ import datetime
 from sqlalchemy import (
     Column,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     String,
     Text,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import backref, relationship
 
 from database import Base
 
@@ -77,6 +78,9 @@ class Character(Base):
     voice: str = Column(String(255), default="en-GB-SoniaNeural", nullable=False)
     voice_notes: str = Column(Text, default="", nullable=False)
     reference_image_path: str | None = Column(String(1024), nullable=True)
+    lora_path: str | None = Column(String(1024), nullable=True)  # Path to active LoRA for this character
+    lora_strength: float = Column(Float, default=0.7)
+    trigger_word: str | None = Column(String(255), nullable=True)  # e.g. "ohwx person" — injected into prompts
 
     project = relationship("Project", back_populates="characters")
     scene_characters = relationship("SceneCharacter", back_populates="character", cascade="all, delete-orphan")
@@ -93,6 +97,9 @@ class Location(Base):
     slug: str = Column(String(255), nullable=False)
     description: str = Column(Text, default="", nullable=False)
     reference_image_path: str | None = Column(String(1024), nullable=True)
+    lora_path: str | None = Column(String(1024), nullable=True)
+    lora_strength: float = Column(Float, default=0.5)
+    trigger_word: str | None = Column(String(255), nullable=True)
 
     project = relationship("Project", back_populates="locations")
     scenes = relationship("Scene", back_populates="location")
@@ -213,12 +220,69 @@ class SceneClipVersion(Base):
     clip_path: str = Column(String(1024), nullable=False)
 
     # Generation settings snapshot
-    quality: str | None = Column(String(32), nullable=True)       # draft | quality | final
+    quality: str | None = Column(String(32), nullable=True)       # draft | good | final
     visual_style: str | None = Column(Text, nullable=True)        # project.visual_style at gen time
     tone: str | None = Column(Text, nullable=True)                # project.tone at gen time
     prompt: str | None = Column(Text, nullable=True)              # full prompt sent to model
+    negative_prompt: str | None = Column(Text, nullable=True)     # negative prompt sent
     seed_image: str | None = Column(String(1024), nullable=True)  # reference image used
+
+    # Detailed generation settings for comparison
+    model_name: str | None = Column(String(256), nullable=True)   # e.g. Q4_K_S vs Q5_K_S
+    mode: str | None = Column(String(16), nullable=True)          # "t2v" or "i2v"
+    steps: int | None = Column(Integer, nullable=True)            # inference steps
+    denoise: float | None = Column(Float, nullable=True)          # denoise value
+    loras: str | None = Column(Text, nullable=True)               # JSON: [["name", strength], ...]
 
     created_at: datetime.datetime = Column(DateTime, default=_now, nullable=False)
 
     scene = relationship("Scene", back_populates="clip_versions")
+
+
+# ── TrainingJob ──────────────────────────────────────────────────────────────
+
+class TrainingJob(Base):
+    __tablename__ = "training_jobs"
+
+    id: int = Column(Integer, primary_key=True, index=True)
+    project_id: int = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    character_id: int | None = Column(Integer, ForeignKey("characters.id", ondelete="SET NULL"), nullable=True)
+    location_id: int | None = Column(Integer, ForeignKey("locations.id", ondelete="SET NULL"), nullable=True)
+
+    # "pending" | "provisioning" | "bootstrapping" | "uploading" | "training" | "downloading" | "complete" | "error" | "cancelled"
+    status: str = Column(String(32), nullable=False, default="pending")
+    progress_pct: int = Column(Integer, nullable=False, default=0)
+    log_text: str = Column(Text, nullable=False, default="")
+
+    # Training config
+    gpu_type: str = Column(String(255), default="NVIDIA RTX A6000")
+    dataset_path: str | None = Column(String(1024), nullable=True)  # local path to dataset
+    character_name: str | None = Column(String(255), nullable=True)
+    trigger_word: str | None = Column(String(255), nullable=True)
+    rank: int = Column(Integer, default=32)
+    epochs: int = Column(Integer, default=150)
+    learning_rate: str = Column(String(32), default="1e-4")
+
+    # Results
+    lora_path: str | None = Column(String(1024), nullable=True)  # local path to trained LoRA
+    lora_strength: float = Column(Float, default=0.7)
+
+    # RunPod tracking
+    pod_id: str | None = Column(String(255), nullable=True)
+    pod_ssh_host: str | None = Column(String(255), nullable=True)
+    pod_ssh_port: int | None = Column(Integer, nullable=True)
+    training_loss: float | None = Column(Float, nullable=True)
+
+    # Retry tracking — retries point back to the original job
+    parent_id: int | None = Column(Integer, ForeignKey("training_jobs.id", ondelete="SET NULL"), nullable=True)
+    attempt: int = Column(Integer, default=1)
+
+    # Timestamps
+    created_at: datetime.datetime = Column(DateTime, default=_now, nullable=False)
+    completed_at: datetime.datetime | None = Column(DateTime, nullable=True)
+    cancelled_at: datetime.datetime | None = Column(DateTime, nullable=True)
+
+    project = relationship("Project", backref="training_jobs")
+    character = relationship("Character", backref="training_jobs")
+    location = relationship("Location", backref="training_jobs")
+    retries = relationship("TrainingJob", backref=backref("parent", remote_side="TrainingJob.id"), foreign_keys=[parent_id])
