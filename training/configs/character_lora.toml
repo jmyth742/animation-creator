@@ -1,0 +1,49 @@
+# =============================================================================
+# Character LoRA — Image-based training
+# Teaches the model to recognize and reproduce a specific character.
+# Best for: facial consistency, clothing, body proportions across scenes
+#
+# Trigger word: use the character name in your prompts (e.g., "detective_voss")
+# =============================================================================
+
+# --- Model ---
+pretrained_model_name_or_path = "/workspace/models/hunyuan_video_I2V_720_fp16.safetensors"
+vae = "/workspace/models/vae_dir/vae"
+text_encoder1 = "/workspace/models/text_encoder"
+clip = "/workspace/models/clip_vision/sigclip_vision_patch14_384.safetensors"
+
+# --- Dataset ---
+dataset_config = "configs/character_dataset.toml"
+
+# --- Output ---
+output_dir = "/workspace/outputs/character_lora"
+output_name = "character_lora"
+save_every_n_steps = 50
+save_state = false
+
+# --- LoRA settings ---
+network_module = "networks.lora"
+network_dim = 64          # Higher rank for character detail (face, clothing)
+network_alpha = 32
+
+# --- Training ---
+max_train_steps = 500     # Characters often converge faster than style
+learning_rate = 0.0001    # Slightly lower LR for character fidelity
+optimizer_type = "adamw8bit"
+lr_scheduler = "cosine_with_restarts"
+lr_warmup_steps = 30
+
+train_batch_size = 1
+gradient_accumulation_steps = 4
+gradient_checkpointing = true
+mixed_precision = "bf16"
+seed = 42
+
+# --- Memory optimization ---
+# blocks_to_swap = 0
+# fp8_llm = false
+# fp8_fast = false
+
+# --- Logging ---
+logging_dir = "/workspace/outputs/character_lora/logs"
+log_with = "tensorboard"

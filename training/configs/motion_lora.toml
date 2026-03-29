@@ -1,0 +1,50 @@
+# =============================================================================
+# Motion LoRA — Video-based training
+# Teaches specific motion patterns: walk cycles, camera moves, transitions
+# Requires more VRAM than image LoRA (~24GB+ recommended)
+#
+# NOTE: This is the most experimental config. Start with style/character LoRA
+# first and only attempt this if you need specific motion control.
+# =============================================================================
+
+# --- Model ---
+pretrained_model_name_or_path = "/workspace/models/hunyuan_video_I2V_720_fp16.safetensors"
+vae = "/workspace/models/vae_dir/vae"
+text_encoder1 = "/workspace/models/text_encoder"
+clip = "/workspace/models/clip_vision/sigclip_vision_patch14_384.safetensors"
+
+# --- Dataset ---
+dataset_config = "configs/motion_dataset.toml"
+
+# --- Output ---
+output_dir = "/workspace/outputs/motion_lora"
+output_name = "motion_lora"
+save_every_n_steps = 100
+save_state = false
+
+# --- LoRA settings ---
+network_module = "networks.lora"
+network_dim = 32
+network_alpha = 16
+
+# --- Training ---
+max_train_steps = 2000    # Motion needs more steps
+learning_rate = 0.0002
+optimizer_type = "adamw8bit"
+lr_scheduler = "cosine_with_restarts"
+lr_warmup_steps = 100
+
+train_batch_size = 1
+gradient_accumulation_steps = 8    # Higher to compensate for batch_size=1
+gradient_checkpointing = true
+mixed_precision = "bf16"
+seed = 42
+
+# --- Memory optimization (likely needed for video training) ---
+blocks_to_swap = 4        # Offload some transformer blocks to CPU
+# fp8_llm = false
+# fp8_fast = false
+
+# --- Logging ---
+logging_dir = "/workspace/outputs/motion_lora/logs"
+log_with = "tensorboard"

@@ -1,0 +1,24 @@
+# =============================================================================
+# Dataset config for character LoRA
+#
+# Place 10-30 images of your character in /workspace/datasets/character/
+# Vary: angles (front, 3/4, profile), expressions, poses, lighting
+# Keep consistent: the character's core appearance
+#
+# Each image needs a matching .txt caption:
+#   front_neutral.png  →  front_neutral.txt
+#
+# Caption format — always include the trigger word:
+#   "detective_voss, a middle-aged man with sharp jawline and grey temples,
+#    wearing a dark trenchcoat, front-facing, neutral expression, studio lighting"
+# =============================================================================
+
+[general]
+resolution = [848, 480]
+caption_extension = ".txt"
+batch_size = 1
+enable_bucket = true
+
+[[datasets]]
+image_directory = "/workspace/datasets/character"
+num_repeats = 15

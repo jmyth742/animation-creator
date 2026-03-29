@@ -1,0 +1,23 @@
+# =============================================================================
+# Dataset config for motion LoRA (video-based training)
+#
+# Place 15-100 short video clips in /workspace/datasets/motion/
+# Each clip: 2-4 seconds, showing the motion pattern you want to teach
+# Each clip needs a matching .txt caption:
+#   walk_cycle_01.mp4  →  walk_cycle_01.txt
+#
+# Caption format:
+#   "A person walking steadily forward, smooth gait, side view,
+#    consistent pace, indoor hallway, even lighting"
+# =============================================================================
+
+[general]
+resolution = [848, 480]
+caption_extension = ".txt"
+batch_size = 1
+enable_bucket = true
+
+[[datasets]]
+video_directory = "/workspace/datasets/motion"
+num_repeats = 5
+target_frames = [49]       # 49 frames = ~2s at 24fps (must be 4k+1)

@@ -1,0 +1,21 @@
+# =============================================================================
+# Dataset config for style LoRA (image-based training)
+#
+# Place your style reference images in /workspace/datasets/style/
+# Each image needs a matching .txt caption file:
+#   image_001.png  →  image_001.txt
+#
+# Captions should describe the image in detail:
+#   "A noir detective standing in a rain-soaked alley, dramatic shadows,
+#    high contrast lighting, muted color palette with amber highlights"
+# =============================================================================
+
+[general]
+resolution = [848, 480]     # Match your production output resolution
+caption_extension = ".txt"
+batch_size = 1
+enable_bucket = true
+
+[[datasets]]
+image_directory = "/workspace/datasets/style"
+num_repeats = 10            # How many times to repeat each image per epoch
