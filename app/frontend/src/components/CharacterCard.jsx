@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import { Camera, Pencil, Star, Trash2 } from 'lucide-react'
+import { put } from '../api/client'
 
 function getInitials(name = '') {
   return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
@@ -15,7 +16,24 @@ const VOICE_LABELS = {
   'en-AU-NatashaNeural': 'NATASHA-AU',
 }
 
+function getLoraFilename(path) {
+  if (!path) return ''
+  return path.split('/').pop().split('\\').pop().replace(/\.[^.]+$/, '')
+}
+
 export default function CharacterCard({ character, onEdit, onDelete, onOpenPortraitStudio, deleting }) {
+  const [strength, setStrength] = useState(character.lora_strength ?? 0.7)
+  const debounceRef = useRef(null)
+
+  const handleStrengthChange = useCallback((e) => {
+    const val = parseFloat(e.target.value)
+    setStrength(val)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      put(`/characters/${character.id}`, { lora_strength: val }).catch(() => {})
+    }, 400)
+  }, [character.id])
+
   return (
     <div
       className="group relative bg-zinc-800 border-2 border-zinc-700 flex flex-col overflow-hidden"
@@ -97,6 +115,38 @@ export default function CharacterCard({ character, onEdit, onDelete, onOpenPortr
           </span>
         )}
       </div>
+
+      {/* LoRA strength slider */}
+      {character.lora_path && (
+        <div className="px-3 pb-3 flex flex-col gap-1">
+          <span className="label-pixel text-zinc-500 truncate" style={{ fontSize: '6px' }}
+            title={character.lora_path}>
+            LoRA: {getLoraFilename(character.lora_path)}
+          </span>
+          {character.trigger_word && (
+            <span className="font-pixel text-accent-400 truncate" style={{ fontSize: '6px' }}
+              title={`Trigger: ${character.trigger_word}`}>
+              TRIGGER: {character.trigger_word}
+            </span>
+          )}
+          <div className="flex items-center gap-1.5">
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={strength}
+              onChange={handleStrengthChange}
+              className="input-pixel flex-1 h-1.5 accent-accent-600 cursor-pointer"
+              style={{ accentColor: 'var(--accent-600, #7c3aed)' }}
+              title={`LoRA strength: ${strength.toFixed(2)}`}
+            />
+            <span className="font-pixel text-zinc-100 min-w-[2rem] text-right" style={{ fontSize: '7px' }}>
+              {strength.toFixed(2)}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

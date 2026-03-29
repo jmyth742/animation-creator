@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Users, Tv, MapPin, Settings, RefreshCw, Film, Clapperboard } from 'lucide-react'
+import { ArrowLeft, Users, Tv, MapPin, Settings, RefreshCw, Film, Clapperboard, Flame } from 'lucide-react'
 import { get } from '../api/client'
 import CharactersTab from '../components/CharactersTab'
 import EpisodesTab from '../components/EpisodesTab'
@@ -8,12 +8,14 @@ import LocationsTab from '../components/LocationsTab'
 import TheaterTab from '../components/TheaterTab'
 import ProjectSettingsForm from '../components/ProjectSettingsForm'
 import ProductionPanel from '../components/ProductionPanel'
+import TrainingTab from '../components/TrainingTab'
 import RebuildRefsModal from '../components/RebuildRefsModal'
 
 const TABS = [
   { key: 'characters', label: 'PARTY',     Icon: Users       },
   { key: 'locations',  label: 'WORLD MAP', Icon: MapPin      },
   { key: 'episodes',   label: 'QUEST LOG', Icon: Tv          },
+  { key: 'training',   label: 'FORGE',     Icon: Flame       },
   { key: 'theater',    label: 'THEATER',   Icon: Clapperboard },
   { key: 'settings',   label: 'OPTIONS',   Icon: Settings    },
 ]
@@ -159,6 +161,13 @@ export default function ProjectPage() {
             episodes={project.episodes || []}
             onEpisodesChange={handleEpisodesChange}
             onProduce={handleProduce}
+          />
+        )}
+        {activeTab === 'training' && (
+          <TrainingTab
+            projectId={id}
+            project={project}
+            onTrainingChange={fetchProject}
           />
         )}
         {activeTab === 'theater' && (

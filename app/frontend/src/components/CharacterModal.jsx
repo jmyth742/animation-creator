@@ -27,6 +27,7 @@ export default function CharacterModal({ projectId, character, projectContext = 
     visual_description: character?.visual_description ?? '',
     voice: character?.voice ?? 'en-GB-RyanNeural',
     voice_notes: character?.voice_notes ?? '',
+    trigger_word: character?.trigger_word ?? '',
   })
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -146,6 +147,18 @@ export default function CharacterModal({ projectId, character, projectContext = 
             <textarea name="visual_description" value={form.visual_description} onChange={handleChange} rows={3}
               className="input-pixel resize-none" placeholder="Tall man in his 40s, weathered face, dark coat..." />
           </div>
+
+          {/* LoRA trigger word */}
+          {isEditing && character?.lora_path && (
+            <div>
+              <label className="label-pixel">LORA TRIGGER WORD</label>
+              <p className="text-retro text-zinc-500 mb-1" style={{ fontSize: '15px' }}>
+                This word activates the LoRA — it gets injected into video prompts automatically
+              </p>
+              <input name="trigger_word" value={form.trigger_word} onChange={handleChange}
+                className="input-pixel" placeholder="e.g. bibi, Reemi, sksstyle" />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>

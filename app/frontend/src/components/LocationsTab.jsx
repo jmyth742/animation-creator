@@ -4,16 +4,23 @@ import { post, put, del } from '../api/client'
 import LocationStudioModal from './LocationStudioModal'
 import EnhanceButton from './EnhanceButton'
 
+function getLoraFilename(path) {
+  if (!path) return ''
+  return path.split('/').pop().split('\\').pop().replace(/\.[^.]+$/, '')
+}
+
 function LocationRow({ location, projectContext, onEdit, onDelete, onOpenLocationStudio, deleting }) {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(location.name)
   const [description, setDescription] = useState(location.description)
+  const [triggerWord, setTriggerWord] = useState(location.trigger_word || '')
+  const [loraStrength, setLoraStrength] = useState(location.lora_strength ?? 0.5)
   const [saving, setSaving] = useState(false)
 
   const handleSave = async () => {
     setSaving(true)
     try {
-      await put(`/locations/${location.id}`, { name, description })
+      await put(`/locations/${location.id}`, { name, description, trigger_word: triggerWord || null, lora_strength: loraStrength })
       setEditing(false)
       onEdit()
     } catch { alert('Failed to save location.') }
@@ -39,6 +46,27 @@ function LocationRow({ location, projectContext, onEdit, onDelete, onOpenLocatio
         </div>
         <textarea className="input-pixel resize-none w-full" rows={2} value={description}
           onChange={(e) => setDescription(e.target.value)} placeholder="Visual description for video generation..." />
+        {location.lora_path && (
+          <div className="mt-3 p-3 bg-zinc-900 border border-zinc-700">
+            <span className="label-pixel text-zinc-500 block mb-2" style={{ fontSize: '6px' }}>
+              LoRA: {getLoraFilename(location.lora_path)}
+            </span>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <span className="label-pixel" style={{ fontSize: '6px' }}>TRIGGER WORD</span>
+                <input className="input-pixel w-full mt-1" value={triggerWord}
+                  onChange={(e) => setTriggerWord(e.target.value)} placeholder="e.g. sksstyle" />
+              </div>
+              <div>
+                <span className="label-pixel" style={{ fontSize: '6px' }}>STRENGTH: {loraStrength.toFixed(2)}</span>
+                <input type="range" min="0" max="1" step="0.05" value={loraStrength}
+                  onChange={(e) => setLoraStrength(parseFloat(e.target.value))}
+                  className="input-pixel w-full mt-1 h-1.5 accent-accent-600 cursor-pointer"
+                  style={{ accentColor: 'var(--accent-600, #7c3aed)' }} />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -77,6 +105,21 @@ function LocationRow({ location, projectContext, onEdit, onDelete, onOpenLocatio
           <p className="text-retro text-zinc-400 line-clamp-2" style={{ fontSize: '16px' }}>{location.description}</p>
         )}
         <p className="font-mono text-zinc-600 text-xs mt-1">{location.slug}</p>
+        {location.lora_path && (
+          <div className="flex items-center gap-3 mt-1.5">
+            <span className="font-pixel text-zinc-500" style={{ fontSize: '6px' }}>
+              LoRA: {getLoraFilename(location.lora_path)}
+            </span>
+            {location.trigger_word && (
+              <span className="font-pixel text-accent-400" style={{ fontSize: '6px' }}>
+                TRIGGER: {location.trigger_word}
+              </span>
+            )}
+            <span className="font-pixel text-zinc-500" style={{ fontSize: '6px' }}>
+              STR: {(location.lora_strength ?? 0.5).toFixed(2)}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
