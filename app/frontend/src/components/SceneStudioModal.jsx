@@ -251,7 +251,7 @@ export default function SceneStudioModal({ scene, project, locations, onClose, o
                   <div className="text-3xl mb-2">🎬</div>
                   <p className="font-pixel text-zinc-500 mb-1" style={{ fontSize: '7px' }}>NO REFERENCE GENERATED YET</p>
                   <p className="text-retro text-zinc-600" style={{ fontSize: '15px' }}>
-                    Generate a FLUX composition still for this scene. It will seed HunyuanVideo
+                    Generate a FLUX composition still for this scene. It will seed WAN 2.2
                     I2V when the clip is generated — giving you precise control over the shot.
                   </p>
                 </div>
@@ -265,7 +265,7 @@ export default function SceneStudioModal({ scene, project, locations, onClose, o
         <div className="flex items-center justify-between px-6 py-4 border-t-2 border-zinc-700">
           <div className="text-retro text-zinc-600" style={{ fontSize: '14px' }}>
             {canonicalPath
-              ? 'Reference set — this FLUX still seeds HunyuanVideo I2V for this scene clip.'
+              ? 'Reference set — this FLUX still seeds WAN 2.2 I2V for this scene clip.'
               : 'Without a reference, the system falls back to the character or location reference for seeding.'}
           </div>
           <button onClick={onClose} className="btn-pixel">DONE</button>

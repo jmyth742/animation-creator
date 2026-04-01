@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { MapPin, Users, Film, X, ChevronRight, Clock } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { post, put } from '../api/client'
 import EnhanceButton from './EnhanceButton'
 
@@ -46,8 +47,8 @@ export default function SceneComposerModal({ episodeId, scene, locations, charac
         ? await post(`/episodes/${episodeId}/scenes`, payload)
         : await put(`/scenes/${scene.id}`, payload)
       onSave()
-    } catch {
-      alert('Failed to save scene.')
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || 'Failed to save scene.')
     } finally {
       setSaving(false)
     }

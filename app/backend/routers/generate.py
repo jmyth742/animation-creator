@@ -26,7 +26,7 @@ router = APIRouter()
 _ENHANCE_SYSTEM = """\
 You are an expert prompt engineer for AI video generation pipelines.
 The user is building an animated series using FLUX (text-to-image) for reference images
-and HunyuanVideo (image-to-video) for clip generation.
+and WAN 2.2 (image-to-video) for clip generation.
 
 When asked to enhance a field, return exactly 3 numbered suggestions separated by "---".
 Each suggestion should be concise but specific, optimized for AI generation.
@@ -51,7 +51,7 @@ Format your response as exactly 3 options, like:
 """
 
 _ENHANCE_FIELD_HINTS = {
-    "visual_style": "The user's series visual style field — used in every FLUX and HunyuanVideo prompt.",
+    "visual_style": "The user's series visual style field — used in every FLUX and WAN 2.2 prompt.",
     "tone": "The series tone/mood field — shapes how Claude writes dialogue and scene descriptions.",
     "setting": "The series setting field — time period and world context.",
     "premise": "The series premise — 2-3 sentence core concept.",

@@ -108,7 +108,7 @@ export default function RebuildRefsModal({ projectId, mode = 'refs', onClose, on
               <div className="bg-zinc-900 border border-zinc-700 p-3 space-y-1.5">
                 <div className="label-pixel mb-1">WHAT HAPPENS</div>
                 <p className="text-retro text-zinc-400" style={{ fontSize: '15px' }}>• Each scene clip regenerated in episode order</p>
-                <p className="text-retro text-zinc-400" style={{ fontSize: '15px' }}>• HunyuanVideo starts from the FLUX reference image (I2V seed)</p>
+                <p className="text-retro text-zinc-400" style={{ fontSize: '15px' }}>• WAN 2.2 starts from the FLUX reference image (I2V seed)</p>
                 <p className="text-retro text-zinc-400" style={{ fontSize: '15px' }}>• Style-first prompts applied — clips should match reference look</p>
                 <p className="text-retro text-zinc-400" style={{ fontSize: '15px' }}>• ~45s per clip at draft quality</p>
                 <p className="text-retro text-px-green" style={{ fontSize: '15px' }}>

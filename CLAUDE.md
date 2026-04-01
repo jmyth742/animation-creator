@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Project Is
 
-An end-to-end automated animated series production pipeline. Given a concept, it uses Claude to write episode scripts, ComfyUI (HunyuanVideo 1.5) to generate video clips, Edge-TTS for voiceover, and FFmpeg to stitch everything into finished MP4 episodes. A full-stack web UI (FastAPI + React) manages projects, characters, locations, and episodes — and is intentionally kept polished for screen recording/demo purposes.
+An end-to-end automated animated series production pipeline. Given a concept, it uses Claude to write episode scripts, ComfyUI (WAN 2.2) to generate video clips, Edge-TTS for voiceover, and FFmpeg to stitch everything into finished MP4 episodes. A full-stack web UI (FastAPI + React) manages projects, characters, locations, and episodes — and is intentionally kept polished for screen recording/demo purposes.
 
 **Current owner: personal use only.** The UI is a demo asset — preserve its look and feel when making changes.
 
@@ -16,7 +16,7 @@ Three services must all be running:
 
 ```bash
 # Terminal 1: ComfyUI video generation server
-conda activate hunyuan-comfy
+# conda activate video-comfy  (if using conda)
 bash scripts/launch.sh                  # → http://localhost:8188
 
 # Terminal 2: FastAPI backend
@@ -51,7 +51,7 @@ python scripts/showrunner.py produce-all my_series
 python scripts/showrunner.py status my_series
 
 # Quick single-clip test
-python scripts/comfyui_api_gen.py workflows/t2v_v15_480p_fast.json \
+python scripts/comfyui_api_gen.py workflows/wan22_t2v_480p.json \
   -p "A cat on a windowsill, cinematic" -s 42
 ```
 
@@ -125,8 +125,8 @@ Character `visual_description` is injected into every scene prompt via `build_sc
 | `app/frontend/src/components/TheaterTab.jsx` | Episode viewer — lists finished episodes with inline video player |
 | `app/frontend/src/components/CharacterCard.jsx` | Character card with canonical portrait star badge |
 | `app/backend/templates.py` | Pre-seeded project templates (noir-detective, space-frontier, folklore-horror) |
-| `workflows/t2v_v15_480p_fast.json` | Default ComfyUI T2V workflow |
-| `workflows/i2v_v15_480p.json` | I2V workflow (used for chaining + character ref seeding) |
+| `workflows/wan22_t2v_480p.json` | Default ComfyUI T2V workflow |
+| `workflows/wan22_i2v_480p.json` | I2V workflow (used for chaining + character ref seeding) |
 
 ### Key showrunner.py Functions (for pipeline.py integration)
 
@@ -193,25 +193,25 @@ Scene JSON fields: `id`, `location`, `characters[]` (keys like `char_1`), `clip_
 
 ---
 
-## Hardware Constraints (RTX 4070 Laptop, 8GB VRAM)
+## Hardware Constraints (RTX 3090, 24GB VRAM)
 
 Do not change these without testing:
 
 | Parameter | Value | Reason |
 |-----------|-------|--------|
-| Resolution | 848×480 or 480×848 | Max for 8GB with Q4_K_S |
-| `cfg` | **1.0** | Distilled model — any other value breaks output |
-| `shift` | 5.0 | 480p default (9.0 for 720p) |
+| Resolution | 832×480 or 480×832 | WAN 2.2 480p default |
+| `cfg` | **5.0** | WAN 2.2 default guidance scale |
+| `shift` | 12.0 | WAN 2.2 T2V default (5.0 for I2V) |
 | Frame count | 49 / 65 / 81 | short/medium/long; must be `4n+1` |
 | Clip duration | 2.0s / 2.7s / 3.4s | Corresponds to frame counts above |
 
-**Model**: `hunyuanvideo1.5_480p_t2v_cfg_distilled-Q4_K_S.gguf`
+**Model**: `wan2.2_t2v_high_noise_14B_Q4_K_S.gguf`
 
 ---
 
 ## Environment
 
-- **Python env**: `conda activate hunyuan-comfy` (Python 3.10.9, PyTorch 2.5.1+cu121)
+- **Python env**: `# conda activate video-comfy  (if using conda)` (Python 3.10.9, PyTorch 2.5.1+cu121)
 - **`ANTHROPIC_API_KEY`**: required for script generation
 - **`SECRET_KEY`**: required for JWT auth — set in `app/backend/.env`
 - **ComfyUI**: must be running on `localhost:8188` for any video/portrait generation

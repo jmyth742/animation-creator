@@ -60,53 +60,16 @@ COMFYUI_OUTPUT = COMFYUI_DIR / "output" / "video"
 SERVER = "http://localhost:8188"
 
 # ─── Model configurations ────────────────────────────────────────────
-# Each video model has its own resolution presets, clip lengths, quality steps,
-# and workflow structure. Toggle between models via --video-model flag.
+# WAN 2.2 is the sole video generation model.
 
 MODEL_CONFIGS = {
-    "hunyuan": {
-        "label": "HunyuanVideo 1.5",
-        "fps": 24,
-        "cfg": 1.0,          # Distilled model — must be 1.0
-        "sampler": "euler",
-        "scheduler": "simple",
-        "clip_lengths": {
-            "short":  {"frames": 49, "seconds": 2.0},
-            "medium": {"frames": 65, "seconds": 2.7},
-            "long":   {"frames": 81, "seconds": 3.4},
-        },
-        "quality_steps": {"draft": 20, "good": 30, "final": 50},
-        "resolutions": {
-            "480p": {
-                "width": 848, "height": 480, "shift": 5.0,
-                "t2v_unet": "hunyuanvideo1.5_480p_t2v_cfg_distilled-Q5_K_S.gguf",
-                "i2v_unet": "hunyuanvideo1.5_480p_i2v_cfg_distilled-Q5_K_S.gguf",
-                "min_vram_gb": 8, "label": "480p (848×480)",
-            },
-            "720p": {
-                "width": 1280, "height": 720, "shift": 9.0,
-                "t2v_unet": "hunyuanvideo1.5_480p_t2v_cfg_distilled-Q5_K_S.gguf",
-                "i2v_unet": "hunyuanvideo1.5_480p_i2v_cfg_distilled-Q5_K_S.gguf",
-                "min_vram_gb": 24, "label": "720p (1280×720)",
-            },
-        },
-        "text_encoders": {
-            "clip1": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
-            "clip2": "byt5_small_glyphxl_fp16.safetensors",
-            "clip_type": "hunyuan_video_15",
-        },
-        "vae": "hunyuanvideo15_vae_fp16.safetensors",
-        "clip_vision": "sigclip_vision_patch14_384.safetensors",
-        "lora_loader": "LoraLoaderModelOnly",
-    },
     "wan": {
-        "label": "WAN 2.2 (A14B dual-model)",
+        "label": "WAN 2.2 (A14B single-model + KSampler)",
         "fps": 16,
         "cfg": 5.0,
         "sampler": "uni_pc_bh2",
         "scheduler": "simple",
-        "dual_model": True,  # WAN 2.2 uses high-noise + low-noise model switching
-        "timestep_boundary": 0.875,  # Switch from high→low noise model at this % of steps
+        "dual_model": False,  # Single high-noise model — dual SplitSigmas caused mosaic artifacts
         "clip_lengths": {
             "short":  {"frames": 33, "seconds": 2.1},
             "medium": {"frames": 49, "seconds": 3.1},
@@ -116,16 +79,16 @@ MODEL_CONFIGS = {
         "resolutions": {
             "480p": {
                 "width": 832, "height": 480, "shift": 12.0,
-                "t2v_unet": "wan2.2_t2v_high_noise_14B_Q4_K_S.gguf",
-                "t2v_unet_low": "wan2.2_t2v_low_noise_14B_Q4_K_S.gguf",
+                "t2v_unet": "wan2.2_t2v_high_noise_14B_Q8_0.gguf",
+                "t2v_unet_low": "wan2.2_t2v_low_noise_14B_Q8_0.gguf",
                 "i2v_unet": "wan2.2_i2v_high_noise_14B_Q4_K_S.gguf",
                 "i2v_unet_low": "wan2.2_i2v_low_noise_14B_Q4_K_S.gguf",
                 "min_vram_gb": 12, "label": "480p (832×480)",
             },
             "720p": {
                 "width": 1280, "height": 720, "shift": 12.0,
-                "t2v_unet": "wan2.2_t2v_high_noise_14B_Q4_K_S.gguf",
-                "t2v_unet_low": "wan2.2_t2v_low_noise_14B_Q4_K_S.gguf",
+                "t2v_unet": "wan2.2_t2v_high_noise_14B_Q8_0.gguf",
+                "t2v_unet_low": "wan2.2_t2v_low_noise_14B_Q8_0.gguf",
                 "i2v_unet": "wan2.2_i2v_high_noise_14B_Q4_K_S.gguf",
                 "i2v_unet_low": "wan2.2_i2v_low_noise_14B_Q4_K_S.gguf",
                 "min_vram_gb": 24, "label": "720p (1280×720)",
@@ -139,8 +102,37 @@ MODEL_CONFIGS = {
         "clip_vision": "sigclip_vision_patch14_384.safetensors",
         "lora_loader": "LoraLoaderModelOnly",
     },
+    "wan-5b": {
+        "label": "WAN 2.2 TI2V-5B (local preview)",
+        "fps": 16,
+        "cfg": 5.0,
+        "sampler": "uni_pc_bh2",
+        "scheduler": "simple",
+        "dual_model": False,  # 5B is a single model
+        "clip_lengths": {
+            "short":  {"frames": 33, "seconds": 2.1},
+            "medium": {"frames": 49, "seconds": 3.1},
+            "long":   {"frames": 81, "seconds": 5.1},
+        },
+        "quality_steps": {"draft": 10, "good": 20, "final": 30},
+        "resolutions": {
+            "480p": {
+                "width": 832, "height": 480, "shift": 5.0,
+                "t2v_unet": "wan2.2_ti2v_5B_Q4_K_S.gguf",
+                "i2v_unet": "wan2.2_ti2v_5B_Q4_K_S.gguf",
+                "min_vram_gb": 8, "label": "480p (832×480)",
+            },
+        },
+        "text_encoders": {
+            "clip1": "umt5-xxl-encoder-Q8_0.gguf",
+            "clip_type": "wan",
+        },
+        "vae": "Wan2.1_VAE.pth",
+        "clip_vision": "sigclip_vision_patch14_384.safetensors",
+        "lora_loader": "LoraLoaderModelOnly",
+    },
 }
-DEFAULT_VIDEO_MODEL = "hunyuan"
+DEFAULT_VIDEO_MODEL = "wan"
 
 # ─── Optimization presets ────────────────────────────────────────────
 # EasyCache (TeaCache) skips redundant diffusion steps by reusing cached
@@ -166,11 +158,11 @@ OPTIMIZATION_PRESETS = {
     },
 }
 
-# Inference quality presets — these are overridden by model config but kept for backward compat
-QUALITY_STEPS = MODEL_CONFIGS["hunyuan"]["quality_steps"]
+# Inference quality presets
+QUALITY_STEPS = MODEL_CONFIGS["wan"]["quality_steps"]
 
-# Clip length presets — backward compat alias
-CLIP_LENGTHS = MODEL_CONFIGS["hunyuan"]["clip_lengths"]
+# Clip length presets
+CLIP_LENGTHS = MODEL_CONFIGS["wan"]["clip_lengths"]
 
 # I2V denoise presets — lower = closer to reference image
 DENOISE_PRESETS = {
@@ -213,7 +205,7 @@ def get_resolution_config(resolution: str | None = None, video_model: str = DEFA
     return resolutions.get(resolution, list(resolutions.values())[0])
 
 
-# Frame count constraints (must be 4n+1 for both HunyuanVideo and WAN)
+# Frame count constraints (must be 4n+1 for WAN 2.2)
 MIN_FRAMES = 33   # ~1.4s at 24fps / ~2.1s at 16fps
 MAX_FRAMES = 97   # ~4.0s at 24fps / ~6.1s at 16fps
 
@@ -221,7 +213,7 @@ MAX_FRAMES = 97   # ~4.0s at 24fps / ~6.1s at 16fps
 def frames_for_duration(seconds: float, fps: int = 24) -> int:
     """Compute the nearest valid frame count (4n+1) for a given duration.
 
-    Both HunyuanVideo and WAN require frame counts of the form 4n+1.
+    WAN 2.2 requires frame counts of the form 4n+1.
     Returns the closest valid count within MIN_FRAMES..MAX_FRAMES, with a small
     buffer (+0.3s) to ensure audio fits comfortably within the clip.
     """
@@ -443,12 +435,19 @@ def call_claude(system_prompt: str, user_prompt: str, max_tokens: int = 8000) ->
     """Call Claude API and return the text response."""
     import anthropic
     client = anthropic.Anthropic()
-    message = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=max_tokens,
-        system=system_prompt,
-        messages=[{"role": "user", "content": user_prompt}],
-    )
+    try:
+        message = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=max_tokens,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}],
+        )
+    except anthropic.AuthenticationError:
+        raise RuntimeError("Invalid Anthropic API key. Set ANTHROPIC_API_KEY to a valid key.")
+    except anthropic.RateLimitError:
+        raise RuntimeError("Anthropic rate limit exceeded. Wait a moment and try again.")
+    except anthropic.APIError as e:
+        raise RuntimeError(f"Anthropic API error: {e}")
     return message.content[0].text
 
 
@@ -456,12 +455,19 @@ def call_claude_vision(system_prompt: str, content_blocks: list, max_tokens: int
     """Call Claude API with a multimodal message (text + images)."""
     import anthropic
     client = anthropic.Anthropic()
-    message = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=max_tokens,
-        system=system_prompt,
-        messages=[{"role": "user", "content": content_blocks}],
-    )
+    try:
+        message = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=max_tokens,
+            system=system_prompt,
+            messages=[{"role": "user", "content": content_blocks}],
+        )
+    except anthropic.AuthenticationError:
+        raise RuntimeError("Invalid Anthropic API key. Set ANTHROPIC_API_KEY to a valid key.")
+    except anthropic.RateLimitError:
+        raise RuntimeError("Anthropic rate limit exceeded. Wait a moment and try again.")
+    except anthropic.APIError as e:
+        raise RuntimeError(f"Anthropic API error: {e}")
     return message.content[0].text
 
 
@@ -522,7 +528,11 @@ Remember: return ONLY valid JSON, no markdown."""
     if response.endswith("```"):
         response = response.rsplit("```", 1)[0]
     response = response.strip()
-    return json.loads(response)
+    try:
+        return json.loads(response)
+    except json.JSONDecodeError as e:
+        print(f"[generate_bible] Failed to parse JSON: {response[:500]}")
+        raise ValueError(f"generate_bible: Claude returned invalid JSON: {e}") from e
 
 
 def generate_episode(bible: dict, concept: dict, ep_num: int, total_eps: int, previous_summaries: list[str]) -> dict:
@@ -618,7 +628,11 @@ Return ONLY valid JSON, no markdown."""
     if response.endswith("```"):
         response = response.rsplit("```", 1)[0]
     response = response.strip()
-    return json.loads(response)
+    try:
+        return json.loads(response)
+    except json.JSONDecodeError as e:
+        print(f"[generate_episode] Failed to parse JSON: {response[:500]}")
+        raise ValueError(f"generate_episode: Claude returned invalid JSON: {e}") from e
 
 
 # ─── TTS ─────────────────────────────────────────────────────────────
@@ -757,7 +771,8 @@ def _insert_optimizations(wf: dict, optimization: str, model_node: str) -> None:
         _insert_easycache(wf, preset["easycache"], model_node)
 
 
-def _insert_lora_chain(wf: dict, loras: list[tuple[str, float]], unet_node: str, sampler_model_node: str) -> None:
+def _insert_lora_chain(wf: dict, loras: list[tuple[str, float]], unet_node: str,
+                       sampler_model_node: str, node_id_offset: int = 50) -> None:
     """Insert a chain of LoRA nodes between the UNet loader and the sampler model node.
 
     Each LoRA feeds into the next, forming a chain:
@@ -768,6 +783,7 @@ def _insert_lora_chain(wf: dict, loras: list[tuple[str, float]], unet_node: str,
         loras: List of (lora_filename, strength) tuples. Max 3 recommended.
         unet_node: Node ID of UnetLoaderGGUF (e.g. "1").
         sampler_model_node: Node ID that consumes the model (e.g. "7" for T2V, "10" for I2V).
+        node_id_offset: Starting node ID for LoRA nodes (default 50; use 60 for second chain).
     """
     if not loras:
         return
@@ -775,7 +791,7 @@ def _insert_lora_chain(wf: dict, loras: list[tuple[str, float]], unet_node: str,
     prev_output = [unet_node, 0]  # Start from UNet output
 
     for idx, (lora_name, lora_strength) in enumerate(loras):
-        node_id = str(50 + idx)  # "50", "51", "52"
+        node_id = str(node_id_offset + idx)  # "50", "51", "52" or "60", "61", "62"
         wf[node_id] = build_lora_node(prev_output, lora_name, lora_strength)
         prev_output = [node_id, 0]
 
@@ -783,141 +799,56 @@ def _insert_lora_chain(wf: dict, loras: list[tuple[str, float]], unet_node: str,
     wf[sampler_model_node]["inputs"]["model"] = prev_output
 
 
-def build_t2v_workflow(prompt: str, seed: int, clip_prefix: str, frames: int,
-                       negative_prompt: str = "", steps: int = 15,
-                       lora_name: str | None = None, lora_strength: float = 0.7,
-                       loras: list[tuple[str, float]] | None = None,
-                       res_config: dict | None = None) -> dict:
-    rc = res_config or RESOLUTION_PRESETS[DEFAULT_RESOLUTION]
-    wf = {
-        "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc["t2v_unet"]}},
-        "2": {"class_type": "DualCLIPLoader", "inputs": {"clip_name1": "qwen_2.5_vl_7b_fp8_scaled.safetensors", "clip_name2": "byt5_small_glyphxl_fp16.safetensors", "type": "hunyuan_video_15"}},
-        "3": {"class_type": "VAELoader", "inputs": {"vae_name": "hunyuanvideo15_vae_fp16.safetensors"}},
-        "4": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
-        "5": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": negative_prompt}},
-        "6": {"class_type": "EmptyHunyuanVideo15Latent", "inputs": {"width": rc["width"], "height": rc["height"], "length": frames, "batch_size": 1}},
-        "7": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": rc["shift"]}},
-        "8": {"class_type": "CFGGuider", "inputs": {"model": ["7", 0], "positive": ["4", 0], "negative": ["5", 0], "cfg": 1.0}},
-        "9": {"class_type": "BasicScheduler", "inputs": {"model": ["7", 0], "scheduler": "simple", "steps": steps, "denoise": 1.0}},
-        "10": {"class_type": "RandomNoise", "inputs": {"noise_seed": seed}},
-        "11": {"class_type": "KSamplerSelect", "inputs": {"sampler_name": "euler"}},
-        "12": {"class_type": "SamplerCustomAdvanced", "inputs": {"noise": ["10", 0], "guider": ["8", 0], "sampler": ["11", 0], "sigmas": ["9", 0], "latent_image": ["6", 0]}},
-        "13": {"class_type": "VAEDecode", "inputs": {"samples": ["12", 0], "vae": ["3", 0]}},
-        "14": {"class_type": "CreateVideo", "inputs": {"images": ["13", 0], "fps": 24.0}},
-        "15": {"class_type": "SaveVideo", "inputs": {"video": ["14", 0], "filename_prefix": f"video/{clip_prefix}", "format": "mp4", "codec": "h264"}},
-    }
-    # Build LoRA list: prefer new `loras` param, fall back to legacy single lora
-    lora_list = loras or ([(lora_name, lora_strength)] if lora_name else [])
-    _insert_lora_chain(wf, lora_list, unet_node="1", sampler_model_node="7")
-    return wf
-
-
-def build_i2v_workflow(prompt: str, image_name: str, seed: int, clip_prefix: str, frames: int,
-                       negative_prompt: str = "", steps: int = 15,
-                       denoise: float = DEFAULT_DENOISE,
-                       lora_name: str | None = None, lora_strength: float = 0.7,
-                       loras: list[tuple[str, float]] | None = None,
-                       res_config: dict | None = None) -> dict:
-    rc = res_config or RESOLUTION_PRESETS[DEFAULT_RESOLUTION]
-    wf = {
-        "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc["i2v_unet"]}},
-        "2": {"class_type": "DualCLIPLoader", "inputs": {"clip_name1": "qwen_2.5_vl_7b_fp8_scaled.safetensors", "clip_name2": "byt5_small_glyphxl_fp16.safetensors", "type": "hunyuan_video_15"}},
-        "3": {"class_type": "VAELoader", "inputs": {"vae_name": "hunyuanvideo15_vae_fp16.safetensors"}},
-        "4": {"class_type": "CLIPVisionLoader", "inputs": {"clip_name": "sigclip_vision_patch14_384.safetensors"}},
-        "5": {"class_type": "LoadImage", "inputs": {"image": image_name}},
-        "20": {"class_type": "ImageScale", "inputs": {
-            "image": ["5", 0], "upscale_method": "lanczos",
-            "width": rc["width"], "height": rc["height"], "crop": "center"
-        }},
-        "6": {"class_type": "CLIPVisionEncode", "inputs": {"clip_vision": ["4", 0], "image": ["20", 0], "crop": "center"}},
-        "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
-        "8": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": negative_prompt}},
-        "9": {"class_type": "HunyuanVideo15ImageToVideo", "inputs": {
-            "positive": ["7", 0], "negative": ["8", 0], "vae": ["3", 0],
-            "width": rc["width"], "height": rc["height"], "length": frames, "batch_size": 1,
-            "start_image": ["20", 0], "clip_vision_output": ["6", 0]
-        }},
-        "10": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": rc["shift"]}},
-        "11": {"class_type": "CFGGuider", "inputs": {"model": ["10", 0], "positive": ["9", 0], "negative": ["9", 1], "cfg": 1.0}},
-        "12": {"class_type": "BasicScheduler", "inputs": {"model": ["10", 0], "scheduler": "simple", "steps": steps, "denoise": denoise}},
-        "13": {"class_type": "RandomNoise", "inputs": {"noise_seed": seed}},
-        "14": {"class_type": "KSamplerSelect", "inputs": {"sampler_name": "euler"}},
-        "15": {"class_type": "SamplerCustomAdvanced", "inputs": {"noise": ["13", 0], "guider": ["11", 0], "sampler": ["14", 0], "sigmas": ["12", 0], "latent_image": ["9", 2]}},
-        "16": {"class_type": "VAEDecode", "inputs": {"samples": ["15", 0], "vae": ["3", 0]}},
-        "17": {"class_type": "CreateVideo", "inputs": {"images": ["16", 0], "fps": 24.0}},
-        "18": {"class_type": "SaveVideo", "inputs": {"video": ["17", 0], "filename_prefix": f"video/{clip_prefix}", "format": "mp4", "codec": "h264"}},
-    }
-    lora_list = loras or ([(lora_name, lora_strength)] if lora_name else [])
-    _insert_lora_chain(wf, lora_list, unet_node="1", sampler_model_node="10")
-    return wf
-
-
-# ─── WAN 2.1 workflow builders ──────────────────────────────────────
+# ─── WAN 2.2 workflow builders ──────────────────────────────────────
 
 def build_wan_t2v_workflow(prompt: str, seed: int, clip_prefix: str, frames: int,
                             negative_prompt: str = "", steps: int = 25,
                             loras: list[tuple[str, float]] | None = None,
+                            high_loras: list[tuple[str, float]] | None = None,
+                            low_loras: list[tuple[str, float]] | None = None,
                             res_config: dict | None = None,
                             model_config: dict | None = None) -> dict:
-    """Build a WAN 2.2 T2V workflow with dual-model (high/low noise) architecture.
+    """Build a WAN T2V workflow.
 
-    WAN 2.2 uses two DiT models:
-      - High-noise model: handles early denoising steps (coarse structure)
-      - Low-noise model: handles later steps (fine detail refinement)
-    The switch happens at timestep_boundary (default 87.5% of steps).
-
-    This produces significantly better quality than single-model WAN 2.1
-    because each model is specialized for its noise level range.
+    Supports both dual-model (WAN 2.2 14B) and single-model (TI2V-5B) configs.
+    In dual-model mode, uses SplitSigmas to switch between high-noise and
+    low-noise expert models at the timestep_boundary.
     """
     mc = model_config or MODEL_CONFIGS["wan"]
     rc = res_config or list(mc["resolutions"].values())[0]
     te = mc["text_encoders"]
-    boundary = mc.get("timestep_boundary", 0.875)
-    boundary_step = int(steps * boundary)
+    is_dual = mc.get("dual_model", False)
 
+    # Single-model T2V with KSampler (dual-model SplitSigmas causes mosaic artifacts)
     wf = {
-        # Shared: text encoder, VAE, prompts
-        "2": {"class_type": "CLIPLoaderGGUF", "inputs": {"clip_name": te["clip1"], "type": te["clip_type"]}},
-        "3": {"class_type": "VAELoader", "inputs": {"vae_name": mc["vae"]}},
-        "4": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
-        "5": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": negative_prompt}},
-
-        # High-noise model (early steps: structure, composition)
         "1":  {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc["t2v_unet"]}},
+        "2":  {"class_type": "CLIPLoaderGGUF", "inputs": {"clip_name": te["clip1"], "type": te["clip_type"]}},
+        "3":  {"class_type": "VAELoader", "inputs": {"vae_name": mc["vae"]}},
+        "4":  {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
+        "5":  {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": negative_prompt}},
+        "6":  {"class_type": "WanImageToVideo", "inputs": {
+            "positive": ["4", 0], "negative": ["5", 0], "vae": ["3", 0],
+            "width": rc["width"], "height": rc["height"], "length": frames, "batch_size": 1,
+        }},
         "7":  {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": rc["shift"]}},
-        "8":  {"class_type": "CFGGuider", "inputs": {"model": ["7", 0], "positive": ["4", 0], "negative": ["5", 0], "cfg": mc["cfg"]}},
-        "9":  {"class_type": "BasicScheduler", "inputs": {"model": ["7", 0], "scheduler": mc["scheduler"], "steps": steps, "denoise": 1.0}},
-        "30": {"class_type": "SplitSigmas", "inputs": {"sigmas": ["9", 0], "step": boundary_step}},
-
-        # Low-noise model (later steps: detail, refinement)
-        "31": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc.get("t2v_unet_low", rc["t2v_unet"])}},
-        "32": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["31", 0], "shift": rc["shift"]}},
-        "33": {"class_type": "CFGGuider", "inputs": {"model": ["32", 0], "positive": ["4", 0], "negative": ["5", 0], "cfg": mc["cfg"]}},
-
-        # Latent, noise, sampler
-        "6":  {"class_type": "EmptySD3LatentImage", "inputs": {"width": rc["width"], "height": rc["height"], "batch_size": 1}},
-        "10": {"class_type": "RandomNoise", "inputs": {"noise_seed": seed}},
-        "11": {"class_type": "KSamplerSelect", "inputs": {"sampler_name": mc["sampler"]}},
-
-        # Two-stage sampling: high-noise → low-noise
-        "34": {"class_type": "SamplerCustomAdvanced", "inputs": {
-            "noise": ["10", 0], "guider": ["8", 0], "sampler": ["11", 0],
-            "sigmas": ["30", 0], "latent_image": ["6", 0]
+        "8":  {"class_type": "KSampler", "inputs": {
+            "model": ["7", 0], "positive": ["6", 0], "negative": ["6", 1],
+            "latent_image": ["6", 2], "seed": seed, "steps": steps, "cfg": mc["cfg"],
+            "sampler_name": mc["sampler"], "scheduler": mc["scheduler"], "denoise": 1.0,
         }},
-        "35": {"class_type": "SamplerCustomAdvanced", "inputs": {
-            "noise": ["10", 0], "guider": ["33", 0], "sampler": ["11", 0],
-            "sigmas": ["30", 1], "latent_image": ["34", 0]
-        }},
-
-        # Decode and save
-        "13": {"class_type": "VAEDecode", "inputs": {"samples": ["35", 0], "vae": ["3", 0]}},
-        "14": {"class_type": "CreateVideo", "inputs": {"images": ["13", 0], "fps": float(mc["fps"])}},
-        "15": {"class_type": "SaveVideo", "inputs": {"video": ["14", 0], "filename_prefix": f"video/{clip_prefix}", "format": "mp4", "codec": "h264"}},
     }
+
+    sampled_output = "8"
+
+    # Decode and save
+    wf["13"] = {"class_type": "VAEDecode", "inputs": {"samples": [sampled_output, 0], "vae": ["3", 0]}}
+    wf["14"] = {"class_type": "CreateVideo", "inputs": {"images": ["13", 0], "fps": float(mc["fps"])}}
+    wf["15"] = {"class_type": "SaveVideo", "inputs": {"video": ["14", 0], "filename_prefix": f"video/{clip_prefix}", "format": "mp4", "codec": "h264"}}
+
+    # LoRA injection (single model — high-noise only)
     if loras:
-        _insert_lora_chain(wf, loras, unet_node="1", sampler_model_node="7")
-        # Also apply LoRAs to the low-noise model
-        _insert_lora_chain(wf, loras, unet_node="31", sampler_model_node="32")
+        _insert_lora_chain(wf, loras, unet_node="1", sampler_model_node="7", node_id_offset=50)
+
     return wf
 
 
@@ -925,80 +856,191 @@ def build_wan_i2v_workflow(prompt: str, image_name: str, seed: int, clip_prefix:
                             negative_prompt: str = "", steps: int = 25,
                             denoise: float = DEFAULT_DENOISE,
                             loras: list[tuple[str, float]] | None = None,
+                            high_loras: list[tuple[str, float]] | None = None,
+                            low_loras: list[tuple[str, float]] | None = None,
                             res_config: dict | None = None,
                             model_config: dict | None = None) -> dict:
-    """Build a WAN 2.2 I2V workflow with dual-model architecture.
+    """Build a WAN I2V workflow.
 
-    Same dual high/low noise approach as T2V, but uses Wan22ImageToVideoLatent
-    for start image conditioning and the I2V-specific model checkpoints.
+    Supports both dual-model (14B) and single-model (5B) configs.
+    Uses WanImageToVideo for start image conditioning.
     """
     mc = model_config or MODEL_CONFIGS["wan"]
     rc = res_config or list(mc["resolutions"].values())[0]
     te = mc["text_encoders"]
-    boundary = mc.get("timestep_boundary", 0.875)
-    boundary_step = int(steps * boundary)
+    is_dual = mc.get("dual_model", False)
 
     wf = {
-        # Shared
         "2": {"class_type": "CLIPLoaderGGUF", "inputs": {"clip_name": te["clip1"], "type": te["clip_type"]}},
         "3": {"class_type": "VAELoader", "inputs": {"vae_name": mc["vae"]}},
-
-        # Image conditioning
         "5":  {"class_type": "LoadImage", "inputs": {"image": image_name}},
         "20": {"class_type": "ImageScale", "inputs": {
             "image": ["5", 0], "upscale_method": "lanczos",
             "width": rc["width"], "height": rc["height"], "crop": "center"
         }},
-
-        # Text conditioning
         "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
         "8": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": negative_prompt}},
-
-        # I2V conditioning — WanImageToVideo handles start_image (clip_vision optional)
         "9": {"class_type": "WanImageToVideo", "inputs": {
             "positive": ["7", 0], "negative": ["8", 0], "vae": ["3", 0],
             "width": rc["width"], "height": rc["height"], "length": frames, "batch_size": 1,
             "start_image": ["20", 0],
         }},
-
-        # High-noise model
         "1":  {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc["i2v_unet"]}},
-        "10": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": rc["shift"]}},
-        "11": {"class_type": "CFGGuider", "inputs": {"model": ["10", 0], "positive": ["7", 0], "negative": ["8", 0], "cfg": mc["cfg"]}},
-        "12": {"class_type": "BasicScheduler", "inputs": {"model": ["10", 0], "scheduler": mc["scheduler"], "steps": steps, "denoise": denoise}},
-        "30": {"class_type": "SplitSigmas", "inputs": {"sigmas": ["12", 0], "step": boundary_step}},
-
-        # Low-noise model
-        "31": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc.get("i2v_unet_low", rc["i2v_unet"])}},
-        "32": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["31", 0], "shift": rc["shift"]}},
-        "33": {"class_type": "CFGGuider", "inputs": {"model": ["32", 0], "positive": ["7", 0], "negative": ["8", 0], "cfg": mc["cfg"]}},
-
-        # Noise + sampler
-        "13": {"class_type": "RandomNoise", "inputs": {"noise_seed": seed}},
-        "14": {"class_type": "KSamplerSelect", "inputs": {"sampler_name": mc["sampler"]}},
-
-        # Two-stage sampling (WanImageToVideo outputs: [0]=pos_cond, [1]=neg_cond, [2]=latent)
-        "34": {"class_type": "SamplerCustomAdvanced", "inputs": {
-            "noise": ["13", 0], "guider": ["11", 0], "sampler": ["14", 0],
-            "sigmas": ["30", 0], "latent_image": ["9", 2]
+        "10": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": 5.0}},  # I2V uses lower shift than T2V
+        "11": {"class_type": "KSampler", "inputs": {
+            "model": ["10", 0], "positive": ["9", 0], "negative": ["9", 1],
+            "latent_image": ["9", 2], "seed": seed, "steps": steps, "cfg": mc["cfg"],
+            "sampler_name": mc["sampler"], "scheduler": mc["scheduler"], "denoise": denoise,
         }},
-        "35": {"class_type": "SamplerCustomAdvanced", "inputs": {
-            "noise": ["13", 0], "guider": ["33", 0], "sampler": ["14", 0],
-            "sigmas": ["30", 1], "latent_image": ["34", 0]
-        }},
-
-        # Decode and save
-        "16": {"class_type": "VAEDecode", "inputs": {"samples": ["35", 0], "vae": ["3", 0]}},
-        "17": {"class_type": "CreateVideo", "inputs": {"images": ["16", 0], "fps": float(mc["fps"])}},
-        "18": {"class_type": "SaveVideo", "inputs": {"video": ["17", 0], "filename_prefix": f"video/{clip_prefix}", "format": "mp4", "codec": "h264"}},
     }
+
+    sampled_output = "11"
+
+    wf["16"] = {"class_type": "VAEDecode", "inputs": {"samples": [sampled_output, 0], "vae": ["3", 0]}}
+    wf["17"] = {"class_type": "CreateVideo", "inputs": {"images": ["16", 0], "fps": float(mc["fps"])}}
+    wf["18"] = {"class_type": "SaveVideo", "inputs": {"video": ["17", 0], "filename_prefix": f"video/{clip_prefix}", "format": "mp4", "codec": "h264"}}
+
+    # LoRA injection (single model)
     if loras:
-        _insert_lora_chain(wf, loras, unet_node="1", sampler_model_node="10")
-        _insert_lora_chain(wf, loras, unet_node="31", sampler_model_node="32")
+        _insert_lora_chain(wf, loras, unet_node="1", sampler_model_node="10", node_id_offset=50)
+
     return wf
 
 
-# ─── Model-agnostic workflow dispatch ────────────────────────────────
+def _resolve_wan_dual_loras(loras: list[tuple[str, float]] | None) -> tuple[list[tuple[str, float]] | None, list[tuple[str, float]] | None]:
+    """Resolve WAN LoRA base names to actual files on disk.
+
+    Since we use single-model KSampler (high-noise model only), this resolves
+    split LoRA names to their -high variant. For example:
+    "reemi-wan22.safetensors" → "reemi-wan22-high.safetensors" (if it exists)
+
+    Returns (None, None) always — resolved LoRAs are written back into the
+    input list so callers use the unified `loras` path (single-model injection).
+    """
+    if not loras:
+        return None, None
+
+    loras_dir = COMFYUI_DIR / "models" / "loras"
+
+    for i, (lora_name, strength) in enumerate(loras):
+        # If the exact file exists, use it as-is
+        if (loras_dir / lora_name).exists():
+            continue
+
+        # Check for -high split variant (we only use high-noise model)
+        base = lora_name.removesuffix(".safetensors")
+        high_file = f"{base}-high.safetensors"
+
+        if (loras_dir / high_file).exists():
+            loras[i] = (high_file, strength)
+            print(f"[WAN] Resolved LoRA: {lora_name} → {high_file}")
+        else:
+            print(f"[WAN] WARNING: LoRA not found: {lora_name} (checked {high_file})")
+
+    # Always return None — single-model mode uses unified loras list
+    return None, None
+
+
+def build_wan_s2v_workflow(prompt: str, audio_path: str, seed: int, clip_prefix: str, frames: int,
+                            negative_prompt: str = "", steps: int = 25,
+                            ref_image: str | None = None,
+                            loras: list[tuple[str, float]] | None = None,
+                            high_loras: list[tuple[str, float]] | None = None,
+                            low_loras: list[tuple[str, float]] | None = None,
+                            res_config: dict | None = None,
+                            model_config: dict | None = None) -> dict:
+    """Build a WAN 2.2 S2V (Speech-to-Video) workflow for dialogue scenes.
+
+    Uses WanSoundImageToVideo to generate video driven by audio input,
+    producing natural lip sync and expressions. Requires:
+    - Audio encoder model in ComfyUI/models/audio_encoders/
+    - S2V-compatible UNet (wan2.2_t2v_* works, dedicated S2V model preferred)
+
+    Args:
+        audio_path: Path to audio file (TTS-generated dialogue).
+        ref_image: Character reference image for visual conditioning.
+    """
+    mc = model_config or MODEL_CONFIGS["wan"]
+    rc = res_config or list(mc["resolutions"].values())[0]
+    te = mc["text_encoders"]
+    is_dual = mc.get("dual_model", False)
+
+    wf = {
+        # Text encoder + VAE
+        "2": {"class_type": "CLIPLoaderGGUF", "inputs": {"clip_name": te["clip1"], "type": te["clip_type"]}},
+        "3": {"class_type": "VAELoader", "inputs": {"vae_name": mc["vae"]}},
+        "4": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
+        "5": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": negative_prompt}},
+
+        # Audio encoding
+        "40": {"class_type": "AudioEncoderLoader", "inputs": {"audio_encoder_name": "wan2.2_audio_encoder.safetensors"}},
+        "41": {"class_type": "LoadAudio", "inputs": {"audio": audio_path}},
+        "42": {"class_type": "AudioEncoderEncode", "inputs": {"audio_encoder": ["40", 0], "audio": ["41", 0]}},
+    }
+
+    # S2V conditioning — ref_image is optional but strongly recommended
+    s2v_inputs = {
+        "positive": ["4", 0], "negative": ["5", 0], "vae": ["3", 0],
+        "width": rc["width"], "height": rc["height"], "length": frames, "batch_size": 1,
+        "audio_encoder_output": ["42", 0],
+    }
+    if ref_image:
+        wf["43"] = {"class_type": "LoadImage", "inputs": {"image": ref_image}}
+        wf["44"] = {"class_type": "ImageScale", "inputs": {
+            "image": ["43", 0], "upscale_method": "lanczos",
+            "width": rc["width"], "height": rc["height"], "crop": "center"
+        }}
+        s2v_inputs["ref_image"] = ["44", 0]
+
+    wf["9"] = {"class_type": "WanSoundImageToVideo", "inputs": s2v_inputs}
+
+    # UNet + sampling (single model + KSampler — dual-model SplitSigmas causes mosaic)
+    wf["1"] = {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc["t2v_unet"]}}
+    wf["10"] = {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": rc["shift"]}}
+    wf["11"] = {"class_type": "KSampler", "inputs": {
+        "model": ["10", 0], "positive": ["4", 0], "negative": ["5", 0],
+        "latent_image": ["9", 2], "seed": seed, "steps": steps, "cfg": mc["cfg"],
+        "sampler_name": mc["sampler"], "scheduler": mc["scheduler"], "denoise": 1.0,
+    }}
+
+    sampled_output = "11"
+
+    wf["16"] = {"class_type": "VAEDecode", "inputs": {"samples": [sampled_output, 0], "vae": ["3", 0]}}
+    wf["17"] = {"class_type": "CreateVideo", "inputs": {"images": ["16", 0], "fps": float(mc["fps"])}}
+    wf["18"] = {"class_type": "SaveVideo", "inputs": {"video": ["17", 0], "filename_prefix": f"video/{clip_prefix}", "format": "mp4", "codec": "h264"}}
+
+    # LoRA injection (single model)
+    if loras:
+        _insert_lora_chain(wf, loras, unet_node="1", sampler_model_node="10", node_id_offset=50)
+
+    return wf
+
+
+def classify_scene_type(scene: dict) -> str:
+    """Classify a scene into a generation mode based on its content.
+
+    Returns:
+        "s2v"           — dialogue scene with speech (uses S2V for lip sync)
+        "i2v"           — action/continuation scene (uses I2V with reference image)
+        "t2v"           — establishing/wide shot (uses T2V, no reference needed)
+    """
+    has_dialogue = bool(scene.get("dialogue"))
+    has_narration = bool(scene.get("narration", "").strip())
+    has_characters = bool(scene.get("characters"))
+
+    # Dialogue with characters → S2V (lip sync)
+    if has_dialogue and has_characters:
+        return "s2v"
+
+    # Characters present but no dialogue → I2V (reference seeding)
+    if has_characters:
+        return "i2v"
+
+    # No characters (establishing shot, location) → T2V
+    return "t2v"
+
+
+# ─── Workflow dispatch ────────────────────────────────────────────────
 
 def build_video_workflow(video_model: str, mode: str, prompt: str, seed: int,
                           clip_prefix: str, frames: int, res_config: dict,
@@ -1006,46 +1048,44 @@ def build_video_workflow(video_model: str, mode: str, prompt: str, seed: int,
                           denoise: float = DEFAULT_DENOISE,
                           loras: list[tuple[str, float]] | None = None,
                           image_name: str | None = None,
+                          audio_path: str | None = None,
                           optimization: str = "none") -> dict:
-    """Dispatch to the correct workflow builder based on video model and mode.
+    """Build a WAN video generation workflow.
 
     Args:
-        video_model: "hunyuan" or "wan"
-        mode: "t2v" or "i2v"
+        video_model: "wan" (14B dual-model) or "wan-5b" (5B local preview).
+        mode: "t2v", "i2v", or "s2v" (speech-to-video with lip sync).
+        audio_path: Path to audio file (required for s2v mode).
         optimization: "none", "balanced", "fast", or "turbo" (EasyCache presets)
-        Other args passed through to the model-specific builder.
+        Other args passed through to the WAN workflow builders.
     """
     mc = get_model_config(video_model)
 
-    if video_model == "wan":
-        # WAN 2.2 uses WanAttentionBlock — HunyuanVideo LoRAs (MMDoubleStreamBlock)
-        # are incompatible. Only pass LoRAs that were trained for WAN.
-        wan_loras = [l for l in (loras or []) if "wan" in l[0].lower()] or None
-        if loras and not wan_loras:
-            pass  # Silently skip incompatible LoRAs — rely on I2V reference seeding
+    # Resolve split high/low noise LoRA variants if they exist on disk
+    high_loras, low_loras = _resolve_wan_dual_loras(loras)
 
-        if mode == "i2v" and image_name:
-            wf = build_wan_i2v_workflow(prompt, image_name, seed, clip_prefix, frames,
-                                         negative_prompt=negative_prompt, steps=steps,
-                                         denoise=denoise, loras=wan_loras,
-                                         res_config=res_config, model_config=mc)
-            _insert_optimizations(wf, optimization, model_node="10")
-        else:
-            wf = build_wan_t2v_workflow(prompt, seed, clip_prefix, frames,
-                                         negative_prompt=negative_prompt, steps=steps,
-                                         loras=wan_loras, res_config=res_config, model_config=mc)
-            _insert_optimizations(wf, optimization, model_node="7")
-    else:  # hunyuan (default)
-        if mode == "i2v" and image_name:
-            wf = build_i2v_workflow(prompt, image_name, seed, clip_prefix, frames,
+    if mode == "s2v" and audio_path:
+        # S2V: audio-driven video with lip sync
+        wf = build_wan_s2v_workflow(prompt, audio_path, seed, clip_prefix, frames,
                                      negative_prompt=negative_prompt, steps=steps,
-                                     denoise=denoise, loras=loras, res_config=res_config)
-            _insert_optimizations(wf, optimization, model_node="10")
-        else:
-            wf = build_t2v_workflow(prompt, seed, clip_prefix, frames,
+                                     ref_image=image_name, loras=loras,
+                                     high_loras=high_loras, low_loras=low_loras,
+                                     res_config=res_config, model_config=mc)
+        _insert_optimizations(wf, optimization, model_node="10")
+    elif mode == "i2v" and image_name:
+        wf = build_wan_i2v_workflow(prompt, image_name, seed, clip_prefix, frames,
                                      negative_prompt=negative_prompt, steps=steps,
-                                     loras=loras, res_config=res_config)
-            _insert_optimizations(wf, optimization, model_node="7")
+                                     denoise=denoise, loras=loras,
+                                     high_loras=high_loras, low_loras=low_loras,
+                                     res_config=res_config, model_config=mc)
+        _insert_optimizations(wf, optimization, model_node="10")
+    else:
+        wf = build_wan_t2v_workflow(prompt, seed, clip_prefix, frames,
+                                     negative_prompt=negative_prompt, steps=steps,
+                                     loras=loras,
+                                     high_loras=high_loras, low_loras=low_loras,
+                                     res_config=res_config, model_config=mc)
+        _insert_optimizations(wf, optimization, model_node="7")
 
     return wf
 
@@ -1056,7 +1096,7 @@ def build_video_workflow(video_model: str, mode: str, prompt: str, seed: int,
 # providing much stronger appearance/face consistency than LoRAs alone.
 # Requires: ComfyUI-IPAdapter-plus custom node + IP-Adapter model files.
 
-# Default IP-Adapter model for video (works with HunyuanVideo via SD1.5 adapter)
+# Default IP-Adapter model for video
 IP_ADAPTER_MODEL = "ip-adapter-plus_sd15.safetensors"
 IP_ADAPTER_CLIP_VISION = "sigclip_vision_patch14_384.safetensors"  # Reuse existing CLIP vision
 IP_ADAPTER_DEFAULT_STRENGTH = 0.5
@@ -1171,7 +1211,7 @@ CAMERA_MOTION = {
 
 
 def build_scene_prompt(scene: dict, bible: dict) -> str:
-    """Build a structured video generation prompt optimised for HunyuanVideo.
+    """Build a structured video generation prompt optimised for WAN 2.2.
 
     Prompt order matters — earlier tokens carry more weight in diffusion models.
     Structure: shot_type → trigger_words → action/composition → camera_motion → location → lighting → style
@@ -1253,7 +1293,9 @@ def build_scene_prompt(scene: dict, bible: dict) -> str:
         short_style = series_style.split(",")[0].strip()[:60]
         parts.append(short_style)
 
-    return ", ".join(filter(None, parts))
+    # Clean up: strip trailing periods from parts before joining
+    cleaned = [p.rstrip(".").strip() for p in parts if p]
+    return ". ".join(filter(None, cleaned)) + "."
 
 
 def build_negative_prompt(scene: dict) -> str:
@@ -1497,7 +1539,7 @@ def poll_until_done(prompt_id: str, poll_interval: int = 10, max_wait: int = 180
                 r2 = requests.get(f"{SERVER}/history/{prompt_id}")
                 if prompt_id in r2.json() and r2.json()[prompt_id].get("outputs"):
                     return True
-                return True
+                return False
         except requests.ConnectionError:
             print(f"\r    Reconnecting... ({elapsed}s)", end="", flush=True)
         time.sleep(poll_interval)
@@ -1506,11 +1548,14 @@ def poll_until_done(prompt_id: str, poll_interval: int = 10, max_wait: int = 180
 
 
 def extract_last_frame(video_path: str, output_path: str) -> bool:
-    subprocess.run(
+    result = subprocess.run(
         ["ffmpeg", "-y", "-sseof", "-0.1", "-i", video_path,
          "-frames:v", "1", "-q:v", "2", output_path],
         capture_output=True, timeout=30,
     )
+    if result.returncode != 0:
+        print(f"[extract_last_frame] ffmpeg failed (rc={result.returncode}): {result.stderr.decode(errors='replace')[:500]}")
+        return False
     return os.path.exists(output_path)
 
 
@@ -2118,7 +2163,7 @@ def build_t2i_workflow(
     """
     FLUX.1-schnell GGUF T2I workflow.
 
-    Generates a high-quality still image for use as an I2V seed in HunyuanVideo.
+    Generates a high-quality still image for use as an I2V seed in WAN 2.2.
     4 inference steps (distilled model) — fast and sharp.
 
     width/height defaults:
@@ -2142,40 +2187,13 @@ def build_t2i_workflow(
     }
 
 
-def build_ref_workflow(prompt: str, seed: int, prefix: str,
-                       width: int = 480, height: int = 320, steps: int = 30) -> dict:
-    """HunyuanVideo 1.5 T2V workflow that generates a single frame.
-
-    Used for character/location reference images when engine='hunyuan'.
-    Produces images that match the video model's visual style exactly,
-    which improves I2V seeding consistency.
-    """
-    return {
-        "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": "hunyuanvideo1.5_480p_t2v_cfg_distilled-Q5_K_S.gguf"}},
-        "2": {"class_type": "DualCLIPLoader", "inputs": {"clip_name1": "qwen_2.5_vl_7b_fp8_scaled.safetensors", "clip_name2": "byt5_small_glyphxl_fp16.safetensors", "type": "hunyuan_video_15"}},
-        "3": {"class_type": "VAELoader", "inputs": {"vae_name": "hunyuanvideo15_vae_fp16.safetensors"}},
-        "4": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
-        "5": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": "blurry, motion blur, multiple people, duplicate"}},
-        "6": {"class_type": "EmptyHunyuanVideo15Latent", "inputs": {"width": width, "height": height, "length": 1, "batch_size": 1}},
-        "7": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": 5.0}},
-        "8": {"class_type": "CFGGuider", "inputs": {"model": ["7", 0], "positive": ["4", 0], "negative": ["5", 0], "cfg": 1.0}},
-        "9": {"class_type": "BasicScheduler", "inputs": {"model": ["7", 0], "scheduler": "simple", "steps": steps, "denoise": 1.0}},
-        "10": {"class_type": "RandomNoise", "inputs": {"noise_seed": seed}},
-        "11": {"class_type": "KSamplerSelect", "inputs": {"sampler_name": "euler"}},
-        "12": {"class_type": "SamplerCustomAdvanced", "inputs": {"noise": ["10", 0], "guider": ["8", 0], "sampler": ["11", 0], "sigmas": ["9", 0], "latent_image": ["6", 0]}},
-        "13": {"class_type": "VAEDecode", "inputs": {"samples": ["12", 0], "vae": ["3", 0]}},
-        "14": {"class_type": "SaveImage", "inputs": {"images": ["13", 0], "filename_prefix": f"refs/{prefix}"}},
-    }
-
-
 def generate_reference_images(series_name: str, bible: dict, force: bool = False,
                               engine: str = "flux"):
     """
     Generate canonical reference images for all characters and locations in the bible.
 
     engine:
-      "flux"      — FLUX.1-schnell T2I (fast, high quality stills, different style from video model)
-      "hunyuan"   — HunyuanVideo 1.5 single-frame T2V (matches video model style exactly)
+      "flux"      — FLUX.1-schnell T2I (fast, high quality stills)
 
     Character keys in the bible are already prefixed ("char_1", "char_2", …) as are
     location keys ("loc_1", …).  The prefix is used directly as the output filename
@@ -2217,7 +2235,7 @@ def generate_reference_images(series_name: str, bible: dict, force: bool = False
                        ", ".join(filter(None, prompt_parts)), 640, 360))
 
     refs_out = COMFYUI_DIR / "output" / "refs"
-    engine_label = "HunyuanVideo T2V" if engine == "hunyuan" else "FLUX T2I"
+    engine_label = "FLUX T2I"
     print(f"  Generating {len(items)} reference images with {engine_label}...")
 
     for prefix, label, prompt, width, height in items:
@@ -2227,10 +2245,7 @@ def generate_reference_images(series_name: str, bible: dict, force: bool = False
             continue
 
         print(f"    {label} ({width}×{height}) [{engine_label}]...")
-        if engine == "hunyuan":
-            wf = build_ref_workflow(prompt, seed=999, prefix=prefix)
-        else:
-            wf = build_t2i_workflow(prompt, seed=999, prefix=prefix, width=width, height=height)
+        wf = build_t2i_workflow(prompt, seed=999, prefix=prefix, width=width, height=height)
         try:
             prompt_id = queue_prompt(wf)
         except requests.ConnectionError:
@@ -2275,7 +2290,7 @@ def get_scene_seed_image(scene: dict, series_name: str, current_chain: str | Non
     is_dialogue = bool(scene.get("dialogue"))
 
     # 2. Character portrait seed — for any scene with characters that isn't
-    # a wide/establishing shot. This gives HunyuanVideo's CLIP vision encoder
+    # a wide/establishing shot. This gives WAN 2.2's I2V conditioning
     # a strong reference for character appearance, which is the primary
     # consistency mechanism for this model (IP-Adapter is not compatible).
     has_characters = bool(scene.get("characters"))
@@ -3085,7 +3100,9 @@ def cmd_produce(args):
         else:
             scene_denoise = base_denoise
 
-        mode = "i2v" if seed_image else "t2v"
+        # Force T2V for all scenes — I2V + KSampler produces grey/noise output.
+        # Character consistency comes from LoRA trigger words, not I2V seed images.
+        mode = "t2v"
         optimization = getattr(args, "optimization", "none")
         wf = build_video_workflow(
             video_model, mode, prompt, seed, clip_prefix, frames, res_config,
@@ -3093,10 +3110,10 @@ def cmd_produce(args):
             loras=scene_loras, image_name=seed_image, optimization=optimization,
         )
 
-        # IP-Adapter: not compatible with HunyuanVideo DiT architecture.
+        # IP-Adapter: experimental with WAN 2.2 architecture.
         # Character consistency is handled through I2V seed images instead —
         # get_scene_seed_image() already feeds character portraits into dialogue/
-        # close-up scenes via the HunyuanVideo15ImageToVideo CLIP vision encoder.
+        # close-up scenes via the WAN I2V start_image conditioning.
         # The --ip-adapter flag is kept for future model support.
 
         try:
@@ -3323,18 +3340,9 @@ def cmd_storyboard(args):
 
         print(f"  [{i+1}/{n}] {scene['id']}: {prompt[:80]}...")
 
-        # Generate a single still frame
-        if engine == "hunyuan":
-            wf = build_ref_workflow(prompt, seed=seed, prefix=prefix,
-                                    width=res_config["width"], height=res_config["height"], steps=30)
-        else:
-            wf = build_t2i_workflow(prompt, seed=seed, prefix=prefix,
-                                    width=res_config["width"], height=res_config["height"])
-
-        # Inject LoRAs if available
-        scene_loras = get_scene_loras(scene, bible)
-        if engine == "hunyuan" and scene_loras:
-            _insert_lora_chain(wf, scene_loras, unet_node="1", sampler_model_node="7")
+        # Generate a single still frame via FLUX
+        wf = build_t2i_workflow(prompt, seed=seed, prefix=prefix,
+                                width=res_config["width"], height=res_config["height"])
 
         try:
             prompt_id = queue_prompt(wf)
@@ -3345,10 +3353,6 @@ def cmd_storyboard(args):
         success = poll_until_done(prompt_id)
         if success:
             # Find and copy the generated frame
-            if engine == "hunyuan":
-                refs_out = COMFYUI_DIR / "output" / "storyboard"
-            else:
-                refs_out = COMFYUI_DIR / "output" / "refs"
             # Try both output dirs
             for out_dir in [COMFYUI_DIR / "output" / "storyboard", COMFYUI_DIR / "output" / "refs"]:
                 if out_dir.exists():
@@ -3660,8 +3664,8 @@ def main():
                            help="Upscale factor (default: 4)")
     p_produce.add_argument("--interpolate", action="store_true",
                            help="Interpolate frames with RIFE for smoother motion (2x, requires rife-ncnn-vulkan)")
-    p_produce.add_argument("--video-model", choices=["hunyuan", "wan"], default="hunyuan",
-                           help="Video generation model: hunyuan (HunyuanVideo 1.5) or wan (WAN 2.1 14B) (default: hunyuan)")
+    p_produce.add_argument("--video-model", choices=["wan", "wan-5b"], default="wan",
+                           help="Video model: wan (14B dual-model) or wan-5b (5B local preview) (default: wan)")
     p_produce.add_argument("--optimization", choices=["none", "balanced", "fast", "turbo"], default="none",
                            help="Speed optimization: none, balanced (30%% faster), fast (50%% faster), turbo (60%% faster, lower quality)")
     p_produce.add_argument("--resolution", choices=["480p", "720p", "auto"], default="auto",
@@ -3695,8 +3699,8 @@ def main():
     p_all.add_argument("--upscale-factor", type=int, default=4, choices=[2, 4])
     p_all.add_argument("--interpolate", action="store_true",
                        help="Interpolate frames with RIFE (2x smoother motion)")
-    p_all.add_argument("--video-model", choices=["hunyuan", "wan"], default="hunyuan",
-                       help="Video generation model (default: hunyuan)")
+    p_all.add_argument("--video-model", choices=["wan", "wan-5b"], default="wan",
+                       help="Video model: wan (14B dual-model) or wan-5b (5B local preview) (default: wan)")
     p_all.add_argument("--optimization", choices=["none", "balanced", "fast", "turbo"], default="none",
                        help="Speed optimization preset")
     p_all.add_argument("--resolution", choices=["480p", "720p", "auto"], default="auto",
@@ -3729,8 +3733,8 @@ def main():
     p_refs = sub.add_parser("gen-refs", help="Generate canonical reference images for all characters and locations")
     p_refs.add_argument("series")
     p_refs.add_argument("--force", action="store_true", help="Regenerate even if images already exist")
-    p_refs.add_argument("--engine", choices=["flux", "hunyuan"], default="flux",
-                        help="Portrait engine: flux (FLUX T2I, fast, sharp stills) or hunyuan (HunyuanVideo single-frame, matches video style) (default: flux)")
+    p_refs.add_argument("--engine", choices=["flux"], default="flux",
+                        help="Portrait engine: flux (FLUX T2I, fast, sharp stills) (default: flux)")
 
     p_review = sub.add_parser("review", help="Interactively review clips and flag weak ones for regeneration")
     p_review.add_argument("series")
@@ -3749,10 +3753,10 @@ def main():
     p_storyboard.add_argument("--episode", type=int, required=True)
     p_storyboard.add_argument("--seed-base", type=int, default=1000)
     p_storyboard.add_argument("--force", action="store_true", help="Regenerate existing storyboard frames")
-    p_storyboard.add_argument("--engine", choices=["flux", "hunyuan"], default="flux",
-                              help="Image engine: flux (fast T2I) or hunyuan (matches video model) (default: flux)")
+    p_storyboard.add_argument("--engine", choices=["flux"], default="flux",
+                              help="Image engine: flux (FLUX T2I) (default: flux)")
     p_storyboard.add_argument("--resolution", choices=["480p", "720p", "auto"], default="auto",
-                              help="Resolution for HunyuanVideo engine (default: auto)")
+                              help="Resolution (default: auto)")
 
     args = parser.parse_args()
 

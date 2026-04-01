@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react'
 import CharacterCard from './CharacterCard'
 import CharacterModal from './CharacterModal'
 import PortraitStudioModal from './PortraitStudioModal'
+import toast from 'react-hot-toast'
 import { del } from '../api/client'
 
 export default function CharactersTab({ projectId, project = {}, characters, onCharactersChange }) {
@@ -17,7 +18,7 @@ export default function CharactersTab({ projectId, project = {}, characters, onC
       await del(`/characters/${character.id}`)
       onCharactersChange()
     } catch {
-      alert('Failed to delete character.')
+      toast.error('Failed to delete character.')
     } finally {
       setDeletingId(null)
     }

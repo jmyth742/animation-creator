@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Tv, Users, Trash2 } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { del } from '../api/client'
 
 const CARD_COLORS = [
@@ -41,7 +42,7 @@ export default function ProjectCard({ project, onDelete }) {
       await del(`/projects/${project.id}`)
       onDelete(project.id)
     } catch (err) {
-      alert('Failed to delete project.')
+      toast.error('Failed to delete project.')
     } finally {
       setDeleting(false)
     }

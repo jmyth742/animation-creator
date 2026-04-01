@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Camera, Check, MapPin, Pencil, Plus, Star, Trash2, X } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { post, put, del } from '../api/client'
 import LocationStudioModal from './LocationStudioModal'
 import EnhanceButton from './EnhanceButton'
@@ -23,7 +24,7 @@ function LocationRow({ location, projectContext, onEdit, onDelete, onOpenLocatio
       await put(`/locations/${location.id}`, { name, description, trigger_word: triggerWord || null, lora_strength: loraStrength })
       setEditing(false)
       onEdit()
-    } catch { alert('Failed to save location.') }
+    } catch (err) { toast.error(err?.response?.data?.detail || 'Failed to save location.') }
     finally { setSaving(false) }
   }
 
@@ -156,7 +157,7 @@ export default function LocationsTab({ projectId, project, locations, onLocation
       await post(`/projects/${projectId}/locations`, { name: newName.trim(), description: newDesc.trim() })
       setNewName(''); setNewDesc(''); setShowAdd(false)
       onLocationsChange()
-    } catch { alert('Failed to add location.') }
+    } catch (err) { toast.error(err?.response?.data?.detail || 'Failed to add location.') }
     finally { setAdding(false) }
   }
 
@@ -164,7 +165,7 @@ export default function LocationsTab({ projectId, project, locations, onLocation
     if (!window.confirm(`DELETE location "${location.name}"?`)) return
     setDeletingId(location.id)
     try { await del(`/locations/${location.id}`); onLocationsChange() }
-    catch { alert('Failed to delete location.') }
+    catch (err) { toast.error(err?.response?.data?.detail || 'Failed to delete location.') }
     finally { setDeletingId(null) }
   }
 

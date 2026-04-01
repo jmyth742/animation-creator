@@ -264,7 +264,7 @@ def produce_episode(
     quality: str = "draft",
     force: bool = False,
     denoise: float = 0.82,
-    video_model: str = "hunyuan",
+    video_model: str = "wan",
     optimization: str = "none",
     resolution: str = "auto",
     enhance: bool = True,
@@ -289,7 +289,7 @@ def produce_episode(
     """
     ep = _get_episode_or_404(episode_id, current_user, db)
 
-    # Check ComfyUI is reachable
+    # Check ComfyUI is reachable BEFORE creating a job to avoid zombie DB rows
     try:
         resp = _requests.get(COMFYUI_BASE, timeout=3)
         resp.raise_for_status()

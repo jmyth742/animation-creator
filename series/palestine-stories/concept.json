@@ -1,0 +1,15 @@
+{
+  "title": "Palestine Stories",
+  "premise": "A dark comedy set in Haifa port during the late 1940s. Reemi, a young local Palestinian woman, watches as her world changes around her. bibi, a scheming newcomer, arrives at the port with grand plans. Their encounters reveal the absurdity and tragedy of the era through sharp humor and animated storytelling.",
+  "tone": "dark comedy",
+  "visual_style": "2D animated cartoon, thick black outlines, flat color shading, large expressive eyes, bold simple shapes, vibrant colors",
+  "setting": "Haifa port and surrounding areas, Palestine, 1948",
+  "num_episodes": 5,
+  "episode_plan": [
+    "EP1: Opening - Reemi and bibi's first encounter at Haifa port. She is suspicious of him from the start.",
+    "EP2: The Key - bibi tries to claim ownership of a building using the key he found. Reemi investigates.",
+    "EP3: The Market - Tensions rise at the port market. Reemi rallies the local vendors against bibi's schemes.",
+    "EP4: The Rooftop - A confrontation on the rooftop overlooking the port. Truths are revealed.",
+    "EP5: The Port - The final showdown at the port. Reemi must decide what she's willing to fight for."
+  ]
+}

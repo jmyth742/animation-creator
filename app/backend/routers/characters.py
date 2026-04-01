@@ -158,10 +158,10 @@ def generate_portrait(
     Synchronously generate up to 3 portrait candidates via ComfyUI
     (takes ~30 s per candidate).  Returns the URL list when complete.
 
-    engine: "flux" (default, FLUX T2I) or "hunyuan" (HunyuanVideo single-frame,
+    engine: "flux" (default, FLUX T2I).
     matches video model style for better I2V seeding).
     """
-    if engine not in ("flux", "hunyuan"):
+    if engine not in ("flux",):
         engine = "flux"
     _get_character_or_404(character_id, current_user, db)
 

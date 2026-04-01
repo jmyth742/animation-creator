@@ -131,7 +131,7 @@ export default function PortraitStudioModal({ character, onClose, onPortraitSele
                 </button>
                 {generating && (
                   <span className="text-retro text-zinc-500" style={{ fontSize: '15px' }}>
-                    Running HunyuanVideo... (~30s per candidate)
+                    Running FLUX... (~30s per candidate)
                   </span>
                 )}
               </div>
@@ -235,7 +235,7 @@ export default function PortraitStudioModal({ character, onClose, onPortraitSele
                   <div className="text-3xl mb-2">🎨</div>
                   <p className="font-pixel text-zinc-500 mb-1" style={{ fontSize: '7px' }}>NO PORTRAITS GENERATED YET</p>
                   <p className="text-retro text-zinc-600" style={{ fontSize: '15px' }}>
-                    Click Generate Portraits to create candidates using HunyuanVideo.
+                    Click Generate Portraits to create candidates using FLUX.
                     You'll get 3 options to choose from.
                   </p>
                 </div>

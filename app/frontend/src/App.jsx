@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react'
+import { Toaster } from 'react-hot-toast'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -28,6 +29,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
+      <Toaster position="bottom-right" toastOptions={{ style: { background: '#1a1a2e', color: '#e0e0ff', border: '1px solid #333366', fontFamily: 'VT323, monospace' } }} />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />

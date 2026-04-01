@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { X, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Copy, Square } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
+import toast from 'react-hot-toast'
 import { get, post } from '../api/client'
 
 export default function ProductionPanel({ jobId, episodeTitle, onClose }) {
@@ -40,26 +41,39 @@ export default function ProductionPanel({ jobId, episodeTitle, onClose }) {
       if (data.detail) setWsError(data.detail)
     }
 
+    let pollInterval = null
     ws.onerror = () => {
       // WS connection failed — fall back to REST polling so we don't cry wolf
       setWsError('Live connection lost — polling for status...')
-      const poll = setInterval(async () => {
+      let retries = 0
+      const MAX_RETRIES = 60 // 60 retries × 3s = 3 minutes
+      pollInterval = setInterval(async () => {
+        retries++
         try {
           const job = await get(`/jobs/${jobId}`)
           if (job.progress_pct !== undefined) setProgress(job.progress_pct)
           if (job.log_text) setLog(job.log_text)
           if (job.status) setJobStatus(job.status)
           if (job.status === 'complete' || job.status === 'error') {
-            clearInterval(poll)
+            clearInterval(pollInterval)
+            pollInterval = null
             setWsError(null)
           }
         } catch {
-          // backend unreachable — keep trying
+          // backend unreachable — keep trying until max retries
+        }
+        if (retries >= MAX_RETRIES) {
+          clearInterval(pollInterval)
+          pollInterval = null
+          setWsError('Polling timed out — backend may be unreachable.')
         }
       }, 3000)
     }
 
-    return () => ws.close()
+    return () => {
+      ws.close()
+      if (pollInterval) { clearInterval(pollInterval); pollInterval = null }
+    }
   }, [jobId, token])
 
   const handleCancel = async () => {
@@ -69,7 +83,7 @@ export default function ProductionPanel({ jobId, episodeTitle, onClose }) {
       await post(`/jobs/${jobId}/cancel`)
       setJobStatus('cancelled')
     } catch (err) {
-      alert(err.response?.data?.detail || 'Failed to cancel job.')
+      toast.error(err?.response?.data?.detail || 'Failed to cancel job.')
       setCancelling(false)
     }
   }

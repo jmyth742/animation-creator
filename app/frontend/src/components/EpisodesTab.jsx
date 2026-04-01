@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Plus, Camera, ChevronDown, ChevronRight, Trash2, Pencil, Play, X, Eye, Film, RefreshCw, Star, MapPin, Users, History } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { get, post, put, del } from '../api/client'
 import SceneStudioModal from './SceneStudioModal'
 import SceneComposerModal from './SceneComposerModal'
@@ -300,7 +301,7 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
   const [producing, setProducing] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [advOpts, setAdvOpts] = useState({
-    video_model: 'hunyuan',
+    video_model: 'wan',
     optimization: 'none',
     resolution: 'auto',
     enhance: true,
@@ -319,13 +320,13 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
     if (scenes !== null) return
     setLoadingScenes(true)
     try { const data = await get(`/episodes/${episode.id}`); setScenes(data.scenes || []) }
-    catch { setScenes([]) }
+    catch (err) { setScenes([]); toast.error(err?.response?.data?.detail || 'Failed to load scenes') }
     finally { setLoadingScenes(false) }
   }
 
   const refreshScenes = useCallback(async () => {
     try { const data = await get(`/episodes/${episode.id}`); setScenes(data.scenes || []) }
-    catch {}
+    catch (err) { toast.error(err?.response?.data?.detail || 'Failed to refresh scenes') }
   }, [episode.id])
 
   const handleExpand = () => { setExpanded((v) => !v); if (!expanded) loadScenes() }
@@ -348,7 +349,7 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
   const handleSceneDelete = async (scene) => {
     if (!window.confirm(`DELETE scene ${scene.order_idx + 1}?`)) return
     try { await del(`/scenes/${scene.id}`); refreshScenes() }
-    catch { alert('Failed to delete scene.') }
+    catch (err) { toast.error(err?.response?.data?.detail || 'Failed to delete scene.') }
   }
 
   const handleRegenerate = async (scene, quality, denoise = 0.82) => {
@@ -356,14 +357,14 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
       await post(`/scenes/${scene.id}/regenerate?quality=${quality}&denoise=${denoise}`)
       setScenes((prev) => prev.map((s) => s.id === scene.id ? { ...s, status: 'generating' } : s))
     } catch (err) {
-      alert(err.response?.data?.detail || 'Failed to start regeneration.')
+      toast.error(err?.response?.data?.detail || 'Failed to start regeneration.')
     }
   }
 
   const handleDelete = async () => {
     if (!window.confirm(`DELETE "${episode.title}"? All scenes will be lost.`)) return
     try { await del(`/episodes/${episode.id}`); onEpisodesChange() }
-    catch { alert('Failed to delete episode.') }
+    catch (err) { toast.error(err?.response?.data?.detail || 'Failed to delete episode.') }
   }
 
   const handleProduce = async (quality, force = false, denoise = 0.82) => {
@@ -384,7 +385,7 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
       const result = await post(`/episodes/${episode.id}/produce?${params}`)
       onProduce(result.job_id, { episodeTitle: episode.title, seriesSlug: project.series_slug, episodeNumber: episode.number })
     } catch (err) {
-      alert(err.response?.data?.detail || 'Failed to start production.')
+      toast.error(err?.response?.data?.detail || 'Failed to start production.')
     } finally { setProducing(false) }
   }
 
@@ -466,7 +467,7 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
                       <span className="text-retro text-zinc-400" style={{ fontSize: '13px' }}>Video Model</span>
                       <select value={advOpts.video_model} onChange={(e) => setAdvOpts(o => ({...o, video_model: e.target.value}))}
                         className="bg-zinc-900 border border-zinc-600 text-zinc-300 text-retro px-2 py-0.5" style={{ fontSize: '13px' }}>
-                        <option value="hunyuan">HunyuanVideo 1.5</option>
+                        
                         <option value="wan">WAN 2.2 (A14B)</option>
                       </select>
                     </div>
@@ -638,7 +639,7 @@ function AddEpisodeModal({ projectId, nextNumber, onSave, onClose }) {
     try {
       await post(`/projects/${projectId}/episodes`, { number: nextNumber, title: title.trim(), summary: summary.trim() })
       onSave()
-    } catch { alert('Failed to create episode.') }
+    } catch (err) { toast.error(err?.response?.data?.detail || 'Failed to create episode.') }
     finally { setSaving(false) }
   }
 

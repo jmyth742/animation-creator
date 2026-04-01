@@ -148,7 +148,7 @@ export default function LocationStudioModal({ location, project, onClose, onRefe
                 </button>
                 {generating && (
                   <span className="text-retro text-zinc-500" style={{ fontSize: '15px' }}>
-                    Running HunyuanVideo... (~30s per candidate)
+                    Running FLUX... (~30s per candidate)
                   </span>
                 )}
               </div>
@@ -246,7 +246,7 @@ export default function LocationStudioModal({ location, project, onClose, onRefe
                   <div className="text-3xl mb-2">📍</div>
                   <p className="font-pixel text-zinc-500 mb-1" style={{ fontSize: '7px' }}>NO REFERENCE GENERATED YET</p>
                   <p className="text-retro text-zinc-600" style={{ fontSize: '15px' }}>
-                    Click Generate References to create location stills using HunyuanVideo.
+                    Click Generate References to create location stills using FLUX.
                     The canonical image seeds wide/establishing shots for visual consistency.
                   </p>
                 </div>

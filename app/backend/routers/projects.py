@@ -261,10 +261,10 @@ def start_regen_references(
 ) -> dict:
     """Start a background job that regenerates all char portraits + location refs.
 
-    engine: "flux" (default, FLUX T2I) or "hunyuan" (HunyuanVideo single-frame,
+    engine: "flux" (default, FLUX T2I).
     matches video model style for better I2V seeding).
     """
-    if engine not in ("flux", "hunyuan"):
+    if engine not in ("flux",):
         engine = "flux"
     project = _get_project_or_404(project_id, db)
     _assert_owner(project, current_user)

@@ -22,8 +22,10 @@ import uuid
 from contextlib import redirect_stdout
 from pathlib import Path
 import datetime
+import logging
 import time
 
+logger = logging.getLogger(__name__)
 
 # ── In-memory reference regeneration job registry ─────────────────────────────
 # { job_id: { status, progress, total, items: [{label, status, error?}], error } }
@@ -187,8 +189,8 @@ def export_project_in_background(project_id: int) -> None:
         db = SessionLocal()
         try:
             export_project_to_files(project_id, db)
-        except Exception:
-            pass  # Best-effort; next production run will export anyway
+        except Exception as e:
+            logger.error(f"Background export failed for project {project_id}: {e}", exc_info=True)
         finally:
             db.close()
 
@@ -220,12 +222,13 @@ def _backfill_scene_clips(episode_id: int, db) -> None:
                 rel = str(Path(clip_path).relative_to(settings.COMFYUI_OUTPUT))
                 scene.output_clip_path = rel
                 scene.status = "done"
-            except ValueError:
-                pass
+            except ValueError as e:
+                logger.error(f"Failed to resolve clip path for scene {scene.id}: {e}", exc_info=True)
 
     try:
         db.commit()
-    except Exception:
+    except Exception as e:
+        logger.error(f"Failed to commit backfilled scene clips for episode {episode_id}: {e}", exc_info=True)
         db.rollback()
 
 
@@ -238,7 +241,7 @@ def produce_episode_job(
     force: bool = False,
     denoise: float = showrunner.DEFAULT_DENOISE,
     *,
-    video_model: str = "hunyuan",
+    video_model: str = "wan",
     optimization: str = "none",
     resolution: str = "auto",
     enhance: bool = True,
@@ -354,8 +357,8 @@ def produce_episode_job(
                             try:
                                 import requests as _requests
                                 _requests.post("http://localhost:8188/interrupt", timeout=3)
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                logger.error(f"Failed to interrupt ComfyUI for job {job_id}: {e}", exc_info=True)
                             break
                         if expected_clips > 0 and settings.COMFYUI_OUTPUT.exists():
                             found = len(
@@ -367,11 +370,12 @@ def produce_episode_job(
                         if content:
                             j.log_text = content
                         pdb.commit()
-                    except Exception:
+                    except Exception as e:
+                        logger.error(f"Progress thread error for job {job_id}: {e}", exc_info=True)
                         try:
                             pdb.rollback()
-                        except Exception:
-                            pass
+                        except Exception as e2:
+                            logger.error(f"Progress thread rollback failed for job {job_id}: {e2}", exc_info=True)
             finally:
                 pdb.close()
 
@@ -417,6 +421,7 @@ def produce_episode_job(
 
 
     except Exception as exc:
+        logger.error(f"Fatal error in produce_episode_job (job {job_id}): {exc}", exc_info=True)
         try:
             job = db.get(GenerationJob, job_id)
             if job:
@@ -424,8 +429,8 @@ def produce_episode_job(
                 job.log_text += f"\n\n[FATAL] {exc}"
                 job.completed_at = datetime.datetime.now(datetime.timezone.utc)
                 db.commit()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Failed to record fatal error for job {job_id}: {e}", exc_info=True)
     finally:
         db.close()
 
@@ -496,6 +501,10 @@ def generate_single_scene_job(scene_id: int, quality: str = "draft", denoise: fl
         if scene is None:
             return
 
+        if scene.status == "generating":
+            logger.warning(f"Scene {scene_id} is already generating, skipping duplicate job")
+            return
+
         scene.status = "generating"
         db.commit()
 
@@ -531,7 +540,8 @@ def generate_single_scene_job(scene_id: int, quality: str = "draft", denoise: fl
         # Enhance the prompt with Claude (same as full episode produce)
         try:
             prompt = showrunner.enhance_scene_prompt(scene_dict, bible, base_prompt)
-        except Exception:
+        except Exception as e:
+            logger.error(f"Prompt enhancement failed for scene {scene_id}, using base prompt: {e}", exc_info=True)
             prompt = base_prompt
 
         neg = showrunner.build_negative_prompt(scene_dict)
@@ -557,14 +567,10 @@ def generate_single_scene_job(scene_id: int, quality: str = "draft", denoise: fl
         # Collect all LoRAs for this scene (up to 2 chars + 1 location)
         scene_loras = showrunner.get_scene_loras(scene_dict, bible)
 
-        gen_mode = "i2v" if seed_image else "t2v"
-        model_name = (showrunner.build_i2v_workflow.__defaults__ if seed_image
-                       else showrunner.build_t2v_workflow.__defaults__)
-        # Get actual model name from workflow
-        if seed_image:
-            model_name = "hunyuanvideo1.5_480p_i2v_cfg_distilled-Q5_K_S.gguf"
-        else:
-            model_name = "hunyuanvideo1.5_480p_t2v_cfg_distilled-Q5_K_S.gguf"
+        # Force T2V — I2V + KSampler produces grey/noise output
+        gen_mode = "t2v"
+        res_config = showrunner.get_resolution_config("auto", video_model="wan")
+        model_name = res_config.get("t2v_unet", "wan2.2")
 
         # Archive the current clip (if any) before overwriting it
         _archive_existing_clip(
@@ -574,15 +580,11 @@ def generate_single_scene_job(scene_id: int, quality: str = "draft", denoise: fl
             loras=scene_loras,
         )
 
-        if seed_image:
-            wf = showrunner.build_i2v_workflow(
-                prompt, seed_image, seed, clip_prefix, frames, steps=steps, denoise=denoise,
-                negative_prompt=neg, loras=scene_loras,
-            )
-        else:
-            wf = showrunner.build_t2v_workflow(prompt, seed, clip_prefix, frames, steps=steps,
-                negative_prompt=neg, loras=scene_loras,
-            )
+        wf = showrunner.build_video_workflow(
+            "wan", gen_mode, prompt, seed, clip_prefix, frames, res_config,
+            negative_prompt=neg, steps=steps, denoise=denoise,
+            loras=scene_loras, image_name=seed_image,
+        )
 
         prompt_id = showrunner.queue_prompt(wf)
         success = showrunner.poll_until_done(prompt_id)
@@ -608,18 +610,19 @@ def generate_single_scene_job(scene_id: int, quality: str = "draft", denoise: fl
         # Keep on-disk JSON in sync with DB after clip path update
         try:
             export_project_in_background(episode.project_id)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Post-generation export failed for scene {scene_id}: {e}", exc_info=True)
 
     except Exception as exc:
+        logger.error(f"Fatal error in generate_single_scene_job (scene {scene_id}): {exc}", exc_info=True)
         try:
             db.rollback()
             scene = db.get(Scene, scene_id)
             if scene:
                 scene.status = "error"
                 db.commit()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Failed to record error status for scene {scene_id}: {e}", exc_info=True)
     finally:
         db.close()
 
@@ -632,7 +635,7 @@ def generate_character_portrait(character_id: int, db, engine: str = "flux") -> 
 
     engine:
       "flux"    — FLUX.1-schnell T2I (fast, high quality stills)
-      "hunyuan" — HunyuanVideo 1.5 single-frame T2V (matches video model style)
+      (hunyuan engine removed — use flux)
 
     The first successful candidate is stored in Character.reference_image_path.
 
@@ -657,7 +660,7 @@ def generate_character_portrait(character_id: int, db, engine: str = "flux") -> 
     comfy_refs_out = settings.COMFYUI_DIR / "output" / "refs"
 
     # Style goes FIRST — earliest tokens carry most weight in diffusion models.
-    # "Video frame" anchors FLUX toward something HunyuanVideo will naturally extend.
+    # "Video frame" anchors FLUX toward something WAN 2.2 will naturally extend.
     prompt_parts: list[str] = []
     if style:
         prompt_parts.append(style)
@@ -678,11 +681,8 @@ def generate_character_portrait(character_id: int, db, engine: str = "flux") -> 
         candidate_label = f"{prefix}_v{i+1}"
         out_png = ref_dir / f"{candidate_label}.png"
 
-        # Generate portrait using selected engine
-        if engine == "hunyuan":
-            wf = showrunner.build_ref_workflow(prompt, seed=seed, prefix=candidate_label, width=480, height=640, steps=30)
-        else:
-            wf = showrunner.build_t2i_workflow(prompt, seed=seed, prefix=candidate_label, width=480, height=640)
+        # Generate portrait using FLUX T2I
+        wf = showrunner.build_t2i_workflow(prompt, seed=seed, prefix=candidate_label, width=480, height=640)
 
         try:
             prompt_id = showrunner.queue_prompt(wf)
@@ -724,7 +724,7 @@ def generate_location_reference(location_id: int, db, engine: str = "flux") -> l
 
     engine:
       "flux"    — FLUX.1-schnell T2I (fast, high quality stills)
-      "hunyuan" — HunyuanVideo 1.5 single-frame T2V (matches video model style)
+      (hunyuan engine removed — use flux)
 
     The canonical file (loc_{id}.png) is what showrunner.get_scene_seed_image()
     uses as the I2V seed for establishing/wide shots in that location.
@@ -767,11 +767,8 @@ def generate_location_reference(location_id: int, db, engine: str = "flux") -> l
         candidate_label = f"{prefix}_v{i + 1}"
         out_png = ref_dir / f"{candidate_label}.png"
 
-        # Generate location reference using selected engine
-        if engine == "hunyuan":
-            wf = showrunner.build_ref_workflow(prompt, seed=seed, prefix=candidate_label, width=480, height=320, steps=30)
-        else:
-            wf = showrunner.build_t2i_workflow(prompt, seed=seed, prefix=candidate_label, width=480, height=320)
+        # Generate location reference using FLUX T2I
+        wf = showrunner.build_t2i_workflow(prompt, seed=seed, prefix=candidate_label, width=480, height=320)
 
         try:
             prompt_id = showrunner.queue_prompt(wf)
@@ -987,13 +984,14 @@ def _regenerate_all_clips_bg(project_id: int, job_id: str, quality: str) -> None
         job["status"] = "complete"
 
     except Exception as exc:
+        logger.error(f"Fatal error in _regenerate_all_clips_bg (job {job_id}): {exc}", exc_info=True)
         job["status"] = "error"
         job["error"] = str(exc)
     finally:
         try:
             db.close()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Failed to close DB session in _regenerate_all_clips_bg: {e}", exc_info=True)
 
 
 # ── Bulk reference regeneration ───────────────────────────────────────────────
@@ -1269,7 +1267,8 @@ def run_training_job(job_id: int) -> None:
 
 MUSUBI_DIR = Path("/workspace/musubi-tuner")
 TRAINING_MODELS_DIR = Path("/workspace/training_models")
-DIT_MODEL_PATH = TRAINING_MODELS_DIR / "split_files" / "diffusion_models" / "hunyuanvideo1.5_480p_t2v_cfg_distilled_fp16.safetensors"
+# TODO: Update training pipeline for WAN 2.2 (use musubi-tuner externally for now)
+DIT_MODEL_PATH = TRAINING_MODELS_DIR / "split_files" / "diffusion_models" / "wan2.2_t2v_low_noise_14B_fp16.safetensors"
 
 
 def _stop_comfyui() -> int | None:
@@ -1372,8 +1371,8 @@ def run_local_training_job(job_id: int) -> None:
             subprocess.run(
                 ["python3", "-c", (
                     "from huggingface_hub import hf_hub_download; "
-                    "hf_hub_download('Comfy-Org/HunyuanVideo_1.5_repackaged', "
-                    "filename='split_files/diffusion_models/hunyuanvideo1.5_480p_t2v_cfg_distilled_fp16.safetensors', "
+                    "hf_hub_download('Comfy-Org/Wan_2.2_ComfyUI_Repackaged', "
+                    "filename='split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp16.safetensors', "
                     f"local_dir='{TRAINING_MODELS_DIR}/')"
                 )],
                 check=True, capture_output=True, text=True, timeout=1800,
@@ -1415,7 +1414,7 @@ def run_local_training_job(job_id: int) -> None:
         cache_dir.mkdir(parents=True, exist_ok=True)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        vae_path = settings.COMFYUI_DIR / "models" / "vae" / "hunyuanvideo15_vae_fp16.safetensors"
+        vae_path = settings.COMFYUI_DIR / "models" / "vae" / "Wan2.1_VAE.pth"
         # Training needs the full-precision Qwen model, not the fp8 version
         te_dir = settings.COMFYUI_DIR / "models" / "text_encoders"
         te_path_fp16 = te_dir / "qwen_2.5_vl_7b.safetensors"
@@ -1424,7 +1423,7 @@ def run_local_training_job(job_id: int) -> None:
             subprocess.run(
                 ["python3", "-c", (
                     "from huggingface_hub import hf_hub_download; import shutil; "
-                    f"p = hf_hub_download('Comfy-Org/HunyuanVideo_1.5_repackaged', "
+                    f"p = hf_hub_download('Comfy-Org/Wan_2.2_ComfyUI_Repackaged', "
                     f"filename='split_files/text_encoders/qwen_2.5_vl_7b.safetensors'); "
                     f"shutil.copy2(p, '{te_path_fp16}')"
                 )],
@@ -1667,7 +1666,7 @@ def start_regenerate_all_references(project_id: int, engine: str = "flux") -> st
     Start a background thread that regenerates all character portraits and
     location reference images for the project.
 
-    engine: "flux" (default) or "hunyuan" (matches video model style).
+    engine: "flux" (default).
 
     Returns a job_id that callers can poll via get_ref_regen_job().
     """
@@ -1693,7 +1692,7 @@ def _regenerate_all_references_bg(project_id: int, job_id: str, engine: str = "f
     Background worker for bulk reference regeneration.
 
     For each character and location:
-      1. Generates 3 candidates (FLUX T2I or HunyuanVideo single-frame).
+      1. Generates 3 candidates (FLUX T2I).
       2. Auto-canonicalises the first candidate to char_{id}.png / loc_{id}.png
          so get_scene_seed_image() picks it up immediately on the next production run.
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Plus, ChevronDown, ChevronRight, XCircle, HardDrive, Clock, Cpu, Images, RotateCw } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { get, post, put } from '../api/client'
 import TrainingModal from './TrainingModal'
 
@@ -120,7 +121,7 @@ export default function TrainingTab({ projectId, project = {}, onTrainingChange 
       await post(`/training/${jobId}/cancel`)
       fetchData()
     } catch {
-      alert('Failed to cancel job.')
+      toast.error('Failed to cancel job.')
     } finally {
       setCancellingId(null)
     }
@@ -154,7 +155,7 @@ export default function TrainingTab({ projectId, project = {}, onTrainingChange 
       await post(`/training/${jobId}/retry`, body)
       fetchData()
     } catch (err) {
-      alert(err.response?.data?.detail || 'Failed to retry job.')
+      toast.error(err?.response?.data?.detail || 'Failed to retry job.')
     } finally {
       setRetryingId(null)
     }
@@ -181,7 +182,7 @@ export default function TrainingTab({ projectId, project = {}, onTrainingChange 
       fetchData()
       onTrainingChange?.()
     } catch {
-      alert('Failed to assign LoRA.')
+      toast.error('Failed to assign LoRA.')
     } finally {
       setAssigningLora((prev) => ({ ...prev, [loraFilename]: false }))
     }

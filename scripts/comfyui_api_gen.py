@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ComfyUI API automation for HunyuanVideo workflows."""
+"""ComfyUI API automation for WAN 2.2 workflows."""
 
 import argparse
 import json
@@ -84,7 +84,7 @@ def get_outputs(prompt_id: str) -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Queue HunyuanVideo workflows via ComfyUI API")
+    parser = argparse.ArgumentParser(description="Queue WAN 2.2 workflows via ComfyUI API")
     parser.add_argument("workflow", help="Path to workflow JSON file")
     parser.add_argument("--prompt", "-p", help="Override the text prompt")
     parser.add_argument("--seed", "-s", type=int, help="Override the seed")

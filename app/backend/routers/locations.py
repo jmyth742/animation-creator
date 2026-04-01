@@ -143,10 +143,10 @@ def generate_reference(
     current_user: User = Depends(get_current_user),
 ) -> ReferenceGenerateResponse:
     """
-    engine: "flux" (default, FLUX T2I) or "hunyuan" (HunyuanVideo single-frame,
+    engine: "flux" (default, FLUX T2I).
     matches video model style for better I2V seeding).
     """
-    if engine not in ("flux", "hunyuan"):
+    if engine not in ("flux",):
         engine = "flux"
     loc = _get_location_or_404(location_id, current_user, db)
     if not loc.description:
