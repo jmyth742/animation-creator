@@ -64,12 +64,15 @@ SERVER = "http://localhost:8188"
 
 MODEL_CONFIGS = {
     "wan": {
-        "label": "WAN 2.2 (A14B single-model + KSampler)",
+        "label": "WAN 2.2 (A14B dual-model I2V + single-model T2V)",
         "fps": 16,
         "cfg": 5.0,
+        "i2v_cfg": 3.5,          # Official WAN 2.2 I2V guidance (lower than T2V)
         "sampler": "uni_pc_bh2",
+        "i2v_sampler": "euler",   # Official WAN 2.2 I2V sampler
         "scheduler": "simple",
-        "dual_model": False,  # Single high-noise model — dual SplitSigmas caused mosaic artifacts
+        "dual_model": False,      # T2V: single high-noise model (dual caused mosaic artifacts)
+        "i2v_dual_model": True,   # I2V: dual-model KSamplerAdvanced (official workflow)
         "clip_lengths": {
             "short":  {"frames": 33, "seconds": 2.1},
             "medium": {"frames": 49, "seconds": 3.1},
@@ -78,7 +81,9 @@ MODEL_CONFIGS = {
         "quality_steps": {"draft": 15, "good": 25, "final": 40},
         "resolutions": {
             "480p": {
-                "width": 832, "height": 480, "shift": 12.0,
+                "width": 832, "height": 480,
+                "shift": 12.0,        # T2V shift
+                "i2v_shift": 8.0,     # I2V shift (official WAN 2.2 value)
                 "t2v_unet": "wan2.2_t2v_high_noise_14B_Q8_0.gguf",
                 "t2v_unet_low": "wan2.2_t2v_low_noise_14B_Q8_0.gguf",
                 "i2v_unet": "wan2.2_i2v_high_noise_14B_Q4_K_S.gguf",
@@ -86,7 +91,9 @@ MODEL_CONFIGS = {
                 "min_vram_gb": 12, "label": "480p (832×480)",
             },
             "720p": {
-                "width": 1280, "height": 720, "shift": 12.0,
+                "width": 1280, "height": 720,
+                "shift": 12.0,
+                "i2v_shift": 8.0,
                 "t2v_unet": "wan2.2_t2v_high_noise_14B_Q8_0.gguf",
                 "t2v_unet_low": "wan2.2_t2v_low_noise_14B_Q8_0.gguf",
                 "i2v_unet": "wan2.2_i2v_high_noise_14B_Q4_K_S.gguf",
@@ -860,49 +867,105 @@ def build_wan_i2v_workflow(prompt: str, image_name: str, seed: int, clip_prefix:
                             low_loras: list[tuple[str, float]] | None = None,
                             res_config: dict | None = None,
                             model_config: dict | None = None) -> dict:
-    """Build a WAN I2V workflow.
+    """Build a WAN 2.2 I2V workflow with dual-model KSamplerAdvanced.
 
-    Supports both dual-model (14B) and single-model (5B) configs.
-    Uses WanImageToVideo for start image conditioning.
+    Uses the official WAN 2.2 14B I2V architecture:
+    - High-noise model handles early denoising (steps 0 → mid)
+    - Low-noise model handles detail refinement (steps mid → end)
+    - KSamplerAdvanced enables the step-range handoff between models
+    - Image conditioning via WanImageToVideo (VAE-encodes start image)
+
+    For the 5B single-model config, falls back to a single KSampler pass.
+
+    Key I2V parameters (differ from T2V):
+    - shift: 8.0 (official WAN 2.2 I2V value, vs 12.0 for T2V)
+    - cfg: 3.5 (lower guidance for I2V, vs 5.0 for T2V)
+    - sampler: euler (official I2V sampler)
+    - denoise: 1.0 (image conditioning is via WanImageToVideo concat, not denoise)
     """
     mc = model_config or MODEL_CONFIGS["wan"]
     rc = res_config or list(mc["resolutions"].values())[0]
     te = mc["text_encoders"]
-    is_dual = mc.get("dual_model", False)
+    is_i2v_dual = mc.get("i2v_dual_model", False)
 
+    i2v_shift = rc.get("i2v_shift", 8.0)
+    i2v_cfg = mc.get("i2v_cfg", 3.5)
+    i2v_sampler = mc.get("i2v_sampler", "euler")
+
+    # Common nodes: text encoder, VAE, image loading, conditioning
     wf = {
-        "2": {"class_type": "CLIPLoaderGGUF", "inputs": {"clip_name": te["clip1"], "type": te["clip_type"]}},
-        "3": {"class_type": "VAELoader", "inputs": {"vae_name": mc["vae"]}},
-        "5":  {"class_type": "LoadImage", "inputs": {"image": image_name}},
-        "20": {"class_type": "ImageScale", "inputs": {
-            "image": ["5", 0], "upscale_method": "lanczos",
-            "width": rc["width"], "height": rc["height"], "crop": "center"
+        "3": {"class_type": "CLIPLoaderGGUF", "inputs": {"clip_name": te["clip1"], "type": te["clip_type"]}},
+        "4": {"class_type": "VAELoader", "inputs": {"vae_name": mc["vae"]}},
+        "5": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["3", 0], "text": prompt}},
+        "6": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["3", 0], "text": negative_prompt}},
+        "7": {"class_type": "LoadImage", "inputs": {"image": image_name}},
+        "8": {"class_type": "ImageScale", "inputs": {
+            "image": ["7", 0], "upscale_method": "lanczos",
+            "width": rc["width"], "height": rc["height"], "crop": "center",
         }},
-        "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
-        "8": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": negative_prompt}},
         "9": {"class_type": "WanImageToVideo", "inputs": {
-            "positive": ["7", 0], "negative": ["8", 0], "vae": ["3", 0],
+            "positive": ["5", 0], "negative": ["6", 0], "vae": ["4", 0],
             "width": rc["width"], "height": rc["height"], "length": frames, "batch_size": 1,
-            "start_image": ["20", 0],
-        }},
-        "1":  {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc["i2v_unet"]}},
-        "10": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": 5.0}},  # I2V uses lower shift than T2V
-        "11": {"class_type": "KSampler", "inputs": {
-            "model": ["10", 0], "positive": ["9", 0], "negative": ["9", 1],
-            "latent_image": ["9", 2], "seed": seed, "steps": steps, "cfg": mc["cfg"],
-            "sampler_name": mc["sampler"], "scheduler": mc["scheduler"], "denoise": denoise,
+            "start_image": ["8", 0],
         }},
     }
 
-    sampled_output = "11"
+    if is_i2v_dual and rc.get("i2v_unet_low"):
+        # Dual-model: high-noise + low-noise with KSamplerAdvanced handoff
+        mid_step = steps // 2
 
-    wf["16"] = {"class_type": "VAEDecode", "inputs": {"samples": [sampled_output, 0], "vae": ["3", 0]}}
+        wf["1"] = {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc["i2v_unet"]}}
+        wf["2"] = {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc["i2v_unet_low"]}}
+        wf["10"] = {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": i2v_shift}}
+        wf["11"] = {"class_type": "ModelSamplingSD3", "inputs": {"model": ["2", 0], "shift": i2v_shift}}
+
+        # KSamplerAdvanced #1: high-noise pass
+        wf["12"] = {"class_type": "KSamplerAdvanced", "inputs": {
+            "model": ["10", 0], "positive": ["9", 0], "negative": ["9", 1],
+            "latent_image": ["9", 2], "noise_seed": seed, "steps": steps, "cfg": i2v_cfg,
+            "sampler_name": i2v_sampler, "scheduler": mc["scheduler"],
+            "start_at_step": 0, "end_at_step": mid_step,
+            "add_noise": "enable", "return_with_leftover_noise": "enable",
+        }}
+
+        # KSamplerAdvanced #2: low-noise refinement pass
+        wf["13"] = {"class_type": "KSamplerAdvanced", "inputs": {
+            "model": ["11", 0], "positive": ["9", 0], "negative": ["9", 1],
+            "latent_image": ["12", 0], "noise_seed": seed, "steps": steps, "cfg": i2v_cfg,
+            "sampler_name": i2v_sampler, "scheduler": mc["scheduler"],
+            "start_at_step": mid_step, "end_at_step": 10000,
+            "add_noise": "disable", "return_with_leftover_noise": "disable",
+        }}
+
+        sampled_output = "13"
+
+        # LoRA injection: each model gets its matching -high/-low variant
+        i2v_high_loras = high_loras or loras
+        i2v_low_loras = low_loras or loras
+        if i2v_high_loras:
+            _insert_lora_chain(wf, i2v_high_loras, unet_node="1", sampler_model_node="10", node_id_offset=50)
+        if i2v_low_loras:
+            _insert_lora_chain(wf, i2v_low_loras, unet_node="2", sampler_model_node="11", node_id_offset=60)
+
+    else:
+        # Single-model fallback (5B or if low-noise model unavailable)
+        wf["1"] = {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc["i2v_unet"]}}
+        wf["10"] = {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": i2v_shift}}
+        wf["11"] = {"class_type": "KSampler", "inputs": {
+            "model": ["10", 0], "positive": ["9", 0], "negative": ["9", 1],
+            "latent_image": ["9", 2], "seed": seed, "steps": steps, "cfg": i2v_cfg,
+            "sampler_name": i2v_sampler, "scheduler": mc["scheduler"], "denoise": 1.0,
+        }}
+
+        sampled_output = "11"
+
+        if loras:
+            _insert_lora_chain(wf, loras, unet_node="1", sampler_model_node="10", node_id_offset=50)
+
+    # Decode and save
+    wf["16"] = {"class_type": "VAEDecode", "inputs": {"samples": [sampled_output, 0], "vae": ["4", 0]}}
     wf["17"] = {"class_type": "CreateVideo", "inputs": {"images": ["16", 0], "fps": float(mc["fps"])}}
     wf["18"] = {"class_type": "SaveVideo", "inputs": {"video": ["17", 0], "filename_prefix": f"video/{clip_prefix}", "format": "mp4", "codec": "h264"}}
-
-    # LoRA injection (single model)
-    if loras:
-        _insert_lora_chain(wf, loras, unet_node="1", sampler_model_node="10", node_id_offset=50)
 
     return wf
 
@@ -910,35 +973,54 @@ def build_wan_i2v_workflow(prompt: str, image_name: str, seed: int, clip_prefix:
 def _resolve_wan_dual_loras(loras: list[tuple[str, float]] | None) -> tuple[list[tuple[str, float]] | None, list[tuple[str, float]] | None]:
     """Resolve WAN LoRA base names to actual files on disk.
 
-    Since we use single-model KSampler (high-noise model only), this resolves
-    split LoRA names to their -high variant. For example:
-    "reemi-wan22.safetensors" → "reemi-wan22-high.safetensors" (if it exists)
+    For T2V (single high-noise model): resolves to -high variant and mutates
+    the input list in-place.
 
-    Returns (None, None) always — resolved LoRAs are written back into the
-    input list so callers use the unified `loras` path (single-model injection).
+    For I2V (dual-model): returns separate (high_loras, low_loras) lists so
+    each model gets its matching LoRA variant.
+
+    Examples:
+        "reemi-wan22.safetensors" → high: "reemi-wan22-high.safetensors"
+                                  → low:  "reemi-wan22-low.safetensors"
     """
     if not loras:
         return None, None
 
     loras_dir = COMFYUI_DIR / "models" / "loras"
+    high_loras = []
+    low_loras = []
 
     for i, (lora_name, strength) in enumerate(loras):
-        # If the exact file exists, use it as-is
-        if (loras_dir / lora_name).exists():
-            continue
-
-        # Check for -high split variant (we only use high-noise model)
         base = lora_name.removesuffix(".safetensors")
         high_file = f"{base}-high.safetensors"
+        low_file = f"{base}-low.safetensors"
 
-        if (loras_dir / high_file).exists():
-            loras[i] = (high_file, strength)
-            print(f"[WAN] Resolved LoRA: {lora_name} → {high_file}")
+        # If the exact file exists, use it for both (unsplit LoRA)
+        if (loras_dir / lora_name).exists():
+            high_loras.append((lora_name, strength))
+            low_loras.append((lora_name, strength))
+            continue
+
+        # Check for split -high/-low variants
+        has_high = (loras_dir / high_file).exists()
+        has_low = (loras_dir / low_file).exists()
+
+        if has_high:
+            loras[i] = (high_file, strength)  # Mutate for T2V single-model path
+            high_loras.append((high_file, strength))
+            print(f"[WAN] Resolved LoRA (high): {lora_name} → {high_file}")
         else:
             print(f"[WAN] WARNING: LoRA not found: {lora_name} (checked {high_file})")
 
-    # Always return None — single-model mode uses unified loras list
-    return None, None
+        if has_low:
+            low_loras.append((low_file, strength))
+            print(f"[WAN] Resolved LoRA (low): {lora_name} → {low_file}")
+        elif has_high:
+            # No -low variant — use -high for both (better than nothing)
+            low_loras.append((high_file, strength))
+            print(f"[WAN] No -low variant for {lora_name}, using -high for both models")
+
+    return high_loras or None, low_loras or None
 
 
 def build_wan_s2v_workflow(prompt: str, audio_path: str, seed: int, clip_prefix: str, frames: int,
@@ -3090,8 +3172,9 @@ def cmd_produce(args):
             for ln, ls in scene_loras:
                 print(f"      LoRA: {ln} (strength={ls})")
 
-        # Per-scene denoise: use lower denoise for character close-ups/dialogue
-        # so the portrait reference has stronger influence on appearance.
+        # Per-scene denoise: used for single-model I2V fallback (5B).
+        # For dual-model I2V (14B), denoise is always 1.0 — image conditioning
+        # happens via WanImageToVideo concat, not denoise strength.
         base_denoise = getattr(args, 'denoise', DEFAULT_DENOISE)
         shot = _infer_shot_type(scene.get("visual", ""))
         is_dialogue = bool(scene.get("dialogue"))
@@ -3100,21 +3183,28 @@ def cmd_produce(args):
         else:
             scene_denoise = base_denoise
 
-        # Force T2V for all scenes — I2V + KSampler produces grey/noise output.
-        # Character consistency comes from LoRA trigger words, not I2V seed images.
-        mode = "t2v"
+        # Scene mode: I2V for character scenes (with seed image), T2V for establishing shots.
+        # S2V (lip sync) is not yet enabled — dialogue scenes use I2V instead.
+        scene_type = classify_scene_type(scene)
+        if scene_type == "s2v":
+            # S2V not ready yet — fall back to I2V for dialogue scenes
+            mode = "i2v" if seed_image else "t2v"
+        elif scene_type == "i2v" and seed_image:
+            mode = "i2v"
+        else:
+            mode = "t2v"
+
+        if mode == "i2v":
+            print(f"      Mode: I2V (dual-model) — seed: {seed_image}")
+        else:
+            print(f"      Mode: T2V")
+
         optimization = getattr(args, "optimization", "none")
         wf = build_video_workflow(
             video_model, mode, prompt, seed, clip_prefix, frames, res_config,
             negative_prompt=neg, steps=args.steps, denoise=scene_denoise,
             loras=scene_loras, image_name=seed_image, optimization=optimization,
         )
-
-        # IP-Adapter: experimental with WAN 2.2 architecture.
-        # Character consistency is handled through I2V seed images instead —
-        # get_scene_seed_image() already feeds character portraits into dialogue/
-        # close-up scenes via the WAN I2V start_image conditioning.
-        # The --ip-adapter flag is kept for future model support.
 
         try:
             prompt_id = queue_prompt(wf)

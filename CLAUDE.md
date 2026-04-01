@@ -134,8 +134,9 @@ Character `visual_description` is injected into every scene prompt via `build_sc
 |----------|------|---------|
 | `build_scene_prompt(scene, bible)` | ~596 | Builds video prompt with character descriptions injected |
 | `get_scene_seed_image(scene, series, chain)` | ~1223 | Picks I2V seed: char ref → location ref → previous frame chain |
-| `build_t2v_workflow(prompt, seed, prefix, frames, steps)` | ~542 | T2V ComfyUI workflow dict |
-| `build_i2v_workflow(prompt, img, seed, prefix, frames, steps, denoise)` | ~562 | I2V ComfyUI workflow dict with ImageScale + denoise control |
+| `build_wan_t2v_workflow(...)` | ~822 | T2V workflow: single high-noise model + KSampler |
+| `build_wan_i2v_workflow(...)` | ~855 | I2V workflow: dual-model KSamplerAdvanced (high+low noise) |
+| `classify_scene_type(scene)` | ~1081 | Returns "i2v" (characters), "s2v" (dialogue), or "t2v" (establishing) |
 | `build_negative_prompt(scene)` | ~645 | Universal negatives for all scenes; extra for dialogue |
 | `DENOISE_PRESETS` / `DEFAULT_DENOISE` | ~76 | Faithful (0.70), Balanced (0.82), Creative (1.0) |
 | `queue_prompt(workflow)` | ~766 | POST to ComfyUI, returns prompt_id |
@@ -197,15 +198,18 @@ Scene JSON fields: `id`, `location`, `characters[]` (keys like `char_1`), `clip_
 
 Do not change these without testing:
 
-| Parameter | Value | Reason |
-|-----------|-------|--------|
-| Resolution | 832×480 or 480×832 | WAN 2.2 480p default |
-| `cfg` | **5.0** | WAN 2.2 default guidance scale |
-| `shift` | 12.0 | WAN 2.2 T2V default (5.0 for I2V) |
-| Frame count | 49 / 65 / 81 | short/medium/long; must be `4n+1` |
-| Clip duration | 2.0s / 2.7s / 3.4s | Corresponds to frame counts above |
+| Parameter | T2V Value | I2V Value | Reason |
+|-----------|-----------|-----------|--------|
+| Resolution | 832×480 or 480×832 | same | WAN 2.2 480p default |
+| `cfg` | **5.0** | **3.5** | I2V uses lower guidance (official WAN 2.2) |
+| `shift` | **12.0** | **8.0** | I2V uses different noise schedule (official WAN 2.2) |
+| `sampler` | uni_pc_bh2 | **euler** | I2V uses euler (official WAN 2.2) |
+| Sampler node | KSampler | **KSamplerAdvanced** x2 | I2V needs dual-model step handoff |
+| Frame count | 33 / 49 / 81 | same | short/medium/long; must be `4n+1` |
+| Clip duration | 2.1s / 3.1s / 5.1s | same | At 16fps |
 
-**Model**: `wan2.2_t2v_high_noise_14B_Q4_K_S.gguf`
+**T2V Model**: `wan2.2_t2v_high_noise_14B_Q8_0.gguf` (single model)
+**I2V Models**: `wan2.2_i2v_high_noise_14B_Q4_K_S.gguf` + `wan2.2_i2v_low_noise_14B_Q4_K_S.gguf` (dual model)
 
 ---
 
