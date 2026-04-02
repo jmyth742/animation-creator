@@ -91,7 +91,8 @@ UNET_DIR="$PROJECT/ComfyUI/models/unet"
 VAE_DIR="$PROJECT/ComfyUI/models/vae"
 TE_DIR="$PROJECT/ComfyUI/models/text_encoders"
 CV_DIR="$PROJECT/ComfyUI/models/clip_vision"
-mkdir -p "$UNET_DIR" "$VAE_DIR" "$TE_DIR" "$CV_DIR"
+AE_DIR="$PROJECT/ComfyUI/models/audio_encoders"
+mkdir -p "$UNET_DIR" "$VAE_DIR" "$TE_DIR" "$CV_DIR" "$AE_DIR"
 
 download_hf() {
     local repo="$1" file="$2" dest="$3"
@@ -152,6 +153,16 @@ download_hf "Comfy-Org/HunyuanVideo_1.5_repackaged" \
 download_hf "Comfy-Org/HunyuanVideo_1.5_repackaged" \
     "split_files/clip_vision/sigclip_vision_patch14_384.safetensors" \
     "$CV_DIR/sigclip_vision_patch14_384.safetensors"
+
+# Audio encoder (S2V lip sync)
+download_hf "Comfy-Org/Wan_2.2_ComfyUI_Repackaged" \
+    "split_files/audio_encoders/wan2.2_audio_encoder.safetensors" \
+    "$AE_DIR/wan2.2_audio_encoder.safetensors"
+
+# Animate model (optional — motion transfer, ~28GB, uncomment if needed)
+# download_hf "Wan-AI/Wan2.2-Animate-14B" \
+#     "diffusion_pytorch_model.safetensors" \
+#     "$UNET_DIR/wan2.2_animate_14B.safetensors"
 
 echo "  All models downloaded."
 

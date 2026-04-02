@@ -31,12 +31,12 @@
 | Issue | Priority | Impact |
 |-------|----------|--------|
 | **LoRA training targets HunyuanVideo, not Wan** | 🔴 Critical | Trained LoRAs won't load in Wan 2.2 — different architecture (`WanAttentionBlock` vs `MMDoubleStreamBlock`) |
-| **No S2V (Speech-to-Video)** | 🟠 High | Dialogue scenes have no lip sync — audio bolted onto silent video |
-| **No scene-type routing** | 🟠 High | All scenes go through same T2V→I2V chain regardless of content |
+| ~~**No S2V (Speech-to-Video)**~~ | ✅ Done | S2V workflow wired into production loop — dialogue scenes auto-route to S2V with TTS audio |
+| ~~**No scene-type routing**~~ | ✅ Done | `classify_scene_type()` routes dialogue→S2V, characters→I2V, establishing→T2V |
 | **No TI2V-5B config** | 🟡 Medium | Can't preview on local 8GB GPU — must use RunPod for everything |
-| **Wan 2.1 VAE instead of 2.2** | 🟡 Medium | Missing 16×16×4 compression — less efficient VRAM usage |
-| **No Wan-Animate integration** | 🟡 Medium | Complex motion scenes lack motion transfer capability |
-| **Captioning doesn't follow LoRA best practices** | 🟡 Medium | Florence-2 describes everything including character features — should omit what the LoRA is meant to learn |
+| ~~**Wan 2.1 VAE instead of 2.2**~~ | ✅ Done | Updated to `wan2.2_vae.safetensors` across all configs and workflows |
+| ~~**No Wan-Animate integration**~~ | ✅ Done | `build_wan_animate_workflow()` + `--motion-video` CLI flag + dispatch wiring |
+| ~~**Captioning doesn't follow LoRA best practices**~~ | ✅ Done | `--character-features` strips learned traits, `--rewrite` uses Claude for best-practice captions |
 
 ---
 
@@ -117,153 +117,47 @@ This produces HunyuanVideo LoRAs that are architecturally incompatible with Wan 
 
 ---
 
-### Phase 3: Wan 2.2 VAE Upgrade
+### Phase 3: Wan 2.2 VAE Upgrade ✅ DONE
 
-**Problem:** Config references `Wan2.1_VAE.pth`. Wan 2.2 ships a new VAE with 16×16×4 compression ratio (64× total) — more efficient, faster, lower VRAM.
-
-**Fix:**
-1. Download `wan2.2_vae.safetensors` from `Comfy-Org/Wan_2.2_ComfyUI_Repackaged` or `Wan-AI/Wan2.2-TI2V-5B`
-2. Update `wan` config in `showrunner.py`: `"vae": "wan2.2_vae.safetensors"`
-3. Note: The 5B TI2V model was specifically designed for this new VAE — the 14B MoE models also benefit from it
-
-**Files to modify:**
-- `scripts/showrunner.py` — update VAE reference in `wan` config
-- Model download scripts — add Wan 2.2 VAE download
+Updated `Wan2.1_VAE.pth` → `wan2.2_vae.safetensors` in all configs, workflow JSONs, test files, and training orchestrator.
 
 ---
 
-### Phase 4: Scene-Type Routing
+### Phase 4: Scene-Type Routing ✅ DONE
 
-**Problem:** All scenes use the same generation path (T2V for first, I2V chain for rest). Dialogue, action, and establishing shots have very different requirements.
-
-**Fix:**
-
-1. **Update Claude prompt** in `showrunner.py` episode generation to output scene types:
-```json
-{
-    "scene_number": 3,
-    "type": "dialogue",  // dialogue | action | establishing | transition
-    "speaker": "char_1",
-    "clip_length": "medium",
-    "visual": "Close-up of Jack speaking...",
-    "dialogue": "The city never sleeps, and neither do I.",
-    "emotion": "weary, determined"
-}
-```
-
-2. **Route by scene type** in the production loop:
-```python
-if scene["type"] == "dialogue" and s2v_available:
-    # Generate TTS first, then S2V with audio input
-    generate_dialogue_scene_s2v(scene, character_ref, audio)
-elif scene["type"] == "establishing":
-    # T2V only — no character reference needed
-    generate_establishing_scene(scene)
-else:
-    # Standard I2V with character LoRA
-    generate_action_scene(scene, seed_image, loras)
-```
-
-3. **Update `build_scene_prompt()`** to adjust prompt style per scene type
-
-**Files to modify:**
-- `scripts/showrunner.py` — Claude episode prompt, production loop, prompt builder
-- `app/backend/models.py` — add `scene_type` field to Scene model
-- `app/backend/schemas.py` — add scene type to schema
-- `app/frontend/src/components/EpisodesTab.jsx` — display scene type badges
+Implemented `classify_scene_type()` → routes dialogue→S2V, character scenes→I2V, establishing→T2V.
+- Added `scene_type` column to Scene model + API schema
+- Scene type badges (S2V/I2V/T2V) shown in Episodes UI
+- Production loop and single-scene regeneration both use scene-type routing
 
 ---
 
-### Phase 5: S2V (Speech-to-Video) Integration
+### Phase 5: S2V (Speech-to-Video) Integration ✅ DONE
 
-**Problem:** Dialogue scenes have no lip sync. Audio is generated separately and muxed onto silent video.
-
-**Wan2.2-S2V-14B capabilities:**
-- Takes: character image + audio file + text prompt
-- Outputs: video with natural lip sync, facial expressions, body language
-- Supports: dialogue, singing, performance
-- Full-body and half-body framing
-- Camera movement via text prompt
-
-**Implementation:**
-
-1. **Add S2V model config** — S2V uses its own model weights (`Wan-AI/Wan2.2-S2V-14B`)
-
-2. **Add S2V workflow builder** — `build_wan_s2v_workflow()`:
-   - Input: character reference image + audio file + text prompt
-   - Audio encoding via CosyVoice or direct WAV input
-   - Output: video with synced lip movement
-
-3. **Update production loop:**
-   - For dialogue scenes: generate TTS audio first → feed to S2V with character portrait
-   - For non-dialogue: use existing I2V pipeline
-   - Skip separate audio mux step for S2V scenes (audio is baked in)
-
-4. **ComfyUI requirements:**
-   - Kijai's `ComfyUI-WanVideoWrapper` recommended (has S2V support ahead of native nodes)
-   - S2V model weights: ~14B parameters, needs 24GB+ VRAM (RunPod only)
-
-**Files to modify:**
-- `scripts/showrunner.py` — add S2V workflow builder + production routing
-- `app/backend/pipeline.py` — S2V scene handling
-- Model download scripts — add S2V model download
-
-**Hardware:** S2V is RunPod-only (A6000 48GB recommended). Local preview would still use standard I2V + separate audio.
+- `build_wan_s2v_workflow()` generates audio-conditioned video with lip sync
+- Production loop auto-routes dialogue scenes to S2V when audio is available
+- `generate_single_scene_audio()` helper for single-scene regeneration
+- Audio encoder download added to RunPod setup
+- Falls back to I2V when S2V audio unavailable
 
 ---
 
-### Phase 6: Wan-Animate Integration (Optional / Advanced)
+### Phase 6: Wan-Animate Integration ✅ DONE
 
-**What it does:** Given a character image + reference performance video → generates your character performing the same motion with expression replication.
-
-**Use cases:**
-- Complex choreographed action (fight scenes, dance)
-- Two-character interaction (film each separately with reference motion)
-- Consistent body language across episodes
-
-**Two modes:**
-- **Character Animation:** Animate character with performer's motion
-- **Character Replacement:** Replace person in existing video, matching lighting/tone
-
-**Requirements:**
-- Model: `Wan-AI/Wan2.2-Animate-14B`
-- Skeleton extraction for motion control
-- Implicit facial features for expression
-- Optional Relighting LoRA for environment matching
-- 24GB+ VRAM
-
-**Implementation is more complex** — requires skeleton signal processing and facial feature extraction. Recommend doing this after S2V is stable.
+- `build_wan_animate_workflow()` — motion transfer from reference video to character
+- `--motion-video` CLI flag on `produce` and `produce-all` commands
+- Dispatch wired in `build_video_workflow()` — animate mode takes priority when motion video provided
+- Model download ref added to setup.sh (commented out, ~28GB) and training_orchestrator.py
+- LoRA injection supported for animate mode
 
 ---
 
-### Phase 7: Captioning Best Practices
+### Phase 7: Captioning Best Practices ✅ DONE
 
-**Problem:** Florence-2 auto-captioner describes everything in the image, including character features. Research from Civitai shows this hurts LoRA training because the model can't learn the diff.
-
-**Fix:** Update `auto_caption.py` to:
-1. Accept a `--character-features` flag listing what NOT to describe (e.g., "red hair, blue eyes, leather jacket")
-2. Post-process Florence-2 captions to strip character-feature sentences
-3. Or switch to a two-pass approach:
-   - Pass 1: Florence-2 generates full caption
-   - Pass 2: LLM (Claude or local) rewrites caption following LoRA rules — describes background/environment in detail, uses trigger word for character, omits character visual features
-
-**Captioning template:**
-```
-[trigger_word] [pose/action]. [Background: detailed description of environment,
-lighting, colors, objects]. [Camera: angle, movement]. [Style: aesthetic notes].
-```
-
-**Example:**
-```
-ohwx_jack standing with hands in pockets, looking left. Rainy street at night,
-neon signs reflecting off wet cobblestones, steam rising from a grate, parked
-cars with fogged windows. Medium shot, slight low angle. Film noir, high
-contrast, moody blue-orange color grade.
-```
-
-**Files to modify:**
-- `scripts/auto_caption.py` — add character-aware mode
-- `training/scripts/prepare_dataset.sh` — pass character features to captioner
+- `--character-features` flag strips learned traits from captions via regex
+- `--rewrite` two-pass mode: Florence-2 → Claude Haiku rewrites following LoRA best practices
+- `strip_character_features()` handles comma/conjunction cleanup
+- `prepare_dataset.sh` passes character features through to auto_caption.py
 
 ---
 
@@ -329,8 +223,8 @@ python scripts/showrunner.py produce my_series --episode 1 --video-model wan_5b
 
 1. **Phase 1** — Fix LoRA training target (critical bug, blocks all LoRA work)
 2. **Phase 2** — TI2V-5B local preview (quick win, unblocks local iteration)
-3. **Phase 3** — Wan 2.2 VAE (quick config change, better performance)
-4. **Phase 4** — Scene-type routing (structural improvement, enables Phase 5)
-5. **Phase 5** — S2V integration (biggest quality leap for dialogue)
-6. **Phase 7** — Captioning best practices (improves LoRA quality)
-7. **Phase 6** — Wan-Animate (advanced, do last)
+3. ~~**Phase 3** — Wan 2.2 VAE~~ ✅
+4. ~~**Phase 4** — Scene-type routing~~ ✅
+5. ~~**Phase 5** — S2V integration~~ ✅
+6. ~~**Phase 7** — Captioning best practices~~ ✅
+7. ~~**Phase 6** — Wan-Animate~~ ✅

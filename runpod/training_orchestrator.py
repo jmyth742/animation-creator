@@ -53,11 +53,15 @@ SSH_KEY_PATHS = [
 HF_DIT_REPO = "Comfy-Org/Wan_2.2_ComfyUI_Repackaged"
 HF_DIT_FILE = "split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp16.safetensors"
 HF_VAE_REPO = "Comfy-Org/Wan_2.2_ComfyUI_Repackaged"
-HF_VAE_FILE = "split_files/vae/wan_2.1_vae.safetensors"
+HF_VAE_FILE = "split_files/vae/wan2.2_vae.safetensors"
 HF_TE_REPO = "Comfy-Org/Wan_2.2_ComfyUI_Repackaged"
 HF_TE_FILE = "split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors"
 HF_BYT5_REPO = "Comfy-Org/Wan_2.2_ComfyUI_Repackaged"
 HF_BYT5_FILE = "split_files/text_encoders/byt5_small_glyphxl_fp16.safetensors"
+HF_AUDIO_ENC_REPO = "Comfy-Org/Wan_2.2_ComfyUI_Repackaged"
+HF_AUDIO_ENC_FILE = "split_files/audio_encoders/wan2.2_audio_encoder.safetensors"
+HF_ANIMATE_REPO = "Wan-AI/Wan2.2-Animate-14B"
+HF_ANIMATE_FILE = "diffusion_pytorch_model.safetensors"
 
 # Default training hyperparameters
 DEFAULT_TRAINING_CONFIG = {

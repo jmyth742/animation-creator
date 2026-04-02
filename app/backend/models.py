@@ -149,6 +149,9 @@ class Scene(Base):
     # JSON-encoded list of {"character": str, "line": str}
     dialogue: str = Column(Text, nullable=False, default="[]")
 
+    # "t2v" | "i2v" | "s2v" — computed by classify_scene_type()
+    scene_type: str | None = Column(String(16), nullable=True)
+
     # "pending" | "generating" | "done" | "error"
     status: str = Column(String(32), nullable=False, default="pending")
 

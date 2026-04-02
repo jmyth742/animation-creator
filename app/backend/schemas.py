@@ -220,6 +220,7 @@ class SceneRead(BaseModel):
     visual: str
     narration: str | None = None
     dialogue: str  # raw JSON string; callers parse as list[DialogueLine]
+    scene_type: str | None = None
     status: str
     output_clip_path: str | None = None
     reference_image_path: str | None = None

@@ -225,6 +225,17 @@ def _backfill_scene_clips(episode_id: int, db) -> None:
             except ValueError as e:
                 logger.error(f"Failed to resolve clip path for scene {scene.id}: {e}", exc_info=True)
 
+        # Compute and store scene_type if not already set
+        if not scene.scene_type:
+            try:
+                char_ids = [f"char_{sc.character_id}" for sc in scene.scene_characters]
+                raw_dialogue = json.loads(scene.dialogue or "[]")
+            except (json.JSONDecodeError, TypeError):
+                raw_dialogue = []
+                char_ids = []
+            scene_dict = {"dialogue": raw_dialogue, "characters": char_ids}
+            scene.scene_type = showrunner.classify_scene_type(scene_dict)
+
     try:
         db.commit()
     except Exception as e:
@@ -567,8 +578,27 @@ def generate_single_scene_job(scene_id: int, quality: str = "draft", denoise: fl
         # Collect all LoRAs for this scene (up to 2 chars + 1 location)
         scene_loras = showrunner.get_scene_loras(scene_dict, bible)
 
-        # Force T2V — I2V + KSampler produces grey/noise output
-        gen_mode = "t2v"
+        # Route by scene type: S2V for dialogue, I2V for character scenes, T2V for establishing
+        scene_type = showrunner.classify_scene_type(scene_dict)
+        scene.scene_type = scene_type
+        db.commit()
+
+        audio_path: str | None = None
+        if scene_type == "s2v":
+            # Generate TTS audio for S2V lip-sync
+            ep_out = series_path_dir / "episodes"
+            ep_out.mkdir(parents=True, exist_ok=True)
+            audio_file = showrunner.generate_single_scene_audio(scene_dict, bible, ep_out)
+            if audio_file:
+                audio_path = str(audio_file)
+                gen_mode = "s2v"
+            else:
+                gen_mode = "i2v" if seed_image else "t2v"
+        elif scene_type == "i2v" and seed_image:
+            gen_mode = "i2v"
+        else:
+            gen_mode = "t2v"
+
         res_config = showrunner.get_resolution_config("auto", video_model="wan")
         model_name = res_config.get("t2v_unet", "wan2.2")
 
@@ -583,7 +613,7 @@ def generate_single_scene_job(scene_id: int, quality: str = "draft", denoise: fl
         wf = showrunner.build_video_workflow(
             "wan", gen_mode, prompt, seed, clip_prefix, frames, res_config,
             negative_prompt=neg, steps=steps, denoise=denoise,
-            loras=scene_loras, image_name=seed_image,
+            loras=scene_loras, image_name=seed_image, audio_path=audio_path,
         )
 
         prompt_id = showrunner.queue_prompt(wf)
@@ -1414,7 +1444,7 @@ def run_local_training_job(job_id: int) -> None:
         cache_dir.mkdir(parents=True, exist_ok=True)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        vae_path = settings.COMFYUI_DIR / "models" / "vae" / "Wan2.1_VAE.pth"
+        vae_path = settings.COMFYUI_DIR / "models" / "vae" / "wan2.2_vae.safetensors"
         # Training needs the full-precision Qwen model, not the fp8 version
         te_dir = settings.COMFYUI_DIR / "models" / "text_encoders"
         te_path_fp16 = te_dir / "qwen_2.5_vl_7b.safetensors"

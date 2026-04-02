@@ -25,7 +25,7 @@ I2V_SCHEDULER = "simple"
 I2V_HIGH_UNET = "wan2.2_i2v_high_noise_14B_Q4_K_S.gguf"
 I2V_LOW_UNET = "wan2.2_i2v_low_noise_14B_Q4_K_S.gguf"
 TEXT_ENCODER = "umt5-xxl-encoder-Q8_0.gguf"
-VAE = "Wan2.1_VAE.pth"
+VAE = "wan2.2_vae.safetensors"
 WIDTH, HEIGHT = 832, 480
 FPS = 16
 

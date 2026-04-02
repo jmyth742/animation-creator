@@ -83,8 +83,13 @@ if [ "$AUTO_CAPTION" = "skip" ]; then
 elif command -v python3 &>/dev/null && python3 -c "import transformers" 2>/dev/null; then
     echo ""
     echo "  Running Florence-2 auto-captioning..."
-    python3 "$SCRIPT_DIR/scripts/auto_caption.py" "$DATASET_DIR" \
-        --trigger "$TRIGGER" --force
+    CHAR_FEATURES="${5:-}"  # Optional 5th arg: character features to omit
+    CAPTION_ARGS=(--trigger "$TRIGGER" --force)
+    if [ -n "$CHAR_FEATURES" ]; then
+        CAPTION_ARGS+=(--character-features "$CHAR_FEATURES")
+        echo "  Character features to omit: $CHAR_FEATURES"
+    fi
+    python3 "$SCRIPT_DIR/scripts/auto_caption.py" "$DATASET_DIR" "${CAPTION_ARGS[@]}"
     echo ""
     echo "  Captions generated! Review and refine in $DATASET_DIR/*.txt"
     echo "  Tip: captions should describe visual appearance, not personality."

@@ -142,6 +142,13 @@ function SceneRow({ scene, onEdit, onDelete, onRegenerate, onOpenSceneStudio, on
   const statusColor = scene.status === 'done' ? 'text-px-green' : scene.status === 'error' ? 'text-px-red'
     : isGenerating ? 'text-accent-400' : 'text-zinc-500'
 
+  // Compute scene type from data (mirrors backend classify_scene_type)
+  const hasDialogue = dialogue.length > 0
+  const hasCharacters = (scene.characters || []).length > 0
+  const sceneType = scene.scene_type || (hasDialogue && hasCharacters ? 's2v' : hasCharacters ? 'i2v' : 't2v')
+  const sceneTypeColors = { s2v: 'bg-purple-900 border-purple-700 text-purple-300', i2v: 'bg-blue-900 border-blue-700 text-blue-300', t2v: 'bg-amber-900 border-amber-700 text-amber-300' }
+  const sceneTypeLabel = { s2v: 'S2V', i2v: 'I2V', t2v: 'T2V' }
+
   return (
     <>
       <div className="bg-zinc-900 border-2 border-zinc-700 p-3 group hover:border-zinc-600 transition-colors"
@@ -170,6 +177,7 @@ function SceneRow({ scene, onEdit, onDelete, onRegenerate, onOpenSceneStudio, on
             <div className="flex flex-wrap gap-2 mb-1.5">
               {scene.location_name && <span className="badge-pixel">📍 {scene.location_name}</span>}
               <span className="badge-pixel">{scene.clip_length?.toUpperCase()}</span>
+              <span className={`font-pixel border px-2 py-0.5 inline-flex items-center ${sceneTypeColors[sceneType] || sceneTypeColors.t2v}`} style={{ fontSize: '7px', boxShadow: '2px 2px 0 0 #000' }}>{sceneTypeLabel[sceneType] || 'T2V'}</span>
               <span className={`font-pixel flex items-center gap-1 ${statusColor}`} style={{ fontSize: '7px' }}>
                 {isGenerating && <span className="pixel-spinner" style={{ width: '8px', height: '8px' }} />}
                 {scene.status?.toUpperCase()}
@@ -457,7 +465,7 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
                   className="w-full text-left px-3 py-2 text-retro text-zinc-500 hover:bg-zinc-700 flex items-center justify-between" style={{ fontSize: '15px' }}>
                   <span>{showAdvanced ? '▾' : '▸'} ADVANCED OPTIONS</span>
                   <span className="text-zinc-700" style={{ fontSize: '11px' }}>
-                    {[advOpts.video_model === 'wan' && 'WAN', advOpts.optimization !== 'none' && advOpts.optimization.toUpperCase(), advOpts.upscale && '4K', advOpts.interpolate && '48fps', advOpts.lip_sync && 'LIP', advOpts.tts_engine === 'xtts' && 'XTTS'].filter(Boolean).join(' ') || ''}
+                    {[advOpts.video_model === 'wan' ? 'WAN' : advOpts.video_model === 'wan-5b' ? '5B' : advOpts.video_model.toUpperCase(), advOpts.optimization !== 'none' && advOpts.optimization.toUpperCase(), advOpts.upscale && '4K', advOpts.interpolate && '48fps', advOpts.lip_sync && 'LIP', advOpts.tts_engine === 'xtts' && 'XTTS'].filter(Boolean).join(' ') || ''}
                   </span>
                 </button>
                 {showAdvanced && (
@@ -469,6 +477,7 @@ function EpisodeRow({ episode, project, onEpisodesChange, onProduce }) {
                         className="bg-zinc-900 border border-zinc-600 text-zinc-300 text-retro px-2 py-0.5" style={{ fontSize: '13px' }}>
                         
                         <option value="wan">WAN 2.2 (A14B)</option>
+                        <option value="wan-5b">WAN 2.2 TI2V-5B (8GB)</option>
                       </select>
                     </div>
 

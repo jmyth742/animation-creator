@@ -105,7 +105,7 @@ MODEL_CONFIGS = {
             "clip1": "umt5-xxl-encoder-Q8_0.gguf",
             "clip_type": "wan",
         },
-        "vae": "Wan2.1_VAE.pth",
+        "vae": "wan2.2_vae.safetensors",
         "clip_vision": "sigclip_vision_patch14_384.safetensors",
         "lora_loader": "LoraLoaderModelOnly",
     },
@@ -134,7 +134,7 @@ MODEL_CONFIGS = {
             "clip1": "umt5-xxl-encoder-Q8_0.gguf",
             "clip_type": "wan",
         },
-        "vae": "Wan2.1_VAE.pth",
+        "vae": "wan2.2_vae.safetensors",
         "clip_vision": "sigclip_vision_patch14_384.safetensors",
         "lora_loader": "LoraLoaderModelOnly",
     },
@@ -715,6 +715,44 @@ def generate_episode_audio(episode: dict, bible: dict, output_dir: Path) -> list
     return audio_files
 
 
+def generate_single_scene_audio(scene: dict, bible: dict, output_dir: Path) -> Path | None:
+    """Generate TTS audio for a single scene dict.  Returns audio path or None."""
+    audio_dir = output_dir / "audio"
+    audio_dir.mkdir(parents=True, exist_ok=True)
+    audio_path = audio_dir / f"{scene['id']}.mp3"
+
+    narrator_voice = bible.get("narrator", {}).get("voice", "en-US-GuyNeural")
+    spoken_parts = []
+    if scene.get("narration"):
+        spoken_parts.append(scene["narration"])
+    if scene.get("dialogue"):
+        has_narration = bool(scene.get("narration"))
+        for d in scene["dialogue"]:
+            if has_narration:
+                char = bible.get("characters", {}).get(d["character"], {})
+                name = char.get("name", d["character"])
+                spoken_parts.append(f"{name}: {d['line']}")
+            else:
+                spoken_parts.append(d["line"])
+
+    if not spoken_parts:
+        return None
+
+    full_text = " ".join(spoken_parts)
+    voice = narrator_voice
+    if not scene.get("narration") and scene.get("dialogue"):
+        first_char = scene["dialogue"][0]["character"]
+        voice = bible.get("characters", {}).get(first_char, {}).get("voice", narrator_voice)
+
+    try:
+        asyncio.run(generate_tts_scene(full_text, voice, str(audio_path)))
+    except Exception as e:
+        print(f"    TTS failed for {scene['id']}: {e}")
+        return None
+
+    return audio_path
+
+
 # ─── Video generation ────────────────────────────────────────────────
 
 def build_lora_node(model_output: list, lora_filename: str, strength: float = 0.7) -> dict:
@@ -1098,6 +1136,84 @@ def build_wan_s2v_workflow(prompt: str, audio_path: str, seed: int, clip_prefix:
     return wf
 
 
+def build_wan_animate_workflow(prompt: str, ref_image: str, motion_video: str,
+                                seed: int, clip_prefix: str, frames: int,
+                                negative_prompt: str = "", steps: int = 25,
+                                loras: list[tuple[str, float]] | None = None,
+                                high_loras: list[tuple[str, float]] | None = None,
+                                low_loras: list[tuple[str, float]] | None = None,
+                                res_config: dict | None = None,
+                                model_config: dict | None = None) -> dict:
+    """Build a WAN 2.2 Animate workflow for motion transfer scenes.
+
+    Takes a character reference image + a motion reference video and generates
+    the character performing the same motion with expression replication.
+
+    Requires:
+    - Wan2.2-Animate model in ComfyUI/models/unet/
+    - ComfyUI-WanVideoWrapper custom node (Kijai) with WanAnimate support
+
+    Args:
+        ref_image: Character reference image filename (in ComfyUI input/).
+        motion_video: Motion reference video filename (in ComfyUI input/).
+    """
+    mc = model_config or MODEL_CONFIGS["wan"]
+    rc = res_config or list(mc["resolutions"].values())[0]
+    te = mc["text_encoders"]
+
+    # Animate uses its own UNet — fall back to T2V if animate-specific model not configured
+    animate_unet = rc.get("animate_unet", rc["t2v_unet"])
+
+    wf = {
+        # Text encoder + VAE
+        "2": {"class_type": "CLIPLoaderGGUF", "inputs": {"clip_name": te["clip1"], "type": te["clip_type"]}},
+        "3": {"class_type": "VAELoader", "inputs": {"vae_name": mc["vae"]}},
+        "4": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
+        "5": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": negative_prompt}},
+
+        # Character reference image
+        "43": {"class_type": "LoadImage", "inputs": {"image": ref_image}},
+        "44": {"class_type": "ImageScale", "inputs": {
+            "image": ["43", 0], "upscale_method": "lanczos",
+            "width": rc["width"], "height": rc["height"], "crop": "center"
+        }},
+
+        # Motion reference video
+        "45": {"class_type": "LoadVideo", "inputs": {"video": motion_video, "force_size": "Disabled"}},
+
+        # WanAnimate conditioning — skeleton extraction is implicit
+        "9": {"class_type": "WanAnimate", "inputs": {
+            "positive": ["4", 0], "negative": ["5", 0], "vae": ["3", 0],
+            "ref_image": ["44", 0],
+            "motion_video": ["45", 0],
+            "width": rc["width"], "height": rc["height"], "length": frames, "batch_size": 1,
+        }},
+
+        # UNet + sampling (single model)
+        "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": animate_unet}},
+        "10": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": rc["shift"]}},
+        "11": {"class_type": "KSampler", "inputs": {
+            "model": ["10", 0], "positive": ["4", 0], "negative": ["5", 0],
+            "latent_image": ["9", 2], "seed": seed, "steps": steps, "cfg": mc["cfg"],
+            "sampler_name": mc["sampler"], "scheduler": mc["scheduler"], "denoise": 1.0,
+        }},
+
+        # Decode + save
+        "16": {"class_type": "VAEDecode", "inputs": {"samples": ["11", 0], "vae": ["3", 0]}},
+        "17": {"class_type": "CreateVideo", "inputs": {"images": ["16", 0], "fps": float(mc["fps"])}},
+        "18": {"class_type": "SaveVideo", "inputs": {
+            "video": ["17", 0], "filename_prefix": f"video/{clip_prefix}",
+            "format": "mp4", "codec": "h264"
+        }},
+    }
+
+    # LoRA injection (single model for animate)
+    if loras:
+        _insert_lora_chain(wf, loras, unet_node="1", sampler_model_node="10", node_id_offset=50)
+
+    return wf
+
+
 def classify_scene_type(scene: dict) -> str:
     """Classify a scene into a generation mode based on its content.
 
@@ -1107,7 +1223,7 @@ def classify_scene_type(scene: dict) -> str:
         "t2v"           — establishing/wide shot (uses T2V, no reference needed)
     """
     has_dialogue = bool(scene.get("dialogue"))
-    has_narration = bool(scene.get("narration", "").strip())
+    has_narration = bool((scene.get("narration") or "").strip())
     has_characters = bool(scene.get("characters"))
 
     # Dialogue with characters → S2V (lip sync)
@@ -1131,13 +1247,15 @@ def build_video_workflow(video_model: str, mode: str, prompt: str, seed: int,
                           loras: list[tuple[str, float]] | None = None,
                           image_name: str | None = None,
                           audio_path: str | None = None,
+                          motion_video: str | None = None,
                           optimization: str = "none") -> dict:
     """Build a WAN video generation workflow.
 
     Args:
         video_model: "wan" (14B dual-model) or "wan-5b" (5B local preview).
-        mode: "t2v", "i2v", or "s2v" (speech-to-video with lip sync).
+        mode: "t2v", "i2v", "s2v" (speech-to-video), or "animate" (motion transfer).
         audio_path: Path to audio file (required for s2v mode).
+        motion_video: Motion reference video filename (required for animate mode).
         optimization: "none", "balanced", "fast", or "turbo" (EasyCache presets)
         Other args passed through to the WAN workflow builders.
     """
@@ -1146,7 +1264,14 @@ def build_video_workflow(video_model: str, mode: str, prompt: str, seed: int,
     # Resolve split high/low noise LoRA variants if they exist on disk
     high_loras, low_loras = _resolve_wan_dual_loras(loras)
 
-    if mode == "s2v" and audio_path:
+    if mode == "animate" and image_name and motion_video:
+        # Animate: motion transfer from reference video to character
+        wf = build_wan_animate_workflow(prompt, image_name, motion_video, seed, clip_prefix, frames,
+                                         negative_prompt=negative_prompt, steps=steps,
+                                         loras=loras, high_loras=high_loras, low_loras=low_loras,
+                                         res_config=res_config, model_config=mc)
+        _insert_optimizations(wf, optimization, model_node="10")
+    elif mode == "s2v" and audio_path:
         # S2V: audio-driven video with lip sync
         wf = build_wan_s2v_workflow(prompt, audio_path, seed, clip_prefix, frames,
                                      negative_prompt=negative_prompt, steps=steps,
@@ -3183,18 +3308,29 @@ def cmd_produce(args):
         else:
             scene_denoise = base_denoise
 
-        # Scene mode: I2V for character scenes (with seed image), T2V for establishing shots.
-        # S2V (lip sync) is not yet enabled — dialogue scenes use I2V instead.
+        # Scene mode routing: animate (explicit), S2V for dialogue, I2V for character, T2V for establishing.
+        motion_video = getattr(args, "motion_video", None)
         scene_type = classify_scene_type(scene)
-        if scene_type == "s2v":
-            # S2V not ready yet — fall back to I2V for dialogue scenes
+        audio_for_s2v: str | None = None
+        if motion_video and seed_image:
+            # Explicit animate mode — motion transfer from reference video
+            mode = "animate"
+        elif scene_type == "s2v" and audio_file and Path(str(audio_file)).exists():
+            mode = "s2v"
+            audio_for_s2v = str(audio_file)
+        elif scene_type == "s2v":
+            # S2V scene but no audio available — fall back to I2V
             mode = "i2v" if seed_image else "t2v"
         elif scene_type == "i2v" and seed_image:
             mode = "i2v"
         else:
             mode = "t2v"
 
-        if mode == "i2v":
+        if mode == "animate":
+            print(f"      Mode: Animate (motion transfer) — ref: {motion_video}")
+        elif mode == "s2v":
+            print(f"      Mode: S2V (speech-to-video) — audio: {Path(audio_for_s2v).name}")
+        elif mode == "i2v":
             print(f"      Mode: I2V (dual-model) — seed: {seed_image}")
         else:
             print(f"      Mode: T2V")
@@ -3203,7 +3339,9 @@ def cmd_produce(args):
         wf = build_video_workflow(
             video_model, mode, prompt, seed, clip_prefix, frames, res_config,
             negative_prompt=neg, steps=args.steps, denoise=scene_denoise,
-            loras=scene_loras, image_name=seed_image, optimization=optimization,
+            loras=scene_loras, image_name=seed_image,
+            audio_path=audio_for_s2v, motion_video=motion_video,
+            optimization=optimization,
         )
 
         try:
@@ -3766,6 +3904,8 @@ def main():
                            help=f"IP-Adapter conditioning strength 0.0–1.0 (default: {IP_ADAPTER_DEFAULT_STRENGTH})")
     p_produce.add_argument("--lip-sync", action="store_true",
                            help="Apply Wav2Lip lip sync to dialogue scenes (requires Wav2Lip)")
+    p_produce.add_argument("--motion-video",
+                           help="Motion reference video for animate mode — character performs the motion from this video")
     p_produce.add_argument("--tts-engine", choices=["edge", "xtts"], default="edge",
                            help="TTS engine: edge (Edge-TTS, fast) or xtts (XTTS v2, voice cloning) (default: edge)")
 
@@ -3800,6 +3940,8 @@ def main():
     p_all.add_argument("--ip-adapter-strength", type=float, default=IP_ADAPTER_DEFAULT_STRENGTH)
     p_all.add_argument("--lip-sync", action="store_true",
                        help="Apply Wav2Lip lip sync to dialogue scenes")
+    p_all.add_argument("--motion-video",
+                       help="Motion reference video for animate mode")
     p_all.add_argument("--tts-engine", choices=["edge", "xtts"], default="edge",
                        help="TTS engine: edge or xtts (default: edge)")
 

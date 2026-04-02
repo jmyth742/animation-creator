@@ -15,11 +15,20 @@ Usage:
     # Force overwrite existing captions
     python scripts/auto_caption.py /workspace/datasets/my_character --trigger "ohwx person" --force
 
+    # Character-aware: omit features the LoRA should learn
+    python scripts/auto_caption.py /workspace/datasets/my_character --trigger "ohwx person" \
+        --character-features "red hair, blue eyes, leather jacket, scar on left cheek"
+
+    # Two-pass with Claude rewriting (best quality, requires ANTHROPIC_API_KEY)
+    python scripts/auto_caption.py /workspace/datasets/my_character --trigger "ohwx person" \
+        --character-features "red hair, blue eyes" --rewrite
+
 Requires: pip install transformers torch pillow
 Florence-2-base (~0.5GB) runs comfortably on 8GB VRAM.
 """
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -68,10 +77,103 @@ def caption_image(model, processor, image_path: str, device: str = "cuda") -> st
     return caption.get(task, result).strip()
 
 
-def format_caption(raw_caption: str, trigger: str, style_tags: str = "") -> str:
+def strip_character_features(caption: str, features: list[str]) -> str:
+    """Remove mentions of character-specific features from a caption.
+
+    The LoRA should learn these features from the images themselves — describing
+    them in the caption prevents the model from binding them to the trigger word.
+
+    Args:
+        caption: Raw or cleaned caption text.
+        features: List of feature phrases to remove, e.g. ["red hair", "blue eyes"].
+
+    Returns:
+        Caption with feature mentions stripped and cleaned up.
+    """
+    for feature in features:
+        feature = feature.strip()
+        if not feature:
+            continue
+        # Case-insensitive removal of the feature phrase
+        # Handle surrounding commas/conjunctions: "a person with red hair, wearing..."
+        # Pattern: optional leading "with/and/,/ " + feature + optional trailing ", /and"
+        patterns = [
+            # "with red hair" / "and red hair" / ", red hair"
+            rf",?\s*(?:with|and|featuring|has|having)?\s*{re.escape(feature)}",
+            # Standalone mention
+            rf"\b{re.escape(feature)}\b",
+        ]
+        for pat in patterns:
+            caption = re.sub(pat, "", caption, flags=re.IGNORECASE)
+
+    # Clean up leftover punctuation artifacts
+    caption = re.sub(r",\s*,", ",", caption)       # double commas
+    caption = re.sub(r"\.\s*,", ".", caption)       # period-comma
+    caption = re.sub(r",\s*\.", ".", caption)       # comma-period
+    caption = re.sub(r"\s{2,}", " ", caption)       # multiple spaces
+    caption = re.sub(r"^\s*,\s*", "", caption)      # leading comma
+    caption = re.sub(r",\s*$", "", caption)         # trailing comma
+    return caption.strip()
+
+
+def rewrite_caption_with_claude(
+    raw_caption: str,
+    trigger: str,
+    character_features: list[str],
+    style_tags: str = "",
+) -> str:
+    """Use Claude to rewrite a caption following LoRA training best practices.
+
+    Two-pass approach:
+    1. Florence-2 generates detailed raw caption (already done)
+    2. Claude rewrites following rules: use trigger word, omit character features,
+       describe background/environment in detail, specify camera/style.
+
+    Requires ANTHROPIC_API_KEY environment variable.
+    """
+    import anthropic
+    import os
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise RuntimeError("ANTHROPIC_API_KEY not set — cannot use --rewrite mode")
+
+    client = anthropic.Anthropic(api_key=api_key)
+
+    features_str = ", ".join(character_features) if character_features else "none specified"
+    style_note = f"\n- Append these style tags at the end: {style_tags}" if style_tags else ""
+
+    prompt = f"""Rewrite this image caption for LoRA training. Follow these rules strictly:
+
+- Start with the trigger word: "{trigger}"
+- DO NOT describe these character features (the LoRA learns them from images): {features_str}
+- DO describe: pose, action, expression, body language, clothing details NOT in the feature list
+- DO describe in detail: background, environment, lighting, colors, objects, atmosphere
+- DO describe: camera angle, shot type, framing
+- Keep it as one flowing sentence, no line breaks
+- Be specific and visual — avoid vague words like "beautiful" or "nice"{style_note}
+
+Raw caption from Florence-2:
+{raw_caption}
+
+Rewritten caption:"""
+
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=300,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return response.content[0].text.strip()
+
+
+def format_caption(raw_caption: str, trigger: str, style_tags: str = "",
+                   character_features: list[str] | None = None) -> str:
     """Format a raw Florence caption into LoRA training format.
 
     Output: "{trigger}, {cleaned_caption}, {style_tags}"
+
+    If character_features is provided, strips those features from the caption
+    so the LoRA can learn them from images rather than text.
     """
     # Clean up common Florence artifacts
     caption = raw_caption.strip()
@@ -84,6 +186,10 @@ def format_caption(raw_caption: str, trigger: str, style_tags: str = "") -> str:
         if caption.lower().startswith(prefix.lower()):
             caption = caption[len(prefix):]
             break
+
+    # Strip character features if specified
+    if character_features:
+        caption = strip_character_features(caption, character_features)
 
     # Ensure starts with lowercase (natural continuation after trigger)
     if caption and caption[0].isupper():
@@ -106,6 +212,20 @@ def main():
     parser.add_argument("--force", action="store_true", help="Overwrite existing captions")
     parser.add_argument("--preview", action="store_true", help="Print captions without saving")
     parser.add_argument("--device", default="cuda", choices=["cuda", "cpu"], help="Device (default: cuda)")
+    parser.add_argument(
+        "--character-features",
+        default="",
+        help="Comma-separated character features to OMIT from captions. "
+             "These are visual traits the LoRA should learn from images, not text. "
+             "E.g. 'red hair, blue eyes, leather jacket, scar on left cheek'"
+    )
+    parser.add_argument(
+        "--rewrite",
+        action="store_true",
+        help="Two-pass mode: Florence-2 generates raw caption, then Claude rewrites "
+             "following LoRA best practices. Requires ANTHROPIC_API_KEY. Uses claude-haiku-4-5 "
+             "(fast + cheap). Best caption quality but slower."
+    )
 
     args = parser.parse_args()
     dataset_dir = Path(args.dataset_dir)
@@ -113,6 +233,9 @@ def main():
     if not dataset_dir.is_dir():
         print(f"ERROR: {dataset_dir} is not a directory")
         sys.exit(1)
+
+    # Parse character features
+    char_features = [f.strip() for f in args.character_features.split(",") if f.strip()] if args.character_features else []
 
     # Find all images
     images = sorted(
@@ -127,6 +250,10 @@ def main():
     print(f"  Trigger: {args.trigger}")
     if args.style:
         print(f"  Style tags: {args.style}")
+    if char_features:
+        print(f"  Character features to omit: {', '.join(char_features)}")
+    if args.rewrite:
+        print(f"  Two-pass mode: Florence-2 → Claude rewrite")
     print()
 
     # Load model
@@ -150,7 +277,17 @@ def main():
 
         # Generate caption
         raw = caption_image(model, processor, str(img_path), device=args.device)
-        formatted = format_caption(raw, args.trigger, args.style)
+
+        if args.rewrite:
+            # Two-pass: Claude rewrites the Florence caption
+            try:
+                formatted = rewrite_caption_with_claude(raw, args.trigger, char_features, args.style)
+            except Exception as e:
+                print(f"  WARNING: Claude rewrite failed for {img_path.name}: {e}")
+                print(f"           Falling back to local formatting")
+                formatted = format_caption(raw, args.trigger, args.style, char_features)
+        else:
+            formatted = format_caption(raw, args.trigger, args.style, char_features)
 
         if args.preview:
             print(f"  {img_path.name}:")
