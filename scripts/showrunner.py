@@ -1093,7 +1093,7 @@ def build_wan_s2v_workflow(prompt: str, audio_path: str, seed: int, clip_prefix:
         "5": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": negative_prompt}},
 
         # Audio encoding
-        "40": {"class_type": "AudioEncoderLoader", "inputs": {"audio_encoder_name": "wan2.2_audio_encoder.safetensors"}},
+        "40": {"class_type": "AudioEncoderLoader", "inputs": {"audio_encoder_name": "wav2vec2_large_english_fp16.safetensors"}},
         "41": {"class_type": "LoadAudio", "inputs": {"audio": audio_path}},
         "42": {"class_type": "AudioEncoderEncode", "inputs": {"audio_encoder": ["40", 0], "audio": ["41", 0]}},
     }
@@ -1724,29 +1724,37 @@ def queue_prompt(workflow: dict) -> str:
 
 def poll_until_done(prompt_id: str, poll_interval: int = 10, max_wait: int = 1800) -> bool:
     elapsed = 0
+    inactive_checks = 0  # how many consecutive polls the job was absent from queue
     while elapsed < max_wait:
         try:
             r = requests.get(f"{SERVER}/history/{prompt_id}")
             history = r.json()
             if prompt_id in history:
-                if history[prompt_id].get("outputs"):
-                    return True
-                status = history[prompt_id].get("status", {})
-                if status.get("status_str") == "error":
+                entry = history[prompt_id]
+                status_str = entry.get("status", {}).get("status_str", "")
+                if status_str == "error":
+                    msg = entry.get("status", {}).get("messages", [])
+                    print(f"\n      ComfyUI error: {msg[:200] if msg else 'unknown'}")
                     return False
+                # outputs can be {} briefly before populated — check status_str
+                # or non-empty outputs dict
+                if entry.get("outputs") or status_str == "success":
+                    return True
             q = requests.get(f"{SERVER}/queue").json()
             is_active = any(
                 item[1] == prompt_id
                 for item in q.get("queue_running", []) + q.get("queue_pending", [])
             )
             if is_active:
+                inactive_checks = 0
                 print(f"\r    Running... ({elapsed}s)    ", end="", flush=True)
-            elif elapsed > 30:
-                time.sleep(5)
-                r2 = requests.get(f"{SERVER}/history/{prompt_id}")
-                if prompt_id in r2.json() and r2.json()[prompt_id].get("outputs"):
-                    return True
-                return False
+            else:
+                inactive_checks += 1
+                print(f"\r    Finalizing... ({elapsed}s)    ", end="", flush=True)
+                # Give ComfyUI time to write outputs after job leaves queue.
+                # Only give up after 6 consecutive inactive polls (~60s of no activity).
+                if inactive_checks >= 6:
+                    return False
         except requests.ConnectionError:
             print(f"\r    Reconnecting... ({elapsed}s)", end="", flush=True)
         time.sleep(poll_interval)
@@ -3315,7 +3323,8 @@ def cmd_produce(args):
         if motion_video and seed_image:
             # Explicit animate mode — motion transfer from reference video
             mode = "animate"
-        elif scene_type == "s2v" and audio_file and Path(str(audio_file)).exists():
+        elif (scene_type == "s2v" and audio_file and Path(str(audio_file)).exists()
+              and (COMFYUI_DIR / "models" / "audio_encoders" / "wav2vec2_large_english_fp16.safetensors").exists()):
             mode = "s2v"
             audio_for_s2v = str(audio_file)
         elif scene_type == "s2v":
@@ -3335,7 +3344,7 @@ def cmd_produce(args):
         else:
             print(f"      Mode: T2V")
 
-        optimization = getattr(args, "optimization", "none")
+        optimization = getattr(args, "optimization", "balanced")
         wf = build_video_workflow(
             video_model, mode, prompt, seed, clip_prefix, frames, res_config,
             negative_prompt=neg, steps=args.steps, denoise=scene_denoise,
@@ -3349,8 +3358,25 @@ def cmd_produce(args):
         except requests.ConnectionError:
             print(f"      ERROR: ComfyUI not running at {SERVER}")
             sys.exit(1)
+        except requests.HTTPError as e:
+            print(f"      ERROR: ComfyUI rejected workflow — {e}")
+            continue
 
         success = poll_until_done(prompt_id)
+        if not success:
+            # Check if clip was actually generated despite polling failure
+            clip_path = find_latest_clip(clip_prefix)
+            if clip_path:
+                print(f"\n      Polling lost track but clip was generated — recovering")
+                success = True
+            else:
+                # Retry once: re-queue the same workflow
+                print(f"\n      WARNING: Generation may have failed — retrying once...")
+                try:
+                    prompt_id = queue_prompt(wf)
+                    success = poll_until_done(prompt_id)
+                except (requests.ConnectionError, requests.HTTPError) as e:
+                    print(f"      Retry failed: {e}")
         if success:
             print(f"\n      Done!")
             clip_path = find_latest_clip(clip_prefix)
@@ -3359,7 +3385,7 @@ def cmd_produce(args):
                 if extract_last_frame(clip_path, frame_path):
                     current_image = f"chain_{clip_prefix}.png"
         else:
-            print(f"\n      WARNING: May have failed")
+            print(f"\n      FAILED: Clip not generated after retry")
 
     # ─── Save end-frame for next episode's carry-over ────────────
     # current_image is the last chain frame filename (relative to COMFYUI_INPUT).
@@ -3894,8 +3920,8 @@ def main():
                            help="Interpolate frames with RIFE for smoother motion (2x, requires rife-ncnn-vulkan)")
     p_produce.add_argument("--video-model", choices=["wan", "wan-5b"], default="wan",
                            help="Video model: wan (14B dual-model) or wan-5b (5B local preview) (default: wan)")
-    p_produce.add_argument("--optimization", choices=["none", "balanced", "fast", "turbo"], default="none",
-                           help="Speed optimization: none, balanced (30%% faster), fast (50%% faster), turbo (60%% faster, lower quality)")
+    p_produce.add_argument("--optimization", choices=["none", "balanced", "fast", "turbo"], default="balanced",
+                           help="Speed optimization: none, balanced (30%% faster, default), fast (50%% faster), turbo (60%% faster, lower quality)")
     p_produce.add_argument("--resolution", choices=["480p", "720p", "auto"], default="auto",
                            help="Generation resolution: 480p (8GB), 720p (24GB+), auto (detect VRAM) (default: auto)")
     p_produce.add_argument("--ip-adapter", action="store_true",
@@ -3931,8 +3957,8 @@ def main():
                        help="Interpolate frames with RIFE (2x smoother motion)")
     p_all.add_argument("--video-model", choices=["wan", "wan-5b"], default="wan",
                        help="Video model: wan (14B dual-model) or wan-5b (5B local preview) (default: wan)")
-    p_all.add_argument("--optimization", choices=["none", "balanced", "fast", "turbo"], default="none",
-                       help="Speed optimization preset")
+    p_all.add_argument("--optimization", choices=["none", "balanced", "fast", "turbo"], default="balanced",
+                       help="Speed optimization preset (default: balanced)")
     p_all.add_argument("--resolution", choices=["480p", "720p", "auto"], default="auto",
                        help="Generation resolution (default: auto)")
     p_all.add_argument("--ip-adapter", action="store_true",

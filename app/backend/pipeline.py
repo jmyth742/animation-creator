@@ -253,7 +253,7 @@ def produce_episode_job(
     denoise: float = showrunner.DEFAULT_DENOISE,
     *,
     video_model: str = "wan",
-    optimization: str = "none",
+    optimization: str = "balanced",
     resolution: str = "auto",
     enhance: bool = True,
     upscale: bool = False,
