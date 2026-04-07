@@ -687,11 +687,22 @@ def generate_episode_audio(episode: dict, bible: dict, output_dir: Path) -> list
         if spoken_parts:
             full_text = " ".join(spoken_parts)
 
-            # Warn if spoken text is likely longer than the video clip
+            # Auto-truncate if spoken text is likely longer than the video clip
             word_count = len(full_text.split())
             est_dur = word_count / TTS_WPS
             if est_dur > clip_dur + 0.3:
-                print(f"    WARNING: {scene['id']} audio ~{est_dur:.1f}s but clip is {clip_dur}s — text will be cut off")
+                max_words = int(clip_dur * TTS_WPS * 0.9)  # 10% safety margin
+                if word_count > max_words:
+                    words = full_text.split()
+                    truncated = " ".join(words[:max_words])
+                    # Try to cut at a sentence/clause boundary
+                    last_period = truncated.rfind(".")
+                    last_comma = truncated.rfind(",")
+                    cut_point = max(last_period, last_comma)
+                    if cut_point > len(truncated) * 0.6:
+                        truncated = truncated[:cut_point + 1]
+                    print(f"    {scene['id']}: trimmed audio text from {word_count} to {len(truncated.split())} words to fit {clip_dur}s")
+                    full_text = truncated
 
             # Use narrator voice for narration, character voice for dialogue-only
             voice = narrator_voice
@@ -1453,14 +1464,18 @@ def build_scene_prompt(scene: dict, bible: dict) -> str:
         if shot_type in shot_labels:
             parts.append(shot_labels[shot_type])
 
-    # 2. Character trigger words — LoRAs carry the visual knowledge
+    # 2. Character trigger words — LoRAs carry the visual knowledge;
+    #    for characters without LoRAs, inject a brief visual description instead
     for char_id in characters:
         char = bible.get("characters", {}).get(char_id)
         if not char:
             continue
-        trigger = char.get("trigger_word", "") if char.get("lora_path") else ""
-        if trigger:
-            parts.append(trigger)
+        if char.get("lora_path"):
+            trigger = char.get("trigger_word", "")
+            if trigger:
+                parts.append(trigger)
+        elif char.get("visual"):
+            parts.append(_char_brief(char))
 
     # 3. Scene visual — the action / composition (what the user wrote)
     parts.append(visual)
@@ -1604,6 +1619,7 @@ def enhance_scene_prompt(scene: dict, bible: dict, base_prompt: str) -> str:
     Ask Claude to rewrite a raw scene visual description as a precise
     cinematographer-style video generation prompt.
     Falls back to base_prompt if Claude call fails.
+    Trigger words are re-injected post-hoc to guarantee LoRA activation.
     """
     is_dialogue = bool(scene.get("dialogue"))
     visual_lower = scene.get("visual", "").lower()
@@ -1617,32 +1633,48 @@ def enhance_scene_prompt(scene: dict, bible: dict, base_prompt: str) -> str:
     else:
         scene_type = "action/movement — camera can follow subject"
 
+    # Collect trigger words from characters and location
+    trigger_words = []
     char_descs = []
     for cid in scene.get("characters", []):
         char = bible.get("characters", {}).get(cid, {})
         if char:
             char_descs.append(f"{char.get('name', cid)}: {char.get('visual', '')}")
+            tw = char.get("trigger_word", "")
+            if tw and char.get("lora_path"):
+                trigger_words.append(tw)
 
     loc_id = scene.get("location", "")
     loc_desc = bible.get("world", {}).get("locations", {}).get(loc_id, loc_id)
+    loc_meta = bible.get("locations_meta", {}).get(loc_id, {})
+    if isinstance(loc_meta, dict) and loc_meta.get("trigger_word") and loc_meta.get("lora_path"):
+        trigger_words.append(loc_meta["trigger_word"])
+
     clip_sec = CLIP_LENGTHS.get(scene.get("clip_length", "medium"), CLIP_LENGTHS["medium"])["seconds"]
+
+    trigger_line = ", ".join(trigger_words) if trigger_words else ""
 
     system = (
         "You are a senior cinematographer's assistant specialising in animated short-form drama. "
         "Rewrite rough scene descriptions into precise, evocative video generation prompts. "
+        "IMPORTANT: Preserve all character and location names exactly as given — "
+        "these are trigger words for visual model conditioning. "
         "Return ONLY the enhanced prompt text — no explanation, no preamble, no markdown."
     )
 
     user = f"""SCENE TYPE: {scene_type}
 CLIP LENGTH: {scene.get('clip_length', 'medium')} ({clip_sec}s)
 RAW DESCRIPTION: {scene['visual']}
-CHARACTERS: {chr(10).join(char_descs) if char_descs else 'none'}
+CHARACTERS (integrate their appearance into the prompt):
+{chr(10).join(char_descs) if char_descs else 'none'}
 LOCATION: {loc_desc}
 SERIES STYLE: {bible['series']['style']}
+{f"TRIGGER WORDS (must appear verbatim in your output): {trigger_line}" if trigger_line else ""}
 
 Rewrite as a single paragraph (90–120 words) that:
 - Leads with exact shot type (Medium two-shot / Extreme close-up / Wide establishing shot / etc.)
 - Names the precise lighting setup (hard sidelight, harsh white searchlight, warm amber streetlight, etc.)
+- References each character's visual appearance (clothing, hair, features) at least once
 - Describes character pose and expression if present
 - Specifies camera movement exactly (static locked-off / slow 2mm push-in / handheld drift / etc.)
 - Includes depth-of-field note (shallow / deep / rack focus)
@@ -1652,10 +1684,19 @@ For dialogue scenes: static camera and clear face visibility are non-negotiable.
 For establishing shots: prioritise atmosphere and environment."""
 
     try:
-        return call_claude(system, user, max_tokens=300).strip()
+        enhanced = call_claude(system, user, max_tokens=300).strip()
     except Exception as e:
         print(f"      Prompt enhancement failed ({e}) — using base prompt")
         return base_prompt
+
+    # Post-hoc: re-inject any trigger words Claude may have dropped
+    if trigger_words:
+        enhanced_lower = enhanced.lower()
+        missing = [tw for tw in trigger_words if tw.lower() not in enhanced_lower]
+        if missing:
+            enhanced = ", ".join(missing) + ". " + enhanced
+
+    return enhanced
 
 
 # ─── Clip validation ──────────────────────────────────────────────────
@@ -2510,7 +2551,12 @@ def get_scene_seed_image(scene: dict, series_name: str, current_chain: str | Non
     # consistency mechanism for this model (IP-Adapter is not compatible).
     has_characters = bool(scene.get("characters"))
     if has_characters and not is_establishing:
-        char_key = scene["characters"][0]                          # e.g. "char_1"
+        # For dialogue, prefer the first speaking character's portrait
+        if is_dialogue and scene.get("dialogue"):
+            first_speaker = scene["dialogue"][0].get("character", scene["characters"][0])
+            char_key = first_speaker if first_speaker in scene["characters"] else scene["characters"][0]
+        else:
+            char_key = scene["characters"][0]                      # e.g. "char_1"
         char_id  = char_key.removeprefix("char_")                  # e.g. "1"
         char_ref = ref_dir / f"char_{char_id}.png"
         if char_ref.exists():
@@ -3230,6 +3276,8 @@ def cmd_produce(args):
         carry_over_image = copy_to_input(str(prev_endframe))
         print(f"\n  Cross-episode carry-over: using ep{ep_num - 1:02d} end-frame as scene-1 seed")
 
+    ref_dir = sp / "reference_images"
+
     print(f"\n  Generating video clips...")
     current_image = None
     if args.image:
@@ -3327,6 +3375,14 @@ def cmd_produce(args):
               and (COMFYUI_DIR / "models" / "audio_encoders" / "wav2vec2_large_english_fp16.safetensors").exists()):
             mode = "s2v"
             audio_for_s2v = str(audio_file)
+            # Ensure S2V has a ref_image for character consistency
+            if not seed_image and scene.get("characters"):
+                char_key = scene["characters"][0]
+                char_id = char_key.removeprefix("char_")
+                char_ref = ref_dir / f"char_{char_id}.png"
+                if char_ref.exists():
+                    seed_image = copy_to_input(str(char_ref))
+                    print(f"      S2V ref_image fallback: {char_key} portrait")
         elif scene_type == "s2v":
             # S2V scene but no audio available — fall back to I2V
             mode = "i2v" if seed_image else "t2v"
@@ -3386,6 +3442,18 @@ def cmd_produce(args):
                     current_image = f"chain_{clip_prefix}.png"
         else:
             print(f"\n      FAILED: Clip not generated after retry")
+            # Reset chain to character portrait so next scene doesn't use stale frame
+            if scene.get("characters"):
+                fallback_char = scene["characters"][0]
+                fallback_id = fallback_char.removeprefix("char_")
+                fallback_ref = ref_dir / f"char_{fallback_id}.png"
+                if fallback_ref.exists():
+                    current_image = copy_to_input(str(fallback_ref))
+                    print(f"      Chain reset to {fallback_char} portrait")
+                else:
+                    print(f"      WARNING: Chain broken — no portrait fallback for {fallback_char}")
+            else:
+                print(f"      WARNING: Chain broken — no characters in scene for fallback")
 
     # ─── Save end-frame for next episode's carry-over ────────────
     # current_image is the last chain frame filename (relative to COMFYUI_INPUT).
