@@ -3607,6 +3607,29 @@ def cmd_produce(args):
     else:
         print(f"    All {len(val_results)} clips OK")
 
+    # ─── Auto-analyse with Claude vision ─────────────────────────
+    use_auto_analyse = getattr(args, "auto_analyse", False)
+    if use_auto_analyse:
+        print(f"\n  Running Claude vision analysis...")
+        analysis_results = analyse_episode_clips(ep, bible, ep_out)
+        flagged_by_analysis = set()
+        for ar in analysis_results:
+            if ar.get("should_regenerate"):
+                flagged_by_analysis.add(ar["scene_id"])
+            # Update prompt cache with improved prompts from analysis
+            improved = ar.get("improved_prompt")
+            if improved and ar["scene_id"] not in prompt_cache:
+                prompt_cache[ar["scene_id"]] = improved
+        if flagged_by_analysis:
+            flags = load_flags(ep_out)
+            flags.update(flagged_by_analysis)
+            save_flags(ep_out, flags)
+            save_prompt_cache(ep_out, prompt_cache)
+            print(f"  Analysis flagged {len(flagged_by_analysis)} clip(s) for regeneration")
+            print(f"  Re-run with --flagged-only --enhance to regenerate with improved prompts")
+        else:
+            print(f"  All clips passed analysis")
+
     # ─── Lip sync (dialogue scenes only) ─────────────────────────
     use_lip_sync = getattr(args, "lip_sync", False)
     if use_lip_sync:
@@ -4128,6 +4151,8 @@ def main():
                            help="Motion reference video for animate mode — character performs the motion from this video")
     p_produce.add_argument("--tts-engine", choices=["edge", "xtts"], default="edge",
                            help="TTS engine: edge (Edge-TTS, fast) or xtts (XTTS v2, voice cloning) (default: edge)")
+    p_produce.add_argument("--auto-analyse", action="store_true",
+                           help="After production, run Claude vision analysis on all clips and flag low-scoring ones")
 
     p_all = sub.add_parser("produce-all", help="Produce all episodes")
     p_all.add_argument("series")
