@@ -35,7 +35,9 @@ cd /workspace/text-to-video
 
 # Source API key from .env if available
 if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
+    set -a
+    source .env
+    set +a
 fi
 
 if [ -z "$ANTHROPIC_API_KEY" ]; then

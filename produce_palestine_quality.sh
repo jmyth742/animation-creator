@@ -19,7 +19,9 @@ export PYTHONUNBUFFERED=1
 cd /workspace/text-to-video
 
 if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
+    set -a
+    source .env
+    set +a
 fi
 
 if [ -z "$ANTHROPIC_API_KEY" ]; then
