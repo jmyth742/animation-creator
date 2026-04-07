@@ -30,10 +30,10 @@
 
 | Issue | Priority | Impact |
 |-------|----------|--------|
-| **LoRA training targets HunyuanVideo, not Wan** | 🔴 Critical | Trained LoRAs won't load in Wan 2.2 — different architecture (`WanAttentionBlock` vs `MMDoubleStreamBlock`) |
+| ~~**LoRA training targets HunyuanVideo, not Wan**~~ | ✅ Done | Training orchestrator updated to Wan 2.2 (`Comfy-Org/Wan_2.2_ComfyUI_Repackaged`) |
 | ~~**No S2V (Speech-to-Video)**~~ | ✅ Done | S2V workflow wired into production loop — dialogue scenes auto-route to S2V with TTS audio |
 | ~~**No scene-type routing**~~ | ✅ Done | `classify_scene_type()` routes dialogue→S2V, characters→I2V, establishing→T2V |
-| **No TI2V-5B config** | 🟡 Medium | Can't preview on local 8GB GPU — must use RunPod for everything |
+| ~~**No TI2V-5B config**~~ | ✅ Done | `wan-5b` model config added — single-model 5B at 480p on 8GB VRAM |
 | ~~**Wan 2.1 VAE instead of 2.2**~~ | ✅ Done | Updated to `wan2.2_vae.safetensors` across all configs and workflows |
 | ~~**No Wan-Animate integration**~~ | ✅ Done | `build_wan_animate_workflow()` + `--motion-video` CLI flag + dispatch wiring |
 | ~~**Captioning doesn't follow LoRA best practices**~~ | ✅ Done | `--character-features` strips learned traits, `--rewrite` uses Claude for best-practice captions |
@@ -42,78 +42,25 @@
 
 ## Improvement Plan
 
-### Phase 1: Fix LoRA Training Target (Critical)
+### Phase 1: Fix LoRA Training Target ✅ DONE
 
-**Problem:** `training/configs/character_lora.toml`, `style_lora.toml`, and `motion_lora.toml` all reference:
-```
-pretrained_model_name_or_path = "/workspace/models/hunyuan_video_I2V_720_fp16.safetensors"
-```
-This produces HunyuanVideo LoRAs that are architecturally incompatible with Wan 2.2.
-
-**Fix:**
-1. Update all training configs to point at Wan 2.2 base model weights
-2. Update `training_orchestrator.py` HuggingFace references to download Wan 2.2 models:
-   - DiT: `Wan-AI/Wan2.2-I2V-A14B` or `Wan-AI/Wan2.2-T2V-A14B`
-   - VAE: `Wan-AI/Wan2.2-TI2V-5B` (includes new VAE)
-   - Text encoder: `umt5-xxl` (same across Wan versions)
-3. Update `runpod/train_wan_lora.sh` to use Wan 2.2 model paths
-4. Verify musubi-tuner supports Wan 2.2 MoE architecture for LoRA extraction
-5. If musubi-tuner doesn't support Wan 2.2 yet, fall back to training on Wan 2.1 14B (LoRAs may transfer to 2.2 with reduced effectiveness — test this)
-
-**Files to modify:**
-- `training/configs/character_lora.toml`
-- `training/configs/style_lora.toml`
-- `training/configs/motion_lora.toml`
-- `runpod/training_orchestrator.py` (HF model references)
-- `runpod/train_wan_lora.sh`
-- `training/setup.sh` (model download step)
+Training orchestrator and all configs updated to use Wan 2.2 models from `Comfy-Org/Wan_2.2_ComfyUI_Repackaged`:
+- DiT: `wan2.2_t2v_low_noise_14B_fp16.safetensors`
+- VAE: `wan2.2_vae.safetensors`
+- Text encoder: `qwen_2.5_vl_7b_fp8_scaled.safetensors` + `byt5_small_glyphxl_fp16.safetensors`
+- Training uses musubi-tuner with `hv_1_5_train_network.py` (Wan-compatible)
+- Both remote (RunPod) and local training paths use Wan 2.2 weights
 
 ---
 
-### Phase 2: Add TI2V-5B Config for Local Preview
+### Phase 2: Add TI2V-5B Config for Local Preview ✅ DONE
 
-**Problem:** Only 14B MoE configs exist — can't run anything on the RTX 4070 Laptop (8GB VRAM).
-
-**Fix:** Add `wan_5b` model config to `showrunner.py`:
-
-```python
-"wan_5b": {
-    "label": "WAN 2.2 TI2V-5B (local preview)",
-    "fps": 24,
-    "cfg": 5.0,
-    "sampler": "uni_pc_bh2",
-    "scheduler": "simple",
-    "dual_model": False,  # 5B is a single dense model, NOT MoE
-    "clip_lengths": {
-        "short":  {"frames": 33, "seconds": 1.4},
-        "medium": {"frames": 49, "seconds": 2.0},
-        "long":   {"frames": 81, "seconds": 3.4},
-    },
-    "quality_steps": {"draft": 10, "good": 20, "final": 30},
-    "resolutions": {
-        "480p": {
-            "width": 832, "height": 480, "shift": 12.0,
-            "t2v_unet": "wan2.2_ti2v_5B.safetensors",  # Single model handles both T2V and I2V
-            "i2v_unet": "wan2.2_ti2v_5B.safetensors",
-            "min_vram_gb": 8, "label": "480p (832×480)",
-        },
-    },
-    "text_encoders": {
-        "clip1": "umt5-xxl-encoder-Q8_0.gguf",
-        "clip_type": "wan",
-    },
-    "vae": "wan2.2_vae.safetensors",  # New high-compression VAE
-    "clip_vision": "sigclip_vision_patch14_384.safetensors",
-    "lora_loader": "LoraLoaderModelOnly",
-}
-```
-
-**Also:** Add non-MoE workflow builder (single sampler pass, no `SplitSigmas`).
-
-**Files to modify:**
-- `scripts/showrunner.py` — add `wan_5b` config + single-model workflow builder
-- `app/backend/pipeline.py` — pass model choice through to showrunner
-- CLI: `--video-model wan_5b` option
+Added `wan-5b` model config to showrunner.py:
+- Single-model `wan2.2_ti2v_5B_Q4_K_S.gguf` for both T2V and I2V (no dual-model handoff)
+- 480p at 8GB VRAM minimum, shift=5.0
+- Lower quality steps: draft=10, good=20, final=30
+- CLI: `--video-model wan-5b` on `produce` and `produce-all` commands
+- I2V workflow auto-detects single-model via missing `i2v_dual_model` key → uses single KSampler
 
 ---
 
@@ -221,8 +168,8 @@ python scripts/showrunner.py produce my_series --episode 1 --video-model wan_5b
 
 ## Priority Order
 
-1. **Phase 1** — Fix LoRA training target (critical bug, blocks all LoRA work)
-2. **Phase 2** — TI2V-5B local preview (quick win, unblocks local iteration)
+1. ~~**Phase 1** — Fix LoRA training target~~ ✅
+2. ~~**Phase 2** — TI2V-5B local preview~~ ✅
 3. ~~**Phase 3** — Wan 2.2 VAE~~ ✅
 4. ~~**Phase 4** — Scene-type routing~~ ✅
 5. ~~**Phase 5** — S2V integration~~ ✅

@@ -59,7 +59,7 @@ HF_TE_FILE = "split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors"
 HF_BYT5_REPO = "Comfy-Org/Wan_2.2_ComfyUI_Repackaged"
 HF_BYT5_FILE = "split_files/text_encoders/byt5_small_glyphxl_fp16.safetensors"
 HF_AUDIO_ENC_REPO = "Comfy-Org/Wan_2.2_ComfyUI_Repackaged"
-HF_AUDIO_ENC_FILE = "split_files/audio_encoders/wan2.2_audio_encoder.safetensors"
+HF_AUDIO_ENC_FILE = "split_files/audio_encoders/wav2vec2_large_english_fp16.safetensors"
 HF_ANIMATE_REPO = "Wan-AI/Wan2.2-Animate-14B"
 HF_ANIMATE_FILE = "diffusion_pytorch_model.safetensors"
 

@@ -156,8 +156,8 @@ download_hf "Comfy-Org/HunyuanVideo_1.5_repackaged" \
 
 # Audio encoder (S2V lip sync)
 download_hf "Comfy-Org/Wan_2.2_ComfyUI_Repackaged" \
-    "split_files/audio_encoders/wan2.2_audio_encoder.safetensors" \
-    "$AE_DIR/wan2.2_audio_encoder.safetensors"
+    "split_files/audio_encoders/wav2vec2_large_english_fp16.safetensors" \
+    "$AE_DIR/wav2vec2_large_english_fp16.safetensors"
 
 # Animate model (optional — motion transfer, ~28GB, uncomment if needed)
 # download_hf "Wan-AI/Wan2.2-Animate-14B" \
