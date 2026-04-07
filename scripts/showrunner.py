@@ -644,119 +644,215 @@ Return ONLY valid JSON, no markdown."""
 
 # ─── TTS ─────────────────────────────────────────────────────────────
 
-async def generate_tts_scene(text: str, voice: str, output_path: str):
-    """Generate TTS audio for a single scene."""
+# Per-voice speaking rates (measured from Edge-TTS output)
+VOICE_WPS: dict[str, float] = {
+    "en-US-JennyNeural": 3.0,
+    "en-US-AmberNeural": 2.8,
+    "en-US-AriaNeural": 2.9,
+    "en-US-GuyNeural": 2.9,
+    "en-US-ChristopherNeural": 2.7,
+    "en-US-RogerNeural": 2.8,
+    "en-GB-RyanNeural": 2.3,
+    "en-GB-SoniaNeural": 2.2,
+    "en-GB-ThomasNeural": 2.4,
+    "en-GB-AmberNeural": 2.6,
+    "en-GB-GeorgeNeural": 2.3,
+}
+DEFAULT_WPS = 2.5
+
+
+async def generate_tts_scene(text: str, voice: str, output_path: str,
+                             rate: str = "+0%", pitch: str = "+0Hz"):
+    """Generate TTS audio for a single scene with optional prosody control."""
     import edge_tts
-    communicate = edge_tts.Communicate(text, voice)
+    communicate = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch)
     await communicate.save(output_path)
 
 
+def _concat_audio_files(parts: list[str], output_path: str):
+    """Concatenate multiple audio files into one using ffmpeg."""
+    if len(parts) == 1:
+        shutil.copy2(parts[0], output_path)
+        return
+    # Build concat filter
+    inputs = []
+    filter_parts = []
+    for i, p in enumerate(parts):
+        inputs += ["-i", p]
+        filter_parts.append(f"[{i}:a]")
+    filter_str = f"{''.join(filter_parts)}concat=n={len(parts)}:v=0:a=1[out]"
+    subprocess.run([
+        "ffmpeg", "-y", *inputs,
+        "-filter_complex", filter_str,
+        "-map", "[out]", "-c:a", "libmp3lame", "-b:a", "128k", output_path,
+    ], capture_output=True, timeout=60)
+
+
+def _get_character_prosody(char: dict) -> tuple[str, str]:
+    """Return (rate, pitch) for Edge-TTS based on character voice_notes."""
+    notes = (char.get("voice_notes", "") + " " + char.get("style", "")).lower()
+    rate = "+0%"
+    pitch = "+0Hz"
+    # Adjust speech style based on character description
+    if any(w in notes for w in ["nasal", "wheedling", "scheming", "nervous"]):
+        rate = "+5%"
+        pitch = "+15Hz"  # slightly higher, more strained
+    elif any(w in notes for w in ["fierce", "determined", "confident", "bold"]):
+        rate = "-5%"
+        pitch = "-10Hz"  # slightly lower, more grounded
+    elif any(w in notes for w in ["wry", "sardonic", "detached", "dry"]):
+        rate = "-8%"
+        pitch = "-5Hz"  # slow, measured delivery
+    elif any(w in notes for w in ["warm", "gentle", "kind", "soft"]):
+        rate = "-3%"
+        pitch = "-5Hz"
+    return rate, pitch
+
+
 def generate_episode_audio(episode: dict, bible: dict, output_dir: Path) -> list[Path]:
-    """Generate TTS audio for each scene, return list of audio file paths."""
+    """Generate TTS audio for each scene with per-character voices."""
     audio_dir = output_dir / "audio"
     audio_dir.mkdir(parents=True, exist_ok=True)
 
     narrator_voice = bible.get("narrator", {}).get("voice", "en-US-GuyNeural")
+    narrator_prosody = _get_character_prosody(bible.get("narrator", {}))
     audio_files = []
-
-    TTS_WPS = 2.5  # words per second (Edge-TTS typical rate)
 
     for scene in episode["scenes"]:
         audio_path = audio_dir / f"{scene['id']}.mp3"
         cl = CLIP_LENGTHS.get(scene.get("clip_length", "long"), CLIP_LENGTHS["long"])
         clip_dur = cl["seconds"]
 
-        # Build the spoken text for this scene
-        spoken_parts = []
+        has_narration = bool(scene.get("narration"))
+        has_dialogue = bool(scene.get("dialogue"))
 
-        if scene.get("narration"):
-            spoken_parts.append(scene["narration"])
+        if not has_narration and not has_dialogue:
+            audio_files.append(None)  # Silent scene
+            continue
 
-        if scene.get("dialogue"):
-            has_narration = bool(scene.get("narration"))
-            for d in scene["dialogue"]:
-                if has_narration:
-                    # Mixed scene narrated by narrator — prefix with name so it's clear who speaks
-                    char = bible.get("characters", {}).get(d["character"], {})
-                    name = char.get("name", d["character"])
-                    spoken_parts.append(f"{name}: {d['line']}")
-                else:
-                    # Pure dialogue scene — character voice is used, no prefix needed
-                    spoken_parts.append(d["line"])
+        # Skip if audio already exists (resume mode)
+        if audio_path.exists():
+            audio_files.append(audio_path)
+            continue
 
-        if spoken_parts:
-            full_text = " ".join(spoken_parts)
+        try:
+            audio_parts: list[str] = []
+            temp_dir = audio_dir / f"{scene['id']}_parts"
+            temp_dir.mkdir(exist_ok=True)
 
-            # Auto-truncate if spoken text is likely longer than the video clip
-            word_count = len(full_text.split())
-            est_dur = word_count / TTS_WPS
-            if est_dur > clip_dur + 0.3:
-                max_words = int(clip_dur * TTS_WPS * 0.9)  # 10% safety margin
-                if word_count > max_words:
-                    words = full_text.split()
-                    truncated = " ".join(words[:max_words])
-                    # Try to cut at a sentence/clause boundary
-                    last_period = truncated.rfind(".")
-                    last_comma = truncated.rfind(",")
-                    cut_point = max(last_period, last_comma)
-                    if cut_point > len(truncated) * 0.6:
-                        truncated = truncated[:cut_point + 1]
-                    print(f"    {scene['id']}: trimmed audio text from {word_count} to {len(truncated.split())} words to fit {clip_dur}s")
-                    full_text = truncated
+            part_idx = 0
 
-            # Use narrator voice for narration, character voice for dialogue-only
-            voice = narrator_voice
-            if not scene.get("narration") and scene.get("dialogue"):
-                # Pure dialogue scene — use first character's voice
-                first_char = scene["dialogue"][0]["character"]
-                voice = bible.get("characters", {}).get(first_char, {}).get("voice", narrator_voice)
+            # Generate narration segment
+            if has_narration:
+                narr_text = scene["narration"]
+                wps = VOICE_WPS.get(narrator_voice, DEFAULT_WPS)
+                # Truncate narration if needed (leave room for dialogue)
+                dialogue_budget = len(scene.get("dialogue", [])) * 1.5  # ~1.5s per line estimate
+                narr_budget = clip_dur - dialogue_budget if has_dialogue else clip_dur
+                max_words = int(narr_budget * wps * 0.9)
+                if len(narr_text.split()) > max_words > 0:
+                    words = narr_text.split()[:max_words]
+                    narr_text = " ".join(words)
+                    last_break = max(narr_text.rfind("."), narr_text.rfind(","))
+                    if last_break > len(narr_text) * 0.6:
+                        narr_text = narr_text[:last_break + 1]
+                    print(f"    {scene['id']}: trimmed narration to {len(narr_text.split())} words")
 
-            if not audio_path.exists():
-                try:
-                    asyncio.run(generate_tts_scene(full_text, voice, str(audio_path)))
-                except Exception as e:
-                    print(f"    TTS failed for {scene['id']}: {e}")
-                    audio_files.append(None)
-                    continue
+                part_file = str(temp_dir / f"{part_idx:02d}_narration.mp3")
+                asyncio.run(generate_tts_scene(narr_text, narrator_voice, part_file,
+                                               rate=narrator_prosody[0], pitch=narrator_prosody[1]))
+                audio_parts.append(part_file)
+                part_idx += 1
+
+            # Generate per-character dialogue segments
+            if has_dialogue:
+                for d in scene["dialogue"]:
+                    char_id = d["character"]
+                    char = bible.get("characters", {}).get(char_id, {})
+                    char_voice = char.get("voice", narrator_voice)
+                    char_rate, char_pitch = _get_character_prosody(char)
+
+                    line_text = d["line"]
+                    # Per-voice truncation check
+                    wps = VOICE_WPS.get(char_voice, DEFAULT_WPS)
+                    line_dur_est = len(line_text.split()) / wps
+                    remaining_budget = clip_dur * 0.9 - sum(
+                        _get_video_duration(p) for p in audio_parts if os.path.exists(p)
+                    )
+                    if line_dur_est > remaining_budget > 0 and remaining_budget < line_dur_est * 0.7:
+                        max_w = int(remaining_budget * wps * 0.9)
+                        if max_w > 3:
+                            line_text = " ".join(line_text.split()[:max_w])
+                            print(f"    {scene['id']}: trimmed {char.get('name', char_id)} line to {max_w} words")
+
+                    part_file = str(temp_dir / f"{part_idx:02d}_{char_id}.mp3")
+                    asyncio.run(generate_tts_scene(line_text, char_voice, part_file,
+                                                   rate=char_rate, pitch=char_pitch))
+                    audio_parts.append(part_file)
+                    part_idx += 1
+
+            # Concatenate all parts into final scene audio
+            if audio_parts:
+                _concat_audio_files(audio_parts, str(audio_path))
+
+            # Clean up temp parts
+            for p in audio_parts:
+                Path(p).unlink(missing_ok=True)
+            temp_dir.rmdir()
 
             audio_files.append(audio_path)
-        else:
-            audio_files.append(None)  # Silent scene
+
+        except Exception as e:
+            print(f"    TTS failed for {scene['id']}: {e}")
+            audio_files.append(None)
+            continue
 
     return audio_files
 
 
 def generate_single_scene_audio(scene: dict, bible: dict, output_dir: Path) -> Path | None:
-    """Generate TTS audio for a single scene dict.  Returns audio path or None."""
+    """Generate TTS audio for a single scene with per-character voices."""
     audio_dir = output_dir / "audio"
     audio_dir.mkdir(parents=True, exist_ok=True)
     audio_path = audio_dir / f"{scene['id']}.mp3"
 
     narrator_voice = bible.get("narrator", {}).get("voice", "en-US-GuyNeural")
-    spoken_parts = []
-    if scene.get("narration"):
-        spoken_parts.append(scene["narration"])
-    if scene.get("dialogue"):
-        has_narration = bool(scene.get("narration"))
-        for d in scene["dialogue"]:
-            if has_narration:
-                char = bible.get("characters", {}).get(d["character"], {})
-                name = char.get("name", d["character"])
-                spoken_parts.append(f"{name}: {d['line']}")
-            else:
-                spoken_parts.append(d["line"])
+    narrator_prosody = _get_character_prosody(bible.get("narrator", {}))
 
-    if not spoken_parts:
+    has_narration = bool(scene.get("narration"))
+    has_dialogue = bool(scene.get("dialogue"))
+
+    if not has_narration and not has_dialogue:
         return None
 
-    full_text = " ".join(spoken_parts)
-    voice = narrator_voice
-    if not scene.get("narration") and scene.get("dialogue"):
-        first_char = scene["dialogue"][0]["character"]
-        voice = bible.get("characters", {}).get(first_char, {}).get("voice", narrator_voice)
-
     try:
-        asyncio.run(generate_tts_scene(full_text, voice, str(audio_path)))
+        audio_parts: list[str] = []
+        temp_dir = audio_dir / f"{scene['id']}_parts"
+        temp_dir.mkdir(exist_ok=True)
+
+        if has_narration:
+            part_file = str(temp_dir / "00_narration.mp3")
+            asyncio.run(generate_tts_scene(scene["narration"], narrator_voice, part_file,
+                                           rate=narrator_prosody[0], pitch=narrator_prosody[1]))
+            audio_parts.append(part_file)
+
+        if has_dialogue:
+            for j, d in enumerate(scene["dialogue"]):
+                char = bible.get("characters", {}).get(d["character"], {})
+                char_voice = char.get("voice", narrator_voice)
+                char_rate, char_pitch = _get_character_prosody(char)
+                part_file = str(temp_dir / f"{j+1:02d}_{d['character']}.mp3")
+                asyncio.run(generate_tts_scene(d["line"], char_voice, part_file,
+                                               rate=char_rate, pitch=char_pitch))
+                audio_parts.append(part_file)
+
+        if audio_parts:
+            _concat_audio_files(audio_parts, str(audio_path))
+
+        for p in audio_parts:
+            Path(p).unlink(missing_ok=True)
+        temp_dir.rmdir()
+
     except Exception as e:
         print(f"    TTS failed for {scene['id']}: {e}")
         return None
@@ -1941,23 +2037,23 @@ def _mux_clip_audio(clip_path: str, audio: Path | None, out: str,
 
     if has_amb:
         fp.append(
-            f"[{amb_idx}:a]{trim},aformat=channel_layouts=stereo,volume=0.18[amb_raw]"
+            f"[{amb_idx}:a]{trim},aformat=channel_layouts=stereo,volume=0.35[amb_raw]"
         )
         if has_vo:
-            # Sidechain: VO signal triggers compression on ambient
+            # Sidechain: VO signal triggers gentle compression on ambient
             fp.append(
                 "[amb_raw][vo]sidechaincompress="
-                "threshold=0.015:ratio=5:attack=80:release=400:makeup=1[amb_out]"
+                "threshold=0.05:ratio=3:attack=80:release=500:makeup=1[amb_out]"
             )
         else:
-            fp.append("[amb_raw]volume=1.5[amb_out]")
+            fp.append("[amb_raw]volume=1.2[amb_out]")
         amb_out = "[amb_out]"
     else:
         amb_out = None
 
     if has_mus:
         fp.append(
-            f"[{mus_idx}:a]{trim},aformat=channel_layouts=stereo,volume=0.07[mus_out]"
+            f"[{mus_idx}:a]{trim},aformat=channel_layouts=stereo,volume=0.12[mus_out]"
         )
         mus_out = "[mus_out]"
     else:
@@ -2173,8 +2269,13 @@ def apply_colour_grade(input_path: Path, output_path: Path):
     ], capture_output=True, timeout=180)
 
 
-def generate_srt(episode: dict, bible: dict, output_path: Path):
-    """Generate an SRT subtitle file from episode scene narration and dialogue."""
+def generate_srt(episode: dict, bible: dict, output_path: Path,
+                 audio_files: list[Path | None] | None = None):
+    """Generate an SRT subtitle file with per-character dialogue attribution.
+
+    If audio_files are provided, uses actual audio duration for timing.
+    Otherwise falls back to CLIP_LENGTHS estimates.
+    """
     def srt_ts(seconds: float) -> str:
         h = int(seconds // 3600)
         m = int((seconds % 3600) // 60)
@@ -2184,20 +2285,45 @@ def generate_srt(episode: dict, bible: dict, output_path: Path):
 
     entries = []
     t = 0.0
-    for scene in episode["scenes"]:
-        dur = CLIP_LENGTHS.get(scene.get("clip_length", "long"), CLIP_LENGTHS["long"])["seconds"]
-        lines = []
+    for i, scene in enumerate(episode["scenes"]):
+        # Use actual audio duration if available, else preset
+        if audio_files and i < len(audio_files) and audio_files[i] and audio_files[i].exists():
+            dur = _get_video_duration(str(audio_files[i]))
+            if dur <= 0:
+                dur = CLIP_LENGTHS.get(scene.get("clip_length", "long"), CLIP_LENGTHS["long"])["seconds"]
+        else:
+            dur = CLIP_LENGTHS.get(scene.get("clip_length", "long"), CLIP_LENGTHS["long"])["seconds"]
+
+        # Build subtitle entries — separate narration from dialogue
         if scene.get("narration"):
-            lines.append(scene["narration"])
-        if scene.get("dialogue"):
-            for d in scene["dialogue"]:
+            narr_text = scene["narration"]
+            narr_dur = dur * 0.4 if scene.get("dialogue") else dur * 0.85
+            entries.append((t, t + narr_dur, narr_text))
+
+            # Dialogue follows narration
+            if scene.get("dialogue"):
+                dial_start = t + narr_dur + 0.1
+                dial_dur = (dur - narr_dur - 0.1) * 0.9
+                n_lines = len(scene["dialogue"])
+                per_line = dial_dur / max(n_lines, 1)
+                for j, d in enumerate(scene["dialogue"]):
+                    char = bible.get("characters", {}).get(d["character"], {})
+                    name = char.get("name", d["character"]).upper()
+                    line_start = dial_start + j * per_line
+                    line_end = line_start + per_line * 0.9
+                    entries.append((line_start, line_end, f"{name}: \"{d['line']}\""))
+
+        elif scene.get("dialogue"):
+            # Pure dialogue — distribute time across speakers
+            n_lines = len(scene["dialogue"])
+            per_line = dur / max(n_lines, 1)
+            for j, d in enumerate(scene["dialogue"]):
                 char = bible.get("characters", {}).get(d["character"], {})
                 name = char.get("name", d["character"]).upper()
-                lines.append(f"{name}: \"{d['line']}\"")
-        if lines:
-            # Show subtitle for 85% of the clip duration (leave breathing room)
-            sub_end = t + dur * 0.85
-            entries.append((t, sub_end, "\n".join(lines)))
+                line_start = t + j * per_line
+                line_end = line_start + per_line * 0.85
+                entries.append((line_start, line_end, f"{name}: \"{d['line']}\""))
+
         t += dur
 
     srt_lines = []
@@ -3562,7 +3688,7 @@ def cmd_produce(args):
     if not args.no_subs and current.exists():
         print(f"  Burning subtitles...")
         srt_path = ep_out / f"ep{ep_num:02d}.srt"
-        generate_srt(ep, bible, srt_path)
+        generate_srt(ep, bible, srt_path, audio_files=audio_files)
         subbed = ep_out / f"ep{ep_num:02d}_final.mp4"
         burn_subtitles(current, srt_path, subbed)
         if subbed.exists():

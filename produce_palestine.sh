@@ -91,6 +91,17 @@ if [ "$FRESH_RUN" != "1" ]; then
     RESUME_FLAG="--resume"
 fi
 
+# ─── Regenerate audio (per-character voices) ────────────────
+# Delete old single-voice audio so the new per-character TTS generates fresh files
+echo "  Clearing old audio for per-character voice regeneration..."
+for ep in $EPISODES; do
+    EP_NUM=$(printf '%02d' $ep)
+    AUDIO_DIR="output/$SERIES/ep${EP_NUM}/audio"
+    if [ -d "$AUDIO_DIR" ]; then
+        rm -f "$AUDIO_DIR"/*.mp3
+    fi
+done
+
 # ─── Produce each episode sequentially ──────────────────────
 # Sequential is required for cross-episode continuity (end-frame carry-over).
 FAILED_EPS=""
