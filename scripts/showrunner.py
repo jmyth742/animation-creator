@@ -2965,7 +2965,7 @@ def extract_keyframes(clip_path: str, n: int = 3) -> list[str]:
 
     frames_b64 = []
     for i in range(n):
-        t = dur * (i / max(n - 1, 1))  # 0%, 50%, 100% of clip
+        t = min(dur * (i / max(n - 1, 1)), dur - 0.1)  # 0%, 50%, ~100% of clip
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
             tmp_path = tmp.name
         result = subprocess.run([
@@ -2973,9 +2973,11 @@ def extract_keyframes(clip_path: str, n: int = 3) -> list[str]:
             "-frames:v", "1", "-q:v", "3", "-vf", "scale=480:320",
             tmp_path,
         ], capture_output=True, timeout=15)
-        if result.returncode == 0 and os.path.exists(tmp_path):
+        if result.returncode == 0 and os.path.exists(tmp_path) and os.path.getsize(tmp_path) > 100:
             with open(tmp_path, "rb") as f:
-                frames_b64.append(base64.standard_b64encode(f.read()).decode())
+                data = f.read()
+            if data:
+                frames_b64.append(base64.standard_b64encode(data).decode())
             os.unlink(tmp_path)
 
     return frames_b64
