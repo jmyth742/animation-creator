@@ -55,6 +55,49 @@ def _gust(base: float, depth: float, rate: float = 1.0) -> str:
 # Levels are deliberately low: the sum of four quiet layers reads as a place,
 # where one loud layer reads as an effect.
 PRESETS: dict[str, list[dict]] = {
+    # An inland valley of waterfalls: no swell, no horizon. The low layer is
+    # falling water rather than sea, so it is steadier and sits higher; the
+    # air is close rather than open, so there is no long echo.
+    "valley": [
+        {"name": "falls",  "colour": "white",
+         "chain": "lowpass=f=3200,highpass=f=140,aecho=0.4:0.35:60|110:0.18|0.10",
+         "level": 0.165, "depth": 0.030, "rate": 0.5, "width": 0.9,
+         "presence_hp": (140, 200), "presence_gain": (1.0, 0.8)},
+        {"name": "pool",   "colour": "brown",
+         "chain": "lowpass=f=500,highpass=f=60",
+         "level": 0.105, "depth": 0.024, "rate": 0.3, "width": 0.7,
+         "presence_hp": (60, 80), "presence_gain": (1.0, 1.2)},
+        {"name": "breeze", "colour": "pink",
+         "chain": "lowpass=f=1400,highpass=f=180",
+         "level": 0.032, "depth": 0.026, "rate": 0.8, "width": 0.75,
+         "presence_hp": (180, 260), "presence_gain": (1.0, 0.5)},
+        {"name": "leaves", "colour": "white",
+         "chain": "highpass=f=2600,lowpass=f=9000",
+         "level": 0.020, "depth": 0.016, "rate": 1.5, "width": 0.5,
+         "presence_hp": (2600, 1900), "presence_gain": (0.7, 1.35)},
+    ],
+    # A bleak ruin under flat overcast. The defining quality is ABSENCE: no
+    # sea, no birds, no people. A thin cold wind, drizzle, and bare branches.
+    # Levels sit well below the other two beds on purpose -- the silence is
+    # the point, and filling it would say the opposite of what the scene says.
+    "ruin": [
+        {"name": "lowwind", "colour": "brown",
+         "chain": "lowpass=f=420,highpass=f=45",
+         "level": 0.115, "depth": 0.055, "rate": 0.45, "width": 0.8,
+         "presence_hp": (45, 65), "presence_gain": (1.0, 1.15)},
+        {"name": "gust",    "colour": "pink",
+         "chain": "lowpass=f=1000,highpass=f=110",
+         "level": 0.058, "depth": 0.048, "rate": 0.9, "width": 0.8,
+         "presence_hp": (110, 170), "presence_gain": (1.0, 0.45)},
+        {"name": "drizzle", "colour": "white",
+         "chain": "highpass=f=3000,lowpass=f=10000",
+         "level": 0.016, "depth": 0.006, "rate": 2.6, "width": 0.6,
+         "presence_hp": (3000, 2300), "presence_gain": (0.8, 1.3)},
+        {"name": "thorn",   "colour": "pink",
+         "chain": "highpass=f=900,lowpass=f=3800",
+         "level": 0.011, "depth": 0.014, "rate": 1.9, "width": 0.4,
+         "presence_hp": (900, 700), "presence_gain": (0.5, 1.4)},
+    ],
     "headland": [
         {"name": "swell",  "colour": "brown",
          "chain": "lowpass=f=380,highpass=f=35,aecho=0.7:0.55:450|780:0.35|0.22",
@@ -125,9 +168,12 @@ SCORE_PARTIALS = [(73.42, 0.30), (110.0, 0.22), (146.83, 0.16),
                   (220.0, 0.09), (293.66, 0.055)]     # D2 A2 D3 A3 D4
 
 
-def build_score(seconds: float, out: Path, fade_in: float = 6.0) -> Path:
+def build_score(seconds: float, out: Path, fade_in: float = 6.0,
+                root: float = 73.42) -> Path:
     inputs, filters, tags = [], [], []
-    for i, (hz, lvl) in enumerate(SCORE_PARTIALS):
+    ratio = root / SCORE_PARTIALS[0][0]
+    for i, (hz0, lvl) in enumerate(SCORE_PARTIALS):
+        hz = hz0 * ratio
         # Two sines a fraction apart per partial: the beating between them is
         # what stops a synth drone sounding like a test tone.
         for k, det in enumerate((-0.13, 0.11)):
@@ -167,6 +213,24 @@ def duck_under(bed: Path, voice: Path, out: Path, amount: float = 5.0) -> Path:
 # How close the microphone feels for each framing. A cut from a wide to a
 # close-up that keeps identical ambience reads as a jump; changing perspective
 # with the picture is what makes the cut feel motivated.
+# Which bed a location gets. A location with no entry is a real decision to
+# make, not a default to fall through -- the old ambience system defaulted
+# every unrecognised place to city rain, which is how a desolate ruin ended up
+# sounding like Belfast on a wet Tuesday.
+PRESET_BY_LOCATION = {
+    "farewell_cliff": "headland",
+    "storm_cliffs": "headland",
+    "stormy_sea": "headland",
+    "sunlight_path": "headland",
+    "tir_na_nog": "valley",
+    "ruined_ireland": "ruin",
+}
+
+# The drone's root, per location. D minor for the otherworld; a semitone-flat,
+# lower root for the ruin so the return does not sound like the same place.
+SCORE_ROOT = {"headland": 73.42, "valley": 82.41, "ruin": 61.74}   # D2 / E2 / B1
+
+
 PRESENCE_BY_STAGING = {
     "full_body": 0.0, "walking_away": 0.05, "wider": 0.05,
     "three_quarter": 0.45, "medium": 0.45, "over_shoulder": 0.55,
@@ -226,7 +290,7 @@ def mix_episode(scenes: list[dict], vo_dir: Path, out: Path,
                     "-ar", str(SR), "-ac", "2", str(tmp / "amb.wav")], check=True)
 
     # ── 3. score across the whole piece ──────────────────────────────────
-    build_score(total, tmp / "score.wav")
+    build_score(total, tmp / "score.wav", root=SCORE_ROOT.get(preset, 73.42))
 
     # ── 4. voice, laid at each shot's start offset ───────────────────────
     vo_ins, vo_filt, vo_tags = [], [], []

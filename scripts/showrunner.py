@@ -371,6 +371,30 @@ MAX_S2V_CHUNKS = 3             # 15.19s. All three depths rendered and scored
                                # exceeds what exists on disk.
 
 
+def pad_audio_to(path: str, seconds: float, out_path: str) -> str:
+    """Extend `path` with real silence so it lasts exactly `seconds`.
+
+    S2V drives the mouth from wav2vec2 features over the audio it is given. A
+    shot held longer than its line handed the model 22-36% of a take with NO
+    audio covering it, and the mouth kept moving through the silence -- the
+    character mouthing words after the line had ended. The air that makes a
+    piece breathe is precisely where this shows, so holding shots made it
+    worse, not better.
+
+    Padding with actual silence gives the encoder something truthful to read
+    for the tail, and the mouth closes. Padding is appended, never prepended,
+    so nothing shifts against the picture.
+    """
+    dur = _get_video_duration(path)
+    if dur <= 0 or seconds <= dur + 0.02:
+        return path
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-y", "-i", path,
+         "-af", f"apad=whole_dur={seconds:.3f}",
+         "-t", f"{seconds:.3f}", out_path], check=True)
+    return out_path
+
+
 def s2v_chunks_for_duration(seconds: float, fps: int = 16,
                             floor_seconds: float | None = None
                             ) -> tuple[int, int, int | None]:
@@ -4947,6 +4971,15 @@ def cmd_produce(args):
             if extra_chunks:
                 print(f"      Extended take: {extra_chunks + 1} chained chunks "
                       f"= {_secs:.2f}s")
+            # Give the audio encoder the WHOLE take. Anything past the end of
+            # the line must be audible silence, not absent audio.
+            if audio_file and _spoken > 0 and _secs > _spoken + 0.02:
+                _padded = str(Path(str(audio_file)).with_name(
+                    f"{clip_prefix}_padded.mp3"))
+                pad_audio_to(str(audio_file), _secs, _padded)
+                audio_for_s2v = copy_to_input(_padded)
+                print(f"      Padded audio {_spoken:.2f}s -> {_secs:.2f}s so the "
+                      f"mouth is not driven by absent audio")
             # A line past MAX_S2V_CHUNKS is silently cut off mid-sentence --
             # the same class of defect as narration over budget, which is
             # already fatal. Say so rather than shipping a truncated take.
