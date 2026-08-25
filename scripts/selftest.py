@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import showrunner as sr                                    # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
+TMP = "/tmp/claude-0/-workspace/ff8063a2-884f-41b0-8ae0-53d58f36b62e/scratchpad"
 SERIES = "tir-na-nog-legend"
 
 _results: list[tuple[str, str, str]] = []                  # (status, name, detail)
@@ -1117,6 +1118,73 @@ def _():
         sr.requests, sr.time.sleep = real_req, real_sleep
     assert ok, ("a prompt queued behind another job timed out before it ever "
                 "ran -- queue time is being charged to the render budget")
+
+
+@check("upscale: the cel metric rewards hard edges and punishes texture")
+def _():
+    """This metric changed my conclusion twice before it was right.
+
+    First it compared Laplacian energy ACROSS resolutions, where a 4x image
+    spreads each edge over sixteen times the pixels, so every upscaler scored
+    worse than doing nothing. Then, once scoring at a common size, a strict
+    `<` median bound returned an EMPTY flat-region mask on the best result --
+    more than half the frame had a Laplacian of exactly zero -- and reported
+    nan, which read as a failure when it was the ideal outcome.
+
+    Both mistakes pointed at the wrong model. So the metric is asserted
+    against synthetic images whose right answer is known.
+    """
+    import numpy as np
+    from PIL import Image
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import compare_upscalers as cu
+
+    tmp = Path(TMP) / "celmetric"
+    tmp.mkdir(parents=True, exist_ok=True)
+    rng = np.random.default_rng(7)
+
+    # Cel: flat blocks with hard boundaries.
+    cel = np.zeros((480, 832), dtype=np.uint8)
+    cel[:, :400] = 40
+    cel[:, 400:] = 200
+    cel[200:300, :] = 120
+    Image.fromarray(cel).save(tmp / "cel.png")
+
+    # Same shapes, but every flat area given fine texture -- the waxy failure.
+    waxy = np.clip(cel.astype(np.float32)
+                   + rng.normal(0, 6, cel.shape), 0, 255).astype(np.uint8)
+    Image.fromarray(waxy).save(tmp / "waxy.png")
+
+    # Same shapes, but the edges blurred -- the soft-upscale failure.
+    soft = Image.fromarray(cel).filter(
+        __import__("PIL.ImageFilter", fromlist=["ImageFilter"]).GaussianBlur(3))
+    soft.save(tmp / "soft.png")
+
+    e_cel, f_cel = cu._scores(tmp / "cel.png")
+    e_waxy, f_waxy = cu._scores(tmp / "waxy.png")
+    e_soft, f_soft = cu._scores(tmp / "soft.png")
+
+    assert f_waxy > f_cel * 2, (
+        f"texture in the flats scored {f_waxy:.4f} against clean {f_cel:.4f} -- "
+        f"the metric does not punish waxiness, which is the failure mode that "
+        f"matters most for cel")
+    assert e_soft < e_cel, (
+        f"blurred edges scored {e_soft:.2f} against hard {e_cel:.2f} -- the "
+        f"metric does not reward line definition")
+    assert not (f_cel != f_cel), \
+        "clean cel art scored nan for flatness -- the empty-mask bug is back"
+
+    # Resolution invariance. THE bug that inverted the model ranking: the same
+    # picture at 4x scored far worse simply because each edge covered sixteen
+    # times the pixels. Identical content at two sizes must score the same,
+    # because _scores resamples to a common target before measuring.
+    big = Image.fromarray(cel).resize((3328, 1920), Image.NEAREST)
+    big.save(tmp / "cel_4x.png")
+    e_big, f_big = cu._scores(tmp / "cel_4x.png")
+    assert abs(e_big - e_cel) < e_cel * 0.35, (
+        f"the same image at 4x scored edge {e_big:.2f} against {e_cel:.2f} at "
+        f"native -- scores are not resolution-invariant, so every upscaler is "
+        f"judged against a baseline it cannot win")
 
 
 def main():
