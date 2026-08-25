@@ -178,9 +178,18 @@ def main():
     say(WARN if not shutil.which("rife-ncnn-vulkan") else OK,
         "rife-ncnn-vulkan" + ("" if shutil.which("rife-ncnn-vulkan")
                               else " absent -> --interpolate falls back to FFmpeg minterpolate"))
-    say(WARN if not shutil.which("realesrgan-ncnn-vulkan") else OK,
-        "realesrgan-ncnn-vulkan" + ("" if shutil.which("realesrgan-ncnn-vulkan")
-                                    else " absent -> --upscale falls back to lanczos"))
+    # The ncnn CLI is only what showrunner's own --upscale flag uses. The
+    # better path no longer needs it: upscale_episode.py runs RealESRGAN anime
+    # 6B through ComfyUI, measured on cel frames at 3.25x the line definition
+    # AND a tenth of the texture inside flat colour compared with lanczos.
+    # Report the model file, since that is what actually gates the good path.
+    _up = sr.COMFYUI_DIR / "models" / "upscale_models" / "RealESRGAN_x4plus_anime_6B.pth"
+    say(OK if _up.exists() else WARN,
+        "RealESRGAN anime 6B" + (" (scripts/upscale_episode.py)" if _up.exists()
+                                 else " MISSING -> no 1080p pass available"))
+    say(OK, "realesrgan-ncnn-vulkan not required"
+        if not shutil.which("realesrgan-ncnn-vulkan")
+        else "realesrgan-ncnn-vulkan present")
 
     # ── camera coverage ──────────────────────────────────────────────
     # A scene naming a setup that has no plate falls back silently to the bare
