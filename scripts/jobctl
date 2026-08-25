@@ -1,0 +1,334 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────
+#  jobctl — crash/disconnect-proof runner for production pipelines
+#
+#  A "job" is a plain bash file made of step "<id>" <command...> lines.
+#  Every completed step id is written to a checkpoint file, so restarting
+#  a job skips everything already done. Steps that fail are retried, and
+#  ComfyUI is health-checked (and restarted) before every attempt.
+#
+#  The job runs under setsid+nohup: it is not a child of your SSH session,
+#  so a disconnect leaves it running untouched.
+#
+#  USAGE
+#    jobctl start <jobs/foo.job.sh>   Start (or resume) a job, detached
+#    jobctl start <name>              Resume an existing job by name
+#    jobctl status [name]             Show state, current step, progress
+#    jobctl log [name] [-f]           Show (or follow) the job log
+#    jobctl attach [name]             Follow the log inside tmux
+#    jobctl stop [name]               Stop a running job (checkpoint kept)
+#    jobctl list                      List all jobs and their state
+#    jobctl reset <name> [step-id]    Clear all / one checkpointed step
+#
+#  ENV
+#    JOB_RETRIES=3     attempts per step before giving up
+#    JOB_STOP_ON_FAIL=1  1 = abort job on a failed step, 0 = keep going
+# ─────────────────────────────────────────────────────────────────────
+# The whole script body is wrapped in { } so bash parses it in one go.
+# Without this, bash re-reads the file lazily by byte offset while running,
+# and a long-lived supervisor can be corrupted by an edit to jobctl (or by
+# the network filesystem serving a stale read) mid-job.
+{
+set -uo pipefail
+
+PROJECT="${PROJECT:-/workspace/text-to-video}"
+JOBS_DIR="$PROJECT/.jobs"
+SELF="$(readlink -f "$0")"
+ENSURE_COMFY="$PROJECT/scripts/ensure_comfyui.sh"
+
+mkdir -p "$JOBS_DIR"
+
+now()  { date '+%Y-%m-%d %H:%M:%S'; }
+die()  { echo "jobctl: $*" >&2; exit 1; }
+
+job_dir()  { echo "$JOBS_DIR/$1"; }
+pidfile()  { echo "$(job_dir "$1")/pid"; }
+donefile() { echo "$(job_dir "$1")/completed"; }
+logfile()  { echo "$(job_dir "$1")/job.log"; }
+statefile(){ echo "$(job_dir "$1")/state"; }
+
+# `grep -c` prints 0 *and* exits 1 on an empty file, so `grep -c ... || echo 0`
+# emits two lines ("0\n0") and poisons every arithmetic test downstream.
+# Capture the status instead of chaining with ||.
+count_lines() {
+    local n
+    n=$(grep -c . "$1" 2>/dev/null) || n=0
+    echo "${n:-0}"
+}
+
+count_steps() {
+    local n
+    n=$(enumerate_steps "$1" | grep -c .) || n=0
+    echo "${n:-0}"
+}
+
+running() {
+    local p; p=$(cat "$(pidfile "$1")" 2>/dev/null)
+    [ -n "$p" ] || return 1
+    kill -0 "$p" 2>/dev/null || return 1
+    # Guard against pid reuse: after a pod restart the old pidfile can name a
+    # pid that some unrelated process now owns, which would make jobctl refuse
+    # to ever start the job again. Confirm the pid really is our supervisor.
+    [ -r "/proc/$p/cmdline" ] || return 0
+    grep -qa "jobctl" "/proc/$p/cmdline"
+}
+
+# ─── resolve a job argument to a name, staging the script if given a path ──
+resolve_job() {
+    local arg="$1" name
+    if [ -f "$arg" ]; then
+        name="$(basename "$arg")"; name="${name%.sh}"; name="${name%.job}"
+        mkdir -p "$(job_dir "$name")"
+        cp "$arg" "$(job_dir "$name")/job.sh"     # snapshot: edits mid-run are safe
+    else
+        name="$arg"
+        [ -f "$(job_dir "$name")/job.sh" ] || \
+            die "no job named '$name' (and no such file). Try: jobctl list"
+    fi
+    echo "$name"
+}
+
+
+# Enumerate the step ids a job file will produce, by sourcing it in a
+# subshell with `step` stubbed out to just print its id. Job files must
+# therefore have no side effects outside of step commands.
+enumerate_steps() {
+    local dir; dir="$(job_dir "$1")"
+    ( cd "$PROJECT" 2>/dev/null || exit 0
+      step() { echo "$1"; }
+      . "$dir/job.sh" ) 2>/dev/null
+}
+
+# ═══════════════════════════════════════════════════════════════════════
+#  Supervisor — runs detached. Not called directly by the user.
+# ═══════════════════════════════════════════════════════════════════════
+supervise() {
+    local NAME="$1"
+    local DIR;  DIR="$(job_dir "$NAME")"
+    local LOG;  LOG="$(logfile "$NAME")"
+    local DONE; DONE="$(donefile "$NAME")"
+
+    echo $$ > "$(pidfile "$NAME")"
+    touch "$DONE"
+    echo "running" > "$(statefile "$NAME")"
+
+    exec >>"$LOG" 2>&1          # everything from here on goes to the job log
+
+    # NOTE: not `local` — the EXIT trap runs after this function's locals
+    # are gone, and would see them as unbound under `set -u`.
+    RETRIES="${JOB_RETRIES:-3}"
+    STOP_ON_FAIL="${JOB_STOP_ON_FAIL:-1}"
+    FAILED=0
+    JOB_NAME="$NAME"
+
+    log() { echo "[$(now)] $*"; }
+
+    finish() {
+        local rc=$?
+        local nfail="${FAILED:-0}"
+        if [ "$rc" -eq 0 ] && [ "$nfail" -eq 0 ]; then
+            echo "done" > "$(statefile "$JOB_NAME")"
+            log "═══ JOB COMPLETE ═══"
+        elif [ "$rc" -eq 0 ]; then
+            echo "done-with-failures" > "$(statefile "$JOB_NAME")"
+            log "═══ JOB FINISHED — $nfail step(s) failed ═══"
+        else
+            echo "failed" > "$(statefile "$JOB_NAME")"
+            log "═══ JOB ABORTED (exit $rc) ═══"
+        fi
+        rm -f "$(pidfile "$JOB_NAME")" "$(job_dir "$JOB_NAME")/current_step"
+    }
+    trap finish EXIT
+    trap 'log "received TERM — stopping"; exit 143' TERM INT
+
+    # ── the step primitive available to job files ────────────────────
+    step() {
+        local id="$1"; shift
+        local cmd="$*"
+
+        if grep -qxF "$id" "$DONE" 2>/dev/null; then
+            log "SKIP  $id  (already completed)"
+            return 0
+        fi
+
+        local attempt=1
+        while [ "$attempt" -le "$RETRIES" ]; do
+            echo "$id" > "$DIR/current_step"
+            log "───────────────────────────────────────────────"
+            log "STEP  $id  (attempt $attempt/$RETRIES)"
+
+            if [ "${NEEDS_COMFY:-1}" = "1" ] && [ -x "$ENSURE_COMFY" ]; then
+                bash "$ENSURE_COMFY" ensure || log "WARN: ComfyUI did not come up"
+            fi
+
+            local t0; t0=$(date +%s)
+            if bash -c "$cmd"; then
+                local dt=$(( $(date +%s) - t0 ))
+                echo "$id" >> "$DONE"
+                log "OK    $id  (${dt}s)"
+                rm -f "$DIR/current_step"
+                return 0
+            fi
+
+            local dt=$(( $(date +%s) - t0 ))
+            log "FAIL  $id  (${dt}s, attempt $attempt/$RETRIES)"
+            attempt=$((attempt + 1))
+            if [ "$attempt" -le "$RETRIES" ]; then
+                # a dead/wedged ComfyUI is the usual culprit — bounce it
+                [ "${NEEDS_COMFY:-1}" = "1" ] && [ -x "$ENSURE_COMFY" ] && \
+                    bash "$ENSURE_COMFY" restart
+                log "retrying in 30s..."
+                sleep 30
+            fi
+        done
+
+        FAILED=$((FAILED + 1))
+        rm -f "$DIR/current_step"
+        if [ "$STOP_ON_FAIL" = "1" ]; then
+            log "step '$id' failed $RETRIES times — aborting job"
+            log "fix the cause, then: jobctl start $NAME   (completed steps are skipped)"
+            exit 1
+        fi
+        log "step '$id' failed $RETRIES times — continuing (JOB_STOP_ON_FAIL=0)"
+        return 1
+    }
+
+    log "═══ JOB START: $NAME ═══"
+    log "pid $$  |  retries/step: $RETRIES  |  stop-on-fail: $STOP_ON_FAIL"
+    local done_n; done_n=$(grep -c . "$DONE" 2>/dev/null); done_n="${done_n:-0}"
+    [ "$done_n" -gt 0 ] && log "resuming — $done_n step(s) already completed"
+
+    cd "$PROJECT" || exit 1
+    set -a; [ -f "$PROJECT/.env" ] && . "$PROJECT/.env"; set +a
+    export PYTHONUNBUFFERED=1
+    [ -f /workspace/venv/bin/activate ] && . /workspace/venv/bin/activate
+
+    . "$DIR/job.sh"
+}
+
+# ═══════════════════════════════════════════════════════════════════════
+#  Commands
+# ═══════════════════════════════════════════════════════════════════════
+cmd_start() {
+    local name; name="$(resolve_job "${1:?usage: jobctl start <job-file|name>}")"
+    running "$name" && die "job '$name' is already running (pid $(cat "$(pidfile "$name")"))"
+
+    setsid nohup bash "$SELF" __supervise "$name" >/dev/null 2>&1 </dev/null &
+    sleep 1
+    echo "Started job '$name' (detached — safe to disconnect)"
+    echo "  status:  jobctl status $name"
+    echo "  follow:  jobctl log $name -f"
+    echo "  stop:    jobctl stop $name"
+}
+
+cmd_status() {
+    local name="${1:-}"
+    if [ -z "$name" ]; then cmd_list; return; fi
+    local dir; dir="$(job_dir "$name")"
+    [ -d "$dir" ] || die "no such job: $name"
+
+    local state; state=$(cat "$(statefile "$name")" 2>/dev/null || echo unknown)
+    if running "$name"; then
+        state="running (pid $(cat "$(pidfile "$name")"))"
+    elif [ "$state" = "running" ]; then
+        # state says running but the pid is gone: killed without a chance to
+        # clean up (SIGKILL, OOM-killer, pod restart)
+        state="interrupted — resume with: jobctl start $name"
+    fi
+
+    local total; total=$(enumerate_steps "$name" | grep -c .); total="${total:-?}"
+    local done_n; done_n=$(grep -c . "$(donefile "$name")" 2>/dev/null); done_n="${done_n:-0}"
+
+    echo "════════════════════════════════════════════════════"
+    echo "  job:      $name"
+    echo "  state:    $state"
+    echo "  progress: $done_n / $total steps"
+    [ -f "$dir/current_step" ] && echo "  current:  $(cat "$dir/current_step")"
+    if [ -f "$(logfile "$name")" ]; then
+        echo "  last log: $(date -r "$(logfile "$name")" '+%Y-%m-%d %H:%M:%S')"
+    fi
+    echo "════════════════════════════════════════════════════"
+    bash "$ENSURE_COMFY" status 2>/dev/null
+    echo ""
+    echo "  recent:"
+    tail -6 "$(logfile "$name")" 2>/dev/null | tr '\r' '\n' | grep -v '^$' | sed 's/^/    /'
+}
+
+cmd_list() {
+    printf "%-28s %-22s %s\n" "JOB" "STATE" "PROGRESS"
+    local d name state done_n total
+    for d in "$JOBS_DIR"/*/; do
+        [ -f "$d/job.sh" ] || continue
+        name="$(basename "$d")"
+        state=$(cat "$(statefile "$name")" 2>/dev/null || echo "-")
+        if running "$name"; then state="running"
+        elif [ "$state" = "running" ]; then state="interrupted"; fi
+        done_n=$(grep -c . "$(donefile "$name")" 2>/dev/null); done_n="${done_n:-0}"
+        total=$(enumerate_steps "$name" | grep -c .); total="${total:-?}"
+        printf "%-28s %-22s %s\n" "$name" "$state" "$done_n/$total"
+    done
+}
+
+cmd_log() {
+    local name="${1:?usage: jobctl log <name> [-f]}"
+    local lf; lf="$(logfile "$name")"
+    [ -f "$lf" ] || die "no log for '$name' yet"
+    if [ "${2:-}" = "-f" ]; then tail -f "$lf"; else tail -60 "$lf"; fi
+}
+
+cmd_attach() {
+    local name="${1:?usage: jobctl attach <name>}"
+    if command -v tmux >/dev/null 2>&1; then
+        tmux new-session -A -s "watch-$name" "tail -f '$(logfile "$name")'"
+    else
+        cmd_log "$name" -f
+    fi
+}
+
+cmd_stop() {
+    local name="${1:?usage: jobctl stop <name>}"
+    running "$name" || die "job '$name' is not running"
+    local p; p=$(cat "$(pidfile "$name")")
+    # kill the whole process group so showrunner/ffmpeg children go too
+    kill -TERM -- "-$p" 2>/dev/null || kill -TERM "$p" 2>/dev/null
+    sleep 2
+    running "$name" && { kill -9 -- "-$p" 2>/dev/null || kill -9 "$p" 2>/dev/null; }
+    echo "stopped '$name' — checkpoint kept, resume with: jobctl start $name"
+    echo "(ComfyUI is left running; stop it with: bash scripts/ensure_comfyui.sh stop)"
+}
+
+cmd_reset() {
+    local name="${1:?usage: jobctl reset <name> [step-id]}"
+    local sid="${2:-}"
+    local df; df="$(donefile "$name")"
+    [ -f "$df" ] || die "no checkpoint for '$name'"
+    if [ -z "$sid" ]; then
+        : > "$df"
+        rm -f "$(statefile "$name")" "$(job_dir "$name")/current_step"
+        echo "cleared all checkpoints for '$name'"
+    else
+        grep -vxF "$sid" "$df" > "$df.tmp" 2>/dev/null
+        # exit 1 just means "no lines left", which is a legitimate result;
+        # only 2+ is a real grep error.
+        if [ $? -le 1 ]; then
+            mv "$df.tmp" "$df"
+            echo "cleared step '$sid' for '$name'"
+        else
+            rm -f "$df.tmp"
+            die "could not rewrite checkpoint file $df"
+        fi
+    fi
+}
+
+case "${1:-}" in
+    start)       shift; cmd_start "$@" ;;
+    status)      shift; cmd_status "$@" ;;
+    log|logs)    shift; cmd_log "$@" ;;
+    attach)      shift; cmd_attach "$@" ;;
+    stop)        shift; cmd_stop "$@" ;;
+    list|ls)     shift; cmd_list "$@" ;;
+    reset)       shift; cmd_reset "$@" ;;
+    __supervise) shift; supervise "$@" ;;
+    *) sed -n '2,30p' "$SELF" | sed 's/^# \{0,1\}//' ; exit 2 ;;
+esac
+}

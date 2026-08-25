@@ -213,10 +213,14 @@ def _backfill_scene_clips(episode_id: int, db) -> None:
     if episode is None:
         return
 
+    # Clips are filed per series: scene ids are only unique within a series,
+    # so this must be scoped or it can match another project's clip.
+    series_slug = episode.project.series_slug if episode.project else None
+
     ep_id = f"ep{episode.number:02d}"
     for scene in episode.scenes:
         clip_prefix = f"{ep_id}_s{scene.order_idx + 1:02d}"
-        clip_path = showrunner.find_latest_clip(clip_prefix)
+        clip_path = showrunner.find_latest_clip(clip_prefix, series=series_slug)
         if clip_path:
             try:
                 rel = str(Path(clip_path).relative_to(settings.COMFYUI_OUTPUT))
@@ -306,6 +310,8 @@ def produce_episode_job(
             return
 
         series_slug, _ = export_project_to_files(episode.project_id, db)
+        # Thread-local: scopes clip output/lookup for this production only.
+        showrunner.set_current_series(series_slug)
 
         expected_clips = _count_expected_clips(episode_id)
 
@@ -524,6 +530,7 @@ def generate_single_scene_job(scene_id: int, quality: str = "draft", denoise: fl
 
         # Export current project state to JSON (bible + episode files)
         series_slug, series_path_dir = export_project_to_files(project.id, db)
+        showrunner.set_current_series(series_slug)
 
         # Load bible dict that showrunner functions expect
         bible = json.loads((series_path_dir / "bible.json").read_text())
@@ -625,7 +632,7 @@ def generate_single_scene_job(scene_id: int, quality: str = "draft", denoise: fl
             return
 
         if success:
-            clip_path = showrunner.find_latest_clip(clip_prefix)
+            clip_path = showrunner.find_latest_clip(clip_prefix, series=series_slug)
             if clip_path:
                 rel = Path(clip_path).relative_to(settings.COMFYUI_OUTPUT)
                 scene.output_clip_path = str(rel)

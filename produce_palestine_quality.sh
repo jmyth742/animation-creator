@@ -9,7 +9,7 @@
 #
 # Then apply post-processing: interpolation + upscale + stitch
 # ─────────────────────────────────────────────────────────────
-set -e
+# No set -e: tee pipelines can return non-zero even on success
 
 SERIES="palestine-stories"
 EPISODES="1 2 3 4 5"

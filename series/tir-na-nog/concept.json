@@ -1,0 +1,29 @@
+{
+  "title": "Tír na nÓg — The Calling",
+  "premise": "A brief retelling of the opening of the Irish legend of Niamh and Oisín. While hunting with the Fianna in the misted hills above the Lakes of Killarney, the warrior-poet Oisín is summoned by a strange light from the western sea. Niamh of the Golden Hair rides out of the waves on her white horse Embarr and calls him to follow her to Tír na nÓg, the Land of Youth. He mounts behind her and they ride out across the sea, vanishing into a golden mist.",
+  "tone": "mythic, lyrical, reverent wonder — a hushed, sacred storytelling voice",
+  "visual_style": "Celtic illuminated manuscript animation in the style of the Book of Kells. Every frame painted on aged parchment with intricate interlace knotwork borders, gold leaf accents catching candlelight, deep crimson, emerald green, sapphire blue and saffron yellow palette. Stylised flat figures with halo-like outlines, ornamental hair and robes drawn as flowing decorative spirals, large solemn eyes. Trees, waves and clouds rendered as patterned scrollwork rather than realism. Hand-painted texture, slight gilding, ornate floral and animal motifs filling negative space, softly glowing illumination.",
+  "target_audience": "general — adult and family-friendly mythic storytelling",
+  "setting": "Ancient pre-Christian Ireland. Misted dawn over the Lakes of Killarney; the wild Atlantic shore at the western edge of the world; the threshold between mortal Ireland and the otherworld of Tír na nÓg.",
+  "main_characters": [
+    "Oisín — Young warrior-poet of the Fianna, son of Fionn mac Cumhaill. Fair-haired, beardless, wearing a leather tunic with bronze brooches and a green woollen cloak, a hunting spear in hand. Brave, curious, easily moved by beauty.",
+    "Niamh of the Golden Hair (Niamh Chinn Óir) — Daughter of the king of Tír na nÓg. Otherworldly fae beauty, long flowing golden hair drawn as ornamental spirals, silver-white robes embroidered with gold knotwork, a circlet of pale flowers, riding sidesaddle on a magical white horse. Gentle, ageless, mesmerising.",
+    "Embarr — Niamh's white horse, capable of running across waves. Coat painted pure white with gold-leaf mane and tail, glowing hooves leaving no print on water.",
+    "The Fianna — Oisín's hunting band, glimpsed in the opening scenes. Cloaked warriors with hounds, ornate spears."
+  ],
+  "season_arc": "A single self-contained episode covering only the intro of the legend — the meeting and departure. Later episodes (not produced here) would cover the life in Tír na nÓg, the homesickness, the return, and the fall.",
+  "reference_images": [],
+  "episodes_per_season": 1,
+  "episode_duration_seconds": 60,
+  "episode_plan": [
+    "EP1: Niamh of the Golden Hair rides out of the western sea on her white horse Embarr and calls Oisín of the Fianna to follow her to Tír na nÓg, the Land of Youth. Beats: 1) misted dawn over Killarney lakes establishing shot, 2) Oisín hunting with the Fianna and their hounds in the heather, 3) a strange golden light appears on the western horizon, 4) the Fianna fall silent as the sea parts, 5) Embarr the white horse emerges galloping across the waves, 6) Niamh is revealed riding him, golden hair flowing, 7) Oisín stands transfixed, 8) Niamh speaks — calls his name and invites him to the Land of Youth, 9) Oisín answers, choosing to follow, 10) he mounts behind her on Embarr, 11) the horse turns and gallops out over the sea, 12) the Fianna watch them vanish into golden mist."
+  ],
+  "narrator": {
+    "voice": "en-IE-ConnorNeural",
+    "style": "Hushed, reverent Irish-accented bardic narrator. Speaks as if telling a sacred story by firelight."
+  },
+  "voice_cast": {
+    "oisin": "en-GB-RyanNeural",
+    "niamh": "en-IE-EmilyNeural"
+  }
+}

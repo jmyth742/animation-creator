@@ -1,0 +1,26 @@
+{
+  "title": "Tir na nOg — The Land of Eternal Youth",
+  "premise": "The complete Irish legend of Oisin and Niamh in one short film: the encounter on the storm-cliffs, the ride across the Atlantic to the Land of Eternal Youth, three years of bliss that were three hundred in the mortal world, the homesickness, Niamh's warning, and the fall that turns a young warrior to dust in a single heartbeat.",
+  "tone": "cinematic, mythic, epic fantasy — awe turning to melancholy",
+  "visual_style": "Cel-shaded 2D animation, clean confident linework, flat blocks of colour with simple shading, painted background art, restrained palette of greens, slate blues and gold, expressive stylised faces, animated film still",
+  "target_audience": "general — adult and family-friendly mythic storytelling",
+  "setting": "A mythic world of mortal Ireland and the otherworld beyond the sea.",
+  "main_characters": [
+    "Oisin — young Celtic warrior-poet of the Fianna. Dark shoulder-length hair, trimmed beard, leather jerkin over green wool, bronze cloak-brooch, carries a spear. Brave, curious, easily moved by beauty.",
+    "Niamh of the Golden Hair — princess of Tir na nOg. Long flowing golden hair, emerald green gown, pale luminous skin, faint golden glow. Ageless, gentle, mesmerising.",
+    "Embarr — Niamh's magical white horse, able to gallop across water. Luminous white coat, glowing mane."
+  ],
+  "season_arc": "A single self-contained short film telling the whole legend end to end.",
+  "reference_images": [],
+  "episodes_per_season": 1,
+  "episode_duration_seconds": 73,
+  "episode_plan": [
+    "EP1: The full legend in five movements — 1) The Encounter: Niamh rides from the stormy sea to the cliffs where Oisin stands in awe. 2) The Journey: they cross the Atlantic on a path of sunlight. 3) The Illusion of Time: three years of bliss in a glowing utopia. 4) The Homesickness and Warning: Oisin begs to return; Niamh warns him never to touch Irish soil. 5) The Fall: he finds three centuries gone, slips from the saddle, and three hundred years take him at once."
+  ],
+  "narrator": {
+    "voice": "en-IE-ConnorNeural",
+    "style": "Hushed, reverent Irish-accented bardic narrator, as if telling a sacred story by firelight.",
+    "rate": "+0%",
+    "pitch": "-5Hz"
+  }
+}

@@ -1,0 +1,38 @@
+#!/bin/bash
+# Launch a background job and record its PID, so it can be stopped by PID
+# instead of by pattern.
+#
+# `pkill -f <pattern>` matches the shell that RUNS it, because that shell's own
+# command line contains the pattern. That killed this session's shell five times
+# in one day, twice mid-edit. There is no safe way to pattern-match your own
+# process list; the fix is to stop guessing and record the PID.
+#
+#   scripts/bglaunch <name> <command...>
+#   scripts/bglaunch stop <name>
+#   scripts/bglaunch status
+set -uo pipefail
+D="$(cd "$(dirname "$0")/.." && pwd)/.jobs/pids"
+mkdir -p "$D"
+
+case "${1:-}" in
+  stop)
+    n="${2:?usage: bglaunch stop <name>}"
+    [ -f "$D/$n.pid" ] || { echo "no pidfile for '$n'"; exit 1; }
+    p=$(cat "$D/$n.pid")
+    if kill -0 "$p" 2>/dev/null; then kill "$p" && echo "stopped $n (pid $p)"
+    else echo "$n (pid $p) already gone"; fi
+    rm -f "$D/$n.pid"; exit 0 ;;
+  status)
+    for f in "$D"/*.pid; do
+      [ -e "$f" ] || { echo "no background jobs"; exit 0; }
+      n=$(basename "$f" .pid); p=$(cat "$f")
+      if kill -0 "$p" 2>/dev/null; then echo "  $n  pid $p  RUNNING"
+      else echo "  $n  pid $p  finished"; fi
+    done; exit 0 ;;
+esac
+
+name="${1:?usage: bglaunch <name> <command...>}"; shift
+[ $# -gt 0 ] || { echo "no command given"; exit 1; }
+nohup "$@" > "$D/$name.log" 2>&1 &
+echo $! > "$D/$name.pid"
+echo "launched '$name' pid $(cat "$D/$name.pid")  log: $D/$name.log"

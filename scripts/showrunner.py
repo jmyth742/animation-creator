@@ -39,10 +39,12 @@ import argparse
 import asyncio
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import uuid
 from pathlib import Path
@@ -58,6 +60,118 @@ COMFYUI_DIR = ROOT / "ComfyUI"
 COMFYUI_INPUT = COMFYUI_DIR / "input"
 COMFYUI_OUTPUT = COMFYUI_DIR / "output" / "video"
 SERVER = "http://localhost:8188"
+
+# ─── Series-scoped clip output ────────────────────────────────────────
+# ComfyUI was told to name every clip after the scene id alone ("ep01_s01")
+# and write it into one flat directory. Scene ids are only unique *within*
+# a series — every series has an ep01_s01 — so clips from different series
+# collided, and find_latest_clip() simply returned whichever was rendered
+# most recently. A --resume run of series B could therefore skip a scene
+# because series A had already produced a same-named clip, and stitch the
+# wrong series' footage into the episode. Clips now live in a per-series
+# subdirectory; CURRENT_SERIES is set once from argv in main().
+# Thread-local, not a plain global: the FastAPI backend runs each production
+# in its own thread, so two concurrent jobs for different projects would
+# otherwise overwrite each other's series and file clips under the wrong one.
+_series_tls = threading.local()
+
+
+def set_current_series(series: str | None):
+    _series_tls.value = series
+
+
+def current_series() -> str | None:
+    return getattr(_series_tls, "value", None)
+
+
+def clip_dir(series: str | None = None) -> Path:
+    """Directory holding a series' rendered clips."""
+    s = series if series is not None else current_series()
+    return (COMFYUI_OUTPUT / s) if s else COMFYUI_OUTPUT
+
+
+def save_prefix(clip_prefix: str) -> str:
+    """filename_prefix for ComfyUI's SaveVideo node, scoped to the series."""
+    s = current_series()
+    return f"video/{s}/{clip_prefix}" if s else f"video/{clip_prefix}"
+
+# ─── Step-distilled (Lightning) sampling ──────────────────────────────
+# LightX2V's distilled LoRAs collapse WAN 2.2's two-stage sampling to a
+# handful of steps. Measured on this box at 49 frames / 480x832:
+#   18 steps, cfg 5.0, no LoRA -> 490s   (and the shot came out smeared)
+#    4 steps, cfg 1.0, LoRA    ->  80s
+#    8 steps, cfg 1.0, LoRA    -> 120s   (quality clearly better than base)
+# CFG MUST drop to ~1.0: left at 5.0 the distilled model burns out and it
+# looks like the LoRA is broken rather than the guidance being wrong.
+# ─── Strict mode ──────────────────────────────────────────────────────
+# Every path in this file used to warn and continue, so a wrong configuration
+# and a right one produced the same exit code and the same "JOB COMPLETE".
+# ~20 real defects reached finished episodes that way and not one crashed:
+# a LoRA that did nothing, a seed that fell through to the previous shot, a
+# narration that would not fit. Each cost a 2.5-hour render to discover.
+#
+# Under strict mode those specific conditions abort at the offending shot.
+# jobctl checkpoints completed shots, so a resume after the fix skips the work
+# already done -- aborting early is cheaper than finishing wrong.
+#
+# Advisory warnings (recoverable state, missing optional binaries) are NOT
+# promoted; only conditions where the OUTPUT WILL BE WRONG.
+STRICT = True
+
+
+class PipelineError(RuntimeError):
+    """A condition that makes the render wrong rather than merely imperfect."""
+
+
+def fatal(msg: str, hint: str = ""):
+    """Abort under strict mode; warn and carry on when it is off."""
+    if STRICT:
+        raise PipelineError(msg + (f"\n         {hint}" if hint else ""))
+    print(f"    WARNING: {msg}")
+
+
+LIGHTNING = {
+    "steps": 8,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    # Base names: _resolve_wan_dual_loras() expands these to the -high/-low
+    # files and hands each expert its matching variant.
+    "t2v": [("lightning-t2v.safetensors", 1.0)],
+    "i2v": [("lightning-i2v.safetensors", 1.0)],
+}
+
+
+def apply_lightning(wf: dict, steps: int | None = None):
+    """Patch a built workflow for distilled sampling (low cfg, few steps)."""
+    st = steps or LIGHTNING["steps"]
+    for v in wf.values():
+        if v.get("class_type") in ("KSampler", "KSamplerAdvanced"):
+            i = v["inputs"]
+            i["cfg"] = LIGHTNING["cfg"]
+            i["sampler_name"] = LIGHTNING["sampler"]
+            i["scheduler"] = LIGHTNING["scheduler"]
+            if "steps" in i:
+                i["steps"] = st
+            # The dual-model I2V handoff is steps//2: the high-noise expert
+            # runs 0 -> mid and the low-noise expert mid -> 10000. Move the
+            # handoff to the new midpoint; leave the open-ended 10000 alone.
+            if "end_at_step" in i and i["end_at_step"] != 10000:
+                i["end_at_step"] = max(1, st // 2)
+            if i.get("start_at_step", 0) > 0:
+                i["start_at_step"] = max(1, st // 2)
+    return wf
+
+
+# ─── Claude (script writing) ──────────────────────────────────────────
+# The writing model is the single biggest lever on story quality — it writes
+# the series bible and every episode script. Override per-run if needed:
+#   SHOWRUNNER_CLAUDE_MODEL=claude-sonnet-5 python scripts/showrunner.py write ...
+CLAUDE_MODEL = os.environ.get("SHOWRUNNER_CLAUDE_MODEL", "claude-opus-5")
+# Effort controls how hard the model thinks. "high" is the default; "max" buys
+# noticeably better long-form structure on season arcs at higher cost.
+CLAUDE_EFFORT = os.environ.get("SHOWRUNNER_CLAUDE_EFFORT", "high")
+
 
 # ─── Model configurations ────────────────────────────────────────────
 # WAN 2.2 is the sole video generation model.
@@ -88,6 +202,11 @@ MODEL_CONFIGS = {
                 "t2v_unet_low": "wan2.2_t2v_low_noise_14B_Q8_0.gguf",
                 "i2v_unet": "wan2.2_i2v_high_noise_14B_Q4_K_S.gguf",
                 "i2v_unet_low": "wan2.2_i2v_low_noise_14B_Q4_K_S.gguf",
+                # Speech-to-video is a SEPARATE checkpoint. The S2V workflow
+                # used to load the T2V UNet, which cannot interpret the audio
+                # conditioning at all -- it would have generated video that
+                # simply ignored the voice track, with no lip sync and no error.
+                "s2v_unet": "Wan2.2-S2V-14B-Q5_K_M.gguf",
                 "min_vram_gb": 12, "label": "480p (832×480)",
             },
             "720p": {
@@ -98,6 +217,9 @@ MODEL_CONFIGS = {
                 "t2v_unet_low": "wan2.2_t2v_low_noise_14B_Q8_0.gguf",
                 "i2v_unet": "wan2.2_i2v_high_noise_14B_Q4_K_S.gguf",
                 "i2v_unet_low": "wan2.2_i2v_low_noise_14B_Q4_K_S.gguf",
+                # The S2V checkpoint is not resolution-specific; the 480p entry had it
+                # and this one did not, so any 720p dialogue shot aborted.
+                "s2v_unet": "Wan2.2-S2V-14B-Q5_K_M.gguf",
                 "min_vram_gb": 24, "label": "720p (1280×720)",
             },
         },
@@ -236,6 +358,34 @@ def frames_for_duration(seconds: float, fps: int = 24) -> int:
 # Replace any file with a real recording and it will be used automatically.
 
 AMBIENT_PRESETS: dict[str, dict] = {
+    # ── Outdoor/natural beds. The original library was written for the
+    # Belfast series (pub, prison, factory), so any non-urban story fell
+    # through to city rain.
+    "sea_waves": {
+        "desc": "Atlantic surf on rock, slow swell, open air",
+        "filter": ("anoisesrc=r=44100:c=white:a=0.5,lowpass=f=1200,highpass=f=80,"
+                   "tremolo=f=0.12:d=0.65,aecho=0.6:0.5:120:0.3,volume=0.32"),
+    },
+    "sea_storm": {
+        "desc": "Storm sea: heavy breaking waves and wind",
+        "filter": ("anoisesrc=r=44100:c=white:a=0.65,lowpass=f=2200,highpass=f=70,"
+                   "tremolo=f=0.18:d=0.6,aecho=0.6:0.5:90:0.3,volume=0.38"),
+    },
+    "wind_moor": {
+        "desc": "Open moorland wind over grass, desolate, no traffic",
+        "filter": ("anoisesrc=r=44100:c=pink:a=0.35,lowpass=f=900,highpass=f=60,"
+                   "tremolo=f=0.1:d=0.5,volume=0.24"),
+    },
+    "waterfall": {
+        "desc": "Falling water into a pool, steady broadband",
+        "filter": ("anoisesrc=r=44100:c=white:a=0.5,lowpass=f=4000,highpass=f=250,"
+                   "aecho=0.4:0.4:70:0.2,volume=0.28"),
+    },
+    "meadow": {
+        "desc": "Still sunlit meadow, faint breeze",
+        "filter": ("anoisesrc=r=44100:c=pink:a=0.2,lowpass=f=1200,highpass=f=120,"
+                   "tremolo=f=0.1:d=0.4,volume=0.16"),
+    },
     "street_rain": {
         "desc": "Rain on Belfast cobblestones, distant traffic, wet streets",
         # Heavy rain texture (white noise shaped) + low rumble (pink) + faint echo
@@ -314,6 +464,15 @@ AMBIENT_PRESETS: dict[str, dict] = {
 
 # Keyword rules for automatic location → ambient type classification
 _AMBIENT_RULES: list[tuple[list[str], str]] = [
+    # Natural/outdoor first — these are checked before the Belfast-era rules.
+    (["storm", "stormy", "gale", "tempest"], "sea_storm"),
+    (["waterfall", "waterfalls", "cascade", "falls"], "waterfall"),
+    (["sea", "ocean", "wave", "waves", "surf", "shore", "coast", "cliff",
+      "cliffs", "atlantic", "tide", "headland"], "sea_waves"),
+    (["meadow", "meadows", "blossom", "orchard", "wildflowers", "valley",
+      "paradise", "pasture"], "meadow"),
+    (["moor", "heath", "hillside", "ruin", "ruins", "ruined", "fort",
+      "mist", "bog", "heather"], "wind_moor"),
     (["kesh", "prison", "internment", "camp", "cell", "wire"], "prison"),
     (["checkpoint", "army", "military", "patrol", "land rover", "saracen", "barricade"], "military"),
     (["factory", "warehouse", "industrial", "derelict", "abandoned", "machinery"], "factory"),
@@ -325,13 +484,21 @@ _AMBIENT_RULES: list[tuple[list[str], str]] = [
 ]
 
 
-def classify_ambient(location_id: str, location_desc: str = "") -> str:
+def classify_ambient(location_id: str, location_desc: str = "") -> str | None:
     """Map a location to its ambient sound type based on keywords."""
     text = f"{location_id} {location_desc}".lower()
     for keywords, ambient_type in _AMBIENT_RULES:
-        if any(kw in text for kw in keywords):
-            return ambient_type
-    return "street_rain"   # default — it's Belfast, it's always raining
+        # Word-boundary match. A bare substring test put pub ambience under a
+        # desolate ruin because "bar" occurs inside "bare thorn trees", and
+        # matched "camp" in "campaign", "wire" in "wireless", "yard" in
+        # "graveyard". Underscores count as separators so "back_garden" works.
+        for kw in keywords:
+            if re.search(rf"(?<![a-z0-9]){re.escape(kw)}(?![a-z0-9])", text):
+                return ambient_type
+    # No confident match → no ambience. The old default was "street_rain"
+    # ("it's Belfast, it's always raining"), which laid city rain under every
+    # unrecognised location. Silence is better than the wrong room.
+    return None
 
 
 def get_ambient_file(location_id: str, bible: dict) -> Path | None:
@@ -340,6 +507,8 @@ def get_ambient_file(location_id: str, bible: dict) -> Path | None:
         return None
     loc_desc = bible.get("world", {}).get("locations", {}).get(location_id, "")
     ambient_type = classify_ambient(location_id, loc_desc)
+    if not ambient_type:
+        return None
     path = AMBIENCE_DIR / f"{ambient_type}.mp3"
     return path if path.exists() else None
 
@@ -438,44 +607,151 @@ def episode_path(series_name: str, ep_num: int) -> Path:
 
 # ─── Claude API ──────────────────────────────────────────────────────
 
-def call_claude(system_prompt: str, user_prompt: str, max_tokens: int = 8000) -> str:
-    """Call Claude API and return the text response."""
+def _text_of(message) -> str:
+    """
+    Pull the text block out of a response.
+
+    With thinking enabled content[0] is a ThinkingBlock, so the old
+    `message.content[0].text` would raise or return reasoning instead of the
+    answer. Always select by block type.
+    """
+    for block in message.content:
+        if getattr(block, "type", None) == "text":
+            return block.text
+    raise RuntimeError("Claude returned no text block")
+
+
+def _check_stop(message, what: str):
+    """Turn silent truncation/refusal into a clear error instead of bad JSON."""
+    reason = getattr(message, "stop_reason", None)
+    if reason == "max_tokens":
+        raise RuntimeError(
+            f"{what}: response hit the max_tokens ceiling and was cut off. "
+            f"Raise max_tokens or ask for fewer scenes."
+        )
+    if reason == "refusal":
+        details = getattr(message, "stop_details", None)
+        cat = getattr(details, "category", None) if details else None
+        raise RuntimeError(f"{what}: the model declined this request"
+                           f"{f' ({cat})' if cat else ''}.")
+
+
+def _is_schema_error(err) -> bool:
+    """True when a 400 is about the output schema, not billing/auth/params."""
+    msg = str(err).lower()
+    if "credit balance" in msg or "rate limit" in msg:
+        return False
+    return any(k in msg for k in ("schema", "output_config", "output format",
+                                  "json_schema", "additionalproperties"))
+
+
+def _anthropic_call(system_prompt: str, content, max_tokens: int,
+                    schema: dict | None, effort: str, what: str):
+    """
+    One place for every Claude call: adaptive thinking, configurable effort,
+    optional structured output, and streaming (required for large max_tokens,
+    and it keeps long script generations from hitting request timeouts).
+    """
     import anthropic
     client = anthropic.Anthropic()
-    try:
-        message = client.messages.create(
-            model="claude-sonnet-4-20250514",
+
+    output_config: dict = {"effort": effort}
+    if schema is not None:
+        output_config["format"] = {"type": "json_schema", "schema": schema}
+
+    def _send(cfg):
+        with client.messages.stream(
+            model=CLAUDE_MODEL,
             max_tokens=max_tokens,
             system=system_prompt,
-            messages=[{"role": "user", "content": user_prompt}],
-        )
+            thinking={"type": "adaptive"},
+            output_config=cfg,
+            messages=[{"role": "user", "content": content}],
+        ) as stream:
+            return stream.get_final_message()
+
+    try:
+        try:
+            message = _send(output_config)
+        except anthropic.BadRequestError as e:
+            # If this deployment rejects the schema itself, fall back to a
+            # plain call rather than failing the run — call_claude_json can
+            # still recover the object from the raw text.
+            if "format" not in output_config or not _is_schema_error(e):
+                raise
+            print(f"  NOTE: structured output rejected ({str(e)[:120]}); "
+                  f"retrying without a schema")
+            message = _send({"effort": output_config["effort"]})
     except anthropic.AuthenticationError:
         raise RuntimeError("Invalid Anthropic API key. Set ANTHROPIC_API_KEY to a valid key.")
     except anthropic.RateLimitError:
         raise RuntimeError("Anthropic rate limit exceeded. Wait a moment and try again.")
     except anthropic.APIError as e:
         raise RuntimeError(f"Anthropic API error: {e}")
-    return message.content[0].text
+
+    _check_stop(message, what)
+    return _text_of(message)
 
 
-def call_claude_vision(system_prompt: str, content_blocks: list, max_tokens: int = 1000) -> str:
-    """Call Claude API with a multimodal message (text + images)."""
-    import anthropic
-    client = anthropic.Anthropic()
+def call_claude(system_prompt: str, user_prompt: str, max_tokens: int = 16000, *,
+                schema: dict | None = None, effort: str | None = None,
+                what: str = "call_claude") -> str:
+    """Call Claude and return the text response."""
+    return _anthropic_call(system_prompt, user_prompt, max_tokens, schema,
+                           effort or CLAUDE_EFFORT, what)
+
+
+def call_claude_json(system_prompt: str, user_prompt: str,
+                     schema: dict | None = None,
+                     max_tokens: int = 16000, *, effort: str | None = None,
+                     what: str = "call_claude_json") -> dict:
+    """
+    Call Claude with a JSON schema and return the parsed object.
+
+    Structured outputs make the response conform to the schema, which removes
+    the markdown-fence stripping and the "Claude returned invalid JSON" class
+    of failures that used to abort a whole write run.
+    """
+    raw = _anthropic_call(system_prompt, user_prompt, max_tokens, schema,
+                          effort or CLAUDE_EFFORT, what)
+    return _parse_json_response(raw, what)
+
+
+def _parse_json_response(raw: str, what: str) -> dict:
+    """
+    Parse a JSON object out of a model response.
+
+    With structured outputs this is a plain json.loads. It also recovers the
+    object when a schema was unavailable and the model wrapped it in markdown
+    fences or added a sentence around it.
+    """
+    text = raw.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+        if text.rstrip().endswith("```"):
+            text = text.rstrip()[:-3]
+        text = text.strip()
     try:
-        message = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=max_tokens,
-            system=system_prompt,
-            messages=[{"role": "user", "content": content_blocks}],
-        )
-    except anthropic.AuthenticationError:
-        raise RuntimeError("Invalid Anthropic API key. Set ANTHROPIC_API_KEY to a valid key.")
-    except anthropic.RateLimitError:
-        raise RuntimeError("Anthropic rate limit exceeded. Wait a moment and try again.")
-    except anthropic.APIError as e:
-        raise RuntimeError(f"Anthropic API error: {e}")
-    return message.content[0].text
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    start, end = text.find("{"), text.rfind("}")
+    if start != -1 and end > start:
+        try:
+            return json.loads(text[start:end + 1])
+        except json.JSONDecodeError as e:
+            print(f"[{what}] Unparseable response: {raw[:500]}")
+            raise ValueError(f"{what}: could not parse JSON: {e}") from e
+    print(f"[{what}] Unparseable response: {raw[:500]}")
+    raise ValueError(f"{what}: response contained no JSON object")
+
+
+def call_claude_vision(system_prompt: str, content_blocks: list, max_tokens: int = 2000, *,
+                       schema: dict | None = None, effort: str | None = None,
+                       what: str = "call_claude_vision") -> str:
+    """Call Claude with a multimodal message (text + images)."""
+    return _anthropic_call(system_prompt, content_blocks, max_tokens, schema,
+                           effort or CLAUDE_EFFORT, what)
 
 
 def generate_bible(concept: dict) -> dict:
@@ -490,7 +766,7 @@ Return ONLY valid JSON (no markdown fences) with this exact structure:
     "style": "A detailed visual style prompt that will be appended to every video generation prompt. Be specific about art style, color palette, lighting, animation style. 2-3 sentences.",
     "format": {
       "resolution": [480, 320],
-      "fps": 24
+      "fps": 16
     }
   },
   "characters": {
@@ -527,19 +803,54 @@ CONCEPT:
 
 Remember: return ONLY valid JSON, no markdown."""
 
-    response = call_claude(system, user)
-    # Strip markdown fences if present
-    response = response.strip()
-    if response.startswith("```"):
-        response = response.split("\n", 1)[1]
-    if response.endswith("```"):
-        response = response.rsplit("```", 1)[0]
-    response = response.strip()
-    try:
-        return json.loads(response)
-    except json.JSONDecodeError as e:
-        print(f"[generate_bible] Failed to parse JSON: {response[:500]}")
-        raise ValueError(f"generate_bible: Claude returned invalid JSON: {e}") from e
+    # No JSON schema here: the bible keys characters and locations by id
+    # (dynamic object keys), which structured outputs may not accept. The
+    # prompt pins the shape and _parse_json_response recovers the object.
+    return call_claude_json(system, user, schema=None, max_tokens=16000,
+                            what="generate_bible")
+
+
+def _episode_schema() -> dict:
+    """JSON schema for an episode script — keeps clip_length in sync with CLIP_LENGTHS."""
+    return {
+        "type": "object",
+        "properties": {
+            "id": {"type": "string"},
+            "title": {"type": "string"},
+            "summary": {"type": "string"},
+            "scenes": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "location": {"type": "string"},
+                        "characters": {"type": "array", "items": {"type": "string"}},
+                        "clip_length": {"type": "string", "enum": list(CLIP_LENGTHS.keys())},
+                        "visual": {"type": "string"},
+                        "narration": {"type": ["string", "null"]},
+                        "dialogue": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "character": {"type": "string"},
+                                    "line": {"type": "string"},
+                                },
+                                "required": ["character", "line"],
+                                "additionalProperties": False,
+                            },
+                        },
+                    },
+                    "required": ["id", "location", "characters", "clip_length",
+                                 "visual", "narration", "dialogue"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+        "required": ["id", "title", "summary", "scenes"],
+        "additionalProperties": False,
+    }
 
 
 def generate_episode(bible: dict, concept: dict, ep_num: int, total_eps: int, previous_summaries: list[str]) -> dict:
@@ -547,22 +858,51 @@ def generate_episode(bible: dict, concept: dict, ep_num: int, total_eps: int, pr
 
     target_duration = concept.get("episode_duration_seconds", 30)
 
+    # Derive clip physics from CLIP_LENGTHS rather than hardcoding them. The
+    # prompt used to claim 2.0/2.7/3.4s while the pipeline actually renders
+    # 2.1/3.1/5.1s, so every "long" scene ran 1.7s longer than the writer
+    # budgeted for: episodes overshot their target and long scenes were left
+    # with dead air because their narration was written for a 3.4s slot.
+    _order = ["short", "medium", "long"]
+    # Budget against the slot a scene actually KEEPS. Every boundary gives
+    # CROSSFADE_DURATION back to the transition, so writing to the full clip
+    # length makes the last words of a line overrun into the next shot.
+    _fps = float(get_model_config(DEFAULT_VIDEO_MODEL)["fps"])
+    _secs = {k: round(CLIP_LENGTHS[k]["frames"] / _fps - CROSSFADE_DURATION, 1)
+             for k in _order if k in CLIP_LENGTHS}
+    _avg = sum(_secs.values()) / len(_secs)
+    _min_scenes = max(4, int(target_duration / max(_secs.values())))
+    _est_scenes = max(_min_scenes, round(target_duration / _avg))
+
+    # Narration budget follows the narrator's measured speaking rate — voices
+    # differ by ~35% (en-GB-Sonia 2.2 w/s vs en-US-Jenny 3.0 w/s), so a fixed
+    # words-per-second either overruns the clip or leaves silence.
+    _nv = (bible.get("narrator") or {}).get("voice", "")
+    _wps = VOICE_WPS.get(_nv, DEFAULT_WPS)
+    _words = {k: max(3, int(v * _wps)) for k, v in _secs.items()}
+
+    _use = {"short": "action, transitions, quick cuts, reaction shots",
+            "medium": "dialogue exchanges, character moments, two-shots",
+            "long": "atmospheric establishing shots, emotional beats, wide shots"}
+    _len_menu = "\n".join(
+        f"  - {_secs[k]}s ({k}): {_use[k]}" for k in _order if k in _secs)
+    _word_menu = "\n".join(
+        f"  - {_secs[k]}s {k} clip: max {_words[k]} words of narration"
+        for k in _order if k in _secs)
+    _len_list = ", ".join(f"{_secs[k]}s" for k in _order if k in _secs)
+
     system = f"""You are a showrunner writing episode scripts for an animated short-form series.
 Each episode is ~{target_duration} seconds long, made of multiple clips stitched together.
 
 IMPORTANT CONSTRAINTS:
-- Each clip/scene can be 2.0s, 2.7s, or 3.4s long
+- Each clip/scene is exactly {_len_list} long — no other durations exist
 - Total episode duration should be ~{target_duration} seconds (aim for {target_duration - 3} to {target_duration + 3}s)
-- For a {target_duration}s episode you will need roughly {max(9, target_duration // 3)} scenes — DO NOT write fewer than {max(8, target_duration // 4)} scenes
+- For a {target_duration}s episode you will need roughly {_est_scenes} scenes — DO NOT write fewer than {_min_scenes} scenes
 - Choose clip duration based on content:
-  - 2.0s (short): action, transitions, quick cuts, reaction shots
-  - 2.7s (medium): dialogue exchanges, character moments, two-shots
-  - 3.4s (long): atmospheric establishing shots, emotional beats, wide shots
+{_len_menu}
 - Each scene needs a visual description that works as a text-to-video prompt
-- NARRATION WORD LIMIT (TTS speaks ~2.5 words/second):
-  - 2.0s short clip: max 5 words of narration
-  - 2.7s medium clip: max 7 words of narration
-  - 3.4s long clip: max 8 words of narration
+- NARRATION WORD LIMIT (this narrator speaks ~{_wps} words/second):
+{_word_menu}
   - COUNT the words before finalising — narration that overruns will be cut off
 - Dialogue lines should also be brief (5-8 words max per line); one line per dialogue scene
 - COUNT your scene durations as you write to ensure they sum to ~{target_duration}s before finishing
@@ -589,7 +929,9 @@ Return ONLY valid JSON (no markdown fences) with this structure:
       "narration": "Voiceover text (word count must fit clip — see limits above), or null",
       "dialogue": [
         {{"character": "character_id", "line": "Brief line (5-8 words max)"}}
-      ]
+      ],
+      "setup": "master|reverse|wider|closer|side — which camera setup of the location",
+      "staging": "left|right|close — where the character sits in frame (close-ups only), or omit"
     }}
   ]
 }}
@@ -601,7 +943,30 @@ RULES:
 - A scene can have narration OR dialogue OR both (if both are very brief), or neither
 - Dialogue scenes need static/slow camera so the spoken line is coherent with what's on screen
 - Start with an establishing shot, end with a closing shot
-- The episode should tell a complete mini-story while advancing the season arc"""
+- The episode should tell a complete mini-story while advancing the season arc
+
+CAMERA COVERAGE — "setup" and "staging":
+Each location has a small library of fixed camera setups, and a shot is rendered
+from the plate for the setup you name. Naming them is how a scene keeps the same
+geography from cut to cut instead of re-inventing the place every shot.
+
+- "master"  the established view of the location
+- "reverse" the opposite angle, looking back
+- "wider"   pulled back, more landscape
+- "closer"  pushed in
+- "side"    a different vantage on the same ground
+
+Obey the 180-degree rule in any two-hander. Pick ONE character to shoot from
+"master" and always shoot the OTHER from "reverse", for the whole conversation.
+Do not swap mid-scene: their eyelines stop matching and the two of them appear
+not to be looking at each other. Use "wider" when someone turns away or leaves,
+"closer" to tighten as a scene intensifies.
+
+"staging" applies to close-ups only and says where the character sits in frame.
+
+Prefer FEWER, LONGER shots. Clips cap at ~5s, so a 16-shot minute averages under
+4s a shot and reads as restless. Aim for 10-12 shots a minute and let "long"
+clips carry the weight."""
 
     prev_context = ""
     if previous_summaries:
@@ -628,24 +993,19 @@ This is {'the first episode — introduce the world and characters' if ep_num ==
 Target duration: ~{target_duration} seconds.
 Return ONLY valid JSON, no markdown."""
 
-    response = call_claude(system, user, max_tokens=4000)
-    response = response.strip()
-    if response.startswith("```"):
-        response = response.split("\n", 1)[1]
-    if response.endswith("```"):
-        response = response.rsplit("```", 1)[0]
-    response = response.strip()
-    try:
-        return json.loads(response)
-    except json.JSONDecodeError as e:
-        print(f"[generate_episode] Failed to parse JSON: {response[:500]}")
-        raise ValueError(f"generate_episode: Claude returned invalid JSON: {e}") from e
+    # 4000 tokens was tight: a 17-scene episode already lands near 2.4k, so a
+    # longer episode truncated mid-JSON and aborted the run.
+    return call_claude_json(system, user, schema=_episode_schema(),
+                            max_tokens=16000, what=f"generate_episode ep{ep_num:02d}")
 
 
 # ─── TTS ─────────────────────────────────────────────────────────────
 
 # Per-voice speaking rates (measured from Edge-TTS output)
 VOICE_WPS: dict[str, float] = {
+    # Measured on this box with ffprobe, not estimated.
+    "en-IE-ConnorNeural": 2.78,
+    "en-IE-EmilyNeural": 2.75,
     "en-US-JennyNeural": 3.0,
     "en-US-AmberNeural": 2.8,
     "en-US-AriaNeural": 2.9,
@@ -659,6 +1019,52 @@ VOICE_WPS: dict[str, float] = {
     "en-GB-GeorgeNeural": 2.3,
 }
 DEFAULT_WPS = 2.5
+# Cap on how much a narration line may be sped up to fit its shot.
+MAX_NARRATION_SPEEDUP = 22
+
+
+# Edge-TTS pads every clip: measured 0.226s before the first word and 0.90s
+# after the last. On a 2.6s dialogue shot that is 1.1s -- 42% -- of dead air.
+# It matters more than it sounds, because S2V sizes the clip to its audio and
+# drives the mouth from it, so the character stands mute for nearly half of
+# their own dialogue shot. Trim to a natural breath instead.
+TTS_LEAD_PAD = 0.06        # keep a little, or the line starts abruptly
+TTS_TAIL_PAD = 0.18        # and a little after, or it feels clipped
+
+
+def _trim_tts_silence(path: str) -> bool:
+    """Trim Edge-TTS lead-in/tail silence in place, leaving a natural breath."""
+    try:
+        import numpy as np
+        raw = subprocess.run(
+            ["ffmpeg", "-v", "error", "-i", path, "-ac", "1", "-ar", "16000",
+             "-f", "f32le", "-"], capture_output=True, timeout=120).stdout
+        x = np.frombuffer(raw, dtype=np.float32)
+        if x.size < 1600:
+            return False
+        env = np.abs(x)
+        peak = float(env.max())
+        if peak <= 0:
+            return False
+        idx = np.where(env > peak * 0.06)[0]
+        if idx.size == 0:
+            return False
+        start = max(0.0, idx[0] / 16000 - TTS_LEAD_PAD)
+        end = min(len(x) / 16000, idx[-1] / 16000 + TTS_TAIL_PAD)
+        if end - start < 0.25 or (end - start) >= (len(x) / 16000) - 0.05:
+            return False                       # nothing worth trimming
+        tmp = path + ".trim.mp3"
+        ok = run_ffmpeg(["ffmpeg", "-v", "error", "-y", "-i", path,
+                         "-ss", f"{start:.3f}", "-to", f"{end:.3f}",
+                         "-c:a", "libmp3lame", "-q:a", "2", tmp],
+                        "trim tts silence")
+        if ok and Path(tmp).exists() and Path(tmp).stat().st_size > 1000:
+            shutil.move(tmp, path)
+            return True
+        Path(tmp).unlink(missing_ok=True)
+    except Exception:                                          # noqa: BLE001
+        pass
+    return False
 
 
 async def generate_tts_scene(text: str, voice: str, output_path: str,
@@ -667,6 +1073,7 @@ async def generate_tts_scene(text: str, voice: str, output_path: str,
     import edge_tts
     communicate = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch)
     await communicate.save(output_path)
+    _trim_tts_silence(output_path)
 
 
 def _concat_audio_files(parts: list[str], output_path: str):
@@ -690,6 +1097,12 @@ def _concat_audio_files(parts: list[str], output_path: str):
 
 def _get_character_prosody(char: dict) -> tuple[str, str]:
     """Return (rate, pitch) for Edge-TTS based on character voice_notes."""
+    # An explicit rate/pitch on the character or narrator always wins — the
+    # keyword heuristic below can only ever slow a voice down, so there was no
+    # way to fit more narration into a clip without rewriting the line.
+    if char.get("rate") or char.get("pitch"):
+        return char.get("rate", "+0%"), char.get("pitch", "+0Hz")
+
     notes = (char.get("voice_notes", "") + " " + char.get("style", "")).lower()
     rate = "+0%"
     pitch = "+0Hz"
@@ -745,22 +1158,32 @@ def generate_episode_audio(episode: dict, bible: dict, output_dir: Path) -> list
             # Generate narration segment
             if has_narration:
                 narr_text = scene["narration"]
-                wps = VOICE_WPS.get(narrator_voice, DEFAULT_WPS)
-                # Truncate narration if needed (leave room for dialogue)
                 dialogue_budget = len(scene.get("dialogue", [])) * 1.5  # ~1.5s per line estimate
                 narr_budget = clip_dur - dialogue_budget if has_dialogue else clip_dur
-                max_words = int(narr_budget * wps * 0.9)
-                if len(narr_text.split()) > max_words > 0:
-                    words = narr_text.split()[:max_words]
-                    narr_text = " ".join(words)
-                    last_break = max(narr_text.rfind("."), narr_text.rfind(","))
-                    if last_break > len(narr_text) * 0.6:
-                        narr_text = narr_text[:last_break + 1]
-                    print(f"    {scene['id']}: trimmed narration to {len(narr_text.split())} words")
 
+                # This used to cut the SCRIPT to fit: max_words = budget * wps * 0.9,
+                # with wps falling back to a guess for any voice missing from
+                # VOICE_WPS. It silently dropped the last word of five lines in a
+                # sixteen-shot episode -- "the Land of Eternal" with no "Youth".
+                # Speak the whole line and fit it by delivery speed instead; only
+                # complain if even that cannot make it fit.
                 part_file = str(temp_dir / f"{part_idx:02d}_narration.mp3")
                 asyncio.run(generate_tts_scene(narr_text, narrator_voice, part_file,
                                                rate=narrator_prosody[0], pitch=narrator_prosody[1]))
+                spoken = _get_video_duration(part_file)
+                if narr_budget > 0 and spoken > narr_budget:
+                    over = spoken / narr_budget
+                    pct = min(MAX_NARRATION_SPEEDUP, int((over - 1) * 100) + 3)
+                    asyncio.run(generate_tts_scene(narr_text, narrator_voice, part_file,
+                                                   rate=f"+{pct}%", pitch=narrator_prosody[1]))
+                    now = _get_video_duration(part_file)
+                    print(f"    {scene['id']}: narration {spoken:.2f}s > {narr_budget:.2f}s slot "
+                          f"— respoken at +{pct}% ({now:.2f}s)")
+                    if now > narr_budget + 0.05:
+                        fatal(f"{scene['id']} narration is {now - narr_budget:.2f}s too long "
+                              f"even at +{pct}%",
+                              "Shorten the line in the episode JSON. Nothing is being cut, so "
+                              "the audio would overrun the shot and drift the rest of the film.")
                 audio_parts.append(part_file)
                 part_idx += 1
 
@@ -995,7 +1418,7 @@ def build_wan_t2v_workflow(prompt: str, seed: int, clip_prefix: str, frames: int
     # Decode and save
     wf["13"] = {"class_type": "VAEDecode", "inputs": {"samples": [sampled_output, 0], "vae": ["3", 0]}}
     wf["14"] = {"class_type": "CreateVideo", "inputs": {"images": ["13", 0], "fps": float(mc["fps"])}}
-    wf["15"] = {"class_type": "SaveVideo", "inputs": {"video": ["14", 0], "filename_prefix": f"video/{clip_prefix}", "format": "mp4", "codec": "h264"}}
+    wf["15"] = {"class_type": "SaveVideo", "inputs": {"video": ["14", 0], "filename_prefix": save_prefix(clip_prefix), "format": "mp4", "codec": "h264"}}
 
     # LoRA injection (single model — high-noise only)
     if loras:
@@ -1110,7 +1533,7 @@ def build_wan_i2v_workflow(prompt: str, image_name: str, seed: int, clip_prefix:
     # Decode and save
     wf["16"] = {"class_type": "VAEDecode", "inputs": {"samples": [sampled_output, 0], "vae": ["4", 0]}}
     wf["17"] = {"class_type": "CreateVideo", "inputs": {"images": ["16", 0], "fps": float(mc["fps"])}}
-    wf["18"] = {"class_type": "SaveVideo", "inputs": {"video": ["17", 0], "filename_prefix": f"video/{clip_prefix}", "format": "mp4", "codec": "h264"}}
+    wf["18"] = {"class_type": "SaveVideo", "inputs": {"video": ["17", 0], "filename_prefix": save_prefix(clip_prefix), "format": "mp4", "codec": "h264"}}
 
     return wf
 
@@ -1155,7 +1578,9 @@ def _resolve_wan_dual_loras(loras: list[tuple[str, float]] | None) -> tuple[list
             high_loras.append((high_file, strength))
             print(f"[WAN] Resolved LoRA (high): {lora_name} → {high_file}")
         else:
-            print(f"[WAN] WARNING: LoRA not found: {lora_name} (checked {high_file})")
+            fatal(f"LoRA not found: {lora_name} (checked {high_file})",
+                  "The shot would render without it and look plausible while "
+                  "proving nothing about the LoRA.")
 
         if has_low:
             low_loras.append((low_file, strength))
@@ -1166,6 +1591,21 @@ def _resolve_wan_dual_loras(loras: list[tuple[str, float]] | None) -> tuple[list
             print(f"[WAN] No -low variant for {lora_name}, using -high for both models")
 
     return high_loras or None, low_loras or None
+
+
+def _s2v_unet(rc: dict) -> str:
+    """
+    The speech-to-video checkpoint. Falling back to the T2V UNet would produce
+    a clip that ignores the audio entirely -- no lip sync, no error, no clue.
+    """
+    name = rc.get("s2v_unet")
+    if not name:
+        raise RuntimeError("No s2v_unet configured for this resolution")
+    if not (COMFYUI_DIR / "models" / "unet" / name).exists():
+        raise RuntimeError(
+            f"S2V model missing: models/unet/{name}. Download it from "
+            f"QuantStack/Wan2.2-S2V-14B-GGUF before using dialogue scenes.")
+    return name
 
 
 def build_wan_s2v_workflow(prompt: str, audio_path: str, seed: int, clip_prefix: str, frames: int,
@@ -1222,10 +1662,19 @@ def build_wan_s2v_workflow(prompt: str, audio_path: str, seed: int, clip_prefix:
     wf["9"] = {"class_type": "WanSoundImageToVideo", "inputs": s2v_inputs}
 
     # UNet + sampling (single model + KSampler — dual-model SplitSigmas causes mosaic)
-    wf["1"] = {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": rc["t2v_unet"]}}
+    wf["1"] = {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": _s2v_unet(rc)}}
     wf["10"] = {"class_type": "ModelSamplingSD3", "inputs": {"model": ["1", 0], "shift": rc["shift"]}}
+    # Sample from node 9's CONDITIONING outputs, not the raw text encodings.
+    # wan_sound_to_video() writes both the audio embedding and the ref_image's
+    # VAE latent into the conditioning it returns:
+    #     positive = conditioning_set_values(positive, {"audio_embed": ...})
+    #     positive = conditioning_set_values(positive, {"reference_latents": [ref_latent]})
+    # Taking only its latent (["9", 2]) and passing ["4", 0] / ["5", 0] to the
+    # sampler threw the character reference away on every S2V shot. Measured
+    # consequence: S2V identity averaged 0.777 against I2V's 0.876, and seven
+    # of the eight worst shots in ep04 were dialogue shots.
     wf["11"] = {"class_type": "KSampler", "inputs": {
-        "model": ["10", 0], "positive": ["4", 0], "negative": ["5", 0],
+        "model": ["10", 0], "positive": ["9", 0], "negative": ["9", 1],
         "latent_image": ["9", 2], "seed": seed, "steps": steps, "cfg": mc["cfg"],
         "sampler_name": mc["sampler"], "scheduler": mc["scheduler"], "denoise": 1.0,
     }}
@@ -1234,7 +1683,7 @@ def build_wan_s2v_workflow(prompt: str, audio_path: str, seed: int, clip_prefix:
 
     wf["16"] = {"class_type": "VAEDecode", "inputs": {"samples": [sampled_output, 0], "vae": ["3", 0]}}
     wf["17"] = {"class_type": "CreateVideo", "inputs": {"images": ["16", 0], "fps": float(mc["fps"])}}
-    wf["18"] = {"class_type": "SaveVideo", "inputs": {"video": ["17", 0], "filename_prefix": f"video/{clip_prefix}", "format": "mp4", "codec": "h264"}}
+    wf["18"] = {"class_type": "SaveVideo", "inputs": {"video": ["17", 0], "filename_prefix": save_prefix(clip_prefix), "format": "mp4", "codec": "h264"}}
 
     # LoRA injection (single model)
     if loras:
@@ -1309,7 +1758,7 @@ def build_wan_animate_workflow(prompt: str, ref_image: str, motion_video: str,
         "16": {"class_type": "VAEDecode", "inputs": {"samples": ["11", 0], "vae": ["3", 0]}},
         "17": {"class_type": "CreateVideo", "inputs": {"images": ["16", 0], "fps": float(mc["fps"])}},
         "18": {"class_type": "SaveVideo", "inputs": {
-            "video": ["17", 0], "filename_prefix": f"video/{clip_prefix}",
+            "video": ["17", 0], "filename_prefix": save_prefix(clip_prefix),
             "format": "mp4", "codec": "h264"
         }},
     }
@@ -1487,7 +1936,7 @@ def get_ip_adapter_ref(scene: dict, series_name: str) -> str | None:
     char_key = characters[0]
     char_id = char_key.removeprefix("char_")
     ref_dir = series_path(series_name) / "reference_images"
-    char_ref = ref_dir / f"char_{char_id}.png"
+    char_ref = _find_ref(ref_dir, char_id, "char") or ref_dir / f"char_{char_id}.png"
 
     if char_ref.exists():
         return copy_to_input(str(char_ref))
@@ -1567,9 +2016,16 @@ def build_scene_prompt(scene: dict, bible: dict) -> str:
         if not char:
             continue
         if char.get("lora_path"):
+            # Emit the trigger word AND a brief description. The trigger is what
+            # actually activates the LoRA -- without it in the prompt the LoRA
+            # loads, wires correctly, and does absolutely nothing, with no error.
+            # Keeping the brief too means a weak LoRA degrades to a described
+            # character rather than to a stranger.
             trigger = char.get("trigger_word", "")
             if trigger:
                 parts.append(trigger)
+            if char.get("visual"):
+                parts.append(_char_brief(char))
         elif char.get("visual"):
             parts.append(_char_brief(char))
 
@@ -1591,9 +2047,21 @@ def build_scene_prompt(scene: dict, bible: dict) -> str:
     if cam and not any(w in visual_lower for w in ["static", "handheld", "tracking", "pan", "push", "drift"]):
         parts.append(cam)
 
-    # 5. Location trigger (LoRA handles the look; skip for close-up dialogue)
+    # 5. Location. Close-up dialogue used to be skipped entirely, on the theory
+    # that the background competes with the face. The effect was the opposite of
+    # intended: with NO setting in the prompt the model invents one, so dialogue
+    # close-ups came back in modern interiors and studio rooms while the scene
+    # was supposed to be on a windswept cliff. Close-ups now get a short setting
+    # cue -- enough to anchor the background, not enough to fight the face.
     loc_id = scene.get("location")
-    if loc_id and not (is_dialogue and shot_type == "closeup"):
+    if loc_id and is_dialogue and shot_type == "closeup":
+        loc_desc = bible.get("world", {}).get("locations", {}).get(loc_id, "")
+        if loc_desc:
+            # first clause only: "A high green headland above a calm sea"
+            brief = loc_desc.split(",")[0].split(".")[0].strip()
+            if brief:
+                parts.append(f"{brief} in the background, softly out of focus")
+    elif loc_id:
         locations_meta = bible.get("locations_meta", {})
         loc_meta = locations_meta.get(loc_id) or locations_meta.get(f"loc_{loc_id}") if isinstance(locations_meta, dict) else None
         if loc_meta and isinstance(loc_meta, dict):
@@ -1605,14 +2073,64 @@ def build_scene_prompt(scene: dict, bible: dict) -> str:
                 if loc_desc:
                     parts.append(loc_desc)
 
-    # 6. Style — one short phrase, not the full user description
+    # 6. Style — the first SENTENCE, not the first clause.
+    # split(",")[0] kept only the text before the first comma, so a style
+    # reading "Cinematic epic fantasy, photorealistic live-action film still"
+    # was truncated to the genre label and the photoreal qualifier was thrown
+    # away. Every prompt then ENDED on a term associated with concept art, and
+    # shots collapsed into cel-shaded cartoon while "cartoon, anime" sat
+    # uselessly in the negative prompt.
     series_style = bible["series"].get("style", "")
     if series_style:
-        short_style = series_style.split(",")[0].strip()[:60]
+        short_style = series_style.split(".")[0].strip()
+        if len(short_style) > 150:
+            # cut at a clause boundary, never mid-word
+            cut = short_style[:150].rfind(",")
+            short_style = short_style[:cut if cut > 60 else 150].strip()
         parts.append(short_style)
 
     # Clean up: strip trailing periods from parts before joining
     cleaned = [p.rstrip(".").strip() for p in parts if p]
+
+    # ── Style first for S2V ──────────────────────────────────────────
+    # Diffusion weights early tokens far more heavily, and the style sits LAST
+    # here, where it counts least. That is fine for I2V and T2V: their seed is
+    # a reference image already rendered in the series style, so the look comes
+    # in through the picture rather than the words.
+    #
+    # S2V has no such luck. It is seeded from a character portrait, but the S2V
+    # checkpoint's own prior overrides it -- a cel-shaded portrait came back as
+    # a smooth 3D-CGI face with the wrong hair, in an episode where every other
+    # shot was flat cel. Moving the style to the FRONT of the prompt fixed it:
+    # same scene, same seed, clean linework and flat colour.
+    #
+    # Scoped deliberately to S2V. I2V and T2V already render correctly and
+    # there is no measurement saying the reorder helps them, so they are left
+    # alone rather than changed on a hunch.
+    if cleaned and classify_scene_type(scene) == "s2v" and series_style:
+        style_part = cleaned[-1]
+        if style_part.startswith(short_style.rstrip(".")[:30]):
+            # Lead with the RENDERING technique only. A palette clause at the
+            # very front lands on whatever follows it, and what follows it is
+            # the character: "...restrained palette of greens. Oisin." rendered
+            # him with green skin, as an ogre. Colour is art direction for the
+            # frame, not a description of the subject, so it stays at the back
+            # where it tints the picture instead of the person.
+            clauses = [c.strip() for c in style_part.split(",") if c.strip()]
+            technique, colour = [], []
+            for c in clauses:
+                low = c.lower()
+                is_colour = ("palette" in low
+                             or any(w in low for w in ("greens", "blues", "gold",
+                                                       "slate", "colour of", "hues")))
+                (colour if is_colour else technique).append(c)
+            if technique:
+                cleaned = [", ".join(technique)] + cleaned[:-1]
+                if colour:
+                    cleaned.append(", ".join(colour))
+            else:
+                cleaned = [style_part] + cleaned[:-1]
+
     return ". ".join(filter(None, cleaned)) + "."
 
 
@@ -1625,12 +2143,36 @@ def build_negative_prompt(scene: dict) -> str:
     - Action: static/frozen frames defeat the purpose
     - Close-up: multiple faces or merged identities
     """
-    base = "low quality, blurry, distorted, deformed, ugly, watermark, text overlay, oversaturated"
+    # "painting/illustration" belongs in the negatives, not as a "not a
+    # painting" phrase in the positive prompt -- diffusion models do not
+    # handle negation there and will happily render what you told them not to.
+    # The series is deliberately cel-shaded, so suppressing "cartoon/anime/
+    # illustration" here was spending guidance to fight the look we want -- and
+    # losing, unevenly, which is what produced two visual styles in one episode.
+    # Keep only genuine defects.
+    base = ("low quality, blurry, distorted, deformed, ugly, watermark, text overlay, "
+            "oversaturated, smeared, melting, warped anatomy, extra fingers, "
+            "photorealistic, live action, photograph")
     visual_lower = scene.get("visual", "").lower()
     is_dialogue = bool(scene.get("dialogue"))
     shot_type = _infer_shot_type(scene.get("visual", ""))
 
     extras = []
+    if classify_scene_type(scene) == "s2v":
+        # The S2V checkpoint's prior pulls hard toward smooth 3D-CGI faces and
+        # overrides its own seed image -- a cel-shaded portrait came back as a
+        # game-cutscene head in an episode where every other shot was flat cel.
+        # Moving the style to the front of the prompt fixes most of it; naming
+        # the failure mode here measurably improved the rest (warmer painted
+        # background, the character's gold detailing preserved).
+        extras.extend([
+            "3d render", "cgi", "computer generated", "smooth plastic skin",
+            "video game cutscene", "unreal engine", "realistic rendering",
+            # The series palette is green-heavy and, front-loaded in the
+            # prompt, it once tinted the character's skin rather than the
+            # scene -- a close-up came back as a green ogre.
+            "green skin", "tinted skin", "monster", "ogre", "orc",
+        ])
     if is_dialogue:
         extras.extend([
             "fast movement", "shaky camera", "motion blur", "erratic motion",
@@ -1666,6 +2208,34 @@ def get_scene_lora(scene: dict, bible: dict) -> tuple[str | None, float]:
     return None, 0.7
 
 
+def lora_is_stale(lora_name: str, ref_dir: Path) -> bool:
+    """Was this LoRA trained before the current reference images were made?
+
+    A LoRA carries the STYLE of the images it was trained on, not just the
+    identity. When the series style changes, every existing character LoRA is
+    suddenly training data from a different show -- and it does not announce
+    that, it just quietly pulls shots back toward the old look.
+
+    Compared by mtime against the reference images, so retraining a character
+    on the current anchors clears the staleness automatically rather than
+    needing a flag flipped somewhere.
+    """
+    if not ref_dir.exists():
+        return False
+    refs = list(ref_dir.glob("*.png"))
+    if not refs:
+        return False
+    newest_ref = max(r.stat().st_mtime for r in refs)
+    lora_dir = COMFYUI_DIR / "models" / "loras"
+    base = lora_name.removesuffix(".safetensors")
+    for cand in (lora_dir / lora_name,
+                 lora_dir / f"{base}-high.safetensors",
+                 lora_dir / f"{base}-low.safetensors"):
+        if cand.exists():
+            return cand.stat().st_mtime < newest_ref
+    return False
+
+
 def get_scene_loras(scene: dict, bible: dict) -> list[tuple[str, float]]:
     """Return all LoRAs for a scene: up to 2 character LoRAs + 1 location/style LoRA.
 
@@ -1698,16 +2268,57 @@ def get_scene_loras(scene: dict, bible: dict) -> list[tuple[str, float]]:
 
 # ─── Prompt enhancement via Claude ───────────────────────────────────
 
+# ─── Crash-safe JSON state ────────────────────────────────────────────
+# Production runs are expected to be interrupted (SSH drop, OOM, pod
+# restart). A plain write_text() that is cut off mid-flush leaves a
+# truncated file, and the next run then dies in json.loads() before it
+# can resume. Read tolerantly, write atomically.
+
+def read_json_state(path: Path, default):
+    """Load JSON state, surviving a missing or half-written file."""
+    if not path.exists():
+        return default
+    try:
+        return json.loads(path.read_text())
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError) as e:
+        salvage = path.with_suffix(path.suffix + ".corrupt")
+        try:
+            path.replace(salvage)
+            print(f"  WARNING: {path.name} was unreadable ({e}); "
+                  f"moved to {salvage.name} and starting fresh")
+        except OSError:
+            print(f"  WARNING: {path.name} was unreadable ({e}); ignoring it")
+        return default
+
+
+def write_json_state(path: Path, data):
+    """Write JSON so an interrupted run can never leave a partial file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=f".{path.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)          # atomic within the same filesystem
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
 PROMPT_CACHE_FILE = "prompt_cache.json"
 
 
 def load_prompt_cache(ep_out: Path) -> dict:
-    f = ep_out / PROMPT_CACHE_FILE
-    return json.loads(f.read_text()) if f.exists() else {}
+    cache = read_json_state(ep_out / PROMPT_CACHE_FILE, {})
+    return cache if isinstance(cache, dict) else {}
 
 
 def save_prompt_cache(ep_out: Path, cache: dict):
-    (ep_out / PROMPT_CACHE_FILE).write_text(json.dumps(cache, indent=2, ensure_ascii=False))
+    write_json_state(ep_out / PROMPT_CACHE_FILE, cache)
 
 
 def enhance_scene_prompt(scene: dict, bible: dict, base_prompt: str) -> str:
@@ -1848,6 +2459,30 @@ def validate_episode_clips(scenes: list) -> dict[str, tuple[bool, str]]:
     return results
 
 
+def _graph_check(workflow: dict, mode: str = "?"):
+    """Validate the graph before it costs GPU time.
+
+    Ten silent defects reached finished renders in this project. Configuration
+    checks, data checks and output checks all passed on every one, because the
+    fault was in the GRAPH -- most expensively, an S2V sampler wired to raw
+    text conditioning so the character reference was discarded on every
+    dialogue shot for the life of the project.
+    """
+    try:
+        import validate_workflow as vw
+        problems = vw.check(workflow, mode)
+    except Exception:                                          # noqa: BLE001
+        return                                                 # never block on the checker itself
+    if problems:
+        print("      GRAPH PROBLEM:")
+        for p_ in problems:
+            print(f"        {p_}")
+        if STRICT:
+            raise PipelineError(
+                "workflow graph is wrong before any GPU time was spent:\n         "
+                + "\n         ".join(problems))
+
+
 def queue_prompt(workflow: dict) -> str:
     client_id = str(uuid.uuid4())
     r = requests.post(f"{SERVER}/prompt", json={"prompt": workflow, "client_id": client_id})
@@ -1911,14 +2546,28 @@ def extract_last_frame(video_path: str, output_path: str) -> bool:
     return os.path.exists(output_path)
 
 
-def find_latest_clip(prefix: str) -> str | None:
-    if not COMFYUI_OUTPUT.is_dir():
+# ComfyUI appends a counter to the prefix: "ep01_s01" -> "ep01_s01_00007_.mp4"
+_CLIP_SUFFIX_RE = re.compile(r"^(_\d+_?)?\.mp4$", re.IGNORECASE)
+
+
+def find_latest_clip(prefix: str, series: str | None = None) -> str | None:
+    """
+    Newest rendered clip for a scene id, searched within one series only.
+
+    Suffix matching is boundary-aware rather than a bare startswith(): scene
+    ids are zero-padded today, but if a generated episode ever emitted
+    "ep01_s1" alongside "ep01_s10", startswith() would silently return the
+    wrong scene's clip.
+    """
+    d = clip_dir(series)
+    if not d.is_dir():
         return None
-    candidates = [f for f in os.listdir(COMFYUI_OUTPUT) if f.startswith(prefix) and f.endswith(".mp4")]
+    candidates = [f for f in os.listdir(d)
+                  if f.startswith(prefix) and _CLIP_SUFFIX_RE.match(f[len(prefix):])]
     if not candidates:
         return None
-    candidates.sort(key=lambda f: os.path.getmtime(COMFYUI_OUTPUT / f), reverse=True)
-    return str(COMFYUI_OUTPUT / candidates[0])
+    candidates.sort(key=lambda f: os.path.getmtime(d / f), reverse=True)
+    return str(d / candidates[0])
 
 
 def copy_to_input(src: str) -> str:
@@ -1999,7 +2648,12 @@ def _mux_clip_audio(clip_path: str, audio: Path | None, out: str,
     Falls back to simple mux if the filter chain fails.
     """
     duration = _get_video_duration(clip_path) or 4.0
-    trim = f"atrim=duration={duration:.3f},asetpts=PTS-STARTPTS"
+    # atrim only TRUNCATES. A 4.0s narration in a 5.06s clip stayed 4.0s, so the
+    # muxed clip carried less audio than video; acrossfade then packed the clips
+    # end-to-end on audio time while xfade used video time, and every scene
+    # after the first drifted earlier. Pad to the exact clip length.
+    trim = (f"atrim=duration={duration:.3f},asetpts=PTS-STARTPTS,"
+            f"apad=whole_dur={duration:.3f}")
 
     # ── Build input list, tracking stream indices explicitly ──────────
     cmd_inputs: list[str] = ["-i", clip_path]
@@ -2061,10 +2715,16 @@ def _mux_clip_audio(clip_path: str, audio: Path | None, out: str,
 
     # Final amix
     layers = [vo_out] + ([amb_out] if amb_out else []) + ([mus_out] if mus_out else [])
+    # duration=shortest cut the whole mix down to the narration even when a
+    # full-length ambience bed was present. Take the longest, then trim to the
+    # clip so every muxed clip is exactly as long as its picture.
+    pad_trim = (f"apad=whole_dur={duration:.3f},atrim=duration={duration:.3f},"
+                f"asetpts=PTS-STARTPTS")
     if len(layers) == 1:
-        fp.append(f"{layers[0]}acopy[audio_out]")
+        fp.append(f"{layers[0]}{pad_trim}[audio_out]")
     else:
-        fp.append(f"{''.join(layers)}amix=inputs={len(layers)}:duration=shortest:normalize=0[audio_out]")
+        fp.append(f"{''.join(layers)}amix=inputs={len(layers)}:duration=longest:"
+                  f"normalize=0,{pad_trim}[audio_out]")
 
     result = subprocess.run([
         "ffmpeg", "-y", *cmd_inputs,
@@ -2078,10 +2738,11 @@ def _mux_clip_audio(clip_path: str, audio: Path | None, out: str,
 
     # Fallback: plain mux without ambience/music
     if result.returncode != 0 or not os.path.exists(out):
-        vo_inputs = (["-i", str(audio), "-map", "0:v:0", "-map", "1:a:0", "-shortest"]
+        pad = ["-af", f"apad=whole_dur={duration:.3f}", "-t", f"{duration:.3f}"]
+        vo_inputs = (["-i", str(audio), "-map", "0:v:0", "-map", "1:a:0", *pad]
                      if (audio and audio.exists()) else
                      ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
-                      "-map", "0:v:0", "-map", "1:a:0", "-shortest"])
+                      "-map", "0:v:0", "-map", "1:a:0", *pad])
         subprocess.run([
             "ffmpeg", "-y", "-i", clip_path, *vo_inputs,
             "-c:v", "libx264", "-preset", "fast", "-crf", "18",
@@ -2089,18 +2750,164 @@ def _mux_clip_audio(clip_path: str, audio: Path | None, out: str,
         ], capture_output=True, timeout=120)
 
 
+def run_ffmpeg(cmd: list, what: str, output: str | Path | None = None,
+               timeout: int = 300) -> bool:
+    """
+    Run ffmpeg and actually check whether it worked.
+
+    Most ffmpeg calls in this file discarded the result, so a failed stitch,
+    grade or mux left the previous file in place and the pipeline carried on
+    using it -- the next stage would happily grade or subtitle a stale master
+    and report success. Returns True only if ffmpeg exited 0 AND the expected
+    output exists and is non-trivial.
+    """
+    try:
+        r = subprocess.run(cmd, capture_output=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        print(f"      ERROR: {what} timed out after {timeout}s")
+        return False
+    if r.returncode != 0:
+        tail = r.stderr.decode(errors="replace").strip().splitlines()[-4:]
+        print(f"      ERROR: {what} failed (exit {r.returncode})")
+        for line in tail:
+            print(f"        {line[:160]}")
+        return False
+    if output is not None:
+        f = Path(output)
+        if not f.exists() or f.stat().st_size < 1024:
+            print(f"      ERROR: {what} produced no usable output at {f}")
+            return False
+    return True
+
+
 def _get_video_duration(path: str) -> float:
-    """Return video duration in seconds via ffprobe."""
+    """
+    Duration in seconds via ffprobe, for video OR audio files.
+
+    This used to look only for a stream with codec_type == "video", so it
+    returned 0.0 for every .mp3 -- which silently disabled the "use the real
+    narration length" path in generate_srt() and made callers fall back to
+    nominal clip lengths without ever saying so.
+    """
     result = subprocess.run([
-        "ffprobe", "-v", "quiet", "-print_format", "json", "-show_streams", path
+        "ffprobe", "-v", "quiet", "-print_format", "json",
+        "-show_streams", "-show_format", path
     ], capture_output=True, text=True, timeout=15)
     try:
-        for stream in json.loads(result.stdout).get("streams", []):
-            if stream.get("codec_type") == "video":
-                return float(stream.get("duration", 0))
+        data = json.loads(result.stdout)
     except Exception:
-        pass
-    return 0.0
+        return 0.0
+    for want in ("video", "audio"):
+        for stream in data.get("streams", []):
+            if stream.get("codec_type") == want:
+                try:
+                    return float(stream.get("duration", 0))
+                except (TypeError, ValueError):
+                    pass
+    try:
+        return float(data.get("format", {}).get("duration", 0))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _rms(path) -> float:
+    """Mean RMS of an audio file, 0.0 if unreadable."""
+    try:
+        import numpy as np
+        out = subprocess.run(
+            ["ffmpeg", "-v", "error", "-i", str(path), "-ac", "1", "-ar", "8000",
+             "-f", "f32le", "-"], capture_output=True, timeout=120).stdout
+        x = np.frombuffer(out, dtype=np.float32)
+        return float(np.sqrt((x ** 2).mean())) if x.size else 0.0
+    except Exception:                                          # noqa: BLE001
+        return 0.0
+
+
+def _gain_to(path, target_rms: float, fallback: float) -> float:
+    """Multiplier that brings a file to target_rms.
+
+    A fixed `volume=0.22` assumes the source is at a sensible level. The
+    synthesised ambience beds are not: sea_waves.mp3 measures RMS 0.0050
+    against a voiceover's 0.0721, so scaling it by 0.22 produced 0.0011 --
+    inaudible. Measured on the finished ep04, 72% of the film was near-silent
+    and only 25% carried any audible content. Scale to a TARGET instead, so a
+    quiet bed is lifted and a loud one is not blasted.
+    """
+    r = _rms(path)
+    if r <= 0:
+        return fallback
+    g = target_rms / r
+    return max(0.05, min(g, 12.0))          # never silent, never deafening
+
+
+# Voiceover sits around RMS 0.07. A bed at 0.018 is clearly present underneath
+# without competing, and music below that again.
+AMBIENCE_TARGET_RMS = 0.018
+MUSIC_TARGET_RMS = 0.008
+
+
+def build_timeline_audio(scenes: list, audio_files: list, offsets: list,
+                         total: float, out_wav: Path,
+                         bible: dict | None = None, use_ambience: bool = True,
+                         music: Path | None = None, music_gain: float = 0.10) -> bool:
+    """
+    Build the whole audio track on one absolute timeline.
+
+    The per-clip approach muxes each narration into its own clip and then joins
+    clips with acrossfade -- which fades the stream boundary, so EVERY line
+    fades in over the crossfade and the previous line bleeds across it. Here
+    each line is simply delayed to its true start time and mixed, so nothing
+    fades and nothing bleeds. Offsets come from scene_start_offsets(), which
+    already accounts for the video crossfades.
+    """
+    inputs, filters, labels = [], [], []
+    idx = 0
+    for i, scene in enumerate(scenes):
+        a = audio_files[i] if i < len(audio_files) else None
+        if not (a and Path(a).exists()):
+            continue
+        inputs += ["-i", str(a)]
+        ms = int(round(offsets[i] * 1000))
+        filters.append(f"[{idx}:a]aformat=channel_layouts=stereo,"
+                       f"adelay={ms}|{ms}[vo{idx}]")
+        labels.append(f"[vo{idx}]")
+        idx += 1
+
+    if use_ambience and bible:
+        for i, scene in enumerate(scenes):
+            amb = get_ambient_file(scene.get("location", ""), bible)
+            if not amb:
+                continue
+            cl = CLIP_LENGTHS.get(scene.get("clip_length", "long"), CLIP_LENGTHS["long"])
+            dur = cl["frames"] / float(get_model_config(DEFAULT_VIDEO_MODEL)["fps"])
+            ms = int(round(offsets[i] * 1000))
+            inputs += ["-stream_loop", "-1", "-t", f"{dur:.3f}", "-i", str(amb)]
+            # short fades so a bed starting mid-timeline does not click
+            _g = _gain_to(amb, AMBIENCE_TARGET_RMS, 0.22)
+            filters.append(f"[{idx}:a]aformat=channel_layouts=stereo,volume={_g:.3f},"
+                           f"afade=t=in:st=0:d=0.25,afade=t=out:st={max(0.0, dur-0.25):.3f}:d=0.25,"
+                           f"adelay={ms}|{ms}[amb{idx}]")
+            labels.append(f"[amb{idx}]")
+            idx += 1
+
+    if music and Path(music).exists():
+        # One continuous bed under the whole episode rather than a copy per
+        # clip: a score should not restart at every cut.
+        inputs += ["-stream_loop", "-1", "-t", f"{total:.3f}", "-i", str(music)]
+        _mg = _gain_to(music, MUSIC_TARGET_RMS, music_gain)
+        filters.append(f"[{idx}:a]aformat=channel_layouts=stereo,volume={_mg:.3f},"
+                       f"afade=t=in:st=0:d=2.0,"
+                       f"afade=t=out:st={max(0.0, total - 3.0):.3f}:d=3.0[mus]")
+        labels.append("[mus]")
+        idx += 1
+
+    if not labels:
+        return False
+    filters.append(f"{''.join(labels)}amix=inputs={len(labels)}:duration=longest:"
+                   f"normalize=0,apad=whole_dur={total:.3f},atrim=duration={total:.3f}[out]")
+    return run_ffmpeg(["ffmpeg", "-y", *inputs, "-filter_complex", ";".join(filters),
+                       "-map", "[out]", "-c:a", "pcm_s16le", str(out_wav)],
+                      "timeline audio", out_wav, timeout=300)
 
 
 def stitch_clips_with_audio(scenes: list, audio_files: list, output_path: Path,
@@ -2142,10 +2949,10 @@ def stitch_clips_with_audio(scenes: list, audio_files: list, output_path: Path,
             with open(concat_file, "w") as f:
                 for c in muxed_files:
                     f.write(f"file '{c}'\n")
-            subprocess.run([
+            run_ffmpeg([
                 "ffmpeg", "-y", "-f", "concat", "-safe", "0",
                 "-i", concat_file, "-c", "copy", str(output_path),
-            ], capture_output=True, timeout=120)
+            ], "concat stitch", output_path, timeout=120)
             return
 
         # Step 2: get actual durations for xfade offset calculation
@@ -2211,14 +3018,14 @@ def stitch_clips_with_audio(scenes: list, audio_files: list, output_path: Path,
 
         filter_complex = ";".join(v_filters + a_filters)
 
-        subprocess.run([
+        run_ffmpeg([
             "ffmpeg", "-y", *inputs,
             "-filter_complex", filter_complex,
             "-map", "[vout]", "-map", "[aout]",
             "-c:v", "libx264", "-preset", "fast", "-crf", "18",
             "-c:a", "aac", "-b:a", "128k",
             str(output_path),
-        ], capture_output=True, timeout=300)
+        ], "crossfade stitch", output_path, timeout=300)
 
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
@@ -2256,7 +3063,7 @@ def apply_colour_grade(input_path: Path, output_path: Path):
       - Film grain
       - Subtle vignette
     """
-    subprocess.run([
+    run_ffmpeg([
         "ffmpeg", "-y", "-i", str(input_path),
         "-vf", (
             "hue=s=0.70,"                          # desaturate to 70%
@@ -2266,7 +3073,50 @@ def apply_colour_grade(input_path: Path, output_path: Path):
         ),
         "-c:a", "copy",
         str(output_path),
-    ], capture_output=True, timeout=180)
+    ], "colour grade", output_path, timeout=180)
+
+
+# How long a subtitle stays up after its audio ends, so the final words of a
+# line remain readable instead of disappearing mid-sentence.
+SUBTITLE_TAIL = 0.45
+# Cues may run this far past the next scene's start rather than clip a word.
+SUBTITLE_OVERLAP = 0.30
+
+
+def scene_start_offsets(scenes: list) -> list[float]:
+    """
+    Start time of each scene in the FINISHED film.
+
+    stitch_clips_with_audio() overlaps neighbouring clips with xfade/acrossfade,
+    so the finished film is shorter than the sum of its clips -- 16 scenes
+    totalling 75.6s render as a 70.6s film. Subtitles were timed against the
+    uncompressed sum, so they drifted progressively later and by the closing
+    shots a cue appeared seconds after its audio had already played.
+
+    Mirrors the stitcher: every boundary removes the transition's duration
+    (CROSSFADE_DURATION, or ~0 for a hard cut).
+    """
+    # Prefer the MEASURED duration of the rendered clip over the nominal slot.
+    # S2V sizes each clip to its audio and clamps at MAX_FRAMES, so a dialogue
+    # shot is routinely 1-2.5s away from its clip_length. Timing audio and
+    # subtitles against the nominal slot put them seconds out by the end of an
+    # episode. Nominal is only a fallback for clips that do not exist yet.
+    fps = float(get_model_config(DEFAULT_VIDEO_MODEL)["fps"])
+    offsets, t = [], 0.0
+    for i, scene in enumerate(scenes):
+        offsets.append(t)
+        cl = CLIP_LENGTHS.get(scene.get("clip_length", "long"), CLIP_LENGTHS["long"])
+        dur = cl["frames"] / fps
+        clip = find_latest_clip(scene["id"])
+        if clip:
+            measured = _get_video_duration(clip)
+            if measured > 0:
+                dur = measured
+        t += dur
+        if i < len(scenes) - 1:
+            trans = TRANSITIONS.get(_pick_transition(scene, scenes[i + 1]), "dissolve")
+            t -= 0.01 if trans is None else CROSSFADE_DURATION
+    return offsets
 
 
 def generate_srt(episode: dict, bible: dict, output_path: Path,
@@ -2284,39 +3134,53 @@ def generate_srt(episode: dict, bible: dict, output_path: Path,
         return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
 
     entries = []
-    t = 0.0
+    offsets = scene_start_offsets(episode["scenes"])
     for i, scene in enumerate(episode["scenes"]):
-        # Use actual audio duration if available, else preset
+        t = offsets[i]
+        # The scene's SLOT on the timeline is the clip length. The audio only
+        # decides how long the cue stays up -- using the audio length to
+        # advance the timeline (as this did) desynced everything after it.
+        slot = CLIP_LENGTHS.get(scene.get("clip_length", "long"),
+                                CLIP_LENGTHS["long"])["seconds"]
+        speech = 0.0
         if audio_files and i < len(audio_files) and audio_files[i] and audio_files[i].exists():
-            dur = _get_video_duration(str(audio_files[i]))
-            if dur <= 0:
-                dur = CLIP_LENGTHS.get(scene.get("clip_length", "long"), CLIP_LENGTHS["long"])["seconds"]
-        else:
-            dur = CLIP_LENGTHS.get(scene.get("clip_length", "long"), CLIP_LENGTHS["long"])["seconds"]
+            speech = _get_video_duration(str(audio_files[i])) or 0.0
+        dur = min(speech, slot) if speech > 0 else slot
+
+        # A cue must outlast its speech, not undercut it. This used to show a
+        # narration cue for 85% of the audio, so the last words of every line
+        # vanished before they were spoken. Show the full line plus a short
+        # tail, clamped so it cannot run into the next scene's cue.
+        next_start = offsets[i + 1] if i + 1 < len(offsets) else t + slot + SUBTITLE_TAIL
+        # A line whose speech outruns its post-crossfade slot would otherwise
+        # have its last word cut. A fraction of overlap with the next cue is
+        # imperceptible; a missing final word is not. Prefer the overlap.
+        room = max(0.4, next_start - t + SUBTITLE_OVERLAP)
 
         # Build subtitle entries — separate narration from dialogue
         if scene.get("narration"):
             narr_text = scene["narration"]
-            narr_dur = dur * 0.4 if scene.get("dialogue") else dur * 0.85
+            narr_dur = (dur * 0.4 if scene.get("dialogue")
+                        else min(dur + SUBTITLE_TAIL, room))
             entries.append((t, t + narr_dur, narr_text))
 
             # Dialogue follows narration
             if scene.get("dialogue"):
                 dial_start = t + narr_dur + 0.1
-                dial_dur = (dur - narr_dur - 0.1) * 0.9
+                dial_dur = max(0.4, min(dur, room) - narr_dur - 0.1)
                 n_lines = len(scene["dialogue"])
                 per_line = dial_dur / max(n_lines, 1)
                 for j, d in enumerate(scene["dialogue"]):
                     char = bible.get("characters", {}).get(d["character"], {})
                     name = char.get("name", d["character"]).upper()
                     line_start = dial_start + j * per_line
-                    line_end = line_start + per_line * 0.9
+                    line_end = line_start + per_line * 0.98
                     entries.append((line_start, line_end, f"{name}: \"{d['line']}\""))
 
         elif scene.get("dialogue"):
             # Pure dialogue — distribute time across speakers
             n_lines = len(scene["dialogue"])
-            per_line = dur / max(n_lines, 1)
+            per_line = min(dur + SUBTITLE_TAIL, room) / max(n_lines, 1)
             for j, d in enumerate(scene["dialogue"]):
                 char = bible.get("characters", {}).get(d["character"], {})
                 name = char.get("name", d["character"]).upper()
@@ -2324,7 +3188,6 @@ def generate_srt(episode: dict, bible: dict, output_path: Path,
                 line_end = line_start + per_line * 0.85
                 entries.append((line_start, line_end, f"{name}: \"{d['line']}\""))
 
-        t += dur
 
     srt_lines = []
     for i, (start, end, text) in enumerate(entries, 1):
@@ -2430,7 +3293,38 @@ def interpolate_video(input_path: Path, output_path: Path, multiplier: int = 2) 
     """
     rife_bin = shutil.which("rife-ncnn-vulkan")
     if not rife_bin:
-        print(f"      rife-ncnn-vulkan not found — skipping interpolation")
+        # rife-ncnn-vulkan is not installed here, and silently skipping meant
+        # --interpolate did nothing at all. FFmpeg's motion interpolation is a
+        # decent stand-in: 16fps -> 48fps on a 5s clip takes ~14s on CPU, so it
+        # does not compete with the GPU, and synthesized frames come out clean.
+        src_fps = 16.0
+        probe = subprocess.run([
+            "ffprobe", "-v", "error", "-select_streams", "v:0",
+            "-show_entries", "stream=r_frame_rate", "-of", "csv=p=0", str(input_path),
+        ], capture_output=True, text=True, timeout=30)
+        raw = (probe.stdout or "").strip()
+        if "/" in raw:
+            try:
+                num, den = raw.split("/"); src_fps = float(num) / float(den)
+            except (ValueError, ZeroDivisionError):
+                pass
+        elif raw:
+            try:
+                src_fps = float(raw)
+            except ValueError:
+                pass
+        target = int(round(src_fps * multiplier))
+        print(f"      rife-ncnn-vulkan not found — FFmpeg minterpolate "
+              f"{src_fps:.0f}→{target}fps")
+        r = subprocess.run([
+            "ffmpeg", "-y", "-i", str(input_path),
+            "-filter:v", f"minterpolate=fps={target}:mi_mode=mci:mc_mode=aobmc:vsbmc=1",
+            "-c:v", "libx264", "-crf", "18", "-preset", "medium",
+            "-c:a", "copy", str(output_path),
+        ], capture_output=True, timeout=3600)
+        if r.returncode == 0 and Path(output_path).exists():
+            return True
+        print(f"      minterpolate failed: {r.stderr.decode()[-200:]}")
         return False
 
     tmp_dir = Path(tempfile.mkdtemp())
@@ -2577,9 +3471,9 @@ def generate_reference_images(series_name: str, bible: dict, force: bool = False
     engine:
       "flux"      — FLUX.1-schnell T2I (fast, high quality stills)
 
-    Character keys in the bible are already prefixed ("char_1", "char_2", …) as are
-    location keys ("loc_1", …).  The prefix is used directly as the output filename
-    so get_scene_seed_image() can find them without double-prefixing.
+    Output filenames come from _ref_name(), the same helper get_scene_seed_image()
+    reads with, so semantically-keyed bibles ("niamh") and "char_N" bibles both
+    resolve. Previously these two disagreed and portraits were silently unused.
     """
     ref_dir = series_path(series_name) / "reference_images"
     ref_dir.mkdir(exist_ok=True)
@@ -2601,7 +3495,7 @@ def generate_reference_images(series_name: str, bible: dict, force: bool = False
         prompt_parts.append("cinematic video frame")
         prompt_parts.append(f"portrait of {char['visual']}")
         prompt_parts.append("facing camera, neutral expression, upper body visible")
-        items.append((char_id, f"Character: {char.get('name', char_id)}",
+        items.append((_ref_name(char_id, "char")[:-4], f"Character: {char.get('name', char_id)}",
                        ", ".join(filter(None, prompt_parts)), 480, 640))
 
     # Locations — landscape orientation (640×360)
@@ -2613,7 +3507,7 @@ def generate_reference_images(series_name: str, bible: dict, force: bool = False
         prompt_parts.append("cinematic video frame")
         prompt_parts.append(loc_desc)
         prompt_parts.append("establishing shot, wide angle, no people, empty scene")
-        items.append((loc_id, f"Location: {loc_id}",
+        items.append((_ref_name(loc_id, "loc")[:-4], f"Location: {loc_id}",
                        ", ".join(filter(None, prompt_parts)), 640, 360))
 
     refs_out = COMFYUI_DIR / "output" / "refs"
@@ -2628,6 +3522,7 @@ def generate_reference_images(series_name: str, bible: dict, force: bool = False
 
         print(f"    {label} ({width}×{height}) [{engine_label}]...")
         wf = build_t2i_workflow(prompt, seed=999, prefix=prefix, width=width, height=height)
+        _graph_check(wf, mode)
         try:
             prompt_id = queue_prompt(wf)
         except requests.ConnectionError:
@@ -2651,6 +3546,77 @@ def generate_reference_images(series_name: str, bible: dict, force: bool = False
     print(f"\n  Reference images saved to: {ref_dir}")
 
 
+def _ref_name(key: str, prefix: str) -> str:
+    """
+    Canonical reference-image filename for a bible key.
+
+    Bibles key characters either as "char_1" or semantically ("niamh"), and the
+    two sides of this disagreed: generate_reference_images() wrote "{key}.png"
+    while get_scene_seed_image() looked for "char_{key}.png". They only matched
+    for "char_N" keys, so a semantically-keyed series generated portraits that
+    were then silently never used. Both sides now call this.
+    """
+    return f"{prefix}_{key.removeprefix(prefix + '_')}.png"
+
+
+def _find_ref(ref_dir: Path, key: str, prefix: str) -> Path | None:
+    """Canonical name first, then the legacy bare "{key}.png"."""
+    for name in (_ref_name(key, prefix), f"{key}.png"):
+        f = ref_dir / name
+        if f.exists():
+            return f
+    return None
+
+
+def _find_set_plate(series_name: str, location: str, setup: str | None = None,
+                    character: str | None = None, staging: str | None = None,
+                    framing_pref: list[str] | None = None) -> Path | None:
+    """Look up a plate in the persistent set library, if one has been built.
+
+    Layout (scripts/build_sets.py):
+        sets/<location>/master.png
+        sets/<location>/<setup>.png
+        sets/<location>/<setup>__<character>_<staging>.png
+
+    Returns None when no set library exists, so a series that has not built one
+    behaves exactly as before.
+    """
+    d = series_path(series_name) / "sets" / location
+    if not d.is_dir():
+        return None
+    base = setup or "master"
+    if character:
+        # Prefer the requested staging, then a staging whose FRAMING matches the
+        # shot, then any staging of this character.
+        #
+        # Framing matters as much as identity here. A plate carries its own
+        # framing into the render: seeding an authored WIDE two-shot from a
+        # close plate fixed the identity (0.669 -> 0.808) and turned the shot
+        # into a medium, losing the geography the wide existed to establish.
+        # Alphabetical fallback picked "close" for every shot.
+        if staging:
+            f = d / f"{base}__{character}_{staging}.png"
+            if f.exists():
+                return f
+        for pref in (framing_pref or []):
+            f = d / f"{base}__{character}_{pref}.png"
+            if f.exists():
+                return f
+            hits = sorted(d.glob(f"*__{character}_{pref}.png"))
+            if hits:
+                return hits[0]
+        for f in sorted(d.glob(f"{base}__{character}_*.png")):
+            return f
+        for f in sorted(d.glob(f"*__{character}_*.png")):
+            return f
+        return None
+    f = d / f"{base}.png"
+    if f.exists():
+        return f
+    f = d / "master.png"
+    return f if f.exists() else None
+
+
 def get_scene_seed_image(scene: dict, series_name: str, current_chain: str | None) -> str | None:
     """
     Choose the best I2V seed image for a scene, in priority order:
@@ -2662,39 +3628,191 @@ def get_scene_seed_image(scene: dict, series_name: str, current_chain: str | Non
     ref_dir = series_path(series_name) / "reference_images"
     visual_lower = scene.get("visual", "").lower()
 
+    # 0. Explicit per-scene override. Without this every scene inherits the
+    #    previous frame, so a shot that has to INTRODUCE something new (a
+    #    character riding in, a hard cut to a new place) is seeded with the
+    #    old image and the model simply continues the old shot.
+    #      "t2v"      — no seed at all; generate from the prompt alone
+    #      "portrait" — force the character portrait
+    #      "location" — force the location plate
+    #      "chain"    — force continuity from the previous clip
+    seed_mode = (scene.get("seed") or "").lower()
+    if seed_mode == "t2v":
+        return None
+
     # 1. Scene-specific reference — set explicitly via Scene Studio UI
     scene_ref_path = scene.get("reference_image")
     if scene_ref_path and Path(scene_ref_path).exists():
         return copy_to_input(scene_ref_path)
 
+    # ── Persistent set library ───────────────────────────────────────
+    # A shot seeded from the same plate as its neighbours keeps the same
+    # geography: ep04 s01 and s02 share a cliff, a wind-bent tree and a
+    # horizon line because both started from the same plate. The library
+    # extends that from one camera position to several, and -- crucially --
+    # gives CLOSE-UPS something that carries both the face and the room.
+    # Without it a close-up seeds from a bare portrait and the model invents
+    # a background, which is how dialogue ended up in modern interiors.
+    setup = (scene.get("setup") or "").strip() or None
+    staging = (scene.get("staging") or "").strip() or None
+    loc_id = scene.get("location")
+
+    # seed:"location" means the PLAIN plate, deliberately without a character
+    # in it -- used when a shot is wide enough that identity does not register
+    # and a staged plate would insist on a figure the shot does not want. The
+    # set-library block used to run first and hand back a staged plate anyway,
+    # silently ignoring the override.
+    if loc_id and seed_mode not in ("t2v", "chain", "location"):
+        # A TIGHT close-up keeps the bare portrait. Measured: the portrait
+        # scores 1.000 against the anchor because it IS the anchor, while a
+        # staged plate scores 0.908 -- so seeding a close-up from a plate
+        # trades away identity signal to gain a background the frame barely
+        # shows. On ep04 that cost the dialogue shots 0.02-0.04 each while the
+        # wides gained 0.16-0.20. Setting for close-ups is already handled by
+        # the location cue build_scene_prompt adds to the prompt, which is what
+        # actually fixed the modern-interior problem.
+        _is_tight = any(w in visual_lower for w in
+                        ("tight close-up", "extreme close", "ecu")) or (
+            "close-up" in visual_lower and "medium" not in visual_lower)
+        # Only a WIDE shot benefits from a staged plate. Measured across the
+        # whole of ep04 v2, which used plates everywhere:
+        #
+        #   wide  s09 +0.195   s02 +0.165      <- the portrait cannot fill a
+        #                                         landscape, and a bare location
+        #                                         plate has no face in it at all
+        #   medium two-shot s13 -0.073         <- plate caps identity at 0.908
+        #   close-ups       -0.020 to -0.048      while the portrait is 1.000
+        #
+        # Every non-wide shot lost. So the plate is for the case the portrait
+        # genuinely cannot serve, and nothing else.
+        # A staged plate is used wherever the portrait CANNOT deliver the
+        # requested framing. The portrait is a head-and-shoulders image and
+        # I2V inherits its framing: a shot written "medium shot, from the
+        # waist up" rendered as an extreme close-up with the head cropped.
+        #
+        # An earlier rule reserved plates for wides only, on the evidence that
+        # a plate cost 0.073 of IDENTITY on a medium two-shot. That measured
+        # the wrong thing -- identity is worth little if the shot is not the
+        # shot that was written, and a 12-close-up episode is why this pass
+        # exists. Plates now cover every framing wider than a close-up.
+        _needs_wider_than_portrait = (
+            bool(re.search(r"\bwide\b", visual_lower))
+            or "establishing" in visual_lower
+            or "long shot" in visual_lower
+            or "medium shot" in visual_lower
+            or "medium two-shot" in visual_lower
+            or "three-quarter shot" in visual_lower
+            or "over-the-shoulder" in visual_lower
+            or "full body" in visual_lower
+            or "two-shot" in visual_lower)
+        _is_close_or_dialogue = _needs_wider_than_portrait and not _is_tight
+        chars = scene.get("characters") or []
+        if _is_close_or_dialogue and chars:
+            # Whose shot is it? For dialogue, the first speaker.
+            if scene.get("dialogue"):
+                spk = scene["dialogue"][0].get("character", chars[0])
+                who = spk if spk in chars else chars[0]
+            else:
+                who = chars[0]
+            # Derive the wanted framing from how the shot is written, in
+            # order of preference. An authored wide must not be handed a
+            # close-up plate just because it sorts first.
+            if any(w in visual_lower for w in ("extreme close", "ecu")):
+                pref = ["ecu", "close", "three_quarter", "medium"]
+            elif "close-up" in visual_lower:
+                pref = ["close", "ecu", "three_quarter", "medium"]
+            elif re.search(r"\bwide\b", visual_lower) or "establishing" in visual_lower:
+                pref = ["full_body", "wide_figure", "walking_away", "medium"]
+            elif "over-the-shoulder" in visual_lower:
+                pref = ["over_shoulder", "medium", "three_quarter"]
+            elif "three-quarter shot" in visual_lower:
+                pref = ["three_quarter", "medium", "full_body"]
+            elif "two-shot" in visual_lower or "medium shot" in visual_lower:
+                pref = ["medium", "three_quarter", "full_body", "close"]
+            else:
+                pref = ["medium", "three_quarter", "close"]
+            staged = _find_set_plate(series_name, loc_id, setup, who, staging,
+                                     framing_pref=pref)
+            if staged:
+                return copy_to_input(str(staged))
+        # A plain setup plate has no face in it, so it is only ever right for a
+        # shot with no characters. Handing one to a close-up is how shots came
+        # back as empty cliffs -- and it is strictly worse than the portrait,
+        # which at least carries the identity.
+        if not chars:
+            plate = _find_set_plate(series_name, loc_id, setup)
+            if plate:
+                return copy_to_input(str(plate))
+
     is_close = any(w in visual_lower for w in ["close-up", "extreme close", "ecu"])
-    is_establishing = any(w in visual_lower for w in ["wide shot", "establishing", "aerial", "wide establishing", "long shot"])
+    # Substring matching on "wide shot" missed "Wide static shot", "wide aerial
+    # shot" and similar, so shots that read as establishing were classified as
+    # close-ups. Allow words between "wide" and "shot".
+    is_establishing = (
+        bool(re.search(r"\bwide\b[^.]{0,20}?\bshot\b", visual_lower))
+        or any(w in visual_lower for w in ("establishing", "aerial", "long shot"))
+    )
     is_dialogue = bool(scene.get("dialogue"))
 
-    # 2. Character portrait seed — for any scene with characters that isn't
-    # a wide/establishing shot. This gives WAN 2.2's I2V conditioning
-    # a strong reference for character appearance, which is the primary
-    # consistency mechanism for this model (IP-Adapter is not compatible).
     has_characters = bool(scene.get("characters"))
-    if has_characters and not is_establishing:
+
+    if seed_mode == "chain":
+        return current_chain
+
+    if seed_mode == "location" and scene.get("location"):
+        # Force the plate. Previously this only stopped the establishing check
+        # from being disabled, so a scene whose wording missed that check fell
+        # all the way through to the chain and rendered the previous shot again.
+        loc_ref = _find_ref(ref_dir, scene["location"], "loc")
+        if loc_ref:
+            return copy_to_input(str(loc_ref))
+        fatal(f"seed:location requested but no plate for {scene['location']}",
+              "Falling back re-renders the previous shot instead of the new place. "
+              "Run: showrunner.py gen-refs <series>")
+
+    # A wide shot whose SUBJECT is a character used to fall through to the
+    # chain, so a scene introducing a character rendered as whatever the
+    # previous shot showed — an empty landscape. Seeding it with the portrait
+    # is equally wrong: I2V starts from that image, so a head-and-shoulders
+    # portrait forces portrait framing onto a wide action shot.
+    #
+    # Falling all the way through to T2V (no seed at all) was the next attempt,
+    # and it cost the series its look: with nothing to anchor rendering, a wide
+    # shot free-associates from the prompt. "Cel-shaded 2D animation" came back
+    # as generic 1980s anime — plate armour and a red gown instead of the
+    # leather jerkin and emerald dress in the bible — while the seeded shots
+    # around it looked like a different show entirely.
+    #
+    # The LOCATION PLATE solves both: it is already a wide composition, so
+    # there is no portrait-framing to inherit, and it is rendered in the
+    # series' own style, so the shot inherits the look AND the place. The
+    # characters are composed into it from the prompt. Only when there is no
+    # plate do we fall back to T2V.
+    if is_establishing and has_characters and seed_mode not in ("portrait", "location"):
+        if scene.get("location"):
+            loc_ref = _find_ref(ref_dir, scene["location"], "loc")
+            if loc_ref:
+                return copy_to_input(str(loc_ref))
+        return None
+
+    # 2. Character portrait seed — the primary consistency mechanism for
+    # WAN 2.2 I2V (IP-Adapter is not compatible).
+    if has_characters and (not is_establishing or seed_mode == "portrait"):
         # For dialogue, prefer the first speaking character's portrait
         if is_dialogue and scene.get("dialogue"):
             first_speaker = scene["dialogue"][0].get("character", scene["characters"][0])
             char_key = first_speaker if first_speaker in scene["characters"] else scene["characters"][0]
         else:
             char_key = scene["characters"][0]                      # e.g. "char_1"
-        char_id  = char_key.removeprefix("char_")                  # e.g. "1"
-        char_ref = ref_dir / f"char_{char_id}.png"
-        if char_ref.exists():
+        char_ref = _find_ref(ref_dir, char_key, "char")
+        if char_ref:
             return copy_to_input(str(char_ref))
 
     # 3. Establishing/wide → location reference
     # Locations are keyed as "loc_1" in scene dicts; strip prefix similarly.
     if is_establishing and scene.get("location"):
-        loc_key = scene["location"]                                # e.g. "loc_1"
-        loc_id  = loc_key.removeprefix("loc_")                    # e.g. "1"
-        loc_ref = ref_dir / f"loc_{loc_id}.png"
-        if loc_ref.exists():
+        loc_ref = _find_ref(ref_dir, scene["location"], "loc")
+        if loc_ref:
             return copy_to_input(str(loc_ref))
 
     return current_chain
@@ -2706,15 +3824,28 @@ FLAGS_FILE = "flags.json"
 
 
 def load_flags(ep_out: Path) -> set[str]:
-    f = ep_out / FLAGS_FILE
-    if f.exists():
-        return set(json.load(f.open()))
-    return set()
+    flags = read_json_state(ep_out / FLAGS_FILE, [])
+    return set(flags) if isinstance(flags, list) else set()
 
 
 def save_flags(ep_out: Path, flags: set[str]):
-    with open(ep_out / FLAGS_FILE, "w") as f:
-        json.dump(sorted(flags), f, indent=2)
+    write_json_state(ep_out / FLAGS_FILE, sorted(flags))
+
+
+def update_flags(ep_out: Path, bad: set[str], checked: set[str]):
+    """
+    Record the latest verdict for the clips we actually examined.
+
+    Clips in `checked` that are not in `bad` are cleared: without this the
+    flag set only ever grew, so a clip regenerated successfully by a
+    --flagged-only pass stayed flagged forever and every later pass
+    regenerated it again. Clips outside `checked` keep their prior flag.
+    """
+    flags = load_flags(ep_out)
+    cleared = (flags & checked) - bad
+    flags = (flags - checked) | bad
+    save_flags(ep_out, flags)
+    return flags, cleared
 
 
 # ─── Season compilation ───────────────────────────────────────────────
@@ -3333,6 +4464,7 @@ def cmd_script(args):
 
 def cmd_produce(args):
     """Produce an episode: generate video + audio + stitch."""
+    set_current_series(getattr(args, "series", None))
     # Resolve video model and its configuration
     video_model = getattr(args, "video_model", DEFAULT_VIDEO_MODEL)
     mc = get_model_config(video_model)
@@ -3419,12 +4551,21 @@ def cmd_produce(args):
         cl = model_clip_lengths.get(scene.get("clip_length", "long"), model_clip_lengths["long"])
         frames = cl["frames"]
 
-        # Dynamic clip length: if TTS audio exists, match frame count to audio duration
+        # Clip length: never SHORTER than what the script asked for.
+        # This used to REPLACE the authored length with whatever the audio
+        # needed, so a 5.06s atmospheric shot carrying a 2.2s line rendered as
+        # a 2.5s shot. That silently discards the editing rhythm -- every shot
+        # ends the instant its line does, which is the opposite of how drama is
+        # cut. Extend for long audio; never truncate the authored beat.
         audio_file = audio_files[i] if i < len(audio_files) else None
         if audio_file and Path(str(audio_file)).exists():
             audio_dur = _get_video_duration(str(audio_file))
             if audio_dur > 0:
-                frames = frames_for_duration(audio_dur, fps=mc["fps"])
+                needed = frames_for_duration(audio_dur, fps=mc["fps"])
+                if needed > frames:
+                    print(f"      extending {clip_prefix} to {needed} frames "
+                          f"({audio_dur:.2f}s of speech)")
+                frames = max(frames, needed)
 
         base_prompt = build_scene_prompt(scene, bible)
 
@@ -3469,14 +4610,36 @@ def cmd_produce(args):
         # episode N so the visual style continues directly instead of jumping
         # back to a static reference image. For all other scenes keep the
         # normal priority (scene-ref > char/loc ref > chain).
-        if i == 0 and carry_over_image:
+        # An explicit per-scene seed beats the cross-episode carry-over. Without
+        # this, scene 1 of every episode silently inherits the LAST FRAME of the
+        # previous episode -- so a dawn cliff opens on the muddy ruin the last
+        # episode ended in, and any "seed": "location" on that scene is ignored.
+        if i == 0 and carry_over_image and not (scene.get("seed") or ""):
+            # A carry-over frame older than the reference images means the
+            # series style CHANGED after that episode was rendered. Continuing
+            # from it opens the new episode in the old look, and every later
+            # shot chains off it -- the failure is invisible until someone
+            # watches the first ten seconds.
+            _co = COMFYUI_INPUT / carry_over_image
+            _refs = list((series_path(args.series) / "reference_images").glob("*.png"))
+            if _refs and _co.exists():
+                _newest_ref = max(r.stat().st_mtime for r in _refs)
+                if _co.stat().st_mtime < _newest_ref:
+                    fatal(f"{clip_prefix}: cross-episode carry-over frame predates the "
+                          f"reference images",
+                          "The series style changed after that episode was rendered, so "
+                          "this episode would open in the old look. Give scene 1 an "
+                          'explicit "seed" ("location" or "portrait"), or re-render the '
+                          "previous episode.")
             seed_image = carry_over_image
             print(f"      Using cross-episode carry-over as seed")
         else:
             seed_image = get_scene_seed_image(scene, args.series, current_image)
 
         # Collect all LoRAs for this scene (up to 2 chars + 1 location)
-        scene_loras = get_scene_loras(scene, bible)
+        scene_loras = [] if getattr(args, "no_char_loras", False) else get_scene_loras(scene, bible)
+        use_lightning = getattr(args, "lightning", False)
+        use_lightning_here = use_lightning
         if scene_loras:
             for ln, ls in scene_loras:
                 print(f"      LoRA: {ln} (strength={ls})")
@@ -3502,13 +4665,16 @@ def cmd_produce(args):
         elif (scene_type == "s2v" and audio_file and Path(str(audio_file)).exists()
               and (COMFYUI_DIR / "models" / "audio_encoders" / "wav2vec2_large_english_fp16.safetensors").exists()):
             mode = "s2v"
-            audio_for_s2v = str(audio_file)
+            # LoadAudio resolves names against ComfyUI's input directory and
+            # declares `audio` as a combo built from os.listdir(input_dir), so a
+            # path pointing outside that directory is not a safe thing to pass.
+            # Stage it in, exactly as images are staged with copy_to_input().
+            audio_for_s2v = copy_to_input(str(audio_file))
             # Ensure S2V has a ref_image for character consistency
             if not seed_image and scene.get("characters"):
                 char_key = scene["characters"][0]
-                char_id = char_key.removeprefix("char_")
-                char_ref = ref_dir / f"char_{char_id}.png"
-                if char_ref.exists():
+                char_ref = _find_ref(ref_dir, char_key, "char")
+                if char_ref:
                     seed_image = copy_to_input(str(char_ref))
                     print(f"      S2V ref_image fallback: {char_key} portrait")
         elif scene_type == "s2v":
@@ -3516,26 +4682,78 @@ def cmd_produce(args):
             mode = "i2v" if seed_image else "t2v"
         elif scene_type == "i2v" and seed_image:
             mode = "i2v"
+        elif seed_image and (scene.get("seed") or "").lower() in ("location", "portrait", "chain"):
+            # classify_scene_type() calls every characterless scene "t2v", which
+            # made the mode routing discard seed_image — so location plates were
+            # resolved and then never used, and an explicit per-scene seed on a
+            # characterless shot was silently ignored. Honour the override.
+            mode = "i2v"
         else:
             mode = "t2v"
+
+        # A character LoRA trained on the PREVIOUS series style drags an S2V
+        # shot back to that style. Measured on this episode: Niamh via I2V came
+        # back correctly cel-shaded (the cel seed image dominates), while Oisin
+        # via S2V came back photoreal in the same episode -- S2V leans far less
+        # on its seed, so the LoRA wins. Dropping the stale LoRA costs some
+        # likeness on those shots and keeps the episode in one style, which is
+        # the trade that matters. Retraining on the current anchors clears this
+        # automatically, since the check is by mtime.
+        if mode == "s2v" and scene_loras:
+            # Character LoRAs are trained against the T2V checkpoints
+            # (wan2.2_t2v_{low,high}_noise_14B). S2V renders with a different
+            # model family entirely (Wan2.2-S2V-14B), and applying a LoRA
+            # across families degrades rather than helps -- the same reason the
+            # Lightning distill LoRAs are already skipped here.
+            #
+            # Measured: ep04_s03 with a freshly trained, correctly built rank-64
+            # character LoRA went identity 0.782 -> 0.644 and, far worse, the
+            # cel-style score collapsed 0.999 -> 0.001. The shot came back
+            # photoreal in a cel-shaded series. The training data was verified
+            # 12/12 animated, so the data was not the problem; the checkpoint
+            # mismatch was.
+            print(f"      Dropped {len(scene_loras)} character LoRA(s) for S2V: "
+                  f"{', '.join(n for n, _ in scene_loras)}")
+            print(f"      (trained on the T2V checkpoint; S2V is a different "
+                  f"model family)")
+            scene_loras = []
 
         if mode == "animate":
             print(f"      Mode: Animate (motion transfer) — ref: {motion_video}")
         elif mode == "s2v":
-            print(f"      Mode: S2V (speech-to-video) — audio: {Path(audio_for_s2v).name}")
+            print(f"      Mode: S2V (speech-to-video) — audio: {audio_for_s2v}")
         elif mode == "i2v":
             print(f"      Mode: I2V (dual-model) — seed: {seed_image}")
         else:
             print(f"      Mode: T2V")
 
         optimization = getattr(args, "optimization", "balanced")
+        build_loras = list(scene_loras)
+        build_steps = args.steps
+        if use_lightning:
+            # The distilled LoRA goes on the expert(s) this mode actually
+            # samples with: T2V here is single (high-noise) model, I2V is dual.
+            if mode in ("s2v", "animate"):
+                # The distill LoRAs are trained for the T2V and I2V checkpoints.
+                # Applying the T2V one to the S2V model is a different model
+                # family -- it would degrade the result rather than speed it up.
+                print(f"      Lightning: skipped for {mode} (no distill LoRA for this model)")
+                use_lightning_here = False
+            else:
+                build_loras += (LIGHTNING["i2v"] if mode == "i2v" else LIGHTNING["t2v"])
+                use_lightning_here = True
+            if use_lightning_here:
+                build_steps = getattr(args, "lightning_steps", None) or LIGHTNING["steps"]
+                print(f"      Lightning: {build_steps} steps, cfg {LIGHTNING['cfg']}")
         wf = build_video_workflow(
             video_model, mode, prompt, seed, clip_prefix, frames, res_config,
-            negative_prompt=neg, steps=args.steps, denoise=scene_denoise,
-            loras=scene_loras, image_name=seed_image,
+            negative_prompt=neg, steps=build_steps, denoise=scene_denoise,
+            loras=build_loras, image_name=seed_image,
             audio_path=audio_for_s2v, motion_video=motion_video,
             optimization=optimization,
         )
+        if use_lightning and use_lightning_here:
+            apply_lightning(wf, steps=build_steps)
 
         try:
             prompt_id = queue_prompt(wf)
@@ -3574,14 +4792,16 @@ def cmd_produce(args):
             if scene.get("characters"):
                 fallback_char = scene["characters"][0]
                 fallback_id = fallback_char.removeprefix("char_")
-                fallback_ref = ref_dir / f"char_{fallback_id}.png"
-                if fallback_ref.exists():
+                fallback_ref = _find_ref(ref_dir, fallback_char, "char")
+                if fallback_ref:
                     current_image = copy_to_input(str(fallback_ref))
                     print(f"      Chain reset to {fallback_char} portrait")
                 else:
-                    print(f"      WARNING: Chain broken — no portrait fallback for {fallback_char}")
+                    fatal(f"chain broken and no portrait fallback for {fallback_char}",
+                          "The next shot would seed from a stale or missing frame.")
             else:
-                print(f"      WARNING: Chain broken — no characters in scene for fallback")
+                fatal("chain broken and the scene has no characters to fall back to",
+                      "The next shot would seed from a stale or missing frame.")
 
     # ─── Save end-frame for next episode's carry-over ────────────
     # current_image is the last chain frame filename (relative to COMFYUI_INPUT).
@@ -3597,17 +4817,23 @@ def cmd_produce(args):
     print(f"\n  Validating clips...")
     val_results = validate_episode_clips(scenes)
     bad_clips = {sid: reason for sid, (ok, reason) in val_results.items() if not ok}
+    # Every validated clip gets its verdict recorded, so clips that a
+    # --flagged-only pass has since fixed are un-flagged rather than
+    # staying flagged forever.
+    _, cleared = update_flags(ep_out, set(bad_clips), set(val_results))
     if bad_clips:
         print(f"  WARNING: {len(bad_clips)} bad clip(s) detected:")
         for sid, reason in bad_clips.items():
             print(f"    {sid} — {reason}")
-        # Auto-flag bad clips so they can be re-run with --flagged-only
-        flags = load_flags(ep_out)
-        flags.update(bad_clips.keys())
-        save_flags(ep_out, flags)
-        print(f"  Bad clips auto-flagged. Re-run with --flagged-only to regenerate.")
+        print(f"  Bad clips auto-flagged.")
+        fatal(f"{len(bad_clips)} clip(s) failed validation",
+              "Stitching them produces a finished-looking episode with broken shots "
+              "in it. Re-run with --flagged-only to regenerate just these.")
     else:
         print(f"    All {len(val_results)} clips OK")
+    if cleared:
+        print(f"  Cleared {len(cleared)} previously-flagged clip(s) now passing: "
+              f"{', '.join(sorted(cleared))}")
 
     # ─── Auto-analyse with Claude vision ─────────────────────────
     use_auto_analyse = getattr(args, "auto_analyse", False)
@@ -3622,15 +4848,16 @@ def cmd_produce(args):
             improved = ar.get("improved_prompt")
             if improved and ar["scene_id"] not in prompt_cache:
                 prompt_cache[ar["scene_id"]] = improved
+        analysed = {ar["scene_id"] for ar in analysis_results if ar.get("scene_id")}
+        _, cleared = update_flags(ep_out, flagged_by_analysis, analysed)
+        save_prompt_cache(ep_out, prompt_cache)
         if flagged_by_analysis:
-            flags = load_flags(ep_out)
-            flags.update(flagged_by_analysis)
-            save_flags(ep_out, flags)
-            save_prompt_cache(ep_out, prompt_cache)
             print(f"  Analysis flagged {len(flagged_by_analysis)} clip(s) for regeneration")
             print(f"  Re-run with --flagged-only --enhance to regenerate with improved prompts")
         else:
             print(f"  All clips passed analysis")
+        if cleared:
+            print(f"  Cleared {len(cleared)} previously-flagged clip(s) now passing analysis")
 
     # ─── Lip sync (dialogue scenes only) ─────────────────────────
     use_lip_sync = getattr(args, "lip_sync", False)
@@ -3685,6 +4912,41 @@ def cmd_produce(args):
     else:
         stitch_clips_silent(scenes, stitched)
 
+    # ─── Rebuild the audio on one absolute timeline ───────────────
+    # stitch_clips_with_audio() muxes each line into its own clip and joins the
+    # clips with acrossfade. acrossfade has no offset parameter -- unlike the
+    # video's xfade, which is given an explicit offset per boundary -- so audio
+    # timing comes from the concatenated stream lengths alone. Every clip's AAC
+    # encode adds a little priming delay, and those add up: measured on ep04,
+    # dialogue ran +0.017s late at shot 3 and +0.148s late by shot 15, growing
+    # monotonically. That is the "lip sync doesn't quite line up" symptom, and
+    # it gets worse the longer the episode.
+    #
+    # build_timeline_audio() delays each line to its true start time and mixes,
+    # so a line's position cannot depend on anything before it. Nothing to
+    # accumulate.
+    if not args.no_audio and any(a for a in audio_files) and stitched.exists():
+        total = _get_video_duration(str(stitched))
+        tl_wav = ep_out / f"ep{ep_num:02d}_timeline.wav"
+        offsets = scene_start_offsets(scenes)
+        if total > 0 and build_timeline_audio(
+                scenes, audio_files, offsets, total, tl_wav,
+                bible=bible, use_ambience=use_amb, music=music_path):
+            relaid = ep_out / f"ep{ep_num:02d}_relaid.mp4"
+            ok = run_ffmpeg([
+                "ffmpeg", "-v", "error", "-y",
+                "-i", str(stitched), "-i", str(tl_wav),
+                "-map", "0:v:0", "-map", "1:a:0",
+                "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                "-shortest", str(relaid),
+            ], "relay audio on absolute timeline")
+            if ok and relaid.exists():
+                stitched = relaid
+                print(f"    Audio relaid on absolute offsets "
+                      f"(no per-cut accumulation)")
+            else:
+                print(f"    WARNING: timeline relay failed — keeping per-clip audio")
+
     current = stitched
 
     # ─── Upscale ──────────────────────────────────────────────────
@@ -3732,6 +4994,7 @@ def cmd_produce(args):
 
 def cmd_produce_all(args):
     """Produce all episodes in sequence."""
+    set_current_series(getattr(args, "series", None))
     sp = series_path(args.series)
     episodes = sorted([
         int(f.stem[2:]) for f in (sp / "episodes").glob("ep*.json")
@@ -4153,11 +5416,27 @@ def main():
                            help="Motion reference video for animate mode — character performs the motion from this video")
     p_produce.add_argument("--tts-engine", choices=["edge", "xtts"], default="edge",
                            help="TTS engine: edge (Edge-TTS, fast) or xtts (XTTS v2, voice cloning) (default: edge)")
+    p_produce.add_argument("--no-char-loras", action="store_true",
+                           help="Ignore character LoRAs. They are trained on t2v-A14B; applying "
+                                "them across the I2V and S2V checkpoints in one episode is a "
+                                "cross-family mix and can make shots look inconsistent.")
+    p_produce.add_argument("--lightning", action="store_true",
+                           help="Step-distilled sampling via the LightX2V LoRAs: ~6x faster "
+                                "and better on hard shots. Forces cfg=1.0 and euler/simple.")
+    p_produce.add_argument("--lightning-steps", type=int, default=None,
+                           help="Steps when --lightning is on (default 8; 4 also works)")
+    p_produce.add_argument("--no-strict", action="store_true",
+                           help="Continue past conditions that make the output wrong "
+                                "(missing LoRA, broken seed chain, over-long narration, "
+                                "failed clip validation). Strict is ON by default.")
     p_produce.add_argument("--auto-analyse", action="store_true",
                            help="After production, run Claude vision analysis on all clips and flag low-scoring ones")
 
     p_all = sub.add_parser("produce-all", help="Produce all episodes")
     p_all.add_argument("series")
+    p_all.add_argument("--no-strict", action="store_true",
+                       help="Continue past conditions that make the output wrong. "
+                            "Strict is ON by default.")
     p_all.add_argument("--image", "-i")
     p_all.add_argument("--seed-base", type=int, default=1000)
     p_all.add_argument("--resume", action="store_true")
@@ -4239,9 +5518,18 @@ def main():
 
     args = parser.parse_args()
 
+    # Strict is the default for renders; --no-strict opts out per run.
+
+    global STRICT
+
+    STRICT = not getattr(args, 'no_strict', False)
+
     if not args.command:
         parser.print_help()
         return
+
+    # Scope clip output/lookup to this series for the whole run.
+    set_current_series(getattr(args, "series", None))
 
     cmds = {
         "create": cmd_create,
