@@ -175,13 +175,26 @@ PRESENCE_BY_STAGING = {
 
 
 def mix_episode(scenes: list[dict], vo_dir: Path, out: Path,
-                preset: str = "headland", crossfade: float = 0.35) -> Path:
+                preset: str = "headland", crossfade: float = 0.05,
+                offsets: list[float] | None = None,
+                vo_lead: float = 0.0) -> Path:
     """Build the whole episode's audio: per-shot beds, score, ducked VO.
 
     Each scene needs "id" and "seconds" (the PICTURE duration of that shot).
     Runs entirely on the CPU, so it can be judged before any GPU is spent --
     which is the point: audio decisions should never queue behind a render.
     """
+    # Voice placement must use the STITCHER's offsets, never a second
+    # cumulative sum computed here. Recomputing them put the voice 1.70s ahead
+    # of picture by the last shot of a six-shot piece -- the identical drift
+    # that already bit subtitles, arrived at the identical way.
+    if offsets is None:
+        offsets, _t = [], 0.0
+        for i, sc in enumerate(scenes):
+            offsets.append(_t)
+            _t += sc["seconds"] - (crossfade if i < len(scenes) - 1 else 0)
+    if len(offsets) != len(scenes):
+        raise ValueError(f"{len(offsets)} offsets for {len(scenes)} scenes")
     tmp = out.parent / "_sd"
     tmp.mkdir(parents=True, exist_ok=True)
     total = sum(sc["seconds"] for sc in scenes) - crossfade * (len(scenes) - 1)
@@ -216,20 +229,23 @@ def mix_episode(scenes: list[dict], vo_dir: Path, out: Path,
     build_score(total, tmp / "score.wav")
 
     # ── 4. voice, laid at each shot's start offset ───────────────────────
-    vo_ins, vo_filt, vo_tags, t = [], [], [], 0.0
+    vo_ins, vo_filt, vo_tags = [], [], []
     for i, sc in enumerate(scenes):
+        t = offsets[i]
         f = vo_dir / f"{sc['id']}.mp3"
         if f.exists():
             vo_ins += ["-i", str(f)]
             k = len(vo_tags)
             vo_filt.append(
                 f"[{k}:a]aformat=channel_layouts=stereo:sample_rates={SR},"
-                # A line starts a beat into its shot, not on the cut. Landing
-                # dialogue exactly on a cut is the single clearest tell of an
-                # automated assembly.
-                f"adelay={int((t + 0.35) * 1000)}|{int((t + 0.35) * 1000)}[v{k}]")
+                # vo_lead MUST stay 0 for S2V footage. The mouth in the picture
+                # was generated FROM this audio starting at frame 0 of the clip,
+                # so nudging the voice later to avoid landing on the cut pushes
+                # the sound off the lips -- breaking the exact thing S2V is for.
+                # A lead is only safe on footage whose mouths were not driven by
+                # this track.
+                f"adelay={int((t + vo_lead) * 1000)}|{int((t + vo_lead) * 1000)}[v{k}]")
             vo_tags.append(f"[v{k}]")
-        t += sc["seconds"] - (crossfade if i < len(scenes) - 1 else 0)
     vo_filt.append("".join(vo_tags) +
                    f"amix=inputs={len(vo_tags)}:normalize=0:dropout_transition=0,"
                    f"apad,atrim=duration={total:.3f}[vo]")
@@ -287,6 +303,12 @@ def main():
     m = sub.add_parser("mix"); m.add_argument("plan")
     m.add_argument("--vo", required=True); m.add_argument("-o", "--out", required=True)
     m.add_argument("--preset", default="headland")
+    m.add_argument("--offsets", help="comma-separated absolute shot start times "
+                                     "from the stitcher")
+    m.add_argument("--vo-lead", type=float, default=0.0,
+                   help="delay each line into its shot. Leave at 0 for S2V "
+                        "footage: the mouths were driven by this audio at "
+                        "frame 0 and any lead breaks lip sync.")
     a = ap.parse_args()
     if a.cmd == "bed":
         p = build_bed(a.preset, a.seconds, Path(a.out), a.presence)
@@ -295,7 +317,9 @@ def main():
     else:
         import json
         plan = json.loads(Path(a.plan).read_text())
-        p = mix_episode(plan, Path(a.vo), Path(a.out), preset=a.preset)
+        offs = ([float(x) for x in a.offsets.split(",")] if a.offsets else None)
+        p = mix_episode(plan, Path(a.vo), Path(a.out), preset=a.preset,
+                        offsets=offs, vo_lead=a.vo_lead)
     print(f"  {p}  {_rms(p):.1f} dB RMS")
     return 0
 
