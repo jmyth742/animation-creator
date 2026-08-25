@@ -958,6 +958,167 @@ def _():
     assert not dupes, f"duplicate scene ids {dupes} -- find_latest_clip returns the wrong take"
 
 
+# ══════════════════════════════════════════════════════════════════════
+#  Extended takes (chained S2V chunks)
+# ══════════════════════════════════════════════════════════════════════
+# The 5.06s single-sample ceiling forced a 3-second average cut and no amount
+# of identity or style work fixes a restless edit. Chaining removes it -- but
+# only if the parameter actually reaches the builder, which it did not for the
+# first three attempts: extra_chunks was accepted, defaulted, and dropped at
+# the call site, so every graph came back 16 nodes regardless.
+@check("extend: a line inside the ceiling builds the graph it always built")
+def _():
+    res = sr.get_resolution_config("480p", "wan")
+    f, extra, tail = sr.s2v_chunks_for_duration(3.0, fps=16)
+    assert extra == 0 and tail is None, \
+        f"a 3s line asked for {extra} extra chunk(s) -- chaining is not additive"
+    wf = sr.build_video_workflow("wan", "s2v", "p", 42, "t", f, res,
+                                 extra_chunks=extra, last_chunk_frames=tail,
+                                 negative_prompt="n", steps=8,
+                                 image_name="char_oisin.png", audio_path="a.mp3")
+    assert not [v for v in wf.values()
+                if v["class_type"] == "WanSoundImageToVideoExtend"], \
+        "a short line built Extend nodes -- existing shots would change"
+
+
+@check("extend: extra_chunks reaches the builder and lengthens the take")
+def _():
+    res = sr.get_resolution_config("480p", "wan")
+    seen = {}
+    for extra in (0, 1):
+        wf = sr.build_video_workflow("wan", "s2v", "p", 42, "t", 81, res,
+                                     extra_chunks=extra, negative_prompt="n",
+                                     steps=8, image_name="char_oisin.png",
+                                     audio_path="a.mp3")
+        seen[extra] = sum(1 for v in wf.values()
+                          if v["class_type"] == "WanSoundImageToVideoExtend")
+    assert seen[1] == seen[0] + 1, (
+        f"extra_chunks=1 produced {seen[1]} Extend node(s) against "
+        f"{seen[0]} at 0 -- the parameter is not reaching build_wan_s2v_workflow")
+
+
+@check("extend: the take covers the line, and the tail chunk is not padded")
+def _():
+    fps = 16
+    for spoken in (5.4, 6.5, 7.5, 9.8):
+        f, extra, tail = sr.s2v_chunks_for_duration(spoken, fps=fps)
+        total = (extra * f + (tail or f)) / fps
+        assert total >= spoken, \
+            f"{spoken}s of speech got {total:.2f}s of picture -- the line is cut off"
+        assert total - spoken < 1.0, (
+            f"{spoken}s of speech got {total:.2f}s of picture -- rounding the tail "
+            f"chunk up buys silent picture at a full sampling pass each")
+
+
+@check("extend: a chained graph keeps every sampler on real conditioning")
+def _():
+    import validate_workflow as vw
+    res = sr.get_resolution_config("480p", "wan")
+    wf = sr.build_video_workflow("wan", "s2v", "p", 42, "t", 81, res,
+                                 extra_chunks=1, last_chunk_frames=33,
+                                 negative_prompt="n", steps=8,
+                                 image_name="char_oisin.png", audio_path="a.mp3")
+    bad = vw.check(wf, "s2v")
+    assert not bad, f"chained graph fails its own validator: {bad}"
+    lens = [v["inputs"]["length"] for v in wf.values()
+            if v["class_type"] in ("WanSoundImageToVideo",
+                                   "WanSoundImageToVideoExtend")]
+    assert lens == [81, 33], f"chunk lengths {lens} -- the tail size was ignored"
+
+
+@check("extend: the chunk cap matches what has actually been rendered")
+def _():
+    # 3-chunk was built and queued once; the poll timed out at 30 minutes and
+    # no clip was ever produced or scored. Shipping a cap above what exists on
+    # disk is how unverified capability reaches a delivery.
+    proven = sorted(Path("/workspace/review/extend_test").glob("*chunk.mp4"))
+    have = max([int(p.name[0]) for p in proven], default=1)
+    assert sr.MAX_S2V_CHUNKS <= have, (
+        f"MAX_S2V_CHUNKS={sr.MAX_S2V_CHUNKS} but only {have}-chunk takes have "
+        f"been rendered and scored ({[p.name for p in proven]})")
+
+
+@check("audio: a chained take budgets against its real length, not one chunk")
+def _():
+    single = sr.CLIP_LENGTHS["long"]["seconds"]
+    plain = {"clip_length": "long"}
+    held = {"clip_length": "long", "hold_seconds": 12.0}
+    assert sr.scene_audio_budget(plain) == single, \
+        "an ordinary shot's budget changed -- chaining must be additive"
+    assert sr.scene_audio_budget(held) >= 12.0, (
+        f"a 12s chained take gets a {sr.scene_audio_budget(held):.2f}s audio "
+        f"budget -- its dialogue will be cut to fit a shot half its size")
+
+
+@check("audio: a written dialogue line is never silently truncated")
+def _():
+    src = (ROOT / "scripts" / "showrunner.py").read_text()
+    i = src.index("# Generate per-character dialogue segments")
+    body = src[i:i + 2400]
+    assert "line_text.split()[:max_w]" not in body, (
+        "dialogue is still trimmed to fit -- narration overrunning is fatal a "
+        "few lines earlier, and dialogue matters more, not less")
+
+
+@check("seeding: a cross-episode carry-over never beats an authored plate")
+def _():
+    scene = {"id": "x", "setup": "master", "staging": "full_body"}
+    carry = "carry_ep04.png"
+    # A staged plate, a portrait and a location plate are all authored choices.
+    for planned in ("master__oisin_full_body.png", "char_oisin.png", "loc_cliff.png"):
+        assert not sr.should_use_carry_over(0, scene, carry, planned), (
+            f"scene 1 takes the previous episode's end frame over {planned}")
+    # With nothing authored, the carry-over is exactly what it is for.
+    assert sr.should_use_carry_over(0, scene, carry, "chain_prev.png"), \
+        "the carry-over stopped working for the case it exists to cover"
+    assert not sr.should_use_carry_over(3, scene, carry, "chain_prev.png"), \
+        "the carry-over applied to a shot that is not the episode opener"
+    assert not sr.should_use_carry_over(0, {**scene, "seed": "location"}, carry,
+                                        "chain_prev.png"), \
+        "an explicit per-scene seed was overridden by the carry-over"
+
+
+@check("poll: waiting in the queue does not spend the render's timeout")
+def _():
+    """A prompt queued behind a long job used to be abandoned unstarted.
+
+    Tonight that lost a 3-chunk take and three banner concepts in one evening:
+    each reported "no output produced" while ComfyUI was still holding them in
+    the queue, and the 3-chunk one was found rendering an hour later. Simulated
+    here rather than against a live server so it runs in the no-GPU suite.
+    """
+    import types
+    calls = {"n": 0}
+    PID = "p1"
+
+    class _R:
+        def __init__(self, payload): self._p = payload
+        def json(self): return self._p
+
+    def fake_get(url, **kw):
+        calls["n"] += 1
+        if "/history/" in url:
+            # Only appears once it has actually executed.
+            return _R({PID: {"status": {"status_str": "success"},
+                             "outputs": {"18": {}}}} if calls["n"] > 40 else {})
+        # 20 polls queued behind another job, then it starts running.
+        if calls["n"] < 40:
+            return _R({"queue_running": [[1, "other", {}]],
+                       "queue_pending": [[2, PID, {}]]})
+        return _R({"queue_running": [[2, PID, {}]], "queue_pending": []})
+
+    stub = types.SimpleNamespace(get=fake_get, ConnectionError=Exception)
+    real_req, real_sleep = sr.requests, sr.time.sleep
+    sr.requests, sr.time.sleep = stub, lambda _s: None
+    try:
+        # A budget far smaller than the queue wait it sits through.
+        ok = sr.poll_until_done(PID, poll_interval=10, max_wait=60)
+    finally:
+        sr.requests, sr.time.sleep = real_req, real_sleep
+    assert ok, ("a prompt queued behind another job timed out before it ever "
+                "ran -- queue time is being charged to the render budget")
+
+
 def main():
     b = ROOT / "series" / SERIES
     print(f"selftest — fixtures: {b if b.exists() else '(missing, checks will skip)'}\n")

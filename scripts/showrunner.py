@@ -38,6 +38,7 @@ Usage:
 import argparse
 import asyncio
 import json
+import math
 import os
 import re
 import shutil
@@ -350,6 +351,77 @@ def frames_for_duration(seconds: float, fps: int = 24) -> int:
     n = round((target - 1) / 4)
     frames = 4 * n + 1
     return max(MIN_FRAMES, min(MAX_FRAMES, frames))
+
+
+# A single S2V sample cannot exceed MAX_FRAMES, so every shot was capped at
+# ~5.1s and the episode cut every 3 seconds on average. Real animation holds a
+# shot for 8-15s. WanSoundImageToVideoExtend continues a take from the previous
+# chunk's sampled latent with the audio window advanced, so chunks chain into
+# one continuous shot. Measured over a 15s line: identity did not decay across
+# the joins (drift +0.010 over two chunks vs +0.021 within one).
+S2V_CHUNK_FRAMES = 81          # 5.06s at 16fps; the length the pair was tuned at
+MAX_S2V_CHUNKS = 3             # 15.19s. All three depths rendered and scored
+                               # against the character anchor:
+                               #   1 chunk   5.06s  drift +0.021
+                               #   2 chunks 10.12s  drift +0.010
+                               #   3 chunks 15.19s  drift +0.015
+                               # Identity does not decay across the joins. Raise
+                               # this further only after rendering and scoring
+                               # that depth -- selftest asserts the cap never
+                               # exceeds what exists on disk.
+
+
+def s2v_chunks_for_duration(seconds: float, fps: int = 16,
+                            floor_seconds: float | None = None
+                            ) -> tuple[int, int, int | None]:
+    """How to build a take: (frames_per_chunk, extra_chunks, last_chunk_frames).
+
+    `seconds` is the intended PICTURE duration and is treated as exact -- it is
+    an authored beat. `floor_seconds` is speech that must fit, and gets a small
+    safety buffer, because running out of picture mid-word is unrecoverable
+    while a fraction of a second of extra hold is invisible.
+
+    Rounding the last chunk UP unconditionally was wrong in both directions: a
+    10.0s hold needs 160 frames, two chunks give 162, but ceiling division
+    demanded a third chunk for the missing 2 frames and MIN_FRAMES then padded
+    that chunk to 33 -- a 10-second beat came out at 12.19s and cost an entire
+    extra sampling pass. Enumerate what is actually reachable and take the
+    nearest instead.
+
+    extra_chunks == 0 is an ordinary single-sample shot, so a series that never
+    needs a long take builds exactly the graph it built before.
+    """
+    # A caller that passes only one number means "cover this" -- defaulting the
+    # floor to it keeps a bare call safe, so the two-argument form can never
+    # quietly build less picture than it was asked for.
+    if floor_seconds is None:
+        floor_seconds = seconds
+    need = int(math.ceil((floor_seconds + 0.25) * fps))
+    target = max(int(round(seconds * fps)), need)
+
+    def _valid(lo, hi):
+        return [f for f in range(lo, hi + 1) if f % 4 == 1]
+
+    best = None
+    for n in range(1, MAX_S2V_CHUNKS + 1):
+        if n == 1:
+            options = [(f, 0, None) for f in _valid(MIN_FRAMES, MAX_FRAMES)]
+        else:
+            base = S2V_CHUNK_FRAMES * (n - 1)
+            options = [(S2V_CHUNK_FRAMES, n - 1, t)
+                       for t in _valid(MIN_FRAMES, S2V_CHUNK_FRAMES)]
+        for frames, extra, tail in options:
+            total = (extra * frames + (tail if tail is not None else frames))
+            if total < need:
+                continue
+            # Nearest to the authored length; on a tie prefer the longer take,
+            # so an authored beat is never quietly shortened.
+            key = (abs(total - target), -total, extra)
+            if best is None or key < best[0]:
+                best = (key, (frames, extra, tail))
+    if best is None:                     # longer than the cap can reach
+        return S2V_CHUNK_FRAMES, MAX_S2V_CHUNKS - 1, S2V_CHUNK_FRAMES
+    return best[1]
 
 # ─── Ambient audio system ─────────────────────────────────────────────
 #
@@ -1122,6 +1194,36 @@ def _get_character_prosody(char: dict) -> tuple[str, str]:
     return rate, pitch
 
 
+def scene_audio_budget(scene: dict) -> float:
+    """Seconds of audio this shot can hold.
+
+    A chained take is several chunks long, but this used to read only the
+    nominal single-clip length, so a 10.12s shot was costed at 5.06s and its
+    dialogue was cut to fit a shot half its real size. An authored
+    hold_seconds is the shot's true length.
+    """
+    cl = CLIP_LENGTHS.get(scene.get("clip_length", "long"), CLIP_LENGTHS["long"])
+    return max(float(cl["seconds"]), float(scene.get("hold_seconds") or 0.0))
+
+
+def should_use_carry_over(index: int, scene: dict, carry_over_image: str | None,
+                          planned_seed: str | None) -> bool:
+    """Whether scene `index` should open on the previous episode's end frame.
+
+    The carry-over stops a new episode jumping back to a static reference after
+    the last one ended mid-scene. It is a FALLBACK. When the set library has a
+    staged plate for this exact setup and framing, or a character portrait
+    applies, that is an authored decision and outranks a frame inherited from
+    another episode -- which otherwise put ep04's closing image under ep05's
+    opening wide.
+    """
+    if index != 0 or not carry_over_image or (scene.get("seed") or ""):
+        return False
+    authored = bool(planned_seed) and (
+        "__" in planned_seed or "char_" in planned_seed or "loc_" in planned_seed)
+    return not authored
+
+
 def generate_episode_audio(episode: dict, bible: dict, output_dir: Path) -> list[Path]:
     """Generate TTS audio for each scene with per-character voices."""
     audio_dir = output_dir / "audio"
@@ -1134,7 +1236,7 @@ def generate_episode_audio(episode: dict, bible: dict, output_dir: Path) -> list
     for scene in episode["scenes"]:
         audio_path = audio_dir / f"{scene['id']}.mp3"
         cl = CLIP_LENGTHS.get(scene.get("clip_length", "long"), CLIP_LENGTHS["long"])
-        clip_dur = cl["seconds"]
+        clip_dur = scene_audio_budget(scene)
 
         has_narration = bool(scene.get("narration"))
         has_dialogue = bool(scene.get("dialogue"))
@@ -1202,11 +1304,19 @@ def generate_episode_audio(episode: dict, bible: dict, output_dir: Path) -> list
                     remaining_budget = clip_dur * 0.9 - sum(
                         _get_video_duration(p) for p in audio_parts if os.path.exists(p)
                     )
+                    # Narration that overruns is fatal a few lines above --
+                    # "nothing is being cut, so the audio would overrun". Yet
+                    # dialogue, the thing the audience actually listens to, was
+                    # silently truncated mid-sentence and the render carried on.
+                    # Two policies for one problem, and the quieter one applied
+                    # to the more important text. Same rule for both now.
                     if line_dur_est > remaining_budget > 0 and remaining_budget < line_dur_est * 0.7:
-                        max_w = int(remaining_budget * wps * 0.9)
-                        if max_w > 3:
-                            line_text = " ".join(line_text.split()[:max_w])
-                            print(f"    {scene['id']}: trimmed {char.get('name', char_id)} line to {max_w} words")
+                        fatal(f"{scene['id']}: {char.get('name', char_id)}'s line "
+                              f"needs ~{line_dur_est:.1f}s but only "
+                              f"{remaining_budget:.1f}s of the shot is left",
+                              "Shorten the line, or give the shot a longer "
+                              '"hold_seconds". Truncating it would cut the '
+                              "performance mid-sentence.")
 
                     part_file = str(temp_dir / f"{part_idx:02d}_{char_id}.mp3")
                     asyncio.run(generate_tts_scene(line_text, char_voice, part_file,
@@ -1609,6 +1719,7 @@ def _s2v_unet(rc: dict) -> str:
 
 
 def build_wan_s2v_workflow(prompt: str, audio_path: str, seed: int, clip_prefix: str, frames: int,
+                           extra_chunks: int = 0, last_chunk_frames: int | None = None,
                             negative_prompt: str = "", steps: int = 25,
                             ref_image: str | None = None,
                             loras: list[tuple[str, float]] | None = None,
@@ -1680,9 +1791,55 @@ def build_wan_s2v_workflow(prompt: str, audio_path: str, seed: int, clip_prefix:
     }}
 
     sampled_output = "11"
+    wf["16"] = {"class_type": "VAEDecode", "inputs": {"samples": ["11", 0], "vae": ["3", 0]}}
+    images_output = "16"
 
-    wf["16"] = {"class_type": "VAEDecode", "inputs": {"samples": [sampled_output, 0], "vae": ["3", 0]}}
-    wf["17"] = {"class_type": "CreateVideo", "inputs": {"images": ["16", 0], "fps": float(mc["fps"])}}
+    # ── Chained chunks: shots longer than the per-clip ceiling ────────
+    # WanSoundImageToVideoExtend takes the PREVIOUS chunk's sampled latent,
+    # advances the audio window by that chunk's frame count, and carries motion
+    # continuity through ref_motion_latent. Chunks therefore join into ONE
+    # continuous take rather than a cut.
+    #
+    # This is the single biggest structural limit on how the result reads. A
+    # 5.06s ceiling forces roughly 17 cuts a minute; real animation holds shots
+    # for 8-15s. Measured on a 10.5s line:
+    #     1 chunk   5.06s   identity 0.907 -> 0.928   drift +0.021
+    #     2 chunks 10.12s   identity 0.915 -> 0.925   drift +0.010
+    # Twice the length, LESS drift, no visible seam.
+    #
+    # Extend is handed the RAW text conditioning, exactly as chunk 1 is:
+    # wan_sound_to_video() re-applies the audio window and appends the
+    # reference latent itself, so passing already-conditioned input would stack
+    # reference_latents and overwrite the audio embed.
+    if extra_chunks > 0:
+        last_latent, last_images = "11", "16"
+        for n in range(2, extra_chunks + 2):
+            ext, ks, dec, cat = f"x{n}", f"xk{n}", f"xd{n}", f"xc{n}"
+            # The final chunk is sized to what is left of the line rather than
+            # padded to a full one. Rounding every take up to a whole chunk
+            # bought 5 seconds of silent picture -- and a second full sampling
+            # pass to render it -- for a line 0.2s over the ceiling.
+            n_frames = (last_chunk_frames if (n == extra_chunks + 1
+                                              and last_chunk_frames) else frames)
+            wf[ext] = {"class_type": "WanSoundImageToVideoExtend", "inputs": {
+                "positive": ["4", 0], "negative": ["5", 0], "vae": ["3", 0],
+                "length": n_frames, "video_latent": [last_latent, 0],
+                "audio_encoder_output": ["42", 0]}}
+            if ref_image:
+                wf[ext]["inputs"]["ref_image"] = ["44", 0]
+            wf[ks] = {"class_type": "KSampler", "inputs": {
+                "model": ["10", 0], "positive": [ext, 0], "negative": [ext, 1],
+                "latent_image": [ext, 2], "seed": seed + n, "steps": steps,
+                "cfg": mc["cfg"], "sampler_name": mc["sampler"],
+                "scheduler": mc["scheduler"], "denoise": 1.0}}
+            wf[dec] = {"class_type": "VAEDecode",
+                       "inputs": {"samples": [ks, 0], "vae": ["3", 0]}}
+            wf[cat] = {"class_type": "ImageBatch",
+                       "inputs": {"image1": [last_images, 0], "image2": [dec, 0]}}
+            last_latent, last_images = ks, cat
+        images_output = last_images
+
+    wf["17"] = {"class_type": "CreateVideo", "inputs": {"images": [images_output, 0], "fps": float(mc["fps"])}}
     wf["18"] = {"class_type": "SaveVideo", "inputs": {"video": ["17", 0], "filename_prefix": save_prefix(clip_prefix), "format": "mp4", "codec": "h264"}}
 
     # LoRA injection (single model)
@@ -1804,7 +1961,9 @@ def build_video_workflow(video_model: str, mode: str, prompt: str, seed: int,
                           image_name: str | None = None,
                           audio_path: str | None = None,
                           motion_video: str | None = None,
-                          optimization: str = "none") -> dict:
+                          optimization: str = "none",
+                          extra_chunks: int = 0,
+                          last_chunk_frames: int | None = None) -> dict:
     """Build a WAN video generation workflow.
 
     Args:
@@ -1830,6 +1989,8 @@ def build_video_workflow(video_model: str, mode: str, prompt: str, seed: int,
     elif mode == "s2v" and audio_path:
         # S2V: audio-driven video with lip sync
         wf = build_wan_s2v_workflow(prompt, audio_path, seed, clip_prefix, frames,
+                                     extra_chunks=extra_chunks,
+                                     last_chunk_frames=last_chunk_frames,
                                      negative_prompt=negative_prompt, steps=steps,
                                      ref_image=image_name, loras=loras,
                                      high_loras=high_loras, low_loras=low_loras,
@@ -2494,8 +2655,25 @@ def queue_prompt(workflow: dict) -> str:
     return r.json()["prompt_id"]
 
 
-def poll_until_done(prompt_id: str, poll_interval: int = 10, max_wait: int = 1800) -> bool:
-    elapsed = 0
+def poll_until_done(prompt_id: str, poll_interval: int = 10,
+                    max_wait: int = 1800) -> bool:
+    """Wait for a queued prompt. False means it did NOT produce output.
+
+    This used to return a bare False for three unrelated conditions -- ComfyUI
+    reported an error, the prompt vanished from the queue, or the wait ran out
+    -- and every caller treated all three as "no clip, carry on". A chained S2V
+    take that needed 35 minutes therefore looked exactly like a broken graph:
+    thirty minutes of GPU, one line of output, no clip, no reason. Say which.
+    """
+    # max_wait budgets EXECUTION, not the wall clock. Time spent queued behind
+    # another job used to count against it, so a prompt could be abandoned
+    # having never started: tonight a 3-chunk take and three banner concepts
+    # all reported "no output" while sitting in the queue, and the 3-chunk one
+    # was still rendering an hour later. Only tick the budget while the prompt
+    # is actually the running job.
+    elapsed = 0          # execution time, the thing max_wait bounds
+    waited = 0           # total wall clock, for reporting only
+    queued_note = False
     inactive_checks = 0  # how many consecutive polls the job was absent from queue
     while elapsed < max_wait:
         try:
@@ -2517,20 +2695,40 @@ def poll_until_done(prompt_id: str, poll_interval: int = 10, max_wait: int = 180
                 item[1] == prompt_id
                 for item in q.get("queue_running", []) + q.get("queue_pending", [])
             )
+            is_running = any(item[1] == prompt_id
+                             for item in q.get("queue_running", []))
             if is_active:
                 inactive_checks = 0
-                print(f"\r    Running... ({elapsed}s)    ", end="", flush=True)
+                if is_running:
+                    elapsed += poll_interval
+                    print(f"\r    Running... ({elapsed}s)    ", end="", flush=True)
+                else:
+                    ahead = len(q.get("queue_running", [])) + sum(
+                        1 for i, item in enumerate(q.get("queue_pending", []))
+                        if item[1] != prompt_id)
+                    if not queued_note:
+                        print(f"\n    Queued behind {ahead} job(s); the "
+                              f"{max_wait}s budget starts when it does.")
+                        queued_note = True
+                    print(f"\r    Queued... ({waited}s waited)    ",
+                          end="", flush=True)
             else:
                 inactive_checks += 1
+                elapsed += poll_interval
                 print(f"\r    Finalizing... ({elapsed}s)    ", end="", flush=True)
                 # Give ComfyUI time to write outputs after job leaves queue.
                 # Only give up after 6 consecutive inactive polls (~60s of no activity).
                 if inactive_checks >= 6:
+                    print(f"\n      ComfyUI dropped prompt {prompt_id} from the "
+                          f"queue after {elapsed}s without recording an output")
                     return False
         except requests.ConnectionError:
             print(f"\r    Reconnecting... ({elapsed}s)", end="", flush=True)
         time.sleep(poll_interval)
-        elapsed += poll_interval
+        waited += poll_interval
+    print(f"\n      TIMEOUT after {max_wait}s of execution ({waited}s wall clock) — the job may still be running. "
+          f"A chained take samples once per chunk, so raise max_wait rather "
+          f"than assuming the graph is broken.")
     return False
 
 
@@ -4534,7 +4732,11 @@ def cmd_produce(args):
     carry_over_image: str | None = None
     if not args.image and prev_endframe.exists():
         carry_over_image = copy_to_input(str(prev_endframe))
-        print(f"\n  Cross-episode carry-over: using ep{ep_num - 1:02d} end-frame as scene-1 seed")
+        # Announce that one is AVAILABLE, not that it will be used --
+        # should_use_carry_over() decides per scene, and an authored plate
+        # outranks it. Stating the outcome here contradicted the actual seed.
+        print(f"\n  Cross-episode carry-over available (ep{ep_num - 1:02d} end-frame); "
+              f"an authored plate for scene 1 takes precedence")
 
     ref_dir = sp / "reference_images"
 
@@ -4614,7 +4816,14 @@ def cmd_produce(args):
         # this, scene 1 of every episode silently inherits the LAST FRAME of the
         # previous episode -- so a dawn cliff opens on the muddy ruin the last
         # episode ended in, and any "seed": "location" on that scene is ignored.
-        if i == 0 and carry_over_image and not (scene.get("seed") or ""):
+        # The carry-over exists so a new episode does not jump back to a static
+        # reference after the last one ended mid-scene. It is a FALLBACK for a
+        # shot that has nothing better. When the set library has a staged plate
+        # for this exact setup and framing, that plate is an authored decision
+        # and outranks a frame inherited from another episode -- which here put
+        # ep04's closing image under ep05's opening wide.
+        _planned = get_scene_seed_image(scene, args.series, current_image)
+        if should_use_carry_over(i, scene, carry_over_image, _planned):
             # A carry-over frame older than the reference images means the
             # series style CHANGED after that episode was rendered. Continuing
             # from it opens the new episode in the old look, and every later
@@ -4718,6 +4927,36 @@ def cmd_produce(args):
                   f"model family)")
             scene_loras = []
 
+        # Chunk a dialogue shot that runs past the single-sample ceiling, so
+        # the authored beat survives instead of being clipped to 5.06s. An
+        # explicit "chunks": N on the scene forces a hold longer than its line
+        # -- that is how a 12-second beat is written.
+        extra_chunks, last_chunk_frames = 0, None
+        if mode == "s2v":
+            _want = max(float(scene.get("hold_seconds") or 0.0),
+                        _get_video_duration(str(audio_file)) if audio_file else 0.0)
+            _spoken = _get_video_duration(str(audio_file)) if audio_file else 0.0
+            frames, extra_chunks, last_chunk_frames = s2v_chunks_for_duration(
+                _want, fps=mc["fps"], floor_seconds=_spoken)
+            if scene.get("chunks"):
+                extra_chunks = max(0, min(MAX_S2V_CHUNKS, int(scene["chunks"])) - 1)
+                if extra_chunks:
+                    frames, last_chunk_frames = S2V_CHUNK_FRAMES, None
+            _secs = (extra_chunks * frames
+                     + (last_chunk_frames or frames)) / mc["fps"]
+            if extra_chunks:
+                print(f"      Extended take: {extra_chunks + 1} chained chunks "
+                      f"= {_secs:.2f}s")
+            # A line past MAX_S2V_CHUNKS is silently cut off mid-sentence --
+            # the same class of defect as narration over budget, which is
+            # already fatal. Say so rather than shipping a truncated take.
+            if _want - _secs > 0.25:
+                fatal(f"{clip_prefix}: {_want:.2f}s of speech does not fit in "
+                      f"{_secs:.2f}s of picture",
+                      f"A take caps at {MAX_S2V_CHUNKS} chunks "
+                      f"({MAX_S2V_CHUNKS * S2V_CHUNK_FRAMES / mc['fps']:.2f}s). "
+                      f"Split the line across two shots, or shorten it.")
+
         if mode == "animate":
             print(f"      Mode: Animate (motion transfer) — ref: {motion_video}")
         elif mode == "s2v":
@@ -4750,7 +4989,8 @@ def cmd_produce(args):
             negative_prompt=neg, steps=build_steps, denoise=scene_denoise,
             loras=build_loras, image_name=seed_image,
             audio_path=audio_for_s2v, motion_video=motion_video,
-            optimization=optimization,
+            optimization=optimization, extra_chunks=extra_chunks,
+            last_chunk_frames=last_chunk_frames,
         )
         if use_lightning and use_lightning_here:
             apply_lightning(wf, steps=build_steps)
@@ -4764,7 +5004,12 @@ def cmd_produce(args):
             print(f"      ERROR: ComfyUI rejected workflow — {e}")
             continue
 
-        success = poll_until_done(prompt_id)
+        # A chained take samples once PER CHUNK, so a 3-chunk shot needs roughly
+        # three times the wall clock of a single one. The fixed 30-minute wait
+        # abandoned a 3-chunk test that was still running, reported "no clip
+        # produced", and looked exactly like a broken graph.
+        success = poll_until_done(
+            prompt_id, max_wait=1800 * (1 + extra_chunks))
         if not success:
             # Check if clip was actually generated despite polling failure
             clip_path = find_latest_clip(clip_prefix)

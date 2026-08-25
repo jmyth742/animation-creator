@@ -63,18 +63,28 @@ def check(wf: dict, mode: str = "?") -> list[str]:
     samplers = [n for c in SAMPLERS for n in by_class.get(c, [])]
 
     # ── 1. A conditioning injector must actually reach the sampler ───────
-    for cls, (what, out_idx) in CONDITIONING_INJECTORS.items():
-        for nid in by_class.get(cls, []):
-            for s in samplers:
-                ins = wf[s].get("inputs", {})
-                for side in ("positive", "negative"):
-                    ref = ins.get(side)
-                    if not (isinstance(ref, list) and ref[0] == nid):
-                        problems.append(
-                            f"{cls} (node {nid}) carries {what}, but sampler "
-                            f"{s} takes '{side}' from node "
-                            f"{ref[0] if isinstance(ref, list) else ref!r} — "
-                            f"that conditioning is discarded")
+    # A shot longer than the per-clip ceiling is built as chained chunks:
+    # WanSoundImageToVideoExtend re-applies the audio window and the reference
+    # latent for each chunk, so a later sampler taking conditioning from an
+    # Extend node is CORRECT, not a discarded path. Only flag a sampler that
+    # reads from neither an injector nor an extender.
+    injectors = {n for cls in CONDITIONING_INJECTORS for n in by_class.get(cls, [])}
+    extenders = {n for cls in ("WanSoundImageToVideoExtend",)
+                 for n in by_class.get(cls, [])}
+    valid_sources = injectors | extenders
+    if injectors:
+        what = ", ".join(CONDITIONING_INJECTORS[wf[n]["class_type"]][0]
+                         for n in sorted(injectors))
+        for s in samplers:
+            ins = wf[s].get("inputs", {})
+            for side in ("positive", "negative"):
+                ref = ins.get(side)
+                src = ref[0] if isinstance(ref, list) else None
+                if src not in valid_sources:
+                    problems.append(
+                        f"sampler {s} takes '{side}' from node {src!r}, which is "
+                        f"neither the node carrying {what} nor an extender — "
+                        f"that conditioning is discarded")
 
     # ── 2. Every image loaded must be reachable from a sampler ───────────
     for nid in by_class.get("LoadImage", []):
@@ -143,13 +153,31 @@ def main():
         frames = sr.CLIP_LENGTHS.get(scene.get("clip_length", "long"),
                                      sr.CLIP_LENGTHS["long"])["frames"]
         audio = "dummy.mp3" if mode == "s2v" else None
+        # Mirror cmd_produce's chunk derivation. Checking the SINGLE-sample
+        # graph for a shot that will actually render as a chained take
+        # validates a graph nobody sends -- the same "tested a config beside
+        # the one shipped" failure this file exists to catch.
+        extra, tail = 0, None
+        if mode == "s2v":
+            hold = float(scene.get("hold_seconds") or 0.0)
+            vo = Path("/workspace/review/wow/vo") / f"{scene['id']}.mp3"
+            spoken = sr._get_video_duration(str(vo)) if vo.exists() else 0.0
+            want = max(hold, spoken)
+            if want > 0:
+                # Same two-argument call cmd_produce makes. Passing only `want`
+                # would apply the speech buffer to an authored hold and build a
+                # different number of chunks than the render will.
+                frames, extra, tail = sr.s2v_chunks_for_duration(
+                    want, fps=sr.get_model_config("wan")["fps"],
+                    floor_seconds=spoken)
         try:
             wf = sr.build_video_workflow(
                 "wan", mode, sr.build_scene_prompt(scene, bible), 42,
                 f"chk_{scene['id']}", frames, res,
                 negative_prompt=sr.build_negative_prompt(scene),
                 steps=8, image_name=seed_img, audio_path=audio,
-                loras=loras or None)
+                loras=loras or None, extra_chunks=extra,
+                last_chunk_frames=tail)
         except Exception as e:                                 # noqa: BLE001
             print(f"  {scene['id']}  {mode:5} BUILD FAILED: "
                   f"{type(e).__name__}: {e}")
@@ -157,7 +185,11 @@ def main():
             continue
         bad = check(wf, mode)
         mark = "ok" if not bad else "PROBLEM"
-        print(f"  {scene['id']}  {mode:5} {len(wf):3} nodes  {mark}")
+        span = ""
+        if extra:
+            fps = sr.get_model_config("wan")["fps"]
+            span = f"  {extra + 1} chunks = {(extra * frames + (tail or frames)) / fps:5.2f}s"
+        print(f"  {scene['id']}  {mode:5} {len(wf):3} nodes  {mark}{span}")
         for b in bad:
             print(f"      {b}")
         total += len(bad)

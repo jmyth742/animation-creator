@@ -101,6 +101,8 @@ def main():
         # A scene can classify as i2v and still render as t2v when the seeding
         # policy returns nothing -- reporting the classification alone is
         # misleading, and the seed it computed may be discarded.
+        setup_plates = {f.name for f in
+                        (sr.series_path(a.series) / "sets").rglob("*.png")}
         stype = sr.classify_scene_type(s)
         seed = sr.get_scene_seed_image(s, a.series, "chain_prev.png")
         override = (s.get("seed") or "").lower()
@@ -115,8 +117,17 @@ def main():
         if mode == "t2v":
             seed_kind = "unused" if seed else "none"
         else:
-            seed_kind = ("portrait" if "char_" in str(seed) else
-                         "plate" if "loc_" in str(seed) else "CHAIN")
+            # The set library names staged plates <setup>__<char>_<framing>.png
+            # and setup plates <setup>.png -- neither carries the char_/loc_
+            # prefixes this check was written against, so every staged shot was
+            # reported as falling back to the frame chain. Six correct shots
+            # warning loudly is worse than no check: it teaches you to skip the
+            # section that also carries the real failures.
+            _s = str(seed)
+            seed_kind = ("portrait" if "char_" in _s else
+                         "staged" if "__" in _s else
+                         "plate" if ("loc_" in _s or _s in setup_plates) else
+                         "CHAIN")
         if seed_kind == "CHAIN":
             say(WARN, f"{sid}: falls back to the frame chain — will inherit the previous shot")
         prompt = sr.build_scene_prompt(s, bible)
@@ -131,9 +142,17 @@ def main():
         over = " OVER BUDGET" if len(n) > budget else ""
         if over:
             say(WARN, f"{sid}: narration {len(n)}w > {budget}w for a {slot:.1f}s slot{over}")
+        # 8 words was the right cap when every clip was 5.06s. A chained take
+        # runs to 15s, and a piece written for that format trips this on every
+        # single shot -- so the cap now follows the shot's real length.
+        hold = float(s.get("hold_seconds") or 0.0)
+        spoken_slot = max(slot, hold)
+        dlg_budget = max(8, int(spoken_slot * wps))
         for d in s.get("dialogue", []):
-            if len(d["line"].split()) > 8:
-                say(WARN, f"{sid}: dialogue line {len(d['line'].split())}w > 8w")
+            nw = len(d["line"].split())
+            if nw > dlg_budget:
+                say(WARN, f"{sid}: dialogue line {nw}w > {dlg_budget}w "
+                          f"for a {spoken_slot:.1f}s shot")
         print(f"        {sid}  {mode:4}  seed={seed_kind:9} "
               f"narr={len(n)}/{budget}w  dlg={len(s.get('dialogue', []))}")
 
