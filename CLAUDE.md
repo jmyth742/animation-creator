@@ -262,6 +262,18 @@ scripts/bglaunch stop <name>
 scripts/bglaunch status
 ```
 
+**1b. The GPU is the bottleneck — never measure on it while it renders.**
+A CLIP scoring pass over 190 staged plates was launched "in the background"
+while staging was running. Plate intervals went from 50s to 3 minutes: the
+scorer was taking VRAM and compute from the thing that mattered. Same mistake
+in a smaller form earlier the same evening -- interleaving an upscaler
+comparison between staging prompts forced an 8.5GB model swap each way and
+produced a single 120s stall, the largest idle stretch of the night.
+
+Measurement is cheap on CPU and expensive on GPU. Score frames, measure audio,
+check graphs and run selftest freely; queue anything that loads a model onto
+the GPU **as a block, after the renders**, never interleaved.
+
 **2. Test the configuration you are shipping, not one beside it.** Twice in one
 day a change was validated in a setup that differed from the render it went into:
 
@@ -339,6 +351,34 @@ Advisory warnings — recoverable state, absent optional binaries — are
 deliberately **not** promoted. Only conditions where the output will be wrong.
 
 ---
+
+### Staging thrashes VRAM — batch it, or expect 44s per plate
+
+Building the set library renders many tiny clips (17 frames). Each one needs
+the dual-model I2V pair (8.5GB + 8.5GB), the text encoder (6.7GB) and the VAE
+-- about 24GB of weights on a 24GB card. ComfyUI therefore evicts and reloads
+between every node:
+
+```
+load text encoder 6.7GB -> evict 3.3GB
+load VAE                -> evict 3.7GB
+load UNet 8.5GB         -> evict 2.9GB
+load VAE again          -> "0.00 MB remains loaded"   (UNet fully evicted)
+```
+
+Measured: **44 seconds per plate**, of which the actual 17-frame sampling is
+perhaps 5-10s. GPU utilisation during staging sat at 57-74% mean with 21-22%
+of samples below 10% -- and crucially, ComfyUI reported a prompt RUNNING in
+209 of 219 idle samples, so the stall is inside a prompt, not an empty queue.
+Deeper queueing does nothing.
+
+The fix is to amortise the load across many plates per prompt rather than one.
+Until that is done, budget ~45s per staged plate and stage only the framings a
+script actually uses (`--only` and `--staging` take subsets).
+
+By contrast the S2V story renders do NOT thrash: they sample for ~57s per step
+on an 81-frame chunk, so the model load is a rounding error. Low utilisation is
+a property of many-small-clips work, not of the pipeline generally.
 
 ## Sampling: use `--lightning`
 

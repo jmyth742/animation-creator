@@ -58,7 +58,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("series")
     ap.add_argument("--episode", type=int, required=True)
-    ap.add_argument("--seg", type=float, default=1.5,
+    # Every prompt pays a model-load toll. Staging showed what that costs when
+    # the work per prompt is small: 44s per 17-frame plate, almost all of it
+    # evicting and reloading ~20GB of weights to sample for a few seconds.
+    # 3s segments are 48 frames, about 3.7GB at 4x -- comfortably inside the
+    # headroom once WAN is unloaded, and half as many prompts as 1.5s.
+    ap.add_argument("--seg", type=float, default=3.0,
                     help="seconds per segment; bounds peak VRAM")
     ap.add_argument("--source", default=None)
     a = ap.parse_args()
