@@ -359,6 +359,9 @@ def frames_for_duration(seconds: float, fps: int = 24) -> int:
 # chunk's sampled latent with the audio window advanced, so chunks chain into
 # one continuous shot. Measured over a 15s line: identity did not decay across
 # the joins (drift +0.010 over two chunks vs +0.021 within one).
+S2V_LIVE_TAIL = 0.45           # seconds of generated picture kept after the
+                               # line, so the mouth closes on real motion
+                               # before the held frame takes over
 S2V_CHUNK_FRAMES = 81          # 5.06s at 16fps; the length the pair was tuned at
 MAX_S2V_CHUNKS = 3             # 15.19s. All three depths rendered and scored
                                # against the character anchor:
@@ -369,6 +372,63 @@ MAX_S2V_CHUNKS = 3             # 15.19s. All three depths rendered and scored
                                # this further only after rendering and scoring
                                # that depth -- selftest asserts the cap never
                                # exceeds what exists on disk.
+
+
+def hold_tail(clip_path: str, target_seconds: float, out_path: str,
+              settle: float = 0.35, drift: float = 0.03) -> str:
+    """Extend a clip to `target_seconds` by HOLDING its last frame.
+
+    Padding the audio with silence reduced the mouth moving after a line ended
+    but did not remove it: wav2vec2 still produces features over silence, and
+    across a chained take the model carries motion forward. With 34% of the
+    finished film being picture after the line ends, "reduced" is not good
+    enough -- every one of those seconds is a chance for a character to mouth
+    words that were never spoken.
+
+    The reliable answer is not to generate that picture at all. Hand-drawn
+    animation holds a pose constantly; a held frame with an imperceptible push
+    reads as deliberate, not as a freeze. And it is cheaper: a 12s beat with a
+    9s line becomes two sampled chunks instead of three.
+
+    `settle` dissolves from the live frame into the hold so the transition is
+    invisible; `drift` is the scale push across the hold.
+    """
+    live = _get_video_duration(clip_path)
+    if live <= 0 or target_seconds <= live + 0.05:
+        return clip_path
+    hold = target_seconds - live + settle
+    fps = int(get_model_config(DEFAULT_VIDEO_MODEL)["fps"])
+    tmp = Path(out_path).parent
+    frame = str(tmp / "_hold_frame.png")
+    if not extract_last_frame(clip_path, frame):
+        return clip_path
+    still = str(tmp / "_hold.mp4")
+    n = max(1, int(hold * fps))
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-y", "-loop", "1", "-i", frame,
+         "-t", f"{hold:.3f}", "-r", str(fps),
+         "-vf", (f"zoompan=z='1+{drift}*on/{n}':d=1:"
+                 f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
+                 f"s={_res_of(clip_path)}:fps={fps},format=yuv420p"),
+         "-c:v", "libx264", "-crf", "16", still], check=True)
+    # Dissolve into the hold rather than cutting to it -- a hard cut to a
+    # frozen frame announces itself, a short dissolve does not.
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-y", "-i", clip_path, "-i", still,
+         "-filter_complex",
+         f"[0:v][1:v]xfade=transition=fade:duration={settle}:"
+         f"offset={max(0.0, live - settle):.3f},format=yuv420p[v]",
+         "-map", "[v]", "-r", str(fps), "-c:v", "libx264", "-crf", "16",
+         out_path], check=True)
+    return out_path
+
+
+def _res_of(video: str) -> str:
+    r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0",
+                        "-show_entries", "stream=width,height", "-of", "csv=p=0",
+                        video], capture_output=True, text=True).stdout.strip()
+    w, h = (r.split(",") + ["832", "480"])[:2]
+    return f"{w}x{h}"
 
 
 def pad_audio_to(path: str, seconds: float, out_path: str) -> str:
@@ -4956,10 +5016,22 @@ def cmd_produce(args):
         # explicit "chunks": N on the scene forces a hold longer than its line
         # -- that is how a 12-second beat is written.
         extra_chunks, last_chunk_frames = 0, None
+        # An authored beat is an authored beat whatever renders it. A silent
+        # shot cannot exceed one sample either, so it needs the hold just as
+        # much as a chained take does -- more, since nothing else can extend it.
+        hold_to = float(scene.get("hold_seconds") or 0.0)
         if mode == "s2v":
-            _want = max(float(scene.get("hold_seconds") or 0.0),
-                        _get_video_duration(str(audio_file)) if audio_file else 0.0)
-            _spoken = _get_video_duration(str(audio_file)) if audio_file else 0.0
+            _hold = float(scene.get("hold_seconds") or 0.0)
+            _sp = _get_video_duration(str(audio_file)) if audio_file else 0.0
+            # Sample only as far as the LINE, plus a short live tail so the
+            # mouth closes naturally. The rest of the beat is a held frame --
+            # generating picture over silence is what let the mouth carry on
+            # after the words stopped, and 34% of the film was that picture.
+            # It is also cheaper: a 12s beat on a 9s line drops from three
+            # sampled chunks to two.
+            _want = _sp + S2V_LIVE_TAIL if _sp > 0 else _hold
+            hold_to = _hold
+            _spoken = _sp
             frames, extra_chunks, last_chunk_frames = s2v_chunks_for_duration(
                 _want, fps=mc["fps"], floor_seconds=_spoken)
             if scene.get("chunks"):
@@ -4983,8 +5055,8 @@ def cmd_produce(args):
             # A line past MAX_S2V_CHUNKS is silently cut off mid-sentence --
             # the same class of defect as narration over budget, which is
             # already fatal. Say so rather than shipping a truncated take.
-            if _want - _secs > 0.25:
-                fatal(f"{clip_prefix}: {_want:.2f}s of speech does not fit in "
+            if _sp - _secs > 0.25:
+                fatal(f"{clip_prefix}: {_sp:.2f}s of speech does not fit in "
                       f"{_secs:.2f}s of picture",
                       f"A take caps at {MAX_S2V_CHUNKS} chunks "
                       f"({MAX_S2V_CHUNKS * S2V_CHUNK_FRAMES / mc['fps']:.2f}s). "
@@ -5060,6 +5132,15 @@ def cmd_produce(args):
         if success:
             print(f"\n      Done!")
             clip_path = find_latest_clip(clip_prefix)
+            if clip_path and hold_to > 0:
+                _live = _get_video_duration(clip_path)
+                if hold_to > _live + 0.05:
+                    _held = str(Path(clip_path).with_name(
+                        Path(clip_path).stem + "_held.mp4"))
+                    if hold_tail(clip_path, hold_to, _held) == _held:
+                        Path(_held).replace(clip_path)
+                        print(f"      Held {_live:.2f}s -> {hold_to:.2f}s "
+                              f"(frozen frame, slow push; the mouth cannot move)")
             if clip_path:
                 frame_path = str(COMFYUI_INPUT / f"chain_{clip_prefix}.png")
                 if extract_last_frame(clip_path, frame_path):

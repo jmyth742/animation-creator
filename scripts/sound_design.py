@@ -267,9 +267,13 @@ def mix_episode(scenes: list[dict], vo_dir: Path, out: Path,
     beds = []
     for i, sc in enumerate(scenes):
         pres = PRESENCE_BY_STAGING.get(sc.get("staging", "medium"), 0.45)
+        # A cross-cut moves between locations every shot, so the bed is a
+        # per-shot property, not a per-episode one. `preset` stays the default
+        # for a single-location piece.
+        shot_preset = sc.get("preset") or preset
         b = tmp / f"bed_{sc['id']}.wav"
         # Overlap by the crossfade so the joins have material to work with.
-        build_bed(preset, sc["seconds"] + crossfade, b, presence=pres,
+        build_bed(shot_preset, sc["seconds"] + crossfade, b, presence=pres,
                   seed=11 + i * 31)
         beds.append((b, pres))
 
@@ -293,10 +297,12 @@ def mix_episode(scenes: list[dict], vo_dir: Path, out: Path,
     build_score(total, tmp / "score.wav", root=SCORE_ROOT.get(preset, 73.42))
 
     # ── 4. voice, laid at each shot's start offset ───────────────────────
+    # Voice files may live in different episode directories once shots from
+    # several pieces are cut together, so a shot can name its own path.
     vo_ins, vo_filt, vo_tags = [], [], []
     for i, sc in enumerate(scenes):
         t = offsets[i]
-        f = vo_dir / f"{sc['id']}.mp3"
+        f = Path(sc["vo"]) if sc.get("vo") else vo_dir / f"{sc['id']}.mp3"
         if f.exists():
             vo_ins += ["-i", str(f)]
             k = len(vo_tags)
