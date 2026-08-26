@@ -380,6 +380,18 @@ By contrast the S2V story renders do NOT thrash: they sample for ~57s per step
 on an 81-frame chunk, so the model load is a rounding error. Low utilisation is
 a property of many-small-clips work, not of the pipeline generally.
 
+**The 1080p pass has the same shape.** Measured across four episodes: 43.8%
+mean utilisation, 48.6% of samples idle, against 90.5%/8.2% for the render
+that preceded it. `upscale_episode.py` cuts the film into ~3s segments and
+sends one prompt each -- 76 prompts for four episodes -- and every one decodes
+a video, runs a short ESRGAN burst, then encodes. The GPU waits through both
+ffmpeg passes. Raising the segment length only trades prompt count against
+peak VRAM; the real fix is to feed frames without a per-segment
+decode/encode round trip.
+
+Quote utilisation PER PHASE. A figure taken over a window that happens to be
+all rendering says 97%; the same night measured end to end says 76%.
+
 ## Sampling: use `--lightning`
 
 LightX2V's step-distilled LoRAs are installed (`lightning-{t2v,i2v}-{high,low}.safetensors`).
