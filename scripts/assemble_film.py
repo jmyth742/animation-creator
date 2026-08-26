@@ -53,6 +53,11 @@ def _interleave(a: list, b: list) -> list:
 # them back. This is an editorial cap, applied at assembly, so changing it
 # costs nothing and re-rendering is never required.
 MAX_HELD_SHARE = 0.40
+# A hold is perceived in SECONDS, not as a proportion of its shot: two seconds
+# reads as a beat whether the shot is eight seconds or twelve, and five seconds
+# reads as the video having stopped. Capping only by share left 4-5s freezes on
+# the longest shots, which is exactly where they were noticed.
+MAX_HELD_SECONDS = 2.0
 
 
 def _trim_to(clip: str, seconds: float, out: str) -> str:
@@ -89,8 +94,8 @@ def build_edit(series: str) -> list[dict]:
         spoken = sr._get_video_duration(str(vo)) if vo.exists() else 0.0
         live = min(dur, spoken + sr.S2V_LIVE_TAIL) if spoken > 0 else dur
         held = max(0.0, dur - live)
-        if dur > 0 and held / dur > MAX_HELD_SHARE:
-            keep = live / (1.0 - MAX_HELD_SHARE)
+        if dur > 0 and (held / dur > MAX_HELD_SHARE or held > MAX_HELD_SECONDS):
+            keep = min(live / (1.0 - MAX_HELD_SHARE), live + MAX_HELD_SECONDS)
             trimmed = str(Path("/workspace/review/wow/_film") /
                           f"trim_{sc['id']}.mp4")
             Path(trimmed).parent.mkdir(parents=True, exist_ok=True)

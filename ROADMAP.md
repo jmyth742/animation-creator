@@ -1,177 +1,103 @@
-# ROADMAP — Wan 2.2 Pipeline Assessment & Improvement Plan
+# Production quality — what is left, ranked
 
-*Generated March 29, 2026 — based on research into Wan 2.2 ecosystem and analysis of latest commits.*
-
----
-
-## Current State Assessment
-
-### ✅ What's Working
-
-| Feature | Implementation |
-|---------|---------------|
-| **Wan 2.2 Dual-Model T2V** | Full MoE workflow — high-noise + low-noise expert switching at 87.5% via `SplitSigmas` + `SamplerCustomAdvanced` chaining |
-| **Wan 2.2 Dual-Model I2V** | Same dual-model architecture with `WanImageToVideo` conditioning + `ImageScale` |
-| **LoRA support in workflows** | LoRA chains injected into both high and low noise experts |
-| **LoRA training pipeline** | RunPod orchestrator handles full lifecycle: pod creation → SSH → dataset upload → training → download → cleanup |
-| **Auto-captioning** | Florence-2 based (`auto_caption.py`) with trigger word injection |
-| **Training configs** | Separate TOML configs for character, style, and motion LoRAs via musubi-tuner |
-| **Web UI — Training** | Full job management with GPU availability checker, real-time status, progress bars |
-| **Web UI — Theater** | Episode viewer for watching finished episodes |
-| **Web UI — Templates** | Pre-seeded projects (noir detective, space frontier, folklore horror) |
-| **Character consistency** | Canonical portrait generation → selection → I2V seed for dialogue scenes |
-| **Ambient audio** | FFmpeg filter chains synthesizing environmental audio per location type |
-| **Clip durations** | 5.1s max at 16fps (81 frames) — fits the 5-6s target |
-| **720p support** | Resolution config present for 1280×720 on 24GB+ GPUs |
-| **EasyCache optimization** | TeaCache presets (balanced/fast/turbo) for faster inference |
-| **Quality presets** | Draft (15 steps) / Good (25) / Final (40) for Wan |
-
-### ❌ What's Missing or Broken
-
-| Issue | Priority | Impact |
-|-------|----------|--------|
-| ~~**LoRA training targets HunyuanVideo, not Wan**~~ | ✅ Done | Training orchestrator updated to Wan 2.2 (`Comfy-Org/Wan_2.2_ComfyUI_Repackaged`) |
-| ~~**No S2V (Speech-to-Video)**~~ | ✅ Done | S2V workflow wired into production loop — dialogue scenes auto-route to S2V with TTS audio |
-| ~~**No scene-type routing**~~ | ✅ Done | `classify_scene_type()` routes dialogue→S2V, characters→I2V, establishing→T2V |
-| ~~**No TI2V-5B config**~~ | ✅ Done | `wan-5b` model config added — single-model 5B at 480p on 8GB VRAM |
-| ~~**Wan 2.1 VAE instead of 2.2**~~ | ✅ Done | Updated to `wan2.2_vae.safetensors` across all configs and workflows |
-| ~~**No Wan-Animate integration**~~ | ✅ Done | `build_wan_animate_workflow()` + `--motion-video` CLI flag + dispatch wiring |
-| ~~**Captioning doesn't follow LoRA best practices**~~ | ✅ Done | `--character-features` strips learned traits, `--rewrite` uses Claude for best-practice captions |
+State at the time of writing: two films finished (3:57 and 3:25), cel-shaded,
+character identity 0.88-0.91, long takes 4-14.5s, layered per-location
+ambience, 1080p via RealESRGAN anime 6B. What follows is what still separates
+this from a small studio's work, in the order I would do it.
 
 ---
 
-## Improvement Plan
+## POST-PRODUCTION — no GPU, mostly free
 
-### Phase 1: Fix LoRA Training Target ✅ DONE
+### 1. Give every shot a camera  *(built: scripts/camera_move.py)*
+27 of 27 shots in the film are locked off. That is the loudest remaining
+amateur signal -- louder than lip sync, louder than resolution. 27 static
+frames read as a slideshow of moving portraits however well each is composed.
 
-Training orchestrator and all configs updated to use Wan 2.2 models from `Comfy-Org/Wan_2.2_ComfyUI_Repackaged`:
-- DiT: `wan2.2_t2v_low_noise_14B_fp16.safetensors`
-- VAE: `wan2.2_vae.safetensors`
-- Text encoder: `qwen_2.5_vl_7b_fp8_scaled.safetensors` + `byt5_small_glyphxl_fp16.safetensors`
-- Training uses musubi-tuner with `hv_1_5_train_network.py` (Wan-compatible)
-- Both remote (RunPod) and local training paths use Wan 2.2 weights
+Free because the 1080p pass already upscales to 3328x1920 before resampling to
+1920x1080: 1.73x linear headroom sitting unused. Cropping a MOVING 1920x1080
+window out of the 4x frames is a real camera move at delivery resolution.
 
----
+    close-up / medium  -> push in     decisions, confessions
+    wide / full body   -> pull out    isolation, endings
+    over-shoulder      -> drift       lateral
+    a few              -> hold        so stillness reads as a choice
 
-### Phase 2: Add TI2V-5B Config for Local Preview ✅ DONE
+4-7% across a shot. A move you notice is too big.
 
-Added `wan-5b` model config to showrunner.py:
-- Single-model `wan2.2_ti2v_5B_Q4_K_S.gguf` for both T2V and I2V (no dual-model handoff)
-- 480p at 8GB VRAM minimum, shift=5.0
-- Lower quality steps: draft=10, good=20, final=30
-- CLI: `--video-model wan-5b` on `produce` and `produce-all` commands
-- I2V workflow auto-detects single-model via missing `i2v_dual_model` key → uses single KSampler
+### 2. Cut inside the takes -- reaction shots
+One shot is currently one complete line, always. That is why it still plays as
+alternating statements rather than as a conversation. Take 1.5s of the
+listener's take, drop it into the middle of the speaker's line, run the
+speaker's audio unbroken underneath. Existing footage, no GPU. Would change the
+cross-cut most of all.
 
----
+### 3. Per-movement colour grade
+One grade across everything. The valley wants warmth and lift; the ruin wants
+coolness and crushed blacks. Free, and it reads as "someone finished this".
 
-### Phase 3: Wan 2.2 VAE Upgrade ✅ DONE
+### 4. Score with structure, and spot foley
+The drone never develops -- no motif, no arrival. A theme tied to the counting
+line, returning at the end, would bind the film. And there is not one spot
+effect anywhere: no hoofbeat, no spear planted, no cloth movement. Beds alone
+are ambience, not sound design.
 
-Updated `Wan2.1_VAE.pth` → `wan2.2_vae.safetensors` in all configs, workflow JSONs, test files, and training orchestrator.
-
----
-
-### Phase 4: Scene-Type Routing ✅ DONE
-
-Implemented `classify_scene_type()` → routes dialogue→S2V, character scenes→I2V, establishing→T2V.
-- Added `scene_type` column to Scene model + API schema
-- Scene type badges (S2V/I2V/T2V) shown in Episodes UI
-- Production loop and single-scene regeneration both use scene-type routing
-
----
-
-### Phase 5: S2V (Speech-to-Video) Integration ✅ DONE
-
-- `build_wan_s2v_workflow()` generates audio-conditioned video with lip sync
-- Production loop auto-routes dialogue scenes to S2V when audio is available
-- `generate_single_scene_audio()` helper for single-scene regeneration
-- Audio encoder download added to RunPod setup
-- Falls back to I2V when S2V audio unavailable
+### 5. Title and end cards
+There are none. Typography is disproportionately cheap and effective.
 
 ---
 
-### Phase 6: Wan-Animate Integration ✅ DONE
+## GENERATION — this is what the GPU is for
 
-- `build_wan_animate_workflow()` — motion transfer from reference video to character
-- `--motion-video` CLI flag on `produce` and `produce-all` commands
-- Dispatch wired in `build_video_workflow()` — animate mode takes priority when motion video provided
-- Model download ref added to setup.sh (commented out, ~28GB) and training_orchestrator.py
-- LoRA injection supported for animate mode
+### 6. Coverage: alternate takes on the shots that matter
+The single biggest gap in method. A real production shoots a scene several
+times and picks. This pipeline renders each shot ONCE and accepts whatever
+comes back -- every shot in both films is a first take. Rendering 3 variants of
+the 10 most important shots and choosing on measured identity plus eye is what
+a studio actually does, and it is pure GPU time.
 
----
+### 7. Does WAN 2.2 do camera moves natively?
+Deep research returned ZERO surviving claims on this. Unanswered, and worth
+answering empirically: render the same shot as static, "slow dolly in", "slow
+pan left", "handheld", score identity and artefacts on each. If the model can
+execute a move without warping, that beats a post crop, because the parallax is
+real. If it cannot, item 1 stands and the question is closed.
 
-### Phase 7: Captioning Best Practices ✅ DONE
+### 8. A character LoRA trained against the S2V checkpoint
+Character LoRAs are currently DROPPED on every dialogue shot -- measured
+cross-family degradation, identity -0.138 and cel style collapsing 0.999 ->
+0.001. Dialogue is ~80% of both films, so those shots run with no character
+training at all. A LoRA trained on the S2V family would apply where it matters
+most. Highest potential identity gain available; also the highest risk, since
+musubi's S2V support is unverified.
 
-- `--character-features` flag strips learned traits from captions via regex
-- `--rewrite` two-pass mode: Florence-2 → Claude Haiku rewrites following LoRA best practices
-- `strip_character_features()` handles comma/conjunction cleanup
-- `prepare_dataset.sh` passes character features through to auto_caption.py
+### 9. More setups per location, and the locations not yet built
+3-5 camera positions per place. More angles means more varied cutting and less
+reuse of the same framing. stormy_sea has never been staged at all.
 
----
-
-## Deployment Checklist
-
-### For RunPod Production (24GB+ GPU)
-
-```bash
-# 1. Download Wan 2.2 models (after fixes applied)
-#    - T2V high-noise: wan2.2_t2v_high_noise_14B (GGUF Q4_K_S or fp8)
-#    - T2V low-noise:  wan2.2_t2v_low_noise_14B
-#    - I2V high-noise: wan2.2_i2v_high_noise_14B
-#    - I2V low-noise:  wan2.2_i2v_low_noise_14B
-#    - VAE:            wan2.2_vae.safetensors (NEW - not 2.1)
-#    - Text encoder:   umt5-xxl (GGUF Q8_0)
-#    - CLIP vision:    sigclip_vision_patch14_384
-
-# 2. Install ComfyUI + Kijai's WanVideoWrapper
-git clone https://github.com/kijai/ComfyUI-WanVideoWrapper \
-    ComfyUI/custom_nodes/ComfyUI-WanVideoWrapper
-pip install -r ComfyUI/custom_nodes/ComfyUI-WanVideoWrapper/requirements.txt
-
-# 3. For S2V (Phase 5):
-#    - Download Wan2.2-S2V-14B weights
-#    - Needs A6000 (48GB) for comfortable inference
-
-# 4. For LoRA training:
-#    - Ensure training configs point at Wan 2.2 base models (Phase 1)
-#    - Use A6000 for rank 64 character LoRA
-```
-
-### For Local Preview (RTX 4070, 8GB)
-
-```bash
-# 1. Download TI2V-5B model (after Phase 2)
-#    - wan2.2_ti2v_5B.safetensors
-#    - wan2.2_vae.safetensors
-#    - umt5-xxl (GGUF Q8_0)
-
-# 2. Use --video-model wan_5b for local preview runs
-python scripts/showrunner.py produce my_series --episode 1 --video-model wan_5b
-```
+### 10. Better anchors
+Every plate and every shot descends from nine portraits. Regenerating them at
+higher quality, with more angles, lifts everything downstream.
 
 ---
 
-## Model Download Reference
+## NOT NEXT, and why
 
-| Model | Source | Size | Purpose |
-|-------|--------|------|---------|
-| Wan2.2-T2V-A14B (GGUF) | Kijai/WanVideo_comfy | ~5GB each | T2V high+low noise experts |
-| Wan2.2-I2V-A14B (GGUF) | Kijai/WanVideo_comfy | ~5GB each | I2V high+low noise experts |
-| Wan2.2-TI2V-5B | Wan-AI/Wan2.2-TI2V-5B | ~10GB | Local preview (8GB VRAM) |
-| Wan2.2-S2V-14B | Wan-AI/Wan2.2-S2V-14B | ~28GB | Speech-to-video (RunPod) |
-| Wan2.2-Animate-14B | Wan-AI/Wan2.2-Animate-14B | ~28GB | Motion transfer (RunPod) |
-| Wan 2.2 VAE | Comfy-Org/Wan_2.2_ComfyUI_Repackaged | ~2.5GB | New high-compression VAE |
-| umt5-xxl (GGUF Q8_0) | Kijai/WanVideo_comfy | ~5GB | Text encoder |
-| SigCLIP ViT-L/14 | Comfy-Org | ~857MB | CLIP vision (I2V) |
-| fp8 scaled models | Kijai/WanVideo_comfy_fp8_scaled | varies | Quality/VRAM tradeoff |
+**Phoneme-accurate lip sync.** Research is unambiguous: every locally runnable
+model is measurably WORSE on stylised faces (MuseTalk 67.8%, LatentSync 35.6%
+success on stylised vs 92.2%/74.9% on all video) because they depend on
+photoreal face detection. The one method that holds up has no public weights.
+The local route is Rhubarb, which emits timing data, not pixels -- so it only
+pays off after building a mouth-art compositing stage. Large job, gain most
+viewers cannot name.
 
----
+**Frame interpolation to 24fps.** Research produced no surviving claim, and cel
+animation held on twos can look worse interpolated, not better. Test before
+believing.
 
-## Priority Order
+**Native 720p rendering.** Already measured: 2.75x the cost, waxier not
+sharper. Upscaling wins.
 
-1. ~~**Phase 1** — Fix LoRA training target~~ ✅
-2. ~~**Phase 2** — TI2V-5B local preview~~ ✅
-3. ~~**Phase 3** — Wan 2.2 VAE~~ ✅
-4. ~~**Phase 4** — Scene-type routing~~ ✅
-5. ~~**Phase 5** — S2V integration~~ ✅
-6. ~~**Phase 7** — Captioning best practices~~ ✅
-7. ~~**Phase 6** — Wan-Animate~~ ✅
+**Prop/costume consistency via MAGREF.** The only verified route, but it is
+Wan 2.1 not 2.2, a full 14B checkpoint rather than a LoRA, and evaluated only
+on photoreal content.

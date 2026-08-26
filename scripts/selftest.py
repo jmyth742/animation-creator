@@ -148,7 +148,14 @@ def _():
         return
     assert "char" not in Path(got).name, \
         f"wide+characters seeded from a portrait ({Path(got).name}) — inherits portrait framing"
-    assert "loc" in Path(got).name, f"unexpected seed for a wide shot: {got!r}"
+    # A STAGED plate (<setup>__<char>_<framing>.png) is the better answer and
+    # what the policy asks for; a plain location plate is the fallback when the
+    # set library has not been built for that place. This check asserted "loc"
+    # only, which passed for years because the fixture location had no staged
+    # plates -- the moment storm_cliffs was staged, correct behaviour failed it.
+    name = Path(got).name
+    assert "__" in name or "loc" in name, \
+        f"unexpected seed for a wide shot: {got!r}"
 
 
 @check("seeding: 'Wide static shot' is recognised as wide")
@@ -161,8 +168,9 @@ def _():
         scene = {"id": "t_s01", "visual": phrasing,
                  "characters": ["niamh"], "location": "storm_cliffs"}
         got = sr.get_scene_seed_image(scene, SERIES, "/prev.png")
-        # Recognised as wide => plate or T2V. Misread as a close-up => portrait.
-        assert got is None or "loc" in Path(got).name, \
+        # Recognised as wide => a plate (staged or plain) or T2V. Misread as a
+        # close-up => a portrait, which is the failure this guards against.
+        assert got is None or "__" in Path(got).name or "loc" in Path(got).name, \
             f"{phrasing!r} was not treated as a wide shot (seeded from {got!r})"
 
 
