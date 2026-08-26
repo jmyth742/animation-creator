@@ -362,6 +362,8 @@ def frames_for_duration(seconds: float, fps: int = 24) -> int:
 S2V_LIVE_TAIL = 0.45           # seconds of generated picture kept after the
                                # line, so the mouth closes on real motion
                                # before the held frame takes over
+# Final-chunk lengths that have actually produced clips. See _valid().
+SAFE_TAIL_FRAMES = (33, 45, 49, 53, 65, 81)
 S2V_CHUNK_FRAMES = 81          # 5.06s at 16fps; the length the pair was tuned at
 MAX_S2V_CHUNKS = 3             # 15.19s. All three depths rendered and scored
                                # against the character anchor:
@@ -483,7 +485,16 @@ def s2v_chunks_for_duration(seconds: float, fps: int = 16,
     need = int(math.ceil((floor_seconds + 0.25) * fps))
     target = max(int(round(seconds * fps)), need)
 
-    def _valid(lo, hi):
+    # Not every 4n+1 length is safe as the FINAL chunk of a chained take.
+    # A tail of 37 frames killed ep10_s07 inside WanSoundImageToVideoExtend:
+    #   einops: can't divide axis of length 15600 in chunks of 9   ((37-1)/4)
+    # Tails of 33, 45, 53 and 81 have all rendered without complaint, so the
+    # constraint is stricter than 4n+1 and is not documented anywhere. Rather
+    # than guess at the rule, the tail is restricted to lengths this pipeline
+    # has actually produced clips at.
+    def _valid(lo, hi, tail=False):
+        if tail:
+            return [f for f in SAFE_TAIL_FRAMES if lo <= f <= hi]
         return [f for f in range(lo, hi + 1) if f % 4 == 1]
 
     best = None
@@ -493,7 +504,7 @@ def s2v_chunks_for_duration(seconds: float, fps: int = 16,
         else:
             base = S2V_CHUNK_FRAMES * (n - 1)
             options = [(S2V_CHUNK_FRAMES, n - 1, t)
-                       for t in _valid(MIN_FRAMES, S2V_CHUNK_FRAMES)]
+                       for t in _valid(MIN_FRAMES, S2V_CHUNK_FRAMES, tail=True)]
         for frames, extra, tail in options:
             total = (extra * frames + (tail if tail is not None else frames))
             if total < need:

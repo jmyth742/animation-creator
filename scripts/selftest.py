@@ -1035,6 +1035,31 @@ def _():
     assert lens == [81, 33], f"chunk lengths {lens} -- the tail size was ignored"
 
 
+@check("extend: the final chunk is a length that has actually rendered")
+def _():
+    """A tail of 37 frames killed ep10_s07 inside the Extend node:
+
+        einops: can't divide axis of length 15600 in chunks of 9   ((37-1)/4)
+
+    Tails of 33, 45, 53 and 81 render fine, so the constraint is stricter than
+    4n+1 and is documented nowhere. The sizer is therefore restricted to
+    lengths this pipeline has produced clips at, and this asserts it stays
+    restricted -- a plausible-looking 4n+1 tail is exactly what slipped
+    through the first time.
+    """
+    seen = set()
+    for tenths in range(40, 400):
+        secs = tenths / 10.0
+        f, extra, tail = sr.s2v_chunks_for_duration(secs, fps=16)
+        if tail is not None:
+            seen.add(tail)
+    bad = sorted(t for t in seen if t not in sr.SAFE_TAIL_FRAMES)
+    assert not bad, (
+        f"the sizer can still produce final chunks of {bad} frames, which are "
+        f"not in SAFE_TAIL_FRAMES {sr.SAFE_TAIL_FRAMES} -- one of these will "
+        f"fail inside WanSoundImageToVideoExtend partway through a render")
+
+
 @check("extend: the chunk cap matches what has actually been rendered")
 def _():
     # 3-chunk was built and queued once; the poll timed out at 30 minutes and
