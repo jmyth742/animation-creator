@@ -41,32 +41,42 @@ MOVE_BY_STAGING = {
 AMOUNT = {"push": 0.065, "pull": 0.065, "drift": 0.055, "hold": 0.0}
 
 
-def move_filter(kind: str, n_frames: int, src_w: int, src_h: int) -> str:
-    """A crop expression that walks a 1920x1080 window across the source."""
+def move_filter(kind: str, n_frames: int, src_w: int, src_h: int,
+                out_w: int | None = None, out_h: int | None = None,
+                fps: int = 16) -> str:
+    """A moving window across the source, scaled to the output size.
+
+    Uses zoompan, NOT crop. ffmpeg's crop filter evaluates its `w` and `h`
+    expressions ONCE at initialisation -- only `x` and `y` are re-evaluated per
+    frame. A push written as a shrinking crop window therefore freezes at
+    whatever size frame 0 asked for: measured, `push` came out bit-identical to
+    `static` (mean frame delta 2.920 against 2.918), so seventeen of the
+    twenty-seven shots in the first graded cut had no camera on them at all.
+    Drift worked only because it moves `x`.
+
+    zoompan re-evaluates `z` every frame, which is the whole point.
+    """
+    out_w = out_w or src_w
+    out_h = out_h or src_h
     amt = AMOUNT.get(kind, 0.0)
     if kind == "hold" or amt <= 0 or n_frames <= 1:
-        return f"crop={OUT_W}:{OUT_H}:(in_w-{OUT_W})/2:(in_h-{OUT_H})/2"
-    # Zoom is expressed as the crop window shrinking (push) or growing (pull).
-    # Start and end window widths, clamped to what the source actually has.
-    wide = min(src_w, int(OUT_W * (1 + amt)))
+        return f"scale={out_w}:{out_h}:flags=lanczos,format=yuv420p"
+    last = max(1, n_frames - 1)
+    prog = f"(on/{last})"
     if kind == "push":
-        w0, w1 = wide, OUT_W
+        z = f"(1+{amt}*{prog})"
     elif kind == "pull":
-        w0, w1 = OUT_W, wide
-    else:                                    # drift: constant size, moves across
-        w0 = w1 = OUT_W
-    prog = f"(n/{max(1, n_frames - 1)})"
-    w = f"({w0}+({w1}-{w0})*{prog})"
-    h = f"({w}*{OUT_H}/{OUT_W})"
+        z = f"({1+amt}-{amt}*{prog})"
+    else:                                   # drift: constant zoom, travels
+        z = f"({1+amt})"
     if kind == "drift":
-        # Travel a little over half the spare width, so the frame never runs out.
-        travel = (src_w - OUT_W) * 0.55
-        x = f"((in_w-{w})/2 + {travel:.1f}*({prog}-0.5))"
+        # Travel across the spare width the zoom created.
+        x = f"(iw/2-(iw/zoom/2)) + (iw-iw/zoom)*0.45*({prog}-0.5)*2"
     else:
-        x = f"((in_w-{w})/2)"
-    y = f"((in_h-{h})/2)"
-    return (f"crop=w='{w}':h='{h}':x='{x}':y='{y}',"
-            f"scale={OUT_W}:{OUT_H}:flags=lanczos")
+        x = "iw/2-(iw/zoom/2)"
+    y = "ih/2-(ih/zoom/2)"
+    return (f"zoompan=z='{z}':x='{x}':y='{y}':d=1:s={out_w}x{out_h}:fps={fps},"
+            f"format=yuv420p")
 
 
 def apply_move(src: str, kind: str, out: str) -> str:
@@ -84,8 +94,16 @@ def apply_move(src: str, kind: str, out: str) -> str:
             ["ffprobe", "-v", "error", "-show_entries", "format=duration",
              "-of", "csv=p=0", src], capture_output=True, text=True).stdout.strip())
         n = max(1, int(dur * 16))
+    fps = 16
+    r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0",
+                        "-show_entries", "stream=r_frame_rate", "-of",
+                        "csv=p=0", src], capture_output=True, text=True).stdout.strip()
+    try:
+        fps = int(round(eval(r))) if r else 16                 # noqa: S307
+    except Exception:                                          # noqa: BLE001
+        fps = 16
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src,
-                    "-vf", move_filter(kind, n, w, h),
+                    "-vf", move_filter(kind, n, w, h, fps=fps),
                     "-c:v", "libx264", "-crf", "16", "-an", out], check=True)
     return out
 

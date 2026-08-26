@@ -35,6 +35,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 import showrunner as sr                                        # noqa: E402
 import sound_design as sd                                      # noqa: E402
+import camera_move as cam                                      # noqa: E402
+import grade as gr                                             # noqa: E402
+import titles as ti                                            # noqa: E402
 
 
 def _interleave(a: list, b: list) -> list:
@@ -117,6 +120,10 @@ def main():
     ap.add_argument("series")
     ap.add_argument("-o", "--out", default="/workspace/review/wow/film.mp4")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--post", action="store_true",
+                    help="camera moves, per-location grade, title and end cards")
+    ap.add_argument("--title", default="Tir na nOg")
+    ap.add_argument("--subtitle", default="a film in four movements")
     a = ap.parse_args()
 
     sr.set_current_series(a.series)
@@ -133,6 +140,31 @@ def main():
 
     work = Path(a.out).parent / "_film"
     work.mkdir(parents=True, exist_ok=True)
+
+    # ── post: a camera and a grade on every shot ─────────────────────────
+    # Both are edit-time and deterministic, so they can be re-judged and
+    # changed without touching the GPU. The camera move is free at 1080p
+    # because the upscale already produces 3328x1920; at 832x480 it costs a
+    # little resolution, which is why the move is small.
+    if a.post:
+        post_dir = work / "post"; post_dir.mkdir(exist_ok=True)
+        for e in edit:
+            kind = cam.MOVE_BY_STAGING.get(e["staging"], "push")
+            # A silent shot with no character is a landscape: let it drift.
+            if not e.get("vo"):
+                kind = "drift"
+            moved = str(post_dir / f"mv_{e['id']}.mp4")
+            cam.apply_move(e["clip"], kind, moved)
+            graded = str(post_dir / f"gr_{e['id']}.mp4")
+            gr.apply_grade(moved, e["location"], graded)
+            e["clip"] = graded
+            e["move"] = kind
+        moves = {}
+        for e in edit:
+            moves[e["move"]] = moves.get(e["move"], 0) + 1
+        print(f"\n  camera: {moves}")
+        print(f"  graded per location: "
+              f"{sorted({e['location'] for e in edit})}")
 
     # ── picture ──────────────────────────────────────────────────────────
     lst = work / "concat.txt"
@@ -156,10 +188,43 @@ def main():
     sd.mix_episode(plan, work, mix, preset=edit[0]["preset"],
                    offsets=offsets, vo_lead=0.0)
 
+    body = work / "body.mp4" if a.post else Path(a.out)
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(silent),
                     "-i", str(mix), "-map", "0:v", "-map", "1:a",
                     "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
-                    "-shortest", str(a.out)], check=True)
+                    "-shortest", str(body)], check=True)
+
+    # ── title and end cards ──────────────────────────────────────────────
+    if a.post:
+        w, h = 1920, 1080
+        probe = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0",
+             "-show_entries", "stream=width,height", "-of", "csv=p=0",
+             str(body)], capture_output=True, text=True).stdout.strip().split(",")
+        w, h = int(probe[0]), int(probe[1])
+        ti.W, ti.H = w, h
+        card = str(work / "title.mp4")
+        endc = str(work / "end.mp4")
+        ti.title_card(a.title, a.subtitle, card, seconds=4.0)
+        ti.end_card([a.title, "a folk tale",
+                     "rendered on one graphics card"], endc, seconds=6.0)
+        # Cards are silent; give them a matching silent track so concat does
+        # not drop the audio stream of the film between them.
+        lst2 = work / "final.txt"
+        parts = []
+        for i, seg in enumerate((card, str(body), endc)):
+            fixed = str(work / f"part{i}.mp4")
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", seg,
+                            "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo",
+                            "-map", "0:v", "-map", "1:a?" if i != 1 else "0:a",
+                            "-shortest", "-c:v", "libx264", "-crf", "16",
+                            "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
+                            fixed], check=True)
+            parts.append(fixed)
+        lst2.write_text("".join(f"file '{Path(p).resolve()}'\n" for p in parts))
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat",
+                        "-safe", "0", "-i", str(lst2), "-c", "copy",
+                        str(a.out)], check=True)
     print(f"\n  {a.out}  ({Path(a.out).stat().st_size/1e6:.1f} MB, {total:.1f}s)")
     return 0
 
