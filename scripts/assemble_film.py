@@ -47,6 +47,21 @@ def _interleave(a: list, b: list) -> list:
     return out
 
 
+# A held frame at the end of a line is a beat; too much of one reads as the
+# video stalling. Shots whose line is short against their authored beat end up
+# mostly frozen -- ep07_s04 was 4.0s live and 4.0s held -- so the edit trims
+# them back. This is an editorial cap, applied at assembly, so changing it
+# costs nothing and re-rendering is never required.
+MAX_HELD_SHARE = 0.40
+
+
+def _trim_to(clip: str, seconds: float, out: str) -> str:
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", clip,
+                    "-t", f"{seconds:.3f}", "-c:v", "libx264", "-crf", "16",
+                    "-an", out], check=True)
+    return out
+
+
 def build_edit(series: str) -> list[dict]:
     def scenes(ep):
         return json.loads(
@@ -70,10 +85,23 @@ def build_edit(series: str) -> list[dict]:
         if not preset:
             raise SystemExit(f"no ambience bed mapped for '{loc}'")
         vo = Path("output") / series / ep / "audio" / f"{sc['id']}.mp3"
+        dur = sr._get_video_duration(clip)
+        spoken = sr._get_video_duration(str(vo)) if vo.exists() else 0.0
+        live = min(dur, spoken + sr.S2V_LIVE_TAIL) if spoken > 0 else dur
+        held = max(0.0, dur - live)
+        if dur > 0 and held / dur > MAX_HELD_SHARE:
+            keep = live / (1.0 - MAX_HELD_SHARE)
+            trimmed = str(Path("/workspace/review/wow/_film") /
+                          f"trim_{sc['id']}.mp4")
+            Path(trimmed).parent.mkdir(parents=True, exist_ok=True)
+            _trim_to(clip, keep, trimmed)
+            print(f"  trimmed {sc['id']} {dur:.2f}s -> {keep:.2f}s "
+                  f"({held/dur*100:.0f}% was a held frame)")
+            clip, dur = trimmed, sr._get_video_duration(trimmed)
         edit.append({
             "id": sc["id"], "ep": ep, "clip": clip, "location": loc,
             "preset": preset, "staging": sc.get("staging", "medium"),
-            "seconds": round(sr._get_video_duration(clip), 3),
+            "seconds": round(dur, 3),
             "vo": str(vo) if vo.exists() else None,
         })
     return edit
