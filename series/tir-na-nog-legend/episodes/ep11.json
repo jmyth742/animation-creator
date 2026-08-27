@@ -1,0 +1,202 @@
+{
+  "id": "ep11",
+  "title": "Three Hundred Summers",
+  "summary": "The gap between arriving and leaving: the years passing in the valley and the ache growing. Written deliberately with PHYSICAL ACTION in most shots -- 42 of the previous 55 shots were a person standing still talking, and this is the first script that asks characters to do things while they speak.",
+  "scenes": [
+    {
+      "id": "ep11_s01",
+      "location": "tir_na_nog",
+      "characters": [],
+      "clip_length": "medium",
+      "hold_seconds": 6.0,
+      "visual": "Very wide shot of the green valley, silver waterfalls spilling into still pools, long summer light. No people. Static camera.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "wider",
+      "seed": "location"
+    },
+    {
+      "id": "ep11_s02",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 8.5,
+      "visual": "Medium shot from the waist up. The princess walks slowly through long grass as she speaks, one hand trailing across the seed heads. Static camera, she moves through the frame.",
+      "narration": null,
+      "setup": "master",
+      "staging": "medium",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "You have been counting under your breath again. I can hear you doing it when you think I am asleep."
+        }
+      ]
+    },
+    {
+      "id": "ep11_s03",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.5,
+      "visual": "Three-quarter shot from the waist up. The warrior turns from the water to face her as he speaks, shoulders shifting. Static camera.",
+      "narration": null,
+      "setup": "reverse",
+      "staging": "three_quarter",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "Eleven thousand and some. I lost the thread of it somewhere in the second winter that never came."
+        }
+      ]
+    },
+    {
+      "id": "ep11_s04",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 11.5,
+      "visual": "Medium shot. The princess lowers herself to sit on the grass as she speaks, gathering her gown. Static camera.",
+      "narration": null,
+      "setup": "side",
+      "staging": "medium",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "There is no second winter. There is no first one. That is what I gave you, and you have been keeping accounts against it."
+        }
+      ]
+    },
+    {
+      "id": "ep11_s05",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 11.0,
+      "visual": "Medium shot. The warrior crouches down beside her and picks up a stone from the grass, turning it over in his hand as he speaks. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "medium",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "This stone has not moved since I came here. Not one inch. At home a stone that size would be under a wall by now, or in a grave."
+        }
+      ]
+    },
+    {
+      "id": "ep11_s06",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.5,
+      "visual": "Close-up. The princess turns her head to look at him, hair moving. Static camera.",
+      "narration": null,
+      "setup": "reverse",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "You talk about that place the way other men talk about a woman they did not marry."
+        }
+      ]
+    },
+    {
+      "id": "ep11_s07",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 8.5,
+      "visual": "Three-quarter shot. The warrior stands up slowly as he speaks and lets the stone fall from his hand. Static camera.",
+      "narration": null,
+      "setup": "side",
+      "staging": "three_quarter",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I talk about it the way a man talks about a room he left a lamp burning in. Something is still going on without me."
+        }
+      ]
+    },
+    {
+      "id": "ep11_s08",
+      "location": "tir_na_nog",
+      "characters": [],
+      "clip_length": "medium",
+      "hold_seconds": 6.0,
+      "visual": "Wide shot of the valley in low evening light, the pools very still, no wind. No people. Static camera.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "closer",
+      "seed": "location"
+    },
+    {
+      "id": "ep11_s09",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 11.0,
+      "visual": "Medium shot. The princess rises to her feet and steps toward him as she speaks, closing the distance. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "medium",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Then go and put it out. I have watched you be almost happy for a very long time and I would rather have you back properly or not at all."
+        }
+      ]
+    },
+    {
+      "id": "ep11_s10",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.5,
+      "visual": "Close shot. The warrior looks down, then up at her, the decision arriving on his face. Static camera.",
+      "narration": null,
+      "setup": "closer",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "You would let me go. After three hundred years you would actually let me go."
+        }
+      ]
+    },
+    {
+      "id": "ep11_s11",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.5,
+      "visual": "Close-up. The princess holds his gaze without moving. Static camera.",
+      "narration": null,
+      "setup": "side",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "I would let you go. I never said I would let you stay away."
+        }
+      ]
+    }
+  ]
+}
