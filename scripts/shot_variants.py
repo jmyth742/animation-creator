@@ -128,8 +128,15 @@ def main():
         prefix = f"var_{a.scene}_{name}"
         existing = sr.find_latest_clip(prefix)
         if not existing:
+            # A CAMERA test must hold the seed fixed: the prompt is the only
+            # thing being varied, so varying the seed too makes prompt effect
+            # and sampling noise inseparable. The first run used
+            # 4000 + i*911 for every variant and could not answer its own
+            # question. Coverage takes are the opposite case -- there a
+            # different seed IS the variable.
+            seed = 4000 if a.camera else 4000 + i * 911
             wf = sr.build_video_workflow(
-                "wan", mode, base_prompt + suffix, 4000 + i * 911, prefix,
+                "wan", mode, base_prompt + suffix, seed, prefix,
                 frames, res, negative_prompt=neg, steps=a.steps,
                 image_name=seed_img, audio_path=audio,
                 extra_chunks=extra, last_chunk_frames=tail)

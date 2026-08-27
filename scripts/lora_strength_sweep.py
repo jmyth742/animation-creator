@@ -39,21 +39,33 @@ sys.path.insert(0, str(Path(__file__).parent))
 import showrunner as sr                                        # noqa: E402
 import verify_render as vr                                     # noqa: E402
 
-STRENGTHS = [0.0, 0.20, 0.35, 0.50, 0.70]
+# Extended past 0.7 deliberately. At <=0.7 the cel style holds (0.996-0.997)
+# and identity does not move, contradicting the documented collapse at 0.9. So
+# either the break is between 0.7 and 0.9, or the original measurement had
+# another cause -- and that is worth knowing, because the rule that drops
+# character LoRAs from ~80% of shots rests on it.
+STRENGTHS = [0.0, 0.35, 0.70, 0.90, 1.00]
 CEL = "cel-shaded 2D animation, flat blocks of colour, clean linework"
 PHOTO = "a photograph of a real person, photorealistic"
 
 
 def _style(img: Image.Image) -> float:
-    """How cel is this frame, against a photoreal alternative."""
+    """How cel is this frame, against a photoreal alternative.
+
+    Delegates to verify_render rather than re-deriving it. The first version
+    here softmaxed the RAW CLIP similarities, which sit around 0.2-0.3 and
+    differ between captions by about 0.001 -- so it returned ~0.51 for
+    everything: a clean cel frame, that frame destroyed with blur and grain,
+    and a character portrait alike. It could not discriminate at all, and
+    "style holds" measured with it meant nothing.
+
+    verify_render scales similarities by 100 before the softmax, which is what
+    separates them.
+    """
     v = vr._embed_images([img])
-    t = vr._embed_texts([CEL, PHOTO]) if hasattr(vr, "_embed_texts") else None
-    if t is None:
-        return float("nan")
-    sims = (v @ t.T)[0]
-    import numpy as np
-    e = np.exp(sims - sims.max())
-    return float((e / e.sum())[0])
+    sv = vr._embed_texts(vr._STYLE_OPTIONS)
+    sims = (v @ sv.T).mean(dim=0)
+    return float((sims * 100).softmax(dim=-1)[0])
 
 
 def main():
