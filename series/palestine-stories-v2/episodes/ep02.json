@@ -1,0 +1,147 @@
+{
+  "id": "ep02",
+  "title": "The Key",
+  "summary": "Bibi tries the key on every door in the port district. Reemi catches him and the absurdity of his claim becomes clear.",
+  "scenes": [
+    {
+      "id": "ep02_s01",
+      "location": "loc_4",
+      "characters": [],
+      "clip_length": "medium",
+      "visual": "Close-up of the old iron key being inserted into a rusty lock on a heavy wooden door, the key jamming and refusing to turn, fingers twisting it with increasing force, rust flaking off the lock plate, early morning light in a narrow stone alley",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s02",
+      "location": "loc_4",
+      "characters": ["char_2"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Bibi stepping back from the door, wiping his forehead with the back of his hand, he looks at the key with frustration then up at the door with renewed determination, bougainvillea flowers framing the archway above him",
+      "narration": "Morning came. So did new plans.",
+      "dialogue": [
+        {"character": "char_2", "line": "This key proves it is mine."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s03",
+      "location": "loc_4",
+      "characters": ["char_2"],
+      "clip_length": "short",
+      "visual": "Medium shot of Bibi moving to a second door further down the alley, trying the key again, it does not fit, he yanks it out and hurries to a third door, his movements becoming frantic and comical, suit jacket flapping",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s04",
+      "location": "loc_4",
+      "characters": ["char_2"],
+      "clip_length": "short",
+      "visual": "Close-up of the key scraping uselessly against yet another lock, metal grinding on metal, Bibi's fingers white-knuckled around the key bow, a bead of sweat dropping onto the iron",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s05",
+      "location": "loc_1",
+      "characters": ["char_1"],
+      "clip_length": "long",
+      "visual": "Medium shot of Reemi walking through the waking market at sunrise, vendors opening shutters around her, she carries a basket of herbs, the sea breeze catching her dark hair, she pauses mid-step and tilts her head listening to a distant metallic scraping sound",
+      "narration": "Reemi could smell trouble like salt air.",
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s06",
+      "location": "loc_1",
+      "characters": [],
+      "clip_length": "short",
+      "visual": "Close-up of a vendor's hands pouring dried za'atar from a burlap sack into a clay bowl, the green herbs cascading in morning light, the simple ritual of opening the market for another day",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s07",
+      "location": "loc_4",
+      "characters": ["char_1"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Reemi standing at the entrance to the narrow alley, her silhouette framed by the stone archway, morning light behind her, she watches something ahead with growing concern, one hand resting on the cool stone wall",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s08",
+      "location": "loc_4",
+      "characters": ["char_1"],
+      "clip_length": "long",
+      "visual": "Medium shot of Reemi stepping forward into the alley to confront Bibi, she stands tall with arms crossed blocking the narrow passage, the locked door visible behind her, her expression is cold and controlled, morning light cutting a sharp line across the cobblestones between them",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_1", "line": "That door is not yours, Bibi."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s09",
+      "location": "loc_4",
+      "characters": ["char_2"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Bibi clutching the key behind his back defensively, his forced smile cracking, beady eyes darting left and right, sweat beading on his forehead, he takes a half step backward in the narrow alley",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_2", "line": "I have the key!"}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s10",
+      "location": "loc_4",
+      "characters": ["char_1"],
+      "clip_length": "medium",
+      "visual": "Close-up of Reemi's face showing cold fury, her dark eyes narrowing, lips pressed thin, the shadow of the stone archway falling across half her face, completely unmoved",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_1", "line": "A key that does not fit."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s11",
+      "location": "loc_4",
+      "characters": [],
+      "clip_length": "short",
+      "visual": "Close-up of the old wooden door standing firmly shut, its iron lock untouched and unbothered, a thin crack of light visible beneath, bougainvillea petals drifting down past the weathered wood",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s12",
+      "location": "loc_4",
+      "characters": ["char_2"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Bibi backing away down the narrow alley, stuffing the key into his bulging pocket, his confident posture deflating, he points back toward Reemi with a shaking finger before turning to retreat",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_2", "line": "Details, details. We shall see."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s13",
+      "location": "loc_1",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of Haifa port as morning fully breaks, warm light flooding the market stalls now open for business, the old door visible in the distance at the end of the alley still firmly locked, the harbour calm and indifferent beyond, a fishing boat gliding slowly out to sea",
+      "narration": "The door held. For now.",
+      "dialogue": [],
+      "reference_image": null
+    }
+  ]
+}

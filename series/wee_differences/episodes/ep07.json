@@ -1,0 +1,154 @@
+{
+  "id": "ep07",
+  "title": "Flag Day Weekend",
+  "summary": "St Patrick's Day and The Twelfth happen to fall on the same weekend, turning Paddy and Billy's gardens into competing cultural battlegrounds with escalating displays of patriotic pride.",
+  "scenes": [
+    {
+      "id": "ep07_s01",
+      "location": "belfast_streets",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide establishing shot of the terraced street at dawn. Camera slowly pans across identical red-brick houses, revealing dramatic overnight transformation - one side draped in green, white and gold bunting, the other in red, white and blue. Irish tricolors flutter opposite Union Jacks in perfect symmetry.",
+      "narration": "Weekend warfare begins at dawn.",
+      "dialogue": []
+    },
+    {
+      "id": "ep07_s02",
+      "location": "paddys_house",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Paddy stepping out his green front door, wearing his GAA jersey and traditional Irish cap. He surveys his elaborate green decorations with satisfaction, adjusting a large shamrock banner. Bright morning light emphasizes the overwhelming green theme.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "Erin go Bragh, ya beauty!"
+        }
+      ]
+    },
+    {
+      "id": "ep07_s03",
+      "location": "billys_house",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Billy emerging from his red front door simultaneously, wearing an Orange sash over his blue polo. He straightens a Union Jack and nods approvingly at his red, white and blue display. Camera captures his precise, methodical satisfaction.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "God save our gracious Queen!"
+        }
+      ]
+    },
+    {
+      "id": "ep07_s04",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up reaction shot of both men's faces as they notice each other simultaneously over the fence. Their proud smiles freeze, then slowly turn to competitive grimaces. The fence line divides the frame perfectly between green and blue lighting.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep07_s05",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Paddy and Billy facing each other across the fence, both trying to appear casual while clearly sizing up each other's displays. Their eyes dart competitively between decorations. Static camera captures the tension.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "Nice wee bit of bunting."
+        },
+        {
+          "character": "billy",
+          "line": "Yours too. Very... green."
+        }
+      ]
+    },
+    {
+      "id": "ep07_s06",
+      "location": "paddys_house",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "short",
+      "visual": "Quick action shot of Paddy frantically adding more decorations - hanging additional shamrock garlands, planting tiny Irish flags in flowerpots. Camera follows his manic movement as green overwhelms every surface. Handheld energy captures his competitive urgency.",
+      "narration": "Escalation protocol activated.",
+      "dialogue": []
+    },
+    {
+      "id": "ep07_s07",
+      "location": "billys_house",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Matching action shot of Billy methodically adding more Union Jacks and Orange banners with military precision. Camera tracks his systematic decoration placement. Every movement is calculated and deliberate, creating perfect symmetrical displays.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep07_s08",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Wide shot showing both gardens now completely overwhelmed with competing decorations. Traditional Irish music blares from Paddy's side while Orange flute band music blasts from Billy's. Both men stand proudly in their respective domains, shouting over the noise.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "Can ye hear that beautiful sound?"
+        },
+        {
+          "character": "billy",
+          "line": "What? I can't hear anything!"
+        }
+      ]
+    },
+    {
+      "id": "ep07_s09",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy",
+        "billy",
+        "derek"
+      ],
+      "clip_length": "long",
+      "visual": "Medium three-shot as Derek appears between them wearing a confused expression and a novelty leprechaun hat with tiny Union Jack pins stuck to it. The music stops abruptly. Paddy and Billy stare at him in horror as he cheerfully waves a small Scottish flag.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "derek",
+          "line": "Happy Burns Night, everyone!"
+        }
+      ]
+    },
+    {
+      "id": "ep07_s10",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Extreme close-up reaction shot splitting the frame between Paddy and Billy's faces. Their expressions shift from horror to shared understanding to unified disgust. Their eyes meet across the fence in perfect synchronization of mutual annoyance.",
+      "narration": "Some things transcend cultural differences.",
+      "dialogue": []
+    }
+  ]
+}

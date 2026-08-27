@@ -1,0 +1,122 @@
+{
+  "id": "ep05",
+  "title": "Do Not Touch the Ground",
+  "summary": "One location, six shots, written for long takes. The farewell on the cliff played as a single continuous scene rather than a cut-up montage: shots run 8-12 seconds, screen direction holds across every reverse, and the whole piece lives on one set so the light never changes. Sound design carries the weight the picture cannot.",
+  "scenes": [
+    {
+      "id": "ep05_s01",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot. The warrior stands small against a high green headland above a grey sea, cloak dragging in the wind, his back three-quarters to camera as he looks out east. Static camera, low horizon.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "Three hundred years, you said. Three hundred years of gold and morning, and no grave dug for anyone. And still I look east."
+        }
+      ],
+      "setup": "master",
+      "staging": "full_body",
+      "ambience": "coastal_wind",
+      "hold_seconds": 10.0
+    },
+    {
+      "id": "ep05_s02",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "visual": "Medium shot, reverse angle. The golden-haired princess from the waist up, turned three-quarters to the left, the headland and sea behind her. She watches him. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "You look east every day now. You have learned that horizon the way you once learned mine."
+        }
+      ],
+      "setup": "reverse",
+      "staging": "medium",
+      "hold_seconds": 8.0
+    },
+    {
+      "id": "ep05_s03",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "visual": "Close-up. The princess's face fills much of the frame, wind moving her golden hair, the sea a soft blur behind. She speaks slowly and does not look away. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Go, then. Take the white horse. But whatever you see there, do not set your foot on the ground of Ireland."
+        }
+      ],
+      "setup": "master",
+      "staging": "close",
+      "hold_seconds": 12.0
+    },
+    {
+      "id": "ep05_s04",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "visual": "Three-quarter shot from the waist up, seen from the side. The warrior turned to the left, face lit from the west, jaw tight, the wind pulling at his hair, the sea behind him. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "My father is dust. My hall is stones. Tell me what is left down there that can still take anything from me."
+        }
+      ],
+      "setup": "side",
+      "staging": "three_quarter",
+      "hold_seconds": 8.0
+    },
+    {
+      "id": "ep05_s05",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "visual": "Medium shot over the warrior's shoulder, reverse angle. The princess faces camera past his dark shoulder, the sea beyond her. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "All of it. The years are waiting down there, and they have been patient."
+        }
+      ],
+      "setup": "reverse",
+      "staging": "over_shoulder",
+      "hold_seconds": 8.0
+    },
+    {
+      "id": "ep05_s06",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "visual": "Three-quarter shot from the waist up, the warrior turned back toward her, the open sea filling the frame behind him. He speaks gently. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "Then I will not touch it. I will keep to the saddle, and look my fill, and come back to you before the light goes."
+        }
+      ],
+      "setup": "master",
+      "staging": "three_quarter",
+      "hold_seconds": 10.0
+    }
+  ]
+}

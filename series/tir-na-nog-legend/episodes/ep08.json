@@ -1,0 +1,121 @@
+{
+  "id": "ep08",
+  "title": "What She Kept",
+  "summary": "The untold half of the myth. Niamh alone in the valley after Oisin rides out, speaking to someone who is not there. Single-character piece; reuses the tir_na_nog staging, so it costs no extra plates.",
+  "scenes": [
+    {
+      "id": "ep08_s01",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 12.0,
+      "visual": "Wide shot. The princess stands alone and small in the green valley of silver waterfalls, facing away toward the far end of it. Static camera, low horizon.",
+      "narration": null,
+      "setup": "master",
+      "staging": "full_body",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "You have been gone one day. I have counted it. You would find that funny."
+        }
+      ]
+    },
+    {
+      "id": "ep08_s02",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 10.0,
+      "visual": "Medium shot from the waist up, reverse angle, the pools and green mountainside behind her. She speaks to no one. Static camera.",
+      "narration": null,
+      "setup": "reverse",
+      "staging": "medium",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Nobody here has ever waited before. I do not think there is a word for it in this language."
+        }
+      ]
+    },
+    {
+      "id": "ep08_s03",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 8.0,
+      "visual": "Three-quarter shot from the waist up, seen from the side, warm light across her face. Static camera.",
+      "narration": null,
+      "setup": "side",
+      "staging": "three_quarter",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "I told you the years were patient. I did not tell you that I am not."
+        }
+      ]
+    },
+    {
+      "id": "ep08_s04",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 10.0,
+      "visual": "Medium shot over the shoulder, her back three-quarters to camera, looking down the length of the valley. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "over_shoulder",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Everyone I have ever known is still here, and still exactly as they were. That is the whole trouble with it."
+        }
+      ]
+    },
+    {
+      "id": "ep08_s05",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 12.0,
+      "visual": "Close-up, reverse angle. The princess's face fills much of the frame, the valley a soft blur behind her, her eyes steady. Static camera.",
+      "narration": null,
+      "setup": "reverse",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "I have never once been afraid here. Not once, in all the time there has been. And I sent you out and told you not to put your feet down, and now I am."
+        }
+      ]
+    },
+    {
+      "id": "ep08_s06",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 8.0,
+      "visual": "Three-quarter shot from the waist up, the green valley wide and bright behind her. She looks toward the way he went. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "three_quarter",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Come back and I will learn to count. I will learn it properly."
+        }
+      ]
+    }
+  ]
+}

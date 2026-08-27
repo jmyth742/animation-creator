@@ -1,0 +1,128 @@
+{
+  "id": "ep02",
+  "title": "Operation Demetrius",
+  "summary": "August 9th, 1971: The British Army launches Operation Demetrius, a mass internment operation targeting Catholics across Belfast. Seamus witnesses his brother Declan's arrest in pre-dawn raids.",
+  "scenes": [
+    {
+      "id": "ep02_s01",
+      "location": "falls_road",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide aerial shot of Falls Road at dawn, mist rising from wet cobblestones. Camera slowly pans across rows of terraced houses as army Saracens move into position at street corners. Grey morning light filters through clouds.",
+      "narration": "August ninth, nineteen seventy one, four AM",
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s02",
+      "location": "seamus_home",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on Seamus's face as he jolts awake in bed, eyes wide with alarm. Harsh searchlight beams sweep across his bedroom wall through the window.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s03",
+      "location": "falls_road",
+      "characters": [],
+      "clip_length": "medium",
+      "visual": "Medium shot of army boots marching in formation down wet cobblestone street. Camera tilts up to show soldiers in full combat gear moving toward houses.",
+      "narration": "Operation Demetrius begins across Belfast",
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s04",
+      "location": "seamus_home",
+      "characters": [
+        "seamus",
+        "maire"
+      ],
+      "clip_length": "short",
+      "visual": "Medium two-shot of Seamus and Máire huddled at their front window, peering through curtains. Both faces show fear and anticipation.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "maire",
+          "line": "They're taking everyone"
+        }
+      ]
+    },
+    {
+      "id": "ep02_s05",
+      "location": "seamus_home",
+      "characters": [
+        "declan",
+        "harris"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of front door being kicked open violently. Soldiers storm in with rifles raised as Declan appears at top of stairs in underwear, hands instinctively raised.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "harris",
+          "line": "Declan O'Brien, you're under arrest"
+        }
+      ]
+    },
+    {
+      "id": "ep02_s06",
+      "location": "seamus_home",
+      "characters": [
+        "declan"
+      ],
+      "clip_length": "medium",
+      "visual": "Close-up on Declan's face as plastic hood is pulled over his head. His eyes show defiance turning to fear as darkness covers him.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "declan",
+          "line": "I've done nothing wrong"
+        }
+      ]
+    },
+    {
+      "id": "ep02_s07",
+      "location": "seamus_home",
+      "characters": [
+        "maire"
+      ],
+      "clip_length": "short",
+      "visual": "Extreme close-up on Máire's face as she screams, tears streaming down her cheeks. Static camera captures raw maternal anguish.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s08",
+      "location": "falls_road",
+      "characters": [
+        "declan"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of hooded Declan being dragged to army Saracen. His feet scrape against wet cobblestones as soldiers grip his arms.",
+      "narration": "Three hundred forty two men arrested",
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s09",
+      "location": "seamus_home",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on Seamus's face pressed against window glass, watching helplessly. His breath fogs the window as tears run down his cheeks.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s10",
+      "location": "falls_road",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of convoy of army vehicles disappearing into morning mist down Falls Road. Camera holds as engine sounds fade, leaving only silence and empty street.",
+      "narration": "Without charge, without trial, without hope",
+      "dialogue": []
+    }
+  ]
+}

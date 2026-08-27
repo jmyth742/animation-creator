@@ -1,0 +1,121 @@
+{
+  "id": "ep06",
+  "title": "Nothing Here Is Ever Lost",
+  "summary": "Oisin newly arrived in the otherworld. Niamh shows him a place with no seasons and no graves, and he cannot stop counting. The seed of the homesickness that eventually takes him back.",
+  "scenes": [
+    {
+      "id": "ep06_s01",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 12.0,
+      "visual": "Wide shot. The princess stands small in a green valley of silver waterfalls and still pools, arm half-raised to the land around her. Static camera, low horizon.",
+      "narration": null,
+      "setup": "master",
+      "staging": "full_body",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "This is the valley I promised you. No one grows old here. No one is buried here."
+        }
+      ]
+    },
+    {
+      "id": "ep06_s02",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 8.0,
+      "visual": "Three-quarter shot from the waist up, reverse angle. The warrior turning slowly, listening, the bright valley behind him. Static camera.",
+      "narration": null,
+      "setup": "reverse",
+      "staging": "three_quarter",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I can hear water, and birds, and nothing else. Where is the sound of people working?"
+        }
+      ]
+    },
+    {
+      "id": "ep06_s03",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 10.0,
+      "visual": "Medium shot from the waist up. The princess turned three-quarters, pools and green mountainside behind her. She speaks gently. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "medium",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "There is no work that must be done. Nothing here is ever finished, because nothing here is ever lost."
+        }
+      ]
+    },
+    {
+      "id": "ep06_s04",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 8.0,
+      "visual": "Medium shot over the shoulder, from the side. The warrior looking away down the valley, the light warm on his face. Static camera.",
+      "narration": null,
+      "setup": "side",
+      "staging": "over_shoulder",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "In my father's hall we counted the year by what we buried and what we sowed. That was how we knew where we were."
+        }
+      ]
+    },
+    {
+      "id": "ep06_s05",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 10.0,
+      "visual": "Close-up, reverse angle. The princess's face fills much of the frame, the valley a soft blur of green and silver behind her. She watches him carefully. Static camera.",
+      "narration": null,
+      "setup": "reverse",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "You will stop counting. Everyone does. And on the day you stop, you will be happy."
+        }
+      ]
+    },
+    {
+      "id": "ep06_s06",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 8.0,
+      "visual": "Three-quarter shot from the waist up, the green valley wide behind him. He answers without smiling. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "three_quarter",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "Then let me be the last man in the world who still remembers how to count. Someone should."
+        }
+      ]
+    }
+  ]
+}

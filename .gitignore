@@ -41,9 +41,17 @@ ambience/
 
 # Generated series data (keep templates and concept files)
 series/*/continuity/
-series/*/reference_images/
-series/*/bible.json
-series/*/episodes/
+# bible.json and episodes/ were ignored as "generated series data" back when
+# Claude wrote them from a concept file. They are not generated any more --
+# every line of ep05 through ep10 was hand-authored, rewritten against measured
+# TTS timings, and is the actual creative work. Together they are ~60KB. Losing
+# the scripts while keeping the code that renders them would be exactly the
+# wrong half to back up.
+!series/*/bible.json
+!series/*/episodes/
+# The nine character anchors: 5MB, and every plate, every staged shot and every
+# LoRA in the series descends from them. Regenerating changes the characters.
+!series/*/reference_images/
 
 # Logs
 *.log
@@ -72,7 +80,6 @@ training/logs/
 
 # Generated imagery. Reference plates, staged sets and training builds are all
 # reproducible from the scripts plus the bible, and run to hundreds of MB.
-series/*/reference_images/
 series/*/sets/
 training/character_builds/
 series/*/continuity/

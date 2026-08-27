@@ -1,0 +1,151 @@
+{
+  "id": "ep02",
+  "title": "The Letter H",
+  "summary": "Paddy and Billy's friendship nearly ends when they discover they pronounce the letter H differently during a heated Scrabble game.",
+  "scenes": [
+    {
+      "id": "ep02_s01",
+      "location": "neutral_pub",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of the neutral pub interior. Paddy and Billy sit at a small wooden table with a Scrabble board between them. Warm pub lighting creates shadows as camera slowly pushes in toward their concentrated faces.",
+      "narration": "Ancient rivalries surface in unexpected places",
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s02",
+      "location": "neutral_pub",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Paddy leaning forward over the Scrabble board, finger pointing at tiles. His green GAA jersey is visible as he gestures enthusiastically. Static camera holds on his animated expression.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "That's HAITCH, you eejit!"
+        }
+      ]
+    },
+    {
+      "id": "ep02_s03",
+      "location": "neutral_pub",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on Billy's face showing shock and indignation. His fair hair catches the pub light as he recoils slightly. Camera remains static on his stunned expression.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s04",
+      "location": "neutral_pub",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Billy straightening up in his chair, arms crossing defensively. His blue polo shirt and Union Jack pin are clearly visible. Camera holds steady as he delivers his retort.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "It's AITCH, Paddy! Always has been!"
+        }
+      ]
+    },
+    {
+      "id": "ep02_s05",
+      "location": "neutral_pub",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Wide shot as both men leap to their feet simultaneously, chairs scraping back. Scrabble tiles scatter across the table. Quick handheld camera captures the sudden explosive movement.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s06",
+      "location": "neutral_pub",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Paddy gesturing wildly with both hands, his face animated with passion. The tricolor pin on his jersey catches the light as he leans forward aggressively.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "My granny always said HAITCH!"
+        }
+      ]
+    },
+    {
+      "id": "ep02_s07",
+      "location": "neutral_pub",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Billy pointing a finger emphatically, his face red with frustration. Static camera holds as he delivers his counter-argument with precise Belfast pronunciation.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "Well your granny was wrong!"
+        }
+      ]
+    },
+    {
+      "id": "ep02_s08",
+      "location": "neutral_pub",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "long",
+      "visual": "Two-shot of both men facing each other across the scattered Scrabble board, frozen in their argument. The pub's neutral decor frames them as camera slowly pulls back to reveal the absurdity of their standoff.",
+      "narration": "The pronunciation divide runs deeper than religion",
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s09",
+      "location": "back_garden",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Paddy and Billy leaning over their shared fence, both holding steaming mugs of tea. Their house colors visible in background as they look sheepishly at each other.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "Tea?"
+        }
+      ]
+    },
+    {
+      "id": "ep02_s10",
+      "location": "back_garden",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on Billy's face showing a reluctant smile breaking through his stubborn expression. Camera holds static as he nods slightly, the fence post visible beside him.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "Aye, go on then"
+        }
+      ]
+    }
+  ]
+}

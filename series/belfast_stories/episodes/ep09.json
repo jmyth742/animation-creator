@@ -1,0 +1,115 @@
+{
+  "id": "ep09",
+  "title": "Bloody Sunday",
+  "summary": "January 30th, 1972: In Derry, a peaceful civil rights march turns into massacre as British paratroopers open fire on unarmed civilians, killing fourteen and wounding many more.",
+  "scenes": [
+    {
+      "id": "ep09_s01",
+      "location": "derry_streets",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide aerial shot of Derry's historic walled city on a grey winter afternoon. Camera slowly drifts over narrow stone streets filled with thousands of peaceful marchers carrying banners and signs. The crowd moves like a river through the ancient streets, their voices creating a distant murmur.",
+      "narration": "January 30th, 1972. Derry, Northern Ireland.",
+      "dialogue": []
+    },
+    {
+      "id": "ep09_s02",
+      "location": "derry_streets",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Seamus walking among the crowd of marchers, his green army surplus jacket visible among the sea of faces. Camera moves steadily alongside him as he holds a simple protest sign, his expression determined but peaceful. Other marchers surround him, families and young people together.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "seamus",
+          "line": "Civil rights for all, not just some."
+        }
+      ]
+    },
+    {
+      "id": "ep09_s03",
+      "location": "army_checkpoints",
+      "characters": [],
+      "clip_length": "medium",
+      "visual": "Medium shot of British paratroopers in full combat gear taking positions behind concrete barriers and army vehicles. Camera is low angle, making the soldiers appear imposing. Their faces are hard, weapons at ready, creating stark contrast with the peaceful march.",
+      "narration": "First Parachute Regiment deployed for crowd control.",
+      "dialogue": []
+    },
+    {
+      "id": "ep09_s04",
+      "location": "derry_streets",
+      "characters": [],
+      "clip_length": "short",
+      "visual": "Close-up on multiple hands raised in peace signs and V-for-victory gestures above the crowd. Camera tilts upward showing the forest of peaceful gestures against the grey sky, emphasizing the non-violent nature of the protest.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep09_s05",
+      "location": "derry_streets",
+      "characters": [
+        "harris"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Corporal Harris crouched behind army barriers, his rifle aimed toward the crowd. His face shows cold concentration as he peers through his weapon's sights. The concrete barrier frames the shot, showing his protected position.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "harris",
+          "line": "All targets are legitimate today."
+        }
+      ]
+    },
+    {
+      "id": "ep09_s06",
+      "location": "derry_streets",
+      "characters": [],
+      "clip_length": "short",
+      "visual": "Extreme close-up on a rifle muzzle firing, with bright muzzle flash illuminating the frame. Camera captures the violent moment in stark detail, the mechanical brutality of the weapon contrasting with the peaceful march.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep09_s07",
+      "location": "derry_streets",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on Seamus's face as his expression changes from confusion to horror, his green eyes wide with shock. Camera is static, capturing the exact moment innocence dies as gunfire erupts around him.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep09_s08",
+      "location": "derry_streets",
+      "characters": [],
+      "clip_length": "medium",
+      "visual": "Wide handheld shot of panic as the peaceful crowd scatters in all directions. Bodies fall to the wet cobblestones while others run for cover, banners and signs abandoned on the ground. Camera shakes with the chaos, smoke drifting across the scene.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep09_s09",
+      "location": "derry_streets",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Static wide shot of the aftermath: bodies lying motionless on bloodstained cobblestones, abandoned protest signs scattered like fallen leaves. Steam rises from warm blood meeting cold stone. The scene is eerily quiet after the chaos, with only distant sirens breaking the silence.",
+      "narration": "Fourteen civilians shot dead. All unarmed.",
+      "dialogue": []
+    },
+    {
+      "id": "ep09_s10",
+      "location": "derry_streets",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "long",
+      "visual": "Close-up on Seamus kneeling beside one of the fallen, his hands shaking as he reaches toward the victim. His face is streaked with tears, expression transformed from the hopeful young man at the march's start. Camera slowly pulls back to show him small among the carnage.",
+      "narration": "Something died in all of us.",
+      "dialogue": []
+    }
+  ]
+}

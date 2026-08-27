@@ -1,0 +1,159 @@
+{
+  "id": "ep05",
+  "title": "The GAA",
+  "summary": "Paddy attempts to teach Billy the rules of hurling, but Billy becomes convinced Paddy is making them up as he goes along. Paddy begins to suspect Billy might be right.",
+  "scenes": [
+    {
+      "id": "ep05_s01",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of Paddy leaning excitedly over the garden fence, holding a hurley stick and sliotar ball. Camera slowly pushes in as he gestures enthusiastically with the equipment. Bright afternoon light, tricolour visible in his house window behind him.",
+      "narration": "Ancient Gaelic sport meets modern confusion.",
+      "dialogue": null
+    },
+    {
+      "id": "ep05_s02",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Paddy and Billy facing each other across the fence. Paddy holds the hurley up demonstratively while Billy looks skeptical, arms crossed. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "Right Billy, this is hurling."
+        }
+      ]
+    },
+    {
+      "id": "ep05_s03",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "medium",
+      "visual": "Close-up on Paddy's animated face as he explains excitedly, gesturing with his free hand. The hurley stick visible in frame. Camera holds static on his enthusiastic expression.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "You can catch it in your hand!"
+        }
+      ]
+    },
+    {
+      "id": "ep05_s04",
+      "location": "back_garden_fence",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Extreme close-up on Billy's confused face, eyebrows furrowed in deep skepticism. Camera static, holding on his bewildered expression as he processes this information.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "With your hand?"
+        }
+      ]
+    },
+    {
+      "id": "ep05_s05",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Paddy demonstrating, bouncing the sliotar on the hurley stick. Camera follows the ball's movement as he shows off his skills with exaggerated confidence.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "But only for three steps maximum!"
+        }
+      ]
+    },
+    {
+      "id": "ep05_s06",
+      "location": "back_garden_fence",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on Billy's face as his skepticism deepens, one eyebrow raised higher than the other. Static camera captures his growing suspicion.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "Three steps exactly?"
+        }
+      ]
+    },
+    {
+      "id": "ep05_s07",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Paddy pausing mid-demonstration, the sliotar frozen on his hurley. Camera holds static as uncertainty flickers across his face for the first time.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "Erm... or maybe four steps?"
+        }
+      ]
+    },
+    {
+      "id": "ep05_s08",
+      "location": "back_garden_fence",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Extreme close-up on Billy's triumphant smirk as he realizes he's caught Paddy out. Camera static on his satisfied expression.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "You're making this up!"
+        }
+      ]
+    },
+    {
+      "id": "ep05_s09",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on Paddy's face as realization dawns that Billy might be right. His confident expression crumbles into confusion and doubt. Camera holds static.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "Am I?"
+        }
+      ]
+    },
+    {
+      "id": "ep05_s10",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot pulling back to show both men staring at each other across the fence in mutual confusion, the hurley hanging limply in Paddy's hand. Camera slowly drifts back as awkward silence settles between them.",
+      "narration": "Even ancient traditions need fact-checking sometimes.",
+      "dialogue": null
+    }
+  ]
+}

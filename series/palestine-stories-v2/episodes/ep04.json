@@ -1,0 +1,142 @@
+{
+  "id": "ep04",
+  "title": "The Rooftop",
+  "summary": "Reemi follows Bibi to a rooftop overlooking the port. He reveals the full scope of his ambition and she realizes the true scale of the threat.",
+  "scenes": [
+    {
+      "id": "ep04_s01",
+      "location": "loc_3",
+      "characters": ["char_2"],
+      "clip_length": "long",
+      "visual": "Medium shot of Bibi standing alone at the edge of a rooftop terrace at sunset, his back to camera, his silhouette dark against the glowing sky, hands clasped behind his back, the entire port of Haifa spread below him, he stands perfectly still surveying it all",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep04_s02",
+      "location": "loc_3",
+      "characters": [],
+      "clip_length": "medium",
+      "visual": "Wide shot looking past the rooftop parapet down at the harbour far below, tiny fishing boats at anchor, the market stalls like colourful dots, the last golden sunlight retreating across the water, the scale of the port visible from this height",
+      "narration": "Some truths are best spoken above the world.",
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep04_s03",
+      "location": "loc_3",
+      "characters": [],
+      "clip_length": "short",
+      "visual": "Close-up of a cracked terracotta roof tile on the terrace floor, a small weed growing through the crack, the last warm light catching its single green leaf, footsteps approaching in the background sending dust across the tile",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep04_s04",
+      "location": "loc_3",
+      "characters": ["char_1"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Reemi stepping onto the rooftop from a dark stairwell, sunset light hitting her face, her dark hair whipping in the sea wind, her expression hardened with resolve, she pauses at the threshold",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_1", "line": "Your games end here."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep04_s05",
+      "location": "loc_3",
+      "characters": ["char_2"],
+      "clip_length": "long",
+      "visual": "Medium shot of Bibi turning slowly from the rooftop edge to face Reemi, the vast orange sky behind him, a calm dangerous smile spreading across his face, he does not seem surprised, the wind catching his jacket",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_2", "line": "I wondered when you would come."},
+        {"character": "char_2", "line": "Games? This is destiny."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep04_s06",
+      "location": "loc_3",
+      "characters": ["char_1"],
+      "clip_length": "medium",
+      "visual": "Close-up of Reemi's face in profile against the sunset, her jaw tight, eyes locked on Bibi, the wind pulling strands of hair across her cheek, she does not brush them away",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_1", "line": "Whose destiny? Not ours."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep04_s07",
+      "location": "loc_3",
+      "characters": [],
+      "clip_length": "short",
+      "visual": "Close-up of laundry hanging on a rooftop line, white fabric billowing slowly in the sea wind against the orange and purple sky, casting long shadows across the terrace tiles, the domestic beauty of this place",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep04_s08",
+      "location": "loc_3",
+      "characters": ["char_2"],
+      "clip_length": "long",
+      "visual": "Medium shot of Bibi sweeping his arm grandly across the entire port vista behind him, his beady eyes gleaming with naked ambition, the setting sun casting his long shadow across the terrace tiles, his voice triumphant and possessive",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_2", "line": "All of this. Every stone, every stall, every wave in that harbour. Mine."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep04_s09",
+      "location": "loc_3",
+      "characters": ["char_1"],
+      "clip_length": "long",
+      "visual": "Extreme close-up of Reemi's face as the full realization dawns, her large brown eyes widening with horror then slowly narrowing with fury, the reflected sunset fading in her pupils, her whole expression transforming from shock to steel",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_1", "line": "You want to steal our home."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep04_s10",
+      "location": "loc_3",
+      "characters": ["char_2"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Bibi pulling the iron key from his pocket and holding it up against the dying red light, twirling it slowly between his fingers, silhouetted against the sky, a serpentine smile on his face",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_2", "line": "One key opens many doors."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep04_s11",
+      "location": "loc_3",
+      "characters": ["char_1"],
+      "clip_length": "medium",
+      "visual": "Close-up of Reemi's face shifting from shock to fierce determination, her jaw setting hard, dark eyes blazing, she straightens her back against the twilight sky, the wind dying as if the air itself holds its breath",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_1", "line": "Not while I still breathe."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep04_s12",
+      "location": "loc_3",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of the rooftop terrace at dusk, two small silhouettes standing on opposite sides of the frame, the vast harbour and port below them filling the lower half of the image, the last light of day draining from the sky, the space between them enormous and charged",
+      "narration": "Between them lay a port. Between them lay a future.",
+      "dialogue": [],
+      "reference_image": null
+    }
+  ]
+}

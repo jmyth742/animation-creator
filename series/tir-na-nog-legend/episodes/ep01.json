@@ -1,0 +1,187 @@
+{
+  "id": "ep01",
+  "title": "Tir na nOg — The Land of Eternal Youth",
+  "summary": "The full legend of Oisin and Niamh: the encounter on the storm cliffs, the ride across the Atlantic to the Land of Eternal Youth, three years of bliss that were three centuries in the mortal world, the warning, and the fall.",
+  "scenes": [
+    {
+      "id": "ep01_s01",
+      "location": "storm_cliffs",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide establishing aerial shot of dramatic emerald sea cliffs on the wild Atlantic coast under a bruised storm sky. Camera drifts slowly forward and down along the cliff edge. Huge waves crash white against black rock far below, wind flattens the grass, shafts of gold light break through heavy cloud. Cinematic, epic fantasy, volumetric god-rays, deep shadow, film grain.",
+      "narration": "In Irish myth, Tir na nOg is the Land of Eternal Youth",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s02",
+      "location": "stormy_sea",
+      "characters": [
+        "niamh",
+        "embarr"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of a radiant golden-haired princess in an emerald green gown riding a glowing white stallion that gallops across the crests of towering storm waves. Camera tracks alongside at sea level. Spray hangs in the air, hooves throw light across the water, a band of gold breaks the horizon behind her. Cinematic, epic fantasy, dramatic lighting, shallow depth of field.",
+      "narration": "a paradise free from pain, age, and sorrow",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s03",
+      "location": "storm_cliffs",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "visual": "Medium shot of a young dark-haired Celtic warrior-poet standing at the cliff edge, spear lowered, grey cloak snapping in the wind. Camera pushes in slowly on his face as he stares out to sea in awe, lit from the front by golden light off the water. Storm cloud behind him. Cinematic, photoreal, anamorphic framing.",
+      "narration": "Its princess, Niamh, chose a mortal warrior named Oisin",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s04",
+      "location": "stormy_sea",
+      "characters": [
+        "oisin",
+        "niamh",
+        "embarr"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of the white stallion leaping over a massive ocean wave, the golden-haired princess riding with the dark-haired warrior clinging behind her. Camera tracks the leap in a slow arc. Wall of green water and white foam beneath them, spray suspended in gold light. Cinematic, epic fantasy, high detail.",
+      "narration": "He leaped onto her magical steed and they crossed the vast Atlantic",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s05",
+      "location": "sunlight_path",
+      "characters": [
+        "oisin",
+        "niamh",
+        "embarr"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot from behind as the white horse runs along a blazing path of sunlight laid across a calm mirror-bright ocean toward a shimmering wall of golden mist on the horizon. Camera follows slowly from low above the water. Two riders silhouetted against the light. Ethereal, cinematic, volumetric haze.",
+      "narration": "to a hidden realm where time itself stood perfectly still",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s06",
+      "location": "tir_na_nog",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Sweeping wide establishing shot of a breathtaking otherworldly kingdom in eternal summer. Camera cranes slowly upward to reveal silver waterfalls falling from green heights, meadows of glowing wildflowers and grand pale-stone palaces with tall arches. Warm golden light, impossibly clear air, sunlit mountains beyond. Vibrant colour, cinematic epic fantasy.",
+      "narration": "For three years Oisin lived in bliss, hunting, feasting, and loving",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s07",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "long",
+      "visual": "Medium tracking shot of the golden-haired princess and the young warrior running together through a meadow of glowing wildflowers, laughing. Camera moves with them at chest height. Petals and pollen lift in the warm light, silver waterfall far behind. Shallow depth of field, golden hour, cinematic.",
+      "narration": "But time in the mortal world obeys a far darker rhythm",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s08",
+      "location": "tir_na_nog",
+      "characters": [],
+      "clip_length": "medium",
+      "visual": "Slow static wide shot of a silver waterfall falling into a still pool ringed with glowing flowers, sunlight refracting through the spray into faint rainbows. Nothing moves but the water. Serene, luminous, cinematic, high detail.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s09",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "visual": "Medium shot from behind and slightly above of the young warrior standing alone on a high green headland, looking east over an endless calm sea. Camera pushes in very slowly. Long shadows, low warm light, a single wind-bent tree at frame edge. His shoulders are set, his face turned away. Melancholic, cinematic.",
+      "narration": "Overcome with longing for his old comrades, Oisin begged to return",
+      "dialogue": [],
+      "seed": "t2v"
+    },
+    {
+      "id": "ep01_s10",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin",
+        "niamh",
+        "embarr"
+      ],
+      "clip_length": "long",
+      "visual": "Medium two-shot on the headland, the golden-haired princess placing the reins of the white stallion into the warrior's hands. Static camera, slow push-in. Tears on her face catching the low sun, his expression torn. The horse stands luminous beside them. Emotional, dramatic contrast, cinematic lighting.",
+      "narration": "Niamh granted his wish, but gave a chilling warning",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s11",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "visual": "Close-up on the golden-haired princess's face as she speaks urgently, static camera. Her eyes are fixed and grave, golden hair moving slightly in the wind, faint golden aura around her. Sea and low sun thrown out of focus behind her. Photoreal, shallow depth of field, cinematic.",
+      "narration": "Do not let your feet touch Irish soil",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s12",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "medium",
+      "visual": "Close-up on the young warrior's face as he listens, static camera. Understanding and dread settling into his eyes, jaw tightening. Warm low light on one side of his face, the other in shadow. Photoreal, cinematic, shallow depth of field.",
+      "narration": "If they do, you can never return",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s13",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin",
+        "embarr"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of the mounted warrior on the white horse before a collapsed, overgrown ring-fort of moss-covered stone in grey misted Ireland. Camera drifts slowly in. Bare thorn trees, drizzle in the air, cold flat light, muddy rutted ground. Desaturated, bleak, melancholic, cinematic.",
+      "narration": "He came home to find three centuries had already passed",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s14",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "visual": "Medium shot of the warrior leaning far down from the saddle to help three labouring men lift a heavy boulder from the mud. Camera low and static. His weight shifts, the saddle tilts, strain on every face. Grey rain-light, muddy ground, desaturated cinematic colour.",
+      "narration": "Helping three men lift a heavy stone, he slipped from the saddle",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s15",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "visual": "Close shot on the warrior as his boot strikes the muddy ground and the enchantment breaks. Static camera. His youthful face withers rapidly, skin creasing, dark hair turning white, body folding inward as three centuries take him. Dark, dramatic, rapid transformation, cinematic lighting.",
+      "narration": "His feet touched the ground, and the enchantment shattered",
+      "dialogue": [],
+      "seed": "portrait"
+    },
+    {
+      "id": "ep01_s16",
+      "location": "ruined_ireland",
+      "characters": [],
+      "clip_length": "medium",
+      "visual": "Wide static shot of empty muddy ground in front of a ruined moss-covered stone fort. No horse, no rider, no people anywhere in frame. Only an empty crumpled grey cloak lying in the mud, bare thorn trees, drifting mist and drizzle. Completely deserted landscape. Cold flat light, desaturated, melancholic, cinematic.",
+      "narration": "Three hundred years took him at once",
+      "dialogue": [],
+      "seed": "location"
+    }
+  ]
+}

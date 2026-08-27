@@ -1,0 +1,139 @@
+{
+  "id": "ep04",
+  "title": "Long Kesh",
+  "summary": "Seamus and Máire finally locate Declan at Long Kesh internment camp, witnessing the dehumanizing conditions as families struggle to maintain connections across barbed wire.",
+  "scenes": [
+    {
+      "id": "ep04_s01",
+      "location": "falls_road",
+      "characters": [
+        "seamus",
+        "maire"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of grey dawn over Falls Road terraced houses. Camera slowly pans across wet cobblestones to Seamus and Máire walking together, their silhouettes small against the oppressive military architecture. Muted palette of brick reds and greys.",
+      "narration": "Three weeks since Declan's arrest.",
+      "dialogue": []
+    },
+    {
+      "id": "ep04_s02",
+      "location": "army_checkpoints",
+      "characters": [
+        "seamus",
+        "maire",
+        "harris"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Seamus and Máire at concrete checkpoint barrier. Corporal Harris stands behind razor wire examining papers. Harsh searchlight creates stark shadows on their faces.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "harris",
+          "line": "Long Kesh. Visiting hours Sunday only."
+        }
+      ]
+    },
+    {
+      "id": "ep04_s03",
+      "location": "long_kesh",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide establishing shot of Long Kesh internment camp. Camera drifts over rows of Nissen huts surrounded by double barbed wire fencing. Watchtowers with armed guards loom against grey sky. Desolate, prison-like atmosphere.",
+      "narration": "Eight hundred men held without trial.",
+      "dialogue": []
+    },
+    {
+      "id": "ep04_s04",
+      "location": "long_kesh",
+      "characters": [
+        "seamus",
+        "maire"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on Máire's weathered hands gripping wire mesh fence. Camera static, focused on her knuckles turning white against the chain link. Rain droplets on metal.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep04_s05",
+      "location": "long_kesh",
+      "characters": [
+        "declan"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Declan through fence mesh, thinner and hollow-eyed. Camera slowly pushes in on his gaunt face. Prison-issued clothes hang loose on his frame. Eyes show strain and defiance.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "declan",
+          "line": "They're trying to break us, Ma."
+        }
+      ]
+    },
+    {
+      "id": "ep04_s06",
+      "location": "long_kesh",
+      "characters": [
+        "seamus",
+        "declan"
+      ],
+      "clip_length": "medium",
+      "visual": "Two-shot of Seamus and Declan separated by fence. Camera static, both boys reach toward each other but cannot touch. Wire mesh dominates the foreground, creating visual barrier.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "seamus",
+          "line": "When are you coming home?"
+        }
+      ]
+    },
+    {
+      "id": "ep04_s07",
+      "location": "long_kesh",
+      "characters": [
+        "declan"
+      ],
+      "clip_length": "short",
+      "visual": "Extreme close-up on Declan's eyes through wire mesh. Camera static, his gaze intense and haunted. Metal fence creates diagonal shadows across his face.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep04_s08",
+      "location": "long_kesh",
+      "characters": [
+        "harris"
+      ],
+      "clip_length": "short",
+      "visual": "Medium shot of Corporal Harris approaching with rifle. Camera handheld, following his boots on gravel. Military authority and threat implied through his rigid posture.",
+      "narration": "Time's up.",
+      "dialogue": []
+    },
+    {
+      "id": "ep04_s09",
+      "location": "long_kesh",
+      "characters": [
+        "seamus",
+        "maire"
+      ],
+      "clip_length": "medium",
+      "visual": "Wide shot of Seamus and Máire walking away from fence toward camera. Declan's silhouette remains behind wire in background. Camera tracks their slow departure across muddy ground.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "maire",
+          "line": "We'll be back next Sunday."
+        }
+      ]
+    },
+    {
+      "id": "ep04_s10",
+      "location": "long_kesh",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of Long Kesh from outside perimeter. Camera slowly pulls back as searchlights sweep across the compound. Watchtowers silhouetted against darkening sky. Rain falls steadily.",
+      "narration": "No charges. No trial. No release.",
+      "dialogue": []
+    }
+  ]
+}

@@ -1,0 +1,154 @@
+{
+  "id": "ep05",
+  "title": "Broken",
+  "summary": "At Long Kesh, Seamus witnesses his brother's deterioration from months of detention and interrogation techniques, showing the psychological toll of internment on both prisoners and families.",
+  "scenes": [
+    {
+      "id": "ep05_s01",
+      "location": "long_kesh",
+      "characters": [
+        "seamus",
+        "maire"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of Long Kesh camp in grey morning light, camera slowly pans across rows of Nissen huts behind barbed wire, watchtowers silhouetted against overcast sky, families walking toward visiting area",
+      "narration": "Three months since mass internment began",
+      "dialogue": []
+    },
+    {
+      "id": "ep05_s02",
+      "location": "long_kesh",
+      "characters": [
+        "seamus",
+        "maire"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Seamus and Máire sitting across from each other at visiting table, both looking anxiously toward entrance door, hands clasped on metal table surface",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "maire",
+          "line": "He looks different each time"
+        }
+      ]
+    },
+    {
+      "id": "ep05_s03",
+      "location": "long_kesh",
+      "characters": [
+        "declan"
+      ],
+      "clip_length": "medium",
+      "visual": "Close-up on Declan's face as he enters visiting room, gaunt cheeks and hollow eyes, dark circles under eyes, slight tremor in his hands, forced smile",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep05_s04",
+      "location": "long_kesh",
+      "characters": [
+        "seamus",
+        "maire",
+        "declan"
+      ],
+      "clip_length": "long",
+      "visual": "Medium three-shot around visiting table, Declan sits stiffly across from Seamus and Máire, avoiding direct eye contact, hands shake slightly as he reaches for water cup",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "declan",
+          "line": "They keep asking about guns"
+        }
+      ]
+    },
+    {
+      "id": "ep05_s05",
+      "location": "long_kesh",
+      "characters": [
+        "maire",
+        "declan"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on Máire's concerned face as she reaches across table, camera static, her eyes filled with maternal worry and anger",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "maire",
+          "line": "What guns, son?"
+        }
+      ]
+    },
+    {
+      "id": "ep05_s06",
+      "location": "long_kesh",
+      "characters": [
+        "declan"
+      ],
+      "clip_length": "medium",
+      "visual": "Close-up on Declan's face, camera slowly pushes in, his eyes dart away from camera, jaw clenched, visible tension in neck muscles",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "declan",
+          "line": "Same questions, different methods"
+        }
+      ]
+    },
+    {
+      "id": "ep05_s07",
+      "location": "long_kesh",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "short",
+      "visual": "Extreme close-up on Seamus's face, eyes wide with realization and horror, camera completely static, ambient prison sounds in background",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep05_s08",
+      "location": "long_kesh",
+      "characters": [
+        "harris"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Corporal Harris watching from guard post near visiting area, arms crossed, cold expression, fluorescent light casting harsh shadows on his face",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "harris",
+          "line": "Time's up, visitors out"
+        }
+      ]
+    },
+    {
+      "id": "ep05_s09",
+      "location": "long_kesh",
+      "characters": [
+        "seamus",
+        "maire",
+        "declan"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot as Máire tries to embrace Declan across table, guard's hand on Declan's shoulder pulling him back, Seamus watches helplessly",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "maire",
+          "line": "We'll get you out"
+        }
+      ]
+    },
+    {
+      "id": "ep05_s10",
+      "location": "long_kesh",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of Seamus and Máire walking away from Long Kesh, camera pulls back slowly, barbed wire and watchtowers dominating frame, grey sky overhead",
+      "narration": "No charges, no trial, no release date",
+      "dialogue": []
+    }
+  ]
+}

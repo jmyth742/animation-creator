@@ -1,0 +1,124 @@
+{
+  "id": "ep07",
+  "title": "Ballymurphy Massacre",
+  "summary": "August 1971: As internment raids continue, British paratroopers open fire on civilians in Ballymurphy, killing innocent people including a priest and grandmother, showing the deadly escalation of state violence.",
+  "scenes": [
+    {
+      "id": "ep07_s01",
+      "location": "falls_road",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of Ballymurphy housing estate at dawn, mist rising from wet streets. Camera slowly pans across terraced houses as military vehicles move in the distance. Amber streetlights fade as grey morning light emerges.",
+      "narration": "August eleventh, nineteen seventy-one, Ballymurphy.",
+      "dialogue": []
+    },
+    {
+      "id": "ep07_s02",
+      "location": "falls_road",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Seamus walking quickly down a cobblestone street, army checkpoints visible behind him. Camera tracks alongside as he moves past republican murals on gable walls.",
+      "narration": "More internment raids were coming.",
+      "dialogue": []
+    },
+    {
+      "id": "ep07_s03",
+      "location": "falls_road",
+      "characters": [
+        "harris"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up of Corporal Harris adjusting his rifle sight, cold blue eyes focused with military precision. Static camera on his face as harsh white searchlight illuminates his features.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "harris",
+          "line": "Any movement, you shoot to kill."
+        }
+      ]
+    },
+    {
+      "id": "ep07_s04",
+      "location": "falls_road",
+      "characters": [],
+      "clip_length": "short",
+      "visual": "Extreme close-up on muzzle flashes from military rifles against black background. Camera static as bright flashes strobe rapidly in the darkness.",
+      "narration": "The shooting began.",
+      "dialogue": []
+    },
+    {
+      "id": "ep07_s05",
+      "location": "falls_road",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Seamus pressed against a brick wall, eyes wide with terror as gunfire echoes. Camera holds static as shadows of running figures pass in the background.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "seamus",
+          "line": "They're killing innocent people!"
+        }
+      ]
+    },
+    {
+      "id": "ep07_s06",
+      "location": "falls_road",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of a priest in white collar kneeling beside a fallen civilian on wet cobblestones. Camera slowly pushes in as the priest administers last rites, rain beginning to fall.",
+      "narration": "Father Mullan was shot giving last rites.",
+      "dialogue": []
+    },
+    {
+      "id": "ep07_s07",
+      "location": "falls_road",
+      "characters": [],
+      "clip_length": "short",
+      "visual": "Close-up of an elderly woman's weathered hands clutching rosary beads, lying still on the ground. Static camera focuses on her hands as raindrops begin to gather.",
+      "narration": "Joan Connolly, mother of eight.",
+      "dialogue": []
+    },
+    {
+      "id": "ep07_s08",
+      "location": "falls_road",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "medium",
+      "visual": "Two-shot of Seamus and another young man helping carry a wounded civilian. Camera follows their urgent movement through narrow alleyways between terraced houses.",
+      "narration": "Eleven civilians killed in three days.",
+      "dialogue": []
+    },
+    {
+      "id": "ep07_s09",
+      "location": "falls_road",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "short",
+      "visual": "Extreme close-up on Seamus's face, tears mixing with rain. His green eyes show shock and growing anger. Camera static, harsh white light cutting across his features.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "seamus",
+          "line": "They call us the terrorists."
+        }
+      ]
+    },
+    {
+      "id": "ep07_s10",
+      "location": "falls_road",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of body bags lined up in the rain outside Ballymurphy housing estate. Camera slowly pulls back as military vehicles patrol in the background, searchlights sweeping the scene.",
+      "narration": "The army claimed they were gunmen.",
+      "dialogue": []
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "id": "ep01",
+  "title": "The Arrival",
+  "summary": "Reemi watches a stranger arrive at Haifa port. His interest in the place feels wrong from the first moment.",
+  "scenes": [
+    {
+      "id": "ep01_s01",
+      "location": "loc_1",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide establishing shot of Haifa port at golden hour, camera slowly pans across stone archways and colourful market stalls, fishing boats rocking gently in the harbour, warm amber light flooding the cobblestones, seagulls circling above the masts",
+      "narration": "Haifa, nineteen forty-seven. A port that belonged to everyone.",
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep01_s02",
+      "location": "loc_1",
+      "characters": ["char_1"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Reemi standing behind a market stall arranging oranges, her embroidered thobe catching the sunlight, she looks up calmly toward the harbour with quiet confidence, vendors bustling around her",
+      "narration": "Reemi knew every stone of this port.",
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep01_s03",
+      "location": "loc_1",
+      "characters": ["char_2"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Bibi stepping off a gangplank onto the dock, clutching a worn leather suitcase, his dark suit wrinkled from travel, he looks around with wide calculating eyes, scanning the market stalls like inventory",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_2", "line": "What a charming little port."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep01_s04",
+      "location": "loc_1",
+      "characters": ["char_1"],
+      "clip_length": "short",
+      "visual": "Close-up of Reemi's face, one eyebrow raised, eyes narrowing as she watches something off-screen, the hint of a suspicious frown forming",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep01_s05",
+      "location": "loc_1",
+      "characters": ["char_1", "char_2"],
+      "clip_length": "long",
+      "visual": "Medium two-shot of Reemi on the left and Bibi on the right, standing face to face between market stalls, Reemi has her arms crossed, Bibi leans forward with an ingratiating smile, static camera framing both clearly",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_2", "line": "You live here? How quaint."},
+        {"character": "char_1", "line": "I was born here. And you?"},
+        {"character": "char_2", "line": "Just passing through. For now."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep01_s06",
+      "location": "loc_1",
+      "characters": ["char_1"],
+      "clip_length": "short",
+      "visual": "Close-up of Reemi's face, her jaw set tight, dark eyes staring directly at camera with distrust, warm light catching the embroidery at her collar",
+      "narration": "She did not believe a word.",
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep01_s07",
+      "location": "loc_2",
+      "characters": [],
+      "clip_length": "short",
+      "visual": "Wide establishing shot of rooftop overlooking Haifa harbour at dusk, purple and orange sky reflecting on the calm sea, ships silhouetted against the fading light, laundry lines swaying in the breeze",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep01_s08",
+      "location": "loc_1",
+      "characters": ["char_2"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Bibi alone at the port after dark, checking over his shoulder nervously, he spots something glinting on the cobblestones and crouches down, picking up an old iron key with trembling eager fingers",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_2", "line": "Finders keepers, as they say."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep01_s09",
+      "location": "loc_1",
+      "characters": ["char_2"],
+      "clip_length": "short",
+      "visual": "Close-up of Bibi's hand holding the old iron key up against the moonlit sky, his beady eyes gleaming with avarice in the background, a thin smile spreading across his face",
+      "narration": "One key. That was all.",
+      "dialogue": [],
+      "reference_image": null
+    }
+  ]
+}

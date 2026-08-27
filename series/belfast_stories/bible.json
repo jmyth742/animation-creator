@@ -1,0 +1,84 @@
+{
+  "series": {
+    "title": "The Wall Between Us",
+    "style": "Gritty hand-drawn animation with muted palette of greys, brick reds, and amber streetlight warmth contrasted by harsh white military searchlights. Realistic Belfast architecture featuring terraced red-brick houses, republican murals, cobblestone streets wet with rain, barbed wire, and army checkpoints. Character animation emphasizes expressive faces and body language to convey emotion and trauma.",
+    "format": {
+      "resolution": [
+        480,
+        320
+      ],
+      "fps": 24
+    }
+  },
+  "characters": {
+    "seamus": {
+      "name": "Seamus",
+      "visual": "17-year-old Irish Catholic teenager with dark curly hair and green eyes. Wears a green army surplus jacket over a grey wool jumper and dark jeans. Has a lean build and expressive face that shows both defiance and vulnerability. Often seen with hands in pockets, shoulders slightly hunched.",
+      "voice": "en-GB-RyanNeural",
+      "voice_notes": "Speaks with working-class Belfast accent, thoughtful and introspective, sometimes bitter but always human. Uses local dialect and expressions.",
+      "role": "Primary protagonist and narrator, representing the Catholic youth experience during The Troubles."
+    },
+    "robbie": {
+      "name": "Robbie",
+      "visual": "17-year-old Protestant teenager with fair blonde hair and blue eyes. Wears a navy blue anorak and dark trousers. Slightly stockier build than Seamus, with a more open face that shows internal conflict. Often fidgets with his hands when uncomfortable.",
+      "voice": "en-GB-RyanNeural",
+      "voice_notes": "Belfast Protestant accent, more hesitant and questioning in his speech patterns. Struggles with moral conflicts, speaks carefully.",
+      "role": "Moral witness from the Protestant community, showing the human cost across sectarian lines."
+    },
+    "maire": {
+      "name": "Máire",
+      "visual": "Middle-aged Irish woman with graying dark hair pulled back, wearing a simple house dress and cardigan. Has tired but determined eyes, weathered hands from years of work. Carries herself with dignity despite hardship.",
+      "voice": "en-GB-SoniaNeural",
+      "voice_notes": "Strong Belfast Catholic accent, speaks with authority born of suffering. Uses Irish phrases occasionally, voice carries both love and grief.",
+      "role": "Seamus's mother, representing the mothers and wives who held families together during The Troubles."
+    },
+    "declan": {
+      "name": "Declan",
+      "visual": "Early 20s, similar features to Seamus but more angular. Dark hair, intense eyes. When free, wears working clothes. When interned, shown in prison-issued clothing, increasingly gaunt and hollow-eyed.",
+      "voice": "en-GB-RyanNeural",
+      "voice_notes": "Older brother authority, Belfast Catholic accent with edge of anger and political awareness. Speech becomes more strained after internment.",
+      "role": "Represents the thousands interned without trial, showing the personal cost of detention and torture."
+    },
+    "harris": {
+      "name": "Corporal Harris",
+      "visual": "British Army soldier in his late 20s, 1st Parachute Regiment uniform. Clean-shaven, cold blue eyes, rigid posture. Carries himself with military authority and displays casual cruelty. Always in full combat gear with rifle.",
+      "voice": "en-GB-RyanNeural",
+      "voice_notes": "Clipped English military accent, speaks with cold authority and casual dehumanization. Never shows doubt or remorse.",
+      "role": "Represents the institutional violence and systematic oppression of the British military occupation."
+    }
+  },
+  "world": {
+    "setting": "Belfast and Derry, Northern Ireland, 1971-1972, during the height of The Troubles. Catholic neighborhoods live under military occupation with constant army patrols, curfews, and the threat of violence.",
+    "locations": {
+      "falls_road": "Seamus's working-class Catholic neighborhood with rows of red-brick terraced houses, republican murals on gable walls, and constant military presence. Streets are often wet from rain, with army checkpoints and Saracen armored vehicles stationed at intersections.",
+      "seamus_home": "Small terraced house interior with worn furniture, religious imagery, and family photos. Shows signs of repeated military raids - overturned furniture, scattered belongings, damaged walls.",
+      "shankill_road": "Protestant loyalist area with Union Jack murals and different but parallel working-class conditions. Similar terraced housing but with British military presence seen as protection rather than occupation.",
+      "long_kesh": "Internment camp with Nissen huts surrounded by barbed wire, watchtowers, and armed guards. Bleak, dehumanizing environment where men are held without charge or trial.",
+      "derry_streets": "Historic walled city where civil rights march takes place. Narrow streets, stone buildings, crowd of peaceful protesters contrasted with military positions on city walls.",
+      "army_checkpoints": "Concrete barriers, razor wire, armed soldiers checking identity papers. Bright searchlights cutting through rain and darkness, creating atmosphere of fear and control."
+    },
+    "rules": [
+      "All events are based on documented historical record",
+      "The British Army is consistently portrayed as an occupying force",
+      "Civilian casualties are always shown as innocent victims",
+      "The series maintains clear political perspective supporting Irish nationalist viewpoint",
+      "Violence is shown realistically but not gratuitously",
+      "Each episode connects personal stories to larger historical events"
+    ]
+  },
+  "season_arc": {
+    "summary": "Chronicles the escalation of The Troubles from 1970-1972 through the eyes of Catholic teenager Seamus, showing how British military occupation and systematic violence radicalized an entire generation. Each episode depicts a documented historical atrocity, building from house raids to mass internment to massacre, culminating in Bloody Sunday and its cover-up.",
+    "themes": [
+      "state violence",
+      "civilian resistance",
+      "generational trauma",
+      "institutional cover-up",
+      "the cost of occupation"
+    ],
+    "progression": "Begins with individual family trauma during house raids, expands to community-wide suffering through internment, reaches climax with mass killings at Ballymurphy and Bloody Sunday, then explores the long-term consequences and eventual path toward peace."
+  },
+  "narrator": {
+    "voice": "en-GB-SoniaNeural",
+    "style": "Detached, documentary-style narration providing historical context, official records, and testimony from inquiries. Speaks with authority of historical record, often contrasting official lies with documented truth."
+  }
+}

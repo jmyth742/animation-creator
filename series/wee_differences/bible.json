@@ -1,0 +1,75 @@
+{
+  "series": {
+    "title": "Wee Differences",
+    "style": "Bright Saturday-morning cartoon style with warm bold colors and clean simple backgrounds. Characters have exaggerated expressive faces with bouncy fluid animation. Belfast red-brick terraced houses feature opposing flags - tricolour on one side, Union Jack on the other. Animation emphasizes comedic timing through facial reaction holds and physical comedy.",
+    "format": {
+      "resolution": [
+        480,
+        320
+      ],
+      "fps": 24
+    }
+  },
+  "characters": {
+    "paddy": {
+      "name": "Paddy Murphy",
+      "visual": "35-year-old man with dark curly hair and wiry build. Always wearing a faded green St Gall's GAA jersey or Ireland rugby top. Has a small tricolour pin or badge visible somewhere on his clothing. Animated with expressive hand gestures and animated facial expressions when arguing.",
+      "voice": "en-GB-RyanNeural",
+      "voice_notes": "Heavy Belfast accent, passionate and emphatic when speaking, often works the Famine into conversations, says 'haitch' very deliberately, calls the city 'Derry' with pride.",
+      "role": "Catholic protagonist, best friend and neighbor to Billy despite their differences."
+    },
+    "billy": {
+      "name": "Billy Wilson",
+      "visual": "35-year-old man with fair hair and stocky build. Always wearing a blue polo shirt or Linfield FC top. Has a small Union Jack pin or badge visible somewhere. Animated with precise, measured movements that contrast with Paddy's animated gestures.",
+      "voice": "en-GB-ThomasNeural",
+      "voice_notes": "Belfast accent with precise pronunciation, says 'aitch' with aggressive clarity, calls the city 'Londonderry' firmly, often confused by GAA references.",
+      "role": "Protestant protagonist, best friend and neighbor to Paddy despite their constant disagreements."
+    },
+    "deirdre": {
+      "name": "Deirdre",
+      "visual": "Early 30s woman with shoulder-length brown hair, often wearing practical clothing like cardigans or jumpers. Has an exasperated but caring expression most of the time. Animated with eye-rolls and patient but weary gestures.",
+      "voice": "en-GB-SoniaNeural",
+      "voice_notes": "Belfast accent but more measured and reasonable than the men, often sighs before speaking, the voice of sanity in absurd situations.",
+      "role": "Paddy's long-suffering girlfriend who finds both men equally exhausting but cares for them."
+    },
+    "derek": {
+      "name": "Derek",
+      "visual": "Middle-aged man with receding hair and glasses, always wearing beige cardigans. Lives in the third house. Never fully seen in frame - usually just glimpses through windows or over fences. Animated to appear annoyingly mundane.",
+      "voice": "en-US-GuyNeural",
+      "voice_notes": "Overly cheerful and oblivious to being disliked, speaks in platitudes and small talk.",
+      "role": "The universally disliked neighbor who unites Paddy and Billy in their shared annoyance."
+    }
+  },
+  "world": {
+    "setting": "Present-day Belfast, specifically two adjoining terraced houses on opposite sides of a peace wall divide. The neighborhood is a mix of working-class Catholic and Protestant areas where daily life continues with lingering cultural divisions expressed through friendly but stubborn disagreements.",
+    "locations": {
+      "paddy_house": "Red-brick terraced house with green front door, small tricolour in the window, Celtic FC calendar visible through window, GAA gear hanging in the hallway. Cluttered but lived-in feel.",
+      "billy_house": "Identical red-brick terraced house with red front door, Union Jack bunting, Rangers FC calendar in window, bowler hat on coat hook. Spotlessly clean and organized interior.",
+      "back_garden": "Shared back garden area divided by a low fence where the two men meet daily. Garden chairs on both sides, Paddy's side slightly messier with GAA equipment, Billy's side neat with precisely arranged garden tools.",
+      "local_pub": "Neutral territory pub with both communities' memorabilia awkwardly coexisting. Mix of green and orange decorations creating an uncomfortable but functional social space.",
+      "street": "Typical Belfast terraced street with red-brick houses, street art murals visible in background, parked cars, and neighbors occasionally visible in windows or doorways."
+    },
+    "rules": [
+      "Neither character is ever the villain - both are equally stubborn and equally right from their perspectives",
+      "Arguments always escalate from tiny disagreements to absurd proportions",
+      "Every episode ends with them back at the garden fence drinking tea",
+      "Derek is universally disliked by both men for unclear reasons",
+      "Cultural references must be authentic to both communities",
+      "The tone remains warm and affectionate despite disagreements"
+    ]
+  },
+  "season_arc": {
+    "summary": "Paddy and Billy navigate ten episodes of escalating cultural misunderstandings that test their friendship but ultimately prove it unbreakable. Each episode is self-contained but builds running gags and deepens their relationship through shared absurdity.",
+    "themes": [
+      "friendship across divides",
+      "the absurdity of cultural conflicts",
+      "community bonds",
+      "family traditions"
+    ],
+    "progression": "Episodes start with simple disagreements and build to increasingly elaborate conflicts, but each resolution reinforces that their friendship transcends their differences. The season culminates in them creating their own peace agreement for a hedge dispute."
+  },
+  "narrator": {
+    "voice": "en-GB-SoniaNeural",
+    "style": "Deadpan Belfast voice providing absurdly over-serious historical context for trivial disagreements. Speaks like a documentary narrator covering matters of great historical importance, even when discussing toaster placement or letter pronunciation."
+  }
+}

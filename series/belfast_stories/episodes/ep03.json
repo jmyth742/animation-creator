@@ -1,0 +1,131 @@
+{
+  "id": "ep03",
+  "title": "The Long Road",
+  "summary": "Seamus and Máire face the grim reality of internment as they attempt to locate Declan among the thousands detained without trial, highlighting the bureaucratic cruelty of the system.",
+  "scenes": [
+    {
+      "id": "ep03_s01",
+      "location": "falls_road",
+      "characters": [
+        "seamus",
+        "maire"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of Falls Road in grey morning light. Seamus and Máire walk down the empty cobblestone street, their figures small against rows of terraced houses. Military checkpoints visible in distance. Camera slowly pans to follow their movement.",
+      "narration": "The search for Declan begins",
+      "dialogue": []
+    },
+    {
+      "id": "ep03_s02",
+      "location": "army_checkpoints",
+      "characters": [
+        "maire",
+        "harris"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Máire facing Corporal Harris at checkpoint. Concrete barriers and razor wire behind them. Harris holds clipboard, Máire clutches her handbag tightly. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "maire",
+          "line": "Where is my son Declan?"
+        },
+        {
+          "character": "harris",
+          "line": "No information available, ma'am"
+        }
+      ]
+    },
+    {
+      "id": "ep03_s03",
+      "location": "seamus_home",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on Seamus's face as he sits at kitchen table. Harsh overhead lighting creates deep shadows. His expression shows frustration and anger building. Camera slowly pushes in.",
+      "narration": "Three days pass",
+      "dialogue": []
+    },
+    {
+      "id": "ep03_s04",
+      "location": "army_checkpoints",
+      "characters": [
+        "maire",
+        "harris"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Máire at different checkpoint. Same concrete barriers, different soldier. Máire looks more tired, shoulders sagging. Rain begins to fall. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "maire",
+          "line": "Please, just tell me something"
+        }
+      ]
+    },
+    {
+      "id": "ep03_s05",
+      "location": "falls_road",
+      "characters": [
+        "seamus",
+        "maire"
+      ],
+      "clip_length": "short",
+      "visual": "Medium shot of Seamus and Máire walking back home in rain. Their clothes are soaked, faces drawn with exhaustion. Street lamps create amber pools of light on wet cobblestones.",
+      "narration": "Still no word",
+      "dialogue": []
+    },
+    {
+      "id": "ep03_s06",
+      "location": "seamus_home",
+      "characters": [
+        "maire"
+      ],
+      "clip_length": "long",
+      "visual": "Close-up of Máire's hands holding rosary beads at kitchen table. Camera slowly pulls back to reveal her sitting alone, head bowed in prayer. Single lamp provides warm light against darkness.",
+      "narration": "Mothers pray for sons imprisoned",
+      "dialogue": []
+    },
+    {
+      "id": "ep03_s07",
+      "location": "army_checkpoints",
+      "characters": [
+        "maire",
+        "harris"
+      ],
+      "clip_length": "medium",
+      "visual": "Wide shot showing the scale of checkpoint with long queue of women waiting. Máire is small figure among many others. Soldiers process people slowly. Camera holds static position.",
+      "narration": "Thousands seek missing family members",
+      "dialogue": []
+    },
+    {
+      "id": "ep03_s08",
+      "location": "seamus_home",
+      "characters": [
+        "seamus",
+        "maire"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Seamus and Máire at kitchen table. Official letter lies between them. Both stare at it with mix of relief and dread. Dim overhead light creates intimate atmosphere.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "seamus",
+          "line": "He's alive. He's in Kesh"
+        }
+      ]
+    },
+    {
+      "id": "ep03_s09",
+      "location": "falls_road",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of Seamus standing alone on Falls Road at dusk. Street lamps beginning to flicker on. His figure silhouetted against the republican murals on gable wall behind him. Camera slowly zooms in.",
+      "narration": "But knowing where changes nothing",
+      "dialogue": []
+    }
+  ]
+}

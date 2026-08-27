@@ -1,0 +1,121 @@
+{
+  "id": "ep07",
+  "title": "The Ground",
+  "summary": "Oisin returns to Ireland three hundred years late and finds his father's hall gone to thorn and moss. A single-character piece: the payoff to Niamh's warning, ending on the line that dooms him.",
+  "scenes": [
+    {
+      "id": "ep07_s01",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 12.0,
+      "visual": "Wide shot. The warrior small among the collapsed moss-covered stones of a ring-fort under heavy flat overcast, bare black thorn trees around him. Static camera, low horizon.",
+      "narration": null,
+      "setup": "master",
+      "staging": "full_body",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I told her it would be stones and dust. I was right. Being right is worth nothing at all."
+        }
+      ]
+    },
+    {
+      "id": "ep07_s02",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 8.0,
+      "visual": "Three-quarter shot from the waist up, reverse angle. The warrior looking at a gap in the fallen wall, grey light on his face. Static camera.",
+      "narration": null,
+      "setup": "reverse",
+      "staging": "three_quarter",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "This was the hall. That was the door my father carried me through when I was small."
+        }
+      ]
+    },
+    {
+      "id": "ep07_s03",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 10.0,
+      "visual": "Medium shot from the waist up, seen from the side, bare thorn branches crossing the frame behind him. Static camera.",
+      "narration": null,
+      "setup": "side",
+      "staging": "medium",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "The thorn trees have had three hundred years to grow where the fire was. Nobody stopped them."
+        }
+      ]
+    },
+    {
+      "id": "ep07_s04",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 8.0,
+      "visual": "Medium shot over the shoulder. The warrior facing the dark opening of the ruin, his back three-quarters to camera. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "over_shoulder",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I keep waiting for someone to come out of the dark and not know my face."
+        }
+      ]
+    },
+    {
+      "id": "ep07_s05",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 12.0,
+      "visual": "Close-up. The warrior's face fills much of the frame, the ruin a grey blur behind him, drizzle in the air. He speaks slowly. Static camera.",
+      "narration": null,
+      "setup": "closer",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I have been sitting on this horse for an hour because I know what happens when I get down. And I am going to get down anyway."
+        }
+      ]
+    },
+    {
+      "id": "ep07_s06",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 8.0,
+      "visual": "Wide shot, the warrior small and alone among the stones, the flat grey sky enormous above him. Static camera.",
+      "narration": null,
+      "setup": "wider",
+      "staging": "full_body",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "But there is nobody left to lift me down. So I will have to do it myself."
+        }
+      ]
+    }
+  ]
+}

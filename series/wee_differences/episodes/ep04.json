@@ -1,0 +1,162 @@
+{
+  "id": "ep04",
+  "title": "The Twelfth",
+  "summary": "Billy invites Paddy to watch the Twelfth parade, but Paddy's well-meaning ignorance leads to a series of cultural faux pas that horrify his Protestant neighbor.",
+  "scenes": [
+    {
+      "id": "ep04_s01",
+      "location": "back_garden_fence",
+      "characters": [
+        "billy",
+        "paddy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Billy and Paddy facing each other over the fence. Billy holds a small Orange Order sash, looking proud. Morning sunlight creates warm shadows between the houses.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "Fancy watching the Twelfth with me?"
+        }
+      ]
+    },
+    {
+      "id": "ep04_s02",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on Paddy's face showing genuine enthusiasm and nodding eagerly. His eyes light up with curiosity about the cultural exchange.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "Aye, sounds brilliant!"
+        }
+      ]
+    },
+    {
+      "id": "ep04_s03",
+      "location": "belfast_streets",
+      "characters": [
+        "billy",
+        "paddy"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of a street lined with Orange banners and bunting. Camera slowly pans across the decorated street as Billy and Paddy walk into frame from the right.",
+      "narration": "The annual Orange Order parade approaches.",
+      "dialogue": []
+    },
+    {
+      "id": "ep04_s04",
+      "location": "belfast_streets",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Paddy and Billy standing among the crowd. Paddy pulls out his phone and starts taking photos enthusiastically while Billy watches nervously.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "Great photo op this!"
+        }
+      ]
+    },
+    {
+      "id": "ep04_s05",
+      "location": "belfast_streets",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Extreme close-up on Billy's face showing pure horror and panic. His eyes widen as he realizes what's happening.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "Paddy, no photos!"
+        }
+      ]
+    },
+    {
+      "id": "ep04_s06",
+      "location": "belfast_streets",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Paddy cheerfully waving at the passing parade participants. He cups his hands around his mouth to shout, completely oblivious to protocol.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "Lovely uniforms, lads!"
+        }
+      ]
+    },
+    {
+      "id": "ep04_s07",
+      "location": "belfast_streets",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Quick shot of Billy grabbing Paddy's arm and trying to pull him back. Billy's face shows desperate embarrassment.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "Stop talking to them!"
+        }
+      ]
+    },
+    {
+      "id": "ep04_s08",
+      "location": "belfast_streets",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Paddy clapping enthusiastically along to the drumbeat, completely out of rhythm. He bobs his head with genuine enjoyment.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "Cracking beat on those drums!"
+        }
+      ]
+    },
+    {
+      "id": "ep04_s09",
+      "location": "belfast_streets",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Extreme close-up on Billy covering his face with both hands in complete mortification. Camera holds static on his gesture of despair.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep04_s10",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of both men back at their fence with steaming mugs of tea. Paddy looks confused while Billy shakes his head slowly. Late afternoon shadows fall across both gardens.",
+      "narration": "Cultural education requires careful preparation.",
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "What'd I do wrong?"
+        }
+      ]
+    }
+  ]
+}

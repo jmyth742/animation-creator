@@ -1,0 +1,119 @@
+{
+  "id": "ep02",
+  "title": "The Key",
+  "summary": "Bibi tries the key on every door in the port district. Reemi catches him and the absurdity of his claim becomes clear.",
+  "scenes": [
+    {
+      "id": "ep02_s01",
+      "location": "loc_1",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide establishing shot of Haifa port at early morning, mist rolling off the harbour, first light catching the tops of the stone archways, market stalls still shuttered, a single figure visible walking in the distance",
+      "narration": "Morning came. So did new plans.",
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s02",
+      "location": "loc_4",
+      "characters": ["char_2"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Bibi standing before a heavy arched wooden door in a narrow alley, holding up the iron key triumphantly, bougainvillea flowers framing the doorway above him, morning light cutting through the alley",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_2", "line": "This key proves it is mine."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s03",
+      "location": "loc_4",
+      "characters": ["char_2"],
+      "clip_length": "short",
+      "visual": "Close-up of Bibi's hands jamming the key into the iron lock, the key clearly does not fit, he twists and forces it with growing frustration, rust flaking off the lock",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s04",
+      "location": "loc_1",
+      "characters": ["char_1"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Reemi walking through the waking market, her dark hair caught by the sea breeze, she pauses and tilts her head listening, then turns sharply toward the alley with suspicion in her eyes",
+      "narration": "Reemi could smell trouble like salt air.",
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s05",
+      "location": "loc_4",
+      "characters": ["char_1"],
+      "clip_length": "short",
+      "visual": "Close-up of Reemi peering around a stone wall corner, her eyes locked on something off-screen, brow furrowed with growing concern, dappled light across her face",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s06",
+      "location": "loc_4",
+      "characters": ["char_1", "char_2"],
+      "clip_length": "long",
+      "visual": "Medium two-shot of Reemi confronting Bibi at the old door, she stands tall with arms crossed blocking the alley, he clutches the key behind his back defensively, the locked door between them, static camera",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_1", "line": "That door is not yours, Bibi."},
+        {"character": "char_2", "line": "I have the key!"},
+        {"character": "char_1", "line": "A key that does not fit."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s07",
+      "location": "loc_4",
+      "characters": ["char_2"],
+      "clip_length": "short",
+      "visual": "Close-up of Bibi's face, his forced smile cracking, beady eyes darting left and right, sweat beading on his forehead, he waves the key defensively in front of camera",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_2", "line": "Details, details."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s08",
+      "location": "loc_4",
+      "characters": ["char_1"],
+      "clip_length": "short",
+      "visual": "Close-up of Reemi's face showing cold fury, her dark eyes narrowing, lips pressed thin, the shadow of the archway falling across half her face",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_1", "line": "Keys do not make owners."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s09",
+      "location": "loc_4",
+      "characters": ["char_2"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Bibi backing away down the narrow alley, stuffing the key into his bulging pocket, his confident posture deflating, he points back at Reemi with a shaking finger",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_2", "line": "We shall see about that."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep02_s10",
+      "location": "loc_1",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of Haifa port as morning fully breaks, warm light flooding the market, the old door visible in the distance still firmly locked, the harbour calm and indifferent beyond",
+      "narration": "The door held. For now.",
+      "dialogue": [],
+      "reference_image": null
+    }
+  ]
+}

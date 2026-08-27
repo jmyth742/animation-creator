@@ -1,0 +1,92 @@
+{
+  "series": {
+    "title": "Palestine Stories",
+    "style": "2D animated cartoon, thick black outlines, flat color shading, large expressive eyes, bold simple shapes, vibrant warm palette, watercolor background textures",
+    "tone": "dark comedy",
+    "format": {
+      "resolution": [832, 480],
+      "fps": 16
+    }
+  },
+  "characters": {
+    "char_1": {
+      "name": "Reemi",
+      "visual": "Young Palestinian woman with long dark wavy hair, olive skin, large expressive brown eyes, slender build, wearing a traditional embroidered thobe dress with red and green cross-stitch patterns, a determined confident posture",
+      "voice": "en-US-JennyNeural",
+      "voice_notes": "warm but fierce, steady and grounded",
+      "role": "protagonist",
+      "lora_path": "reemi-wan22.safetensors",
+      "lora_strength": 0.85,
+      "trigger_word": "Reemi"
+    },
+    "char_2": {
+      "name": "Bibi",
+      "visual": "Short stocky middle-aged man with curly dark sidelocks, a black kippa on his head, beady close-set eyes, a thin forced smile, wearing an ill-fitting dark suit with bulging pockets stuffed with papers and keys",
+      "voice": "en-GB-RyanNeural",
+      "voice_notes": "nasal and wheedling, oozing false charm",
+      "role": "antagonist",
+      "lora_path": "bibi-wan22.safetensors",
+      "lora_strength": 0.85,
+      "trigger_word": "bibi"
+    }
+  },
+  "locations_meta": {
+    "loc_1": {
+      "name": "Haifa Port Market",
+      "description": "Bustling Mediterranean port market at Haifa, stone archways, wooden market stalls with colourful awnings, fishing boats and cargo ships in the harbour beyond, cobblestone ground, warm golden sunlight",
+      "lora_path": "haifa_port-wan22.safetensors",
+      "lora_strength": 0.4,
+      "trigger_word": "haifaport"
+    },
+    "loc_2": {
+      "name": "Haifa Port Rooftop Vista",
+      "description": "Rooftop of an old Ottoman-era stone building overlooking Haifa port, terracotta tiles, laundry lines, the deep blue Mediterranean sea stretching to the horizon, ships dotting the harbour below",
+      "lora_path": null,
+      "lora_strength": 0.5,
+      "trigger_word": null
+    },
+    "loc_3": {
+      "name": "Rooftop Terrace",
+      "description": "Open terrace atop an old stone building, cracked tile floor, low stone parapet wall, Mediterranean sea and Haifa port visible in the background, sunset golden hour light, room for characters to stand",
+      "lora_path": null,
+      "lora_strength": 0.5,
+      "trigger_word": null
+    },
+    "loc_4": {
+      "name": "The Old Door",
+      "description": "Narrow alley near Haifa port, weathered stone walls, a heavy arched wooden door with an iron lock and rusty hinges, bougainvillea climbing the wall above, dappled shade",
+      "lora_path": null,
+      "lora_strength": 0.5,
+      "trigger_word": null
+    }
+  },
+  "world": {
+    "setting": "Palestine, 1947-1948, the final years of the British Mandate",
+    "locations": {
+      "loc_1": "Bustling Mediterranean port market at Haifa, stone archways, wooden market stalls with colourful awnings, fishing boats and cargo ships in the harbour beyond, cobblestone ground, warm golden sunlight",
+      "loc_2": "Rooftop of an old Ottoman-era stone building overlooking Haifa port, terracotta tiles, laundry lines, the deep blue Mediterranean stretching to the horizon",
+      "loc_3": "Open terrace atop an old stone building, cracked tile floor, low stone parapet, Mediterranean sea and Haifa port visible in the background, sunset golden hour light",
+      "loc_4": "Narrow alley near Haifa port, weathered stone walls, a heavy arched wooden door with an iron lock, bougainvillea climbing above, dappled shade"
+    },
+    "rules": [
+      "Reemi always speaks with quiet authority — she never shouts but her words carry weight",
+      "Bibi always has a self-serving justification ready — he never admits to wrongdoing",
+      "The port market is the heart of the community — when it thrives, the people thrive",
+      "Keys and doors are recurring symbols — ownership, belonging, and dispossession"
+    ]
+  },
+  "season_arc": {
+    "summary": "The story of a Palestinian community in Haifa during the late 1940s, told through the encounters between Reemi and Bibi. Through dark humor and sharp dialogue, the series follows the escalating attempts to dispossess the local community — from a found key to forged papers to legal claims — and Reemi's growing resistance. Told from the Palestinian perspective, it uses absurdity to illuminate tragedy.",
+    "themes": [
+      "Belonging versus ownership",
+      "Community solidarity against dispossession",
+      "The absurdity of colonial bureaucracy",
+      "Home as something that cannot be taken by paper alone"
+    ],
+    "progression": "Each episode escalates the stakes: a key, a door, a market, a revelation, a final stand. Bibi's tactics grow bolder; Reemi's resistance deepens from suspicion to organized community action."
+  },
+  "narrator": {
+    "voice": "en-GB-SoniaNeural",
+    "style": "Wry, detached documentary narrator with occasional sardonic commentary. Speaks as if recounting history that is both absurd and heartbreaking."
+  }
+}

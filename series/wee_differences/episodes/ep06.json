@@ -1,0 +1,169 @@
+{
+  "id": "ep06",
+  "title": "First Communion",
+  "summary": "Paddy's young nephew has his First Communion. Billy comes along as moral support but treats the whole thing like an anthropological field trip, asking increasingly inappropriate questions.",
+  "scenes": [
+    {
+      "id": "ep06_s01",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Paddy and Billy at the garden fence. Paddy wears a formal shirt and tie, looking nervous. Billy in his usual blue polo but slightly smarter. Morning light, both holding tea mugs.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "Big day today, First Communion."
+        },
+        {
+          "character": "billy",
+          "line": "Right, what exactly happens then?"
+        }
+      ]
+    },
+    {
+      "id": "ep06_s02",
+      "location": "belfast_streets",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Wide shot of both men walking down a Belfast street towards a Catholic church visible in distance. Camera slowly pans to follow their movement. Red brick terraced houses line the street.",
+      "narration": "Ancient rituals await modern scrutiny.",
+      "dialogue": []
+    },
+    {
+      "id": "ep06_s03",
+      "location": "the_pub",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Close-up on Billy's face, eyebrows raised in confusion. Static camera. He's clearly processing information and looking puzzled.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "So they eat actual Jesus?"
+        }
+      ]
+    },
+    {
+      "id": "ep06_s04",
+      "location": "the_pub",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "short",
+      "visual": "Extreme close-up on Paddy's horrified face, eyes wide with shock. Static camera holding on his expression of disbelief.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "Billy, no!"
+        }
+      ]
+    },
+    {
+      "id": "ep06_s05",
+      "location": "belfast_streets",
+      "characters": [
+        "paddy",
+        "billy",
+        "derek"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot outside the church entrance. Families in formal wear gathered. Derek appears from behind a parked car wearing completely inappropriate casual clothes, waving cheerfully.",
+      "narration": "Inappropriate commentary arrives precisely on schedule.",
+      "dialogue": [
+        {
+          "character": "derek",
+          "line": "Is this the vampire thing?"
+        }
+      ]
+    },
+    {
+      "id": "ep06_s06",
+      "location": "belfast_streets",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Paddy and Billy, both looking mortified. Paddy covers his face with his hands. Billy looks around nervously at other families nearby.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "Derek, please just go home."
+        }
+      ]
+    },
+    {
+      "id": "ep06_s07",
+      "location": "belfast_streets",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Close-up on Billy's face as he leans in conspiratorially toward camera. His expression is genuinely curious but completely oblivious to appropriateness.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "But seriously, is it cannibalism?"
+        }
+      ]
+    },
+    {
+      "id": "ep06_s08",
+      "location": "belfast_streets",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "short",
+      "visual": "Extreme close-up on Paddy's face, his eye twitching with barely contained rage. Static camera holding on the eye twitch.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep06_s09",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "long",
+      "visual": "Medium two-shot of both men back at the fence, now in the afternoon. Both look exhausted. Paddy loosened his tie, Billy's hair slightly disheveled. They hold tea mugs.",
+      "narration": "Cultural bridge-building requires stronger tea.",
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "Your nephew looked lovely though."
+        }
+      ]
+    },
+    {
+      "id": "ep06_s10",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on both men's faces in profile, sharing a moment of understanding. Soft afternoon light, both smiling slightly despite themselves.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "Aye, he did."
+        }
+      ]
+    }
+  ]
+}

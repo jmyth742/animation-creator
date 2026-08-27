@@ -1,0 +1,267 @@
+{
+  "id": "ep04",
+  "title": "Three Hundred Years",
+  "summary": "The farewell, with proper coverage: consistent screen direction so reverse angles read as one conversation, escalating framing, and dialogue shot tight so the mouth occupies more of the frame.",
+  "scenes": [
+    {
+      "id": "ep04_s01",
+      "location": "farewell_cliff",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide establishing shot of a high green headland above a calm sea, long evening light, a wind-bent tree on the cliff edge. Slow drift.",
+      "narration": "Three years he had been happy",
+      "dialogue": [],
+      "seed": "location",
+      "setup": "master"
+    },
+    {
+      "id": "ep04_s02",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "medium",
+      "visual": "Wide two-shot, the warrior on the left and the golden-haired woman on the right, both full length on the clifftop, the sea behind them. Static camera.",
+      "narration": "Three years, and nothing had changed.",
+      "dialogue": [],
+      "setup": "master",
+      "staging": "full_body"
+    },
+    {
+      "id": "ep04_s03",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of the warrior from the waist up, turned three-quarters to the right, the headland behind him. He speaks quietly. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I still dream of my father."
+        }
+      ],
+      "setup": "master",
+      "staging": "medium"
+    },
+    {
+      "id": "ep04_s04",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "short",
+      "visual": "Three-quarter shot of the golden-haired woman from the waist up, listening, head turned slightly away. Static camera.",
+      "narration": "She had heard it before.",
+      "dialogue": [],
+      "setup": "reverse",
+      "staging": "full_body"
+    },
+    {
+      "id": "ep04_s05",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "visual": "Medium shot of the golden-haired woman from the waist up, facing left across the frame, the sea behind her. She speaks. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Three years here. Three hundred there."
+        }
+      ],
+      "setup": "reverse",
+      "staging": "medium"
+    },
+    {
+      "id": "ep04_s06",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "short",
+      "visual": "Over-the-shoulder shot past the woman toward the warrior, his face small in frame, the cliff beyond. Static camera.",
+      "narration": "He did the arithmetic.",
+      "dialogue": [],
+      "setup": "master",
+      "staging": "over_shoulder"
+    },
+    {
+      "id": "ep04_s07",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "medium",
+      "visual": "Tight close-up on the warrior, the face filling most of the frame, three-quarter profile. He speaks. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "Then they are all dead."
+        }
+      ],
+      "setup": "master",
+      "staging": "close"
+    },
+    {
+      "id": "ep04_s08",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "short",
+      "visual": "Tight close-up on the golden-haired woman, the face filling most of the frame, turned to the left. She speaks one word. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Yes."
+        }
+      ],
+      "setup": "reverse",
+      "staging": "close"
+    },
+    {
+      "id": "ep04_s09",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "medium",
+      "visual": "Extreme wide shot of the clifftop and the sea, a single small figure of the warrior walking away from camera toward the cliff edge, seen from behind, tiny in the landscape. Static camera.",
+      "narration": "Something in him had already left.",
+      "dialogue": [],
+      "setup": "wider",
+      "seed": "location"
+    },
+    {
+      "id": "ep04_s10",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of the warrior from the waist up, looking back over his shoulder, the sea behind. He speaks. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I have to see it myself."
+        }
+      ],
+      "setup": "master",
+      "staging": "medium"
+    },
+    {
+      "id": "ep04_s11",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "short",
+      "visual": "Three-quarter shot of the golden-haired woman from the knees up, standing still, hands at her sides. Static camera.",
+      "narration": "She did not argue.",
+      "dialogue": [],
+      "setup": "reverse",
+      "staging": "three_quarter"
+    },
+    {
+      "id": "ep04_s12",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "visual": "Medium shot of the golden-haired woman from the waist up, facing left, wind moving her hair. She speaks. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Then take Embarr. He knows the way."
+        }
+      ],
+      "setup": "reverse",
+      "staging": "medium"
+    },
+    {
+      "id": "ep04_s13",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot, the woman at the right of frame and the white horse at the left, the warrior between them. Static camera.",
+      "narration": "The horse was already waiting.",
+      "dialogue": [],
+      "setup": "closer",
+      "staging": "medium"
+    },
+    {
+      "id": "ep04_s14",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "medium",
+      "visual": "Tight close-up on the golden-haired woman, the face filling the frame, eyes steady. She speaks a warning. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Never let your feet touch the ground."
+        }
+      ],
+      "setup": "reverse",
+      "staging": "close"
+    },
+    {
+      "id": "ep04_s15",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "medium",
+      "visual": "Three-quarter shot of the warrior mounted on the white horse, seen from the knees up, the sea behind him. He speaks. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I will come back to you."
+        }
+      ],
+      "setup": "side",
+      "staging": "three_quarter"
+    },
+    {
+      "id": "ep04_s16",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "short",
+      "visual": "Three-quarter shot of the golden-haired woman from the waist up, watching, not moving. Static camera.",
+      "narration": "She watched him go.",
+      "dialogue": [],
+      "setup": "reverse",
+      "staging": "full_body"
+    },
+    {
+      "id": "ep04_s17",
+      "location": "farewell_cliff",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Extreme wide shot of the clifftop, a lone rider on a white horse small against the sea and sky, riding away. Slow drift.",
+      "narration": "She let him go, and said nothing",
+      "dialogue": [],
+      "seed": "location",
+      "setup": "wider"
+    }
+  ]
+}

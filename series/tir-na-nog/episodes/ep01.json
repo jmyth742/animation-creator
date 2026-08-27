@@ -1,0 +1,166 @@
+{
+  "id": "ep01",
+  "title": "The Calling",
+  "summary": "Niamh of the Golden Hair emerges from the western sea to call Oisín away from his mortal world to the eternal Land of Youth.",
+  "scenes": [
+    {
+      "id": "ep01_s01",
+      "location": "killarney_lakes",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of misted dawn over Lakes of Killarney. Slow drift across rolling hills rendered as decorative scrollwork patterns. Ancient oak trees with spiral bark emerge from purple heather fields as morning mist flows in Celtic knot patterns across the parchment-textured landscape. Celtic illuminated manuscript style, gold leaf accents, interlace knotwork borders.",
+      "narration": "In ancient Éire, before dawn",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s02",
+      "location": "killarney_lakes",
+      "characters": ["oisin"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Oisín crouched among heather, ornate hunting spear in hand. Camera slowly pushes in as he scans the misty landscape. Golden spiral hair catches first light, bronze Celtic brooches gleaming on leather tunic. Celtic illuminated manuscript style, gold leaf accents, parchment texture, ornamental knotwork borders.",
+      "narration": "Oisín hunted with the Fianna",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s03",
+      "location": "killarney_lakes",
+      "characters": ["oisin"],
+      "clip_length": "short",
+      "visual": "Close-up on Oisín's face as he turns toward the west. Large solemn eyes widen with sudden alertness. Golden halo outline brightens as mysterious light reflects in his gaze. Celtic illuminated manuscript style, gold leaf accents, parchment texture.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s04",
+      "location": "western_shore",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of wild Atlantic coastline. Strange golden light emanates from the horizon, painted with gold leaf effects. Waves begin to render as interlacing spiral patterns as otherworldly radiance grows stronger across the parchment sky. Celtic illuminated manuscript style, ornamental knotwork borders.",
+      "narration": "A golden light pierced the west",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s05",
+      "location": "killarney_lakes",
+      "characters": ["oisin"],
+      "clip_length": "short",
+      "visual": "Medium shot of Oisín rising to his feet, spear lowered. Static camera as he stands transfixed, green woolen cloak with golden spiral patterns flowing gently in otherworldly breeze. Celtic illuminated manuscript style, gold leaf accents, parchment texture.",
+      "narration": "The Fianna fell silent",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s06",
+      "location": "sea_crossing",
+      "characters": ["embarr"],
+      "clip_length": "long",
+      "visual": "Wide shot of the sea parting in elaborate knotwork patterns. Embarr the white horse emerges galloping across waves, hooves glowing with soft golden light. Mane and tail flow as decorative spirals, leaving no prints on the illuminated water. Celtic illuminated manuscript style, gold leaf accents, parchment texture, ornamental borders.",
+      "narration": "The sea parted like sacred parchment",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s07",
+      "location": "sea_crossing",
+      "characters": ["niamh", "embarr"],
+      "clip_length": "long",
+      "visual": "Wide shot revealing Niamh riding Embarr. Her long golden hair flows in elaborate ornamental spirals, silver-white robes embroidered with gold knotwork. Pale flower circlet crown gleams as soft golden glow surrounds her ethereal figure against the illuminated seascape. Celtic illuminated manuscript style, gold leaf accents, parchment texture.",
+      "narration": "Came Niamh of the Golden Hair",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s08",
+      "location": "western_shore",
+      "characters": ["niamh", "embarr"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Niamh on Embarr at the water's edge. Static camera as she extends her hand toward shore. Large luminous eyes gaze with ancient wisdom, golden spirals of hair catching divine light. Celtic illuminated manuscript style, gold leaf accents, parchment texture, ornamental knotwork.",
+      "narration": null,
+      "dialogue": [
+        {"character": "niamh", "line": "Come with me, brave Oisín"}
+      ]
+    },
+    {
+      "id": "ep01_s09",
+      "location": "western_shore",
+      "characters": ["niamh"],
+      "clip_length": "medium",
+      "visual": "Close-up on Niamh's face as she speaks. Static camera captures her ethereal beauty and gentle authority. Silver-white robes shimmer with embroidered knotwork as otherworldly music seems to emanate from her presence. Celtic illuminated manuscript style, gold leaf accents, parchment texture.",
+      "narration": null,
+      "dialogue": [
+        {"character": "niamh", "line": "To Tír na nÓg, Land of Youth"}
+      ]
+    },
+    {
+      "id": "ep01_s10",
+      "location": "western_shore",
+      "characters": ["oisin"],
+      "clip_length": "short",
+      "visual": "Medium shot of Oisín dropping his spear. Static camera as he steps forward, bronze brooches catching otherworldly light. Green cloak flows behind him as he moves toward his destiny. Celtic illuminated manuscript style, gold leaf accents, parchment texture.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s11",
+      "location": "western_shore",
+      "characters": ["oisin"],
+      "clip_length": "medium",
+      "visual": "Close-up on Oisín's face as he speaks his choice. Static camera captures the wonder and determination in his large solemn eyes. Golden halo outline pulses with inner light as he accepts the call. Celtic illuminated manuscript style, gold leaf accents, parchment texture.",
+      "narration": null,
+      "dialogue": [
+        {"character": "oisin", "line": "I choose your realm, fair Niamh"}
+      ]
+    },
+    {
+      "id": "ep01_s12",
+      "location": "western_shore",
+      "characters": ["oisin", "niamh", "embarr"],
+      "clip_length": "medium",
+      "visual": "Wide shot as Oisín wades into the illuminated water toward Embarr. Slow camera push follows him as he reaches for Niamh's outstretched hand, waves flowing in Celtic knot patterns around his legs. Celtic illuminated manuscript style, gold leaf accents, parchment texture, ornamental knotwork borders.",
+      "narration": "He crossed the sacred threshold",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s13",
+      "location": "sea_crossing",
+      "characters": ["oisin", "niamh", "embarr"],
+      "clip_length": "short",
+      "visual": "Medium shot of Oisín mounting behind Niamh on Embarr. Static camera captures the moment of union as he settles onto the white horse's back, his hands finding her waist. Celtic illuminated manuscript style, gold leaf accents, parchment texture.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s14",
+      "location": "sea_crossing",
+      "characters": ["oisin", "niamh", "embarr"],
+      "clip_length": "long",
+      "visual": "Wide shot as Embarr turns toward the western horizon. Camera slowly pulls back as the white horse begins to gallop across waves rendered as flowing knotwork. Golden mist swirls in elaborate spiral patterns around the departing figures. Celtic illuminated manuscript style, gold leaf accents, parchment texture, ornamental borders.",
+      "narration": "Together they rode the endless sea",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s15",
+      "location": "sea_crossing",
+      "characters": ["oisin", "niamh", "embarr"],
+      "clip_length": "medium",
+      "visual": "Medium tracking shot following Embarr as he gallops toward the golden horizon. Niamh's hair and Oisín's cloak flow as decorative spirals. Water surface reflects illuminated manuscript gold leaf beneath the horse's glowing hooves. Celtic illuminated manuscript style, parchment texture, ornamental knotwork.",
+      "narration": "Toward the Land of Youth",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s16",
+      "location": "sea_crossing",
+      "characters": ["oisin", "niamh", "embarr"],
+      "clip_length": "long",
+      "visual": "Extreme wide shot as Embarr, Niamh and Oisín disappear into swirling golden mist painted as elaborate Celtic spirals. The otherworldly radiance consumes the horizon as they pass beyond the mortal realm forever. Celtic illuminated manuscript style, gold leaf accents, parchment texture, ornamental borders.",
+      "narration": "Into legend, into light eternal",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s17",
+      "location": "western_shore",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of empty coastline at sunset. Camera slowly drifts across the now-quiet shore where only gentle waves in knotwork patterns remain. The golden light fades to deep illuminated manuscript blues and purples as day ends. Celtic illuminated manuscript style, gold leaf accents, parchment texture, ornamental knotwork borders.",
+      "narration": null,
+      "dialogue": []
+    }
+  ]
+}

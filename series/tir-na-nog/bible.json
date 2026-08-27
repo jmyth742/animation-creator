@@ -1,0 +1,76 @@
+{
+  "series": {
+    "title": "Tír na nÓg — The Calling",
+    "style": "Celtic illuminated manuscript animation in the style of the Book of Kells, with every frame painted on aged parchment featuring intricate interlace knotwork borders and gold leaf accents. Deep crimson, emerald green, sapphire blue and saffron yellow palette with stylized flat figures bearing halo-like outlines and ornamental spiral hair. Trees, waves and clouds rendered as decorative scrollwork with hand-painted textures and soft gilding throughout.",
+    "format": {
+      "resolution": [
+        480,
+        320
+      ],
+      "fps": 16
+    }
+  },
+  "characters": {
+    "oisin": {
+      "name": "Oisín",
+      "visual": "Young fair-haired warrior-poet with large solemn eyes and beardless face. Wears leather tunic with bronze Celtic brooches, green woolen cloak with golden spiral patterns, carries ornate hunting spear. Hair flows in decorative spirals, outlined with golden halo effect typical of illuminated manuscripts.",
+      "voice": "en-GB-RyanNeural",
+      "voice_notes": "Speaks with wonder and courage, voice of a young noble warrior drawn to beauty and adventure.",
+      "role": "Protagonist, warrior-poet of the Fianna who is called to the otherworld.",
+      "lora_path": null
+    },
+    "niamh": {
+      "name": "Niamh of the Golden Hair",
+      "visual": "Otherworldly fae princess with long golden hair rendered as elaborate ornamental spirals. Wears silver-white robes embroidered with gold knotwork patterns, pale flower circlet crown. Large luminous eyes, ethereal beauty with soft golden glow surrounding her figure.",
+      "voice": "en-IE-EmilyNeural",
+      "voice_notes": "Soft Irish lilt, ancient wisdom and gentle authority, voice carries otherworldly music and timeless grace.",
+      "role": "Mystical guide who summons Oisín to the Land of Youth.",
+      "lora_path": null
+    },
+    "embarr": {
+      "name": "Embarr",
+      "visual": "Magnificent white horse with pure white coat and flowing golden mane and tail rendered in decorative spirals. Hooves glow with soft golden light, leaves no prints on water. Eyes are large and knowing, decorated with Celtic knotwork patterns along the neck and flanks.",
+      "voice": null,
+      "voice_notes": "Silent character, communicates through movement and presence.",
+      "role": "Magical steed capable of traveling between worlds.",
+      "lora_path": null
+    }
+  },
+  "world": {
+    "setting": "Ancient pre-Christian Ireland and the otherworld of Tir na nOg beyond the western sea, rendered throughout in illuminated manuscript style.",
+    "locations": {
+      "killarney_lakes": "Misted dawn over Lakes of Killarney with rolling hills rendered as decorative scrollwork patterns. Ancient oak trees with spiral bark, heather fields in deep purple and gold, morning mist painted as flowing Celtic knots.",
+      "western_shore": "Wild Atlantic coastline at the edge of the world, waves rendered as interlacing spiral patterns in blue and white. Rocky cliffs decorated with Celtic stonework motifs, golden light emanating from the horizon.",
+      "sea_crossing": "Mystical seascape where Embarr gallops across waves painted as flowing knotwork. Golden mist swirls in elaborate spiral patterns, water surface reflects illuminated manuscript gold leaf.",
+      "tir_na_nog_shore": "The landing shore of the Land of Youth, painted as a strand of pale gold sand meeting a luminous turquoise sea. Waves render as interlacing white and gold knotwork. Cliffs of soft rose stone carved with spiral triskele motifs, the whole scene lit by a low eternal sun that casts no harsh shadow. Gold leaf catches along every wave crest.",
+      "blossom_plain": "An endless plain of flowering meadow between shore and palace, rendered as a decorated manuscript margin come alive. Blossoms drawn as tiny gold-leaf rosettes on emerald ground, flowering trees with spiral trunks, drifting petals painted as flecks of gold. Distant hills scrolled in sapphire and saffron bands.",
+      "golden_palace": "The palace of Tir na nOg, a great hall of gold and white stone rising from the blossom plain. Architecture drawn flat and ornamental in illuminated-manuscript perspective, with interlace knotwork carved into every arch, tall narrow windows of crimson and sapphire glass, and roofs of hammered gold leaf. Banners of emerald and saffron hang still in windless light.",
+      "feast_hall": "The great feasting hall within the golden palace. Long tables laid with gold vessels, harpers and dancers rendered as flat stylised figures with halo outlines, torches burning without smoke. Walls covered floor to ceiling in dense Celtic interlace in crimson, emerald and sapphire, every surface gilded. Warm amber light, no shadows.",
+      "eternal_orchard": "An orchard where blossom and ripe fruit hang on the same bough, painted in illuminated style. Apple trees with spiralling bark and knotwork branches, fruit rendered as burnished gold-leaf spheres, white blossom as delicate painted rosettes. Soft green light filtering through decorative foliage patterns.",
+      "western_cliff": "A high cliff at the western edge of the Land of Youth looking back east over the sea toward mortal Ireland. Rose-gold stone with carved spiral edges, the sea below drawn as receding bands of blue and silver knotwork, and on the far horizon a faint grey line painted in muted earth tones - the only colour in this world that is not luminous."
+    },
+    "rules": [
+      "All visual elements follow illuminated manuscript aesthetics with flat, stylized figures",
+      "Magic manifests as golden light and glowing effects reminiscent of gold leaf",
+      "The otherworld influences reality through beauty, light, and otherworldly music",
+      "Time moves differently when otherworldly forces are present",
+      "In Tir na nOg nothing withers, ages or dies; mortal time passes outside at three hundred years to one season within"
+    ]
+  },
+  "season_arc": {
+    "summary": "Oisin of the Fianna is called across the western sea to the Land of Youth, lives there in deathless joy, and is slowly undone by the memory of the country he left.",
+    "themes": [
+      "The call to adventure",
+      "Beauty as divine summons",
+      "Choice between worlds",
+      "Sacred threshold crossing",
+      "The ache of home",
+      "Time as the price of paradise"
+    ],
+    "progression": "Episode 1 carries Oisin from mortal Ireland across the sea. Episode 2 gives him the Land of Youth entire - arrival, welcome, feast and endless season - and then turns, as the first memory of his father reaches him and joy begins to cost something. Palette moves from earth-tones through full gold to a single grey note on the horizon."
+  },
+  "narrator": {
+    "voice": "en-IE-ConnorNeural",
+    "style": "Hushed, reverent Irish-accented bardic voice speaking as if recounting a sacred legend by firelight. Uses formal, poetic language with Irish cadences and pauses that honor the mythic weight of the story."
+  }
+}

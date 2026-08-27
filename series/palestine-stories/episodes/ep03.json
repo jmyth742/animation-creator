@@ -1,0 +1,118 @@
+{
+  "id": "ep03",
+  "title": "The Papers",
+  "summary": "Bibi returns with forged ownership papers for the market stalls. Reemi rallies the vendors to stand their ground.",
+  "scenes": [
+    {
+      "id": "ep03_s01",
+      "location": "loc_1",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide establishing shot of the bustling Haifa port market at midday, camera slowly pans across vendors selling spices and fruit under colourful awnings, customers haggling, children weaving between stalls, the harbour shimmering in bright Mediterranean sunlight",
+      "narration": "The market had fed Haifa for generations.",
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep03_s02",
+      "location": "loc_1",
+      "characters": ["char_2"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Bibi strutting through the market holding a stack of official-looking papers high above his head, his kippa bobbing as he walks, a smug grin plastered across his face, vendors turning to stare",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_2", "line": "These stalls are mine now. All legal."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep03_s03",
+      "location": "loc_1",
+      "characters": ["char_1"],
+      "clip_length": "short",
+      "visual": "Close-up of Reemi's face reacting with shock turning to anger, her eyes widening then hardening, nostrils flaring, the bustle of the market blurred behind her",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep03_s04",
+      "location": "loc_1",
+      "characters": ["char_1", "char_2"],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Reemi and Bibi facing off in the centre of the market, vendor stalls flanking them on both sides, Reemi stepping forward with clenched fists, Bibi holding papers like a shield, static camera",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_1", "line": "Where did you get those papers?"},
+        {"character": "char_2", "line": "From the proper authorities."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep03_s05",
+      "location": "loc_1",
+      "characters": ["char_2"],
+      "clip_length": "short",
+      "visual": "Close-up of Bibi's hands fanning the papers mockingly toward camera, official stamps and seals visible on the documents, his fingers adorned with cheap rings, a satisfied chuckle on his face",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_2", "line": "Ink and stamps do not lie."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep03_s06",
+      "location": "loc_1",
+      "characters": ["char_1"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Reemi turning to face the market vendors around her, her arms outstretched, passion in her voice, vendors pausing their work to listen, light streaming through the awnings above her",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_1", "line": "He wants to take our livelihood!"}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep03_s07",
+      "location": "loc_1",
+      "characters": [],
+      "clip_length": "medium",
+      "visual": "Wide shot of market vendors rising from their stalls and stepping forward together, closing ranks in a wall of solidarity, their colourful clothes creating a mosaic of resistance, camera pulling back to show the growing crowd",
+      "narration": "The vendors chose their answer.",
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep03_s08",
+      "location": "loc_1",
+      "characters": ["char_2"],
+      "clip_length": "short",
+      "visual": "Close-up of Bibi's face as his smug expression crumbles, eyes widening with alarm, papers crumpling in his tightening grip, he takes a step backward",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep03_s09",
+      "location": "loc_1",
+      "characters": ["char_1"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Reemi standing firm with the wall of vendors behind her, her chin lifted, arms at her sides, steady and unshakeable, warm light illuminating her determined face",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_1", "line": "This market belongs to all of us."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep03_s10",
+      "location": "loc_1",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of the market returning to life as Bibi retreats into the distance, vendors reopening stalls, customers returning, the harbour glittering peacefully behind the scene, normalcy restored but fragile",
+      "narration": "Papers blow away. People remain.",
+      "dialogue": [],
+      "reference_image": null
+    }
+  ]
+}

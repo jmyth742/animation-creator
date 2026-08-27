@@ -1,0 +1,169 @@
+{
+  "id": "ep05",
+  "title": "The Stand",
+  "summary": "At dawn, Bibi arrives with official documents to claim the port. Reemi and the entire community make their final stand together.",
+  "scenes": [
+    {
+      "id": "ep05_s01",
+      "location": "loc_1",
+      "characters": ["char_1"],
+      "clip_length": "long",
+      "visual": "Extreme close-up of Reemi's face in near darkness, only the faintest pre-dawn blue on her skin, her eyes open and unblinking, staring straight ahead, completely still, the sound of distant waves implied by the faint movement of her hair",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep05_s02",
+      "location": "loc_1",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of Haifa port at the moment before dawn, the harbour still and dark, mist curling across the cobblestones, market stalls shuttered and silent, a single lantern glowing warm orange in the distance, the Mediterranean a dark sheet of glass",
+      "narration": "Dawn at the port. The last quiet morning.",
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep05_s03",
+      "location": "loc_1",
+      "characters": ["char_1"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Reemi standing alone on the dock at dawn, her embroidered thobe catching the first pale light, she stares out at the harbour with quiet resolve, hands hanging loose at her sides, the mist parting around her feet",
+      "narration": "Reemi had not slept.",
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep05_s04",
+      "location": "loc_1",
+      "characters": [],
+      "clip_length": "short",
+      "visual": "Close-up of cobblestones wet with morning dew, the first ray of sunlight creeping across the dark stone, steam beginning to rise from the warming surface, a pair of hurried footsteps splashing through a shallow puddle",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep05_s05",
+      "location": "loc_1",
+      "characters": ["char_2"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Bibi emerging from behind a stack of crates at the dock, dawn light catching his kippa and curly sidelocks, a triumphant sneer on his face, he clutches a thick rolled document in his fist and strides forward with the confidence of a man who believes he has already won",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_2", "line": "Time to make this official."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep05_s06",
+      "location": "loc_1",
+      "characters": ["char_2"],
+      "clip_length": "medium",
+      "visual": "Close-up of Bibi unrolling the official document toward camera, stamps and seals and signatures visible in the growing light, his face behind the paper split by a confident grin, the parchment crisp and new against the ancient port behind it",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_2", "line": "I have the legal claim now. Stamps do not lie, Reemi."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep05_s07",
+      "location": "loc_1",
+      "characters": ["char_1"],
+      "clip_length": "long",
+      "visual": "Medium shot of Reemi standing perfectly still on the dock, she does not look at the document, she stares straight through Bibi, her expression utterly calm, the faintest smile at the corner of her mouth, the rising sun warming her olive skin from behind",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_1", "line": "Legal? You found a key on the ground."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep05_s08",
+      "location": "loc_1",
+      "characters": ["char_2"],
+      "clip_length": "short",
+      "visual": "Close-up of Bibi's face, his grin faltering for just a moment, a flicker of uncertainty in his beady eyes, he shakes it off and raises the document higher, his hand trembling slightly",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep05_s09",
+      "location": "loc_1",
+      "characters": ["char_1"],
+      "clip_length": "medium",
+      "visual": "Close-up of Reemi's face, calm and certain, she speaks two quiet words, the sunrise catching a gleam in her dark eyes, her lips barely moving",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_1", "line": "Look behind you."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep05_s10",
+      "location": "loc_1",
+      "characters": [],
+      "clip_length": "short",
+      "visual": "Close-up of a weathered hand gripping the wooden shutter of a market stall, then pushing it open with force, morning light flooding through the opening, dust motes swirling in the beam",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep05_s11",
+      "location": "loc_1",
+      "characters": [],
+      "clip_length": "short",
+      "visual": "Close-up of sandalled feet stepping onto cobblestones, then more feet joining from the left, then more from the right, a gathering of steps converging, shadows stretching in the low dawn light",
+      "narration": null,
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep05_s12",
+      "location": "loc_1",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of the entire port community emerging from behind market stalls and buildings, vendors fishermen workers families, dozens of silhouettes stepping forward together into the dawn light, a wall of people filling the cobblestone harbour, ships in the background, the community rising as one",
+      "narration": "The port answered.",
+      "dialogue": [],
+      "reference_image": null
+    },
+    {
+      "id": "ep05_s13",
+      "location": "loc_1",
+      "characters": ["char_2"],
+      "clip_length": "medium",
+      "visual": "Medium shot of Bibi stumbling backward, his triumphant expression shattered, the document drooping and curling in his loosening grip, kippa askew, his mouth hanging open, the crowd filling the frame behind him",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_2", "line": "This is not over."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep05_s14",
+      "location": "loc_1",
+      "characters": ["char_1"],
+      "clip_length": "long",
+      "visual": "Medium shot of Reemi standing with the community massed behind her, she raises her fist slowly into the air, the sunrise blazing behind the crowd creating halos of golden light around the silhouettes, her face lit with fierce quiet joy",
+      "narration": null,
+      "dialogue": [
+        {"character": "char_1", "line": "Today, we stand together."}
+      ],
+      "reference_image": null
+    },
+    {
+      "id": "ep05_s15",
+      "location": "loc_1",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot pulling back very slowly to reveal the full harbour, the community standing together on the docks in golden morning light, Bibi a small retreating figure disappearing into the distance, ships bobbing peacefully, the morning sun now fully risen over the Mediterranean, the ancient port alive and held",
+      "narration": "They held their ground that morning. History would not be so kind.",
+      "dialogue": [],
+      "reference_image": null
+    }
+  ]
+}

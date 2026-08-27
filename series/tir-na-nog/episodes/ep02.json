@@ -1,0 +1,208 @@
+{
+  "id": "ep02",
+  "title": "The Land of Youth",
+  "summary": "Oisin comes ashore in Tir na nOg and is given its whole endless season - welcome, feast and deathless joy - until the memory of his father reaches him across the sea and the first longing takes hold.",
+  "scenes": [
+    {
+      "id": "ep02_s01",
+      "location": "tir_na_nog_shore",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide establishing shot of a golden shore rising out of parting mist. Camera drifts slowly forward as the swirling gold mist thins to reveal a strand of pale gold sand and a luminous turquoise sea, waves painted as interlacing white and gold knotwork. Rose-stone cliffs carved with spiral triskele motifs stand at the edges of frame. Low eternal sun, no harsh shadows, gold leaf catching along every wave crest.",
+      "narration": "The mist drew back, and a golden land rose from the sea",
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s02",
+      "location": "tir_na_nog_shore",
+      "characters": [
+        "oisin",
+        "niamh",
+        "embarr"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of a white horse with a golden spiral mane stepping onto gold sand, carrying a fair-haired young warrior in a green cloak and a golden-haired woman in silver-white robes. Camera static as the horse's glowing hooves touch the strand. Waves of gold knotwork behind them. Flat stylised figures with halo-like outlines.",
+      "narration": "Embarr's hooves touched shores of light",
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s03",
+      "location": "tir_na_nog_shore",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on the young warrior's face, static camera. Large solemn eyes widen slowly as he looks out at something vast beyond frame. Fair hair drawn in decorative golden spirals, halo outline in gold leaf, soft warm light across his cheek.",
+      "narration": "Oisin beheld the Land",
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s04",
+      "location": "blossom_plain",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide establishing shot across an endless flowering meadow toward a distant palace of gold and white stone. Camera pans slowly right to left. Blossoms rendered as tiny gold-leaf rosettes on emerald ground, flowering trees with spiral trunks, petals drifting as flecks of gold. Sapphire and saffron hills scrolled along the horizon behind the palace roofs of hammered gold.",
+      "narration": "Beyond the blossom rose a palace of gold that would not age",
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s05",
+      "location": "blossom_plain",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of the golden-haired woman and the young warrior facing each other among flowering meadow. Static camera, very slow push-in. She holds his hand and speaks; he listens. Gold-leaf blossoms still around them, ornamental spiral hair, halo outlines, warm even light.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Here nothing withers. Nothing dies."
+        }
+      ]
+    },
+    {
+      "id": "ep02_s06",
+      "location": "golden_palace",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot at a great arched palace gate carved with dense interlace knotwork. Static camera. The warrior and the golden-haired woman walk toward the arch as flat stylised figures in crimson and emerald robes stand to either side in welcome. Tall narrow windows of crimson and sapphire glass above, banners hanging still.",
+      "narration": "The people of the Sidhe made welcome",
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s07",
+      "location": "feast_hall",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of a great feasting hall, camera drifting slowly forward down the length of long tables laid with gold vessels. Harpers and dancers as flat stylised figures with halo outlines move on either side. Torches burn without smoke. Walls covered floor to ceiling in crimson, emerald and sapphire interlace, every surface gilded. Warm amber light, no shadows.",
+      "narration": "There was harping and honey-wine, and laughter that never wearied of itself",
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s08",
+      "location": "feast_hall",
+      "characters": [],
+      "clip_length": "short",
+      "visual": "Extreme close-up on the strings of a golden harp, static camera. A single string trembles and throws off a small burst of gold-leaf light. Knotwork carved into the harp's frame, warm amber glow, shallow ornamental depth.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s09",
+      "location": "feast_hall",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of the young warrior and the golden-haired woman seated together at the feast, facing each other. Static camera. He speaks quietly to her, she inclines her head. Gold vessels on the table before them, gilded interlace wall behind, warm amber light, flat stylised figures.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I have never known such peace."
+        }
+      ]
+    },
+    {
+      "id": "ep02_s10",
+      "location": "eternal_orchard",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of two figures walking beneath apple trees where white blossom and ripe gold fruit hang on the same branch. Camera drifts slowly alongside them. Spiralling bark, knotwork branches, fruit as burnished gold-leaf spheres, soft green light through decorative foliage patterns.",
+      "narration": "Blossom and fruit hung on one bough",
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s11",
+      "location": "eternal_orchard",
+      "characters": [],
+      "clip_length": "short",
+      "visual": "Extreme close-up on a single apple of burnished gold leaf hanging among painted white blossom, static camera. Faint light moves across its curved surface. Ornamental foliage patterns behind in soft green, illuminated manuscript texture on aged parchment.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s12",
+      "location": "blossom_plain",
+      "characters": [],
+      "clip_length": "medium",
+      "visual": "Wide shot of sky above the flowering plain, camera静 static as a gold sun and a silver moon wheel slowly around each other in a single decorative spiral across the parchment sky. Bands of sapphire and saffron rotate behind them. Blossom meadow held still along the bottom of frame.",
+      "narration": "Three hundred years turned like one season",
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s13",
+      "location": "western_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of a lone figure standing at the edge of a high rose-gold cliff, seen from behind, looking east over the sea. Camera pushes in very slowly. The sea below drawn as receding bands of blue and silver knotwork. On the far horizon a faint grey line in muted earth tones, the only unlit colour in frame. Green cloak stirring slightly.",
+      "narration": "But a man carries his own country in him, and it calls",
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s14",
+      "location": "western_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "short",
+      "visual": "Extreme close-up on a hand closing around a bronze Celtic brooch pinned at a green woollen cloak, static camera. The bronze is worn and warm-toned against gold-spiralled fabric. Shallow ornamental depth, soft directional light.",
+      "narration": "His father's brooch, still bright",
+      "dialogue": []
+    },
+    {
+      "id": "ep02_s15",
+      "location": "western_cliff",
+      "characters": [
+        "niamh",
+        "oisin"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot on the cliff edge, the golden-haired woman approaching the warrior from behind as he turns his head toward her. Static camera. Her silver-white robes and ornamental spiral hair catch the low sun; his face is half in shadow. Sea of blue knotwork far below.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "What shadow crosses your face, love?"
+        }
+      ]
+    },
+    {
+      "id": "ep02_s16",
+      "location": "western_cliff",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "long",
+      "visual": "Medium close two-shot, the warrior turned fully to face the golden-haired woman. Static camera, very slow push-in on his face as he speaks. Large solemn eyes, halo outline dimmed. Her expression stills. Rose-gold cliff stone and pale sky behind them, the grey horizon line just visible at frame edge.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I would see my father once more."
+        }
+      ]
+    },
+    {
+      "id": "ep02_s17",
+      "location": "western_cliff",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Extreme wide shot of two small figures standing together at the cliff edge against an enormous pale gold sky and sea. Camera drifts slowly upward and back. Gold mist gathers along the eastern horizon, thickening over the faint grey line of the far country. Elaborate knotwork border creeps in around the edges of the frame.",
+      "narration": "And so the longing began, that would cost him everything",
+      "dialogue": []
+    }
+  ]
+}

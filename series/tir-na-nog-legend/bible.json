@@ -1,0 +1,81 @@
+{
+  "series": {
+    "title": "Tir na nOg \u2014 The Land of Eternal Youth",
+    "style": "Cel-shaded 2D animation, clean confident linework, flat blocks of colour with simple shading, painted background art, restrained palette of greens, slate blues and gold, expressive stylised faces, animated film still",
+    "format": {
+      "resolution": [
+        832,
+        480
+      ],
+      "fps": 16
+    }
+  },
+  "characters": {
+    "oisin": {
+      "name": "Oisin",
+      "visual": "Young Celtic warrior-poet, mid-twenties. Dark shoulder-length hair, short trimmed beard, weathered handsome face. Wears a brown leather jerkin over deep green wool, a heavy grey cloak pinned with a large bronze Celtic brooch, leather arm-wraps. Carries an ash-shafted spear. Cel-shaded animation, clean linework.",
+      "voice": "en-IE-ConnorNeural",
+      "voice_notes": "Young noble warrior, wonder and courage, drawn to beauty.",
+      "role": "Mortal protagonist who crosses into the otherworld.",
+      "lora_path": "oisin-cel64.safetensors",
+      "trigger_word": "o1s1nx",
+      "lora_strength": 0.9,
+      "rate": "+6%",
+      "pitch": "+10Hz"
+    },
+    "niamh": {
+      "name": "Niamh of the Golden Hair",
+      "visual": "Radiant Celtic princess. Long flowing golden hair catching the light, emerald green gown with fine gold embroidery, pale luminous skin, calm otherworldly eyes, faint golden aura around her. Cel-shaded animation, clean linework, soft glow.",
+      "voice": "en-IE-EmilyNeural",
+      "voice_notes": "Soft Irish lilt, ancient and gentle, otherworldly grace.",
+      "role": "Princess of Tir na nOg who chooses a mortal.",
+      "lora_path": "niamh-r64.safetensors",
+      "trigger_word": "Niamh",
+      "lora_strength": 1.0,
+      "rate": "-4%",
+      "pitch": "-2Hz"
+    },
+    "embarr": {
+      "name": "Embarr",
+      "visual": "Majestic pure-white stallion, powerfully built, luminous white coat with a long glowing silver-white mane and tail streaming in the wind. Faint light around the hooves as it gallops across open water. Cel-shaded animation, clean linework.",
+      "voice": null,
+      "voice_notes": "Silent; communicates through movement.",
+      "role": "Magical steed that travels between worlds.",
+      "lora_path": null
+    }
+  },
+  "world": {
+    "setting": "A mythic world of mortal Ireland and the otherworld beyond the sea.",
+    "locations": {
+      "storm_cliffs": "Towering emerald-green sea cliffs on the wild Atlantic coast of Ireland under a bruised storm sky. Huge waves crashing white against black rock far below, wind-flattened grass, shafts of gold breaking through heavy cloud.",
+      "stormy_sea": "The open Atlantic in storm \u2014 towering grey-green swells crowned with white foam, spray hanging in the air, dark cloud above, a band of gold light along the horizon.",
+      "sunlight_path": "The open ocean at golden hour with a blazing path of sunlight laid across the water toward a shimmering wall of golden mist on the horizon. Sea calm and mirror-bright, vast open sky.",
+      "tir_na_nog": "A lush otherworldly Celtic paradise in an inland valley of eternal summer. NO cliffs, no open ocean. Tall silver waterfalls spilling from green mountainsides into clear pools, rolling meadows of glowing wildflowers, and pale golden halls with tall arches and carved Celtic spiral knotwork among flowering trees. Pre-Christian pagan Celtic architecture only, absolutely no crosses, no crucifix, no church, no cathedral, no Christian symbols of any kind. Radiant warm light, impossibly clear air, paradisal.",
+      "farewell_cliff": "A high green headland in the otherworld looking out over an endless calm sea, warm low light, long shadows, one ancient wind-bent tree on the clifftop.",
+      "ruined_ireland": "Bleak grey Ireland under heavy overcast. A collapsed overgrown ring-fort of moss-covered stone, bare black thorn trees, cold flat diffuse daylight with NO sun and NO sunset, drizzle and low mist, muddy rutted ground, puddles. Heavily desaturated, cold blue-grey palette, dreary and melancholic."
+    },
+    "rules": [
+      "Tir na nOg is lit warm and golden; mortal Ireland is cold, grey and desaturated",
+      "Embarr's hooves never break the surface of the water",
+      "Three years in Tir na nOg are three hundred in the mortal world",
+      "If Oisin's feet touch Irish soil the enchantment ends and all his years return at once"
+    ]
+  },
+  "season_arc": {
+    "summary": "The whole legend of Oisin and Niamh, from the calling to the fall.",
+    "themes": [
+      "The call to adventure",
+      "Love across worlds",
+      "Time as the price of paradise",
+      "Homesickness",
+      "Mortality returning all at once"
+    ],
+    "progression": "Storm-grey opening brightens into full gold through the middle movements, then drains to cold grey for the return and the fall."
+  },
+  "narrator": {
+    "voice": "en-IE-ConnorNeural",
+    "style": "Hushed, reverent Irish-accented bardic narrator, as if telling a sacred story by firelight.",
+    "rate": "-8%",
+    "pitch": "-14Hz"
+  }
+}

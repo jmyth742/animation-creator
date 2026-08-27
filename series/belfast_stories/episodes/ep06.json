@@ -1,0 +1,146 @@
+{
+  "id": "ep06",
+  "title": "The Five Techniques",
+  "summary": "Declan reveals to his family the brutal interrogation methods used by British forces, exposing the systematic torture hidden behind official denials.",
+  "scenes": [
+    {
+      "id": "ep06_s01",
+      "location": "long_kesh",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of Long Kesh internment camp at dawn. Watchtowers silhouetted against grey sky, searchlights sweeping across rows of Nissen huts. Camera slowly pans across the barbed wire perimeter as mist drifts between the buildings.",
+      "narration": "Interrogation in depth was standard procedure.",
+      "dialogue": []
+    },
+    {
+      "id": "ep06_s02",
+      "location": "long_kesh",
+      "characters": [
+        "seamus",
+        "declan",
+        "maire"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium three-shot of Seamus, Declan, and Máire huddled close at visiting table. Camera static, focused on their faces. Declan's eyes are hollow, hands trembling slightly as he leans forward.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "declan",
+          "line": "They have five special techniques."
+        }
+      ]
+    },
+    {
+      "id": "ep06_s03",
+      "location": "long_kesh",
+      "characters": [
+        "declan"
+      ],
+      "clip_length": "medium",
+      "visual": "Close-up on Declan's face as he speaks. Static camera captures the exhaustion in his eyes, slight tremor in his voice. Harsh fluorescent lighting creates deep shadows under his cheekbones.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "declan",
+          "line": "Wall-standing for hours and hours."
+        }
+      ]
+    },
+    {
+      "id": "ep06_s04",
+      "location": "long_kesh",
+      "characters": [
+        "declan"
+      ],
+      "clip_length": "short",
+      "visual": "Extreme close-up on Declan's hands pressed flat against the table, fingers spread. Camera shows the raw marks on his fingertips, slight shake in his movements.",
+      "narration": "Sleep deprivation.",
+      "dialogue": []
+    },
+    {
+      "id": "ep06_s05",
+      "location": "long_kesh",
+      "characters": [
+        "declan"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Declan covering his ears with his hands, eyes squeezed shut. Camera static as he demonstrates the position, body language showing remembered trauma.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "declan",
+          "line": "White noise. Constant screaming sound."
+        }
+      ]
+    },
+    {
+      "id": "ep06_s06",
+      "location": "long_kesh",
+      "characters": [
+        "seamus",
+        "maire"
+      ],
+      "clip_length": "short",
+      "visual": "Two-shot reaction of Seamus and Máire, both staring in horror. Camera static, catching the shock and growing anger in their faces as the truth sinks in.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep06_s07",
+      "location": "long_kesh",
+      "characters": [
+        "declan"
+      ],
+      "clip_length": "medium",
+      "visual": "Close-up on Declan's face as he continues his testimony. Camera slowly pushes in slightly, emphasizing the weight of his words and the trauma behind them.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "declan",
+          "line": "Hooding. Bread and water only."
+        }
+      ]
+    },
+    {
+      "id": "ep06_s08",
+      "location": "long_kesh",
+      "characters": [
+        "maire"
+      ],
+      "clip_length": "short",
+      "visual": "Extreme close-up on Máire's face, tears beginning to form in her eyes. Static camera captures the mother's anguish as she processes her son's suffering.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "maire",
+          "line": "My God."
+        }
+      ]
+    },
+    {
+      "id": "ep06_s09",
+      "location": "long_kesh",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on Seamus's face, jaw clenched with growing rage. Camera static, showing the transformation from shock to anger in his expression.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "seamus",
+          "line": "Animals."
+        }
+      ]
+    },
+    {
+      "id": "ep06_s10",
+      "location": "long_kesh",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of the visiting area as families sit at metal tables under harsh lights. Camera slowly pulls back, showing the institutional coldness of the space as the sound of quiet conversations fills the air.",
+      "narration": "Torture techniques banned under international law.",
+      "dialogue": []
+    }
+  ]
+}

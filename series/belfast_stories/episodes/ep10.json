@@ -1,0 +1,116 @@
+{
+  "id": "ep10",
+  "title": "The Truth Will Out",
+  "summary": "In the aftermath of Bloody Sunday, the British government launches the Widgery Inquiry to whitewash the massacre, but the families' long fight for truth continues across decades until justice finally emerges.",
+  "scenes": [
+    {
+      "id": "ep10_s01",
+      "location": "derry_streets",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of Derry streets days after Bloody Sunday. Camera slowly pans across memorial flowers, photographs of victims placed against walls, and bloodstains still visible on cobblestones. Rain falls steadily, washing some flowers away while fresh ones are placed by grieving relatives.",
+      "narration": "The blood was washed away quickly",
+      "dialogue": []
+    },
+    {
+      "id": "ep10_s02",
+      "location": "seamus_home",
+      "characters": [
+        "seamus",
+        "maire"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Seamus and Máire sitting at their kitchen table, watching a small television. The blue glow illuminates their faces as they listen to official government statements. Máire's hands are folded tightly, Seamus stares with growing anger.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "maire",
+          "line": "They're calling our people gunmen now"
+        }
+      ]
+    },
+    {
+      "id": "ep10_s03",
+      "location": "army_checkpoints",
+      "characters": [
+        "harris"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on Corporal Harris in dress uniform, speaking to unseen reporters outside a government building. His expression is cold and controlled, maintaining the official line with calculated precision.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "harris",
+          "line": "Soldiers responded to gunfire appropriately"
+        }
+      ]
+    },
+    {
+      "id": "ep10_s04",
+      "location": "derry_streets",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of families of Bloody Sunday victims walking together through Derry streets, carrying photographs of their dead relatives. Camera follows them slowly as they move with quiet dignity toward a courthouse building in the distance.",
+      "narration": "But the families would not accept lies",
+      "dialogue": []
+    },
+    {
+      "id": "ep10_s05",
+      "location": "seamus_home",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "medium",
+      "visual": "Close-up on middle-aged Seamus, now graying, looking at newspaper headlines about the Saville Inquiry decades later. His weathered hands hold the paper steady as his eyes scan the text with cautious hope.",
+      "narration": "Decades passed before truth had a chance",
+      "dialogue": []
+    },
+    {
+      "id": "ep10_s06",
+      "location": "derry_streets",
+      "characters": [],
+      "clip_length": "short",
+      "visual": "Extreme close-up on newspaper headline: 'BLOODY SUNDAY VICTIMS WERE INNOCENT'. Camera slowly pulls back to reveal crowds reading the same headline in the background.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep10_s07",
+      "location": "long_kesh",
+      "characters": [
+        "declan"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of older Declan, now free, standing where Long Kesh once was. The internment camp is gone, replaced by empty fields. He looks toward the camera with hard-won wisdom in his eyes.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "declan",
+          "line": "The truth was always there waiting"
+        }
+      ]
+    },
+    {
+      "id": "ep10_s08",
+      "location": "falls_road",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on elderly Seamus's face as he stands on Falls Road. Behind him, the peace walls and checkpoints are gone. His expression shows both pain and peace.",
+      "narration": "Some wounds never fully heal",
+      "dialogue": []
+    },
+    {
+      "id": "ep10_s09",
+      "location": "derry_streets",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot slowly panning across a memorial wall with the names of all Bloody Sunday victims carved in stone. Fresh flowers lie at its base. The camera movement is reverent and slow, ending on the inscription 'Their innocence officially recognized'.",
+      "narration": "But truth, once found, endures forever",
+      "dialogue": []
+    }
+  ]
+}

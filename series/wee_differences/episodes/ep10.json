@@ -1,0 +1,151 @@
+{
+  "id": "ep10",
+  "title": "The Great Hedge Accord",
+  "summary": "In the season finale, Paddy and Billy's friendship faces its ultimate test when they must negotiate the annual hedge trimming duties, leading to an absurdly formal peace agreement.",
+  "scenes": [
+    {
+      "id": "ep10_s01",
+      "location": "back_garden",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of the shared garden with an overgrown hedge between the properties. Camera slowly pans across showing both men's houses in background with their respective flags. The hedge is clearly uneven and needs trimming.",
+      "narration": "The annual hedge crisis had arrived.",
+      "dialogue": []
+    },
+    {
+      "id": "ep10_s02",
+      "location": "back_garden",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Paddy leaning over the fence, pointing at the hedge with an exaggerated gesture. He's wearing his GAA jersey and looking determined.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "Right, the hedge needs doing."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s03",
+      "location": "back_garden",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Billy on his side of the fence, arms crossed defensively. He's in his blue polo shirt looking skeptical.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "Aye, but who's doing it?"
+        }
+      ]
+    },
+    {
+      "id": "ep10_s04",
+      "location": "back_garden",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up reaction shot of both men's faces side by side, eyes narrowing as they realize the implications. Camera static.",
+      "narration": "The implications were staggering.",
+      "dialogue": []
+    },
+    {
+      "id": "ep10_s05",
+      "location": "back_garden",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Paddy gesticulating wildly, pointing at different sections of the hedge. His movements are animated and passionate.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "I'll do the Catholic side obviously."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s06",
+      "location": "back_garden",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Billy shaking his head firmly, pointing at his side of the garden with precise movements.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "And I'll do the Protestant bit."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s07",
+      "location": "back_garden",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Wide shot of both men staring at the hedge, then slowly turning to look at each other with dawning horror. Camera holds steady.",
+      "narration": "But what about the middle?",
+      "dialogue": []
+    },
+    {
+      "id": "ep10_s08",
+      "location": "paddys_house",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "medium",
+      "visual": "Close-up of Paddy at his kitchen table with papers spread out, writing furiously with a serious expression. Tricolor visible in background.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "I'm drafting a formal agreement."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s09",
+      "location": "billys_house",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Close-up of Billy at his spotless kitchen table, also writing on official-looking paper with measured precision. Union Jack bunting visible in background.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "I'm preparing my terms too."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s10",
+      "location": "back_garden",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of both men meeting at the fence with their papers, shaking hands solemnly over the garden divide. Camera slowly pulls back to show their houses and flags in harmony behind them as they smile.",
+      "narration": "Peace in our hedge, at last.",
+      "dialogue": []
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "id": "ep01",
+  "title": "Before the Fall",
+  "summary": "August 1971, Belfast. Seventeen-year-old Seamus lives with his family in Falls Road before the British Army's mass internment operation changes everything forever.",
+  "scenes": [
+    {
+      "id": "ep01_s01",
+      "location": "falls_road",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide aerial shot of Falls Road neighborhood in early morning light. Red-brick terraced houses line wet cobblestone streets. Camera slowly drifts over rows of identical rooftops, showing the tight-knit Catholic community. Soft amber light filters through grey clouds.",
+      "narration": "Belfast, August 1971. Before everything changed.",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s02",
+      "location": "seamus_home",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Seamus sitting at kitchen table, eating breakfast. Worn wooden table, simple crockery, family photos on mantelpiece. Camera slowly pushes in on his face as he looks out the window thoughtfully.",
+      "narration": "Seventeen years old, full of dreams.",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s03",
+      "location": "seamus_home",
+      "characters": [
+        "maire",
+        "seamus"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Máire and Seamus at kitchen table. She pours tea while he finishes breakfast. Both face each other across the small table, morning light streaming through net curtains behind them.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "maire",
+          "line": "Stay close to home today, love."
+        },
+        {
+          "character": "seamus",
+          "line": "Aye, Mam. Just meeting the lads."
+        }
+      ]
+    },
+    {
+      "id": "ep01_s04",
+      "location": "seamus_home",
+      "characters": [
+        "declan"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up of Declan reading a newspaper at the table, frowning. Headlines visible about civil rights. Camera static, focused on his concerned expression as he absorbs the news.",
+      "narration": "His brother Declan worked hard.",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s05",
+      "location": "falls_road",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Seamus walking down Falls Road, hands in jacket pockets. Camera follows alongside him as he passes republican murals on gable walls. Other residents go about their morning routines.",
+      "narration": "The community felt safe then.",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s06",
+      "location": "falls_road",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up reaction shot of Seamus stopping suddenly, his face changing from casual to alert. Camera static on his face as distant rumbling sound grows louder.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s07",
+      "location": "falls_road",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of British Army Saracen armored vehicles rolling down Falls Road. Camera static, showing the imposing military presence moving through the residential street. Soldiers visible in combat gear.",
+      "narration": "The British Army was already here.",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s08",
+      "location": "army_checkpoints",
+      "characters": [
+        "harris",
+        "seamus"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Corporal Harris checking Seamus's identity papers at a checkpoint. Harris stands rigid in full combat gear while Seamus looks uncomfortable. Concrete barriers and razor wire visible behind them.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "harris",
+          "line": "Name and address, son."
+        },
+        {
+          "character": "seamus",
+          "line": "Seamus O'Neill, Falls Road."
+        }
+      ]
+    },
+    {
+      "id": "ep01_s09",
+      "location": "falls_road",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "short",
+      "visual": "Medium shot of Seamus walking away from checkpoint, shoulders tense, looking back over his shoulder. Camera follows him as he moves through his own neighborhood now feeling foreign and watched.",
+      "narration": "Everything was about to change.",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s10",
+      "location": "falls_road",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of Falls Road at dusk, streetlights beginning to flicker on. Camera slowly pulls back and up, showing the entire neighborhood under gathering darkness. Army vehicles patrol the wet streets below.",
+      "narration": "August 9th, 1971 was coming.",
+      "dialogue": []
+    }
+  ]
+}

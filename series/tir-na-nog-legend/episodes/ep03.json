@@ -1,0 +1,235 @@
+{
+  "id": "ep03",
+  "title": "Three Hundred Years",
+  "summary": "The farewell, played as drama. Oisin learns what three years in the Land of Youth has cost him, and Niamh gives him the horse and the warning anyway.",
+  "scenes": [
+    {
+      "id": "ep03_s01",
+      "location": "farewell_cliff",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide establishing shot of a high green headland above a calm sea at first light, one ancient wind-bent tree on the clifftop, a white horse standing saddled and waiting. No people in frame. Camera drifts slowly forward. Cold pale dawn light, mist on the water. Cinematic, photoreal, 35mm.",
+      "narration": "Three years he had been happy",
+      "dialogue": [],
+      "seed": "location"
+    },
+    {
+      "id": "ep03_s02",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot, the warrior and the golden-haired woman standing a little apart on the clifftop, both looking out to sea rather than at each other. Static camera. Pale dawn light. Cinematic, photoreal.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep03_s03",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "visual": "Close-up on the warrior's face in profile, static camera, very slow push-in. He speaks without turning, eyes on the horizon. Cold dawn light on one cheek. Cinematic, photoreal, shallow depth of field.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I still dream of my father."
+        }
+      ]
+    },
+    {
+      "id": "ep03_s04",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on the golden-haired woman, static camera. She does not speak. Her eyes move to him and away again. Pale light, faint gold aura. Cinematic, photoreal, shallow depth of field.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep03_s05",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "visual": "Close-up on the golden-haired woman as she finally answers, static camera. Her expression is calm and terrible, as if saying something she has kept for years. Cinematic, photoreal, shallow depth of field.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Three years here. Three hundred there."
+        }
+      ]
+    },
+    {
+      "id": "ep03_s06",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "short",
+      "visual": "Extreme close-up on the warrior's eyes as it lands, static camera. He does not move. Cold dawn light. Cinematic, photoreal, very shallow depth of field.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep03_s07",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "medium",
+      "visual": "Close-up on the warrior, static camera, his jaw tightening as he speaks quietly. Cinematic, photoreal, shallow depth of field.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "Then they are all dead."
+        }
+      ]
+    },
+    {
+      "id": "ep03_s08",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on the golden-haired woman, static camera, a single small nod. Cinematic, photoreal, shallow depth of field.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Yes."
+        }
+      ]
+    },
+    {
+      "id": "ep03_s09",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot, the warrior turning away from her toward the waiting horse, she remains still. Static camera. Cold pale light, sea beyond. Cinematic, photoreal.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep03_s10",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "visual": "Close-up on the warrior looking back at her, static camera, slow push-in. Grief and resolve together. Cinematic, photoreal, shallow depth of field.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I have to see it myself."
+        }
+      ]
+    },
+    {
+      "id": "ep03_s11",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on the golden-haired woman closing her eyes briefly, static camera. Cinematic, photoreal, shallow depth of field.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep03_s12",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "visual": "Close-up on the golden-haired woman, static camera, very slow push-in as she gives permission she does not want to give. Cinematic, photoreal, shallow depth of field.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Then take Embarr. He knows the way."
+        }
+      ]
+    },
+    {
+      "id": "ep03_s13",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot, the golden-haired woman placing the reins of the white horse into the warrior's hands, their hands touching. Static camera. Pale dawn light. Cinematic, photoreal.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep03_s14",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "visual": "Close-up on the golden-haired woman, static camera, holding his gaze as she says the thing that matters. Utterly still. Cinematic, photoreal, shallow depth of field.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Never let your feet touch the ground."
+        }
+      ]
+    },
+    {
+      "id": "ep03_s15",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "visual": "Close-up on the warrior mounted on the white horse looking down at her, static camera. He smiles slightly, certain of himself. Cinematic, photoreal, shallow depth of field.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I will come back to you."
+        }
+      ]
+    },
+    {
+      "id": "ep03_s16",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on the golden-haired woman, static camera. She says nothing at all. Her face does not move. Cinematic, photoreal, shallow depth of field.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep03_s17",
+      "location": "farewell_cliff",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Extreme wide shot of the clifftop, a lone rider on a white horse moving away along the headland, a single small figure left standing by the bent tree. Camera drifts slowly back and up. Pale dawn light, enormous sky. Cinematic, photoreal, 35mm, film grain.",
+      "narration": "She let him go, and said nothing",
+      "dialogue": [],
+      "seed": "location"
+    }
+  ]
+}

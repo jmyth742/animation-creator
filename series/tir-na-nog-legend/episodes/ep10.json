@@ -1,0 +1,497 @@
+{
+  "id": "ep10",
+  "title": "The Woman on the White Horse",
+  "summary": "The prelude: how they met on the Irish cliffs and rode west. Deliberately more varied than the later pieces -- six shots carry no dialogue at all, so they play as generated motion rather than a held frame, and the beats are written close to their lines so nothing hangs.",
+  "scenes": [
+    {
+      "id": "ep10_s01",
+      "location": "storm_cliffs",
+      "characters": [],
+      "clip_length": "medium",
+      "hold_seconds": 6.0,
+      "visual": "Very wide establishing shot. Towering emerald sea cliffs above the wild Atlantic under a bruised storm sky, huge waves breaking white on black rock far below, wind-flattened grass. No people. Static camera.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "master",
+      "seed": "location"
+    },
+    {
+      "id": "ep10_s02",
+      "location": "storm_cliffs",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 10.0,
+      "visual": "Wide shot. The warrior stands on the clifftop with his back three-quarters to camera, spear in hand, cloak dragging hard in the wind, looking out west over the broken sea. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "full_body",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "Three days on this headland and we have killed nothing. The deer have gone west. My father says west is where everything goes in the end."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s03",
+      "location": "storm_cliffs",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 5.5,
+      "visual": "Three-quarter shot from the waist up, wind pulling his hair across his face, grey sea behind him. Static camera.",
+      "narration": null,
+      "setup": "side",
+      "staging": "three_quarter",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I am twenty-two, and I have buried more men than I have hunted deer."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s04",
+      "location": "storm_cliffs",
+      "characters": [],
+      "clip_length": "medium",
+      "hold_seconds": 6.0,
+      "visual": "Wide shot out to sea from the clifftop, spray hanging in the air, a band of pale light on the far horizon where the cloud breaks. No people. Static camera.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "side",
+      "seed": "location"
+    },
+    {
+      "id": "ep10_s05",
+      "location": "storm_cliffs",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 10.0,
+      "visual": "Wide shot. The golden-haired princess stands full length on the wet grass of the clifftop, gown and hair moving in the wind, the storm sea behind her, a faint glow about her. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "full_body",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Oisin. Son of Finn. I have come a long way, and I have been told your name in three languages."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s06",
+      "location": "storm_cliffs",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.5,
+      "visual": "Close shot, the warrior's face, rain on his skin, entirely still with surprise. Static camera.",
+      "narration": null,
+      "setup": "closer",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "Nobody rides out of that water. There is nothing out there but weather."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s07",
+      "location": "storm_cliffs",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 9.0,
+      "visual": "Medium shot from the waist up, reverse angle, the princess calm in the wind, cliffs falling away behind her. Static camera.",
+      "narration": null,
+      "setup": "side",
+      "staging": "medium",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "There is a country out there. I have lived in it since before your grandfather's grandfather was a child."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s08",
+      "location": "storm_cliffs",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 5.5,
+      "visual": "Medium shot over the shoulder, the warrior facing her past his own shoulder, spear lowered. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "over_shoulder",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "And what is it called, this country nobody has ever been to?"
+        }
+      ]
+    },
+    {
+      "id": "ep10_s09",
+      "location": "storm_cliffs",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 14.5,
+      "visual": "Close-up. The princess's face fills much of the frame, hair lifting in the wind, the grey sea a soft blur behind her. Static camera.",
+      "narration": null,
+      "setup": "closer",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Tir na nOg. The land of the young. Nobody sickens there. Nobody is buried there. Nobody is ever counted out."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s24",
+      "location": "storm_cliffs",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.0,
+      "visual": "Close shot, the warrior's face, rain and wind on him, listening hard. Static camera.",
+      "narration": null,
+      "setup": "side",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "Why me? There are better men than me asleep in the camp behind us."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s10",
+      "location": "storm_cliffs",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 5.0,
+      "visual": "Three-quarter shot from the waist up, the warrior half turned back toward the land, the headland behind him. Static camera.",
+      "narration": null,
+      "setup": "side",
+      "staging": "three_quarter",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "You are asking me to leave my father standing on a hill."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s11",
+      "location": "storm_cliffs",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.5,
+      "visual": "Three-quarter shot from the waist up, the princess steady, wind moving her gown, sea behind. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "three_quarter",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "I am asking you to come with me. I will not pretend those are the same thing."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s25",
+      "location": "storm_cliffs",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 10.0,
+      "visual": "Close-up, the princess entirely still in the wind, looking straight at him. Static camera.",
+      "narration": null,
+      "setup": "closer",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Because I have watched a great many men be brave. You are the first I have watched be homesick before he has gone anywhere."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s12",
+      "location": "storm_cliffs",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.5,
+      "visual": "Medium shot from the waist up, the warrior's face working, storm light on him. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "medium",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "He will say I was taken. He will spend the rest of his life telling people I was taken."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s13",
+      "location": "storm_cliffs",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 5.0,
+      "visual": "Medium shot, reverse angle, the princess close to him now, the drop behind her. Static camera.",
+      "narration": null,
+      "setup": "side",
+      "staging": "medium",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Then come back one day and tell him you were not."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s26",
+      "location": "storm_cliffs",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.5,
+      "visual": "Three-quarter shot from the waist up, the warrior looking back once at the land, then forward. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "three_quarter",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "Tell me one true thing about it first. Not a good thing. A true one."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s27",
+      "location": "storm_cliffs",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 11.0,
+      "visual": "Three-quarter shot from the waist up, the princess answering plainly, storm sea behind her. Static camera.",
+      "narration": null,
+      "setup": "side",
+      "staging": "three_quarter",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Time runs differently there. You will not feel it, and it will happen to everyone you leave. That is the true thing."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s14",
+      "location": "storm_cliffs",
+      "characters": [],
+      "clip_length": "medium",
+      "hold_seconds": 6.0,
+      "visual": "Wide shot of a white horse standing alone on the wet clifftop grass in the wind, saddled, reins loose, the storm sea beyond. No people. Static camera.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "master",
+      "seed": "location"
+    },
+    {
+      "id": "ep10_s15",
+      "location": "sunlight_path",
+      "characters": [],
+      "clip_length": "medium",
+      "hold_seconds": 6.0,
+      "visual": "Very wide shot. The open ocean at golden hour with a blazing path of sunlight laid across mirror-calm water toward a shimmering wall of golden mist on the horizon. No people. Static camera.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "master",
+      "seed": "location"
+    },
+    {
+      "id": "ep10_s16",
+      "location": "sunlight_path",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 4.0,
+      "visual": "Three-quarter shot from the waist up, the warrior lit warm and low by the sun ahead, calm bright water behind him. Static camera.",
+      "narration": null,
+      "setup": "side",
+      "staging": "three_quarter",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "How long is the crossing?"
+        }
+      ]
+    },
+    {
+      "id": "ep10_s17",
+      "location": "sunlight_path",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.0,
+      "visual": "Medium shot from the waist up, the princess golden in the low sun, the sunlit water wide behind her. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "medium",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "It is not a distance. Stop looking for the far side of it."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s18",
+      "location": "sunlight_path",
+      "characters": [],
+      "clip_length": "medium",
+      "hold_seconds": 6.0,
+      "visual": "Very wide shot looking back east across calm gold water at a thin dark line of coast far away under evening cloud. No people. Static camera.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "side",
+      "seed": "location"
+    },
+    {
+      "id": "ep10_s19",
+      "location": "sunlight_path",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.5,
+      "visual": "Wide shot, the warrior small against the enormous bright water, turned back to look east, the light warm on his shoulders. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "full_body",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I can still see the smoke off the hill. I would like to be able to say I watched it until it was gone."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s28",
+      "location": "sunlight_path",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.5,
+      "visual": "Close shot, the warrior lit gold, eyes on the horizon, quiet. Static camera.",
+      "narration": null,
+      "setup": "closer",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "She told me the truth on that cliff, and I got on the horse anyway. I would like that remembered."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s20",
+      "location": "sunlight_path",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 8.5,
+      "visual": "Close-up, the princess's face warm in the low sun, gold water soft behind her, watching him kindly. Static camera.",
+      "narration": null,
+      "setup": "closer",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "You will have every morning you can imagine. I would rather you spent this one looking forward."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s21",
+      "location": "sunlight_path",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 4.0,
+      "visual": "Three-quarter shot from the waist up, the warrior turning to face west into the light. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "three_quarter",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "Then tell me what I am looking at."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s22",
+      "location": "sunlight_path",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 10.5,
+      "visual": "Close-up, the princess lit gold, the shimmering horizon behind her, speaking with quiet certainty. Static camera.",
+      "narration": null,
+      "setup": "side",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Gold on the water. And past it a country where nothing you love will ever be taken from you. Ride."
+        }
+      ]
+    },
+    {
+      "id": "ep10_s23",
+      "location": "sunlight_path",
+      "characters": [],
+      "clip_length": "medium",
+      "hold_seconds": 6.0,
+      "visual": "Very wide shot into a shimmering wall of golden mist on the horizon, the sunlit path of water running into it, the light growing. No people. Static camera.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "closer",
+      "seed": "location"
+    }
+  ]
+}

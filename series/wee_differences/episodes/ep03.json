@@ -1,0 +1,157 @@
+{
+  "id": "ep03",
+  "title": "The Toaster",
+  "summary": "Paddy discovers Billy keeps his toaster in a cupboard and cannot comprehend this Protestant peculiarity, leading to an intervention.",
+  "scenes": [
+    {
+      "id": "ep03_s01",
+      "location": "billys_house",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of Billy's immaculate kitchen. Billy opens a cupboard door revealing a gleaming toaster sitting inside. Paddy stands in background, jaw dropping in slow motion as camera slowly zooms in on the cupboard.",
+      "narration": "A discovery that would rock foundations.",
+      "dialogue": []
+    },
+    {
+      "id": "ep03_s02",
+      "location": "billys_house",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "short",
+      "visual": "Extreme close-up on Paddy's face showing complete bewilderment. His eyes blink rapidly, mouth agape, frozen in disbelief.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "In the cupboard?"
+        }
+      ]
+    },
+    {
+      "id": "ep03_s03",
+      "location": "billys_house",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Billy standing defensively next to the open cupboard, arms crossed. His face shows stubborn determination mixed with slight embarrassment.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "It keeps the dust off."
+        }
+      ]
+    },
+    {
+      "id": "ep03_s04",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Paddy and Billy facing each other across the fence. Paddy gesticulates wildly while Billy holds his tea mug defensively.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "But how d'you make toast?"
+        }
+      ]
+    },
+    {
+      "id": "ep03_s05",
+      "location": "back_garden_fence",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on Billy's face showing mounting irritation. He takes a deliberate sip of tea, eyes never leaving Paddy.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "I take it out."
+        }
+      ]
+    },
+    {
+      "id": "ep03_s06",
+      "location": "paddys_house",
+      "characters": [
+        "paddy",
+        "deirdre"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of Paddy's kitchen showing his toaster prominently displayed on the counter. Paddy points at it dramatically while Deirdre sits at table with her head in her hands.",
+      "narration": "Emergency consultations were called for immediately.",
+      "dialogue": []
+    },
+    {
+      "id": "ep03_s07",
+      "location": "paddys_house",
+      "characters": [
+        "deirdre"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Deirdre looking directly at camera with extreme exasperation. She slowly removes her hands from her face and sighs deeply.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "deirdre",
+          "line": "It's just a toaster."
+        }
+      ]
+    },
+    {
+      "id": "ep03_s08",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Extreme close-up of both men's faces in profile, glaring at each other across the fence with stubborn determination.",
+      "narration": "Neither would yield.",
+      "dialogue": []
+    },
+    {
+      "id": "ep03_s09",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot showing both men simultaneously lifting their tea mugs in a reluctant toast. Their expressions remain stern but show hints of resigned acceptance.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "Tea?"
+        },
+        {
+          "character": "paddy",
+          "line": "Aye, tea."
+        }
+      ]
+    },
+    {
+      "id": "ep03_s10",
+      "location": "back_garden_fence",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot pulling back to show both men at the fence drinking tea in comfortable silence. Camera slowly drifts back as the sun sets behind the terraced houses.",
+      "narration": "Some mysteries would remain unsolved forever.",
+      "dialogue": []
+    }
+  ]
+}

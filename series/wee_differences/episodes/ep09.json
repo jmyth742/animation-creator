@@ -1,0 +1,172 @@
+{
+  "id": "ep09",
+  "title": "What Are You?",
+  "summary": "A new neighbor moves in and Paddy and Billy employ every shibboleth they know to determine his religion, only to discover the deeply anticlimactic truth.",
+  "scenes": [
+    {
+      "id": "ep09_s01",
+      "location": "street",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of Belfast terraced street as a moving van pulls up to the empty house between Paddy and Billy's homes. Camera slowly pans to show both men peering suspiciously from their respective windows.",
+      "narration": "A new arrival threatens the delicate ecosystem.",
+      "dialogue": []
+    },
+    {
+      "id": "ep09_s02",
+      "location": "back_garden",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Paddy and Billy at their garden fence, both looking toward the new house with intense curiosity and slight suspicion.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "Right, what d'you think he is?"
+        },
+        {
+          "character": "billy",
+          "line": "Hard to tell from the furniture."
+        }
+      ]
+    },
+    {
+      "id": "ep09_s03",
+      "location": "street",
+      "characters": [
+        "paddy",
+        "billy",
+        "derek"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on a plain doormat being placed at the new house's entrance. Camera pulls back slightly to reveal Paddy and Billy crouched behind a car, studying it intently.",
+      "narration": "The hunt for clues begins.",
+      "dialogue": []
+    },
+    {
+      "id": "ep09_s04",
+      "location": "back_garden",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Paddy gesturing dramatically while Billy takes notes in a small notebook. Both men look like amateur detectives discussing a case.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "No flags, no team colors, nothing!"
+        },
+        {
+          "character": "billy",
+          "line": "Suspicious. Very suspicious indeed."
+        }
+      ]
+    },
+    {
+      "id": "ep09_s05",
+      "location": "street",
+      "characters": [
+        "paddy",
+        "billy",
+        "derek"
+      ],
+      "clip_length": "short",
+      "visual": "Quick montage-style shot of Paddy and Billy separately approaching the new neighbor Derek, who is unpacking boxes. Camera switches between their suspicious faces.",
+      "narration": "Operation identification commences.",
+      "dialogue": []
+    },
+    {
+      "id": "ep09_s06",
+      "location": "street",
+      "characters": [
+        "paddy",
+        "derek"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Paddy standing awkwardly next to Derek who is holding a box. Paddy's face shows intense concentration as he prepares his test question.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "So... how do you say aitch?"
+        },
+        {
+          "character": "derek",
+          "line": "Um... aitch? Why do you ask?"
+        }
+      ]
+    },
+    {
+      "id": "ep09_s07",
+      "location": "street",
+      "characters": [
+        "billy",
+        "derek"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Billy standing stiffly next to Derek, who looks increasingly confused. Billy has his notebook ready and looks like he's conducting an interrogation.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "What do you call this city?"
+        },
+        {
+          "character": "derek",
+          "line": "Belfast? We're in Belfast, right?"
+        }
+      ]
+    },
+    {
+      "id": "ep09_s08",
+      "location": "back_garden",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on both men's frustrated faces as they realize their tests have failed. Both look genuinely puzzled and slightly defeated.",
+      "narration": "The shibboleths have failed.",
+      "dialogue": []
+    },
+    {
+      "id": "ep09_s09",
+      "location": "street",
+      "characters": [
+        "paddy",
+        "billy",
+        "derek"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium three-shot with Derek in the center looking bemused while Paddy and Billy flank him, both leaning in with expectant expressions waiting for his answer.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "Just tell us - what are you?"
+        },
+        {
+          "character": "derek",
+          "line": "I'm... an accountant from Bangor?"
+        }
+      ]
+    },
+    {
+      "id": "ep09_s10",
+      "location": "back_garden",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot of Paddy and Billy back at their fence, both holding cups of tea and looking deflated. They stare into the distance with expressions of profound disappointment.",
+      "narration": "Some mysteries are too mundane to solve.",
+      "dialogue": []
+    }
+  ]
+}

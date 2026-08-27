@@ -1,0 +1,122 @@
+{
+  "id": "ep08",
+  "title": "Civil Rights March",
+  "summary": "January 1972: As anger builds over Ballymurphy and internment, civil rights organizers plan a peaceful march in Derry to protest detention without trial, unaware of what awaits.",
+  "scenes": [
+    {
+      "id": "ep08_s01",
+      "location": "derry_streets",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide establishing shot of Derry's historic stone walls and narrow streets. Camera slowly pans across the ancient city walls, showing the peaceful cityscape under overcast January sky. Muted grey palette with amber light from windows.",
+      "narration": "January 30th, 1972. Derry prepares.",
+      "dialogue": []
+    },
+    {
+      "id": "ep08_s02",
+      "location": "seamus_home",
+      "characters": [
+        "seamus",
+        "maire"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Seamus and Máire facing each other in their small kitchen. Seamus holds a civil rights leaflet, Máire looks concerned. Static camera, warm interior lighting contrasts with cold light from window.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "seamus",
+          "line": "They're marching against internment today."
+        },
+        {
+          "character": "maire",
+          "line": "Stay away from trouble, son."
+        }
+      ]
+    },
+    {
+      "id": "ep08_s03",
+      "location": "derry_streets",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on Seamus's determined face as he walks through Derry streets. Camera follows his movement, showing his green jacket collar turned up against the cold. Background shows other people heading in same direction.",
+      "narration": "But trouble finds us.",
+      "dialogue": []
+    },
+    {
+      "id": "ep08_s04",
+      "location": "derry_streets",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of peaceful civil rights marchers gathering, men and women of all ages carrying banners reading 'END INTERNMENT NOW'. Camera slowly tracks alongside the crowd. Muted colors, dignified atmosphere, families walking together.",
+      "narration": "Thirteen thousand march for justice.",
+      "dialogue": []
+    },
+    {
+      "id": "ep08_s05",
+      "location": "derry_streets",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Seamus walking among the peaceful protesters. Camera moves with the crowd, showing banners and signs. Seamus looks hopeful, surrounded by families and elderly marchers.",
+      "narration": "A peaceful protest for human rights.",
+      "dialogue": []
+    },
+    {
+      "id": "ep08_s06",
+      "location": "army_checkpoints",
+      "characters": [
+        "harris"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on Corporal Harris's cold blue eyes above his rifle sight. Static camera, harsh military lighting. His finger rests near the trigger, face showing no emotion.",
+      "narration": "The Paras wait.",
+      "dialogue": []
+    },
+    {
+      "id": "ep08_s07",
+      "location": "derry_streets",
+      "characters": [],
+      "clip_length": "medium",
+      "visual": "Wide shot showing the peaceful march continuing down narrow Derry street. Camera positioned high, showing the orderly procession of civil rights protesters. Banners visible, atmosphere still calm and hopeful.",
+      "narration": "No weapons. No violence intended.",
+      "dialogue": []
+    },
+    {
+      "id": "ep08_s08",
+      "location": "army_checkpoints",
+      "characters": [],
+      "clip_length": "short",
+      "visual": "Close-up on military radio crackling to life on army checkpoint table. Static camera, harsh white light illuminating the radio equipment. Barbed wire visible in background.",
+      "narration": "Orders are given.",
+      "dialogue": []
+    },
+    {
+      "id": "ep08_s09",
+      "location": "derry_streets",
+      "characters": [
+        "seamus"
+      ],
+      "clip_length": "short",
+      "visual": "Extreme close-up on Seamus's face as realization dawns. His expression shifts from hope to growing alarm. Static camera, natural lighting fading to suggest approaching darkness.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "seamus",
+          "line": "Something's wrong."
+        }
+      ]
+    },
+    {
+      "id": "ep08_s10",
+      "location": "derry_streets",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide shot of the peaceful march continuing, unaware of danger ahead. Camera slowly zooms in on the crowd, creating sense of foreboding. Grey winter sky darkening, streetlights beginning to flicker on.",
+      "narration": "They march toward history's judgment.",
+      "dialogue": []
+    }
+  ]
+}

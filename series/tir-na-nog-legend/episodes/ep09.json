@@ -1,0 +1,57 @@
+{
+  "id": "ep09",
+  "title": "One",
+  "summary": "The ending the film was missing. He gets down. We never see him afterwards -- the fall is a wide shot from a distance and then we are back in the valley with her, so no aged design is needed and the last face in the film is hers. Pays off the counting motif: she said she would learn to count, and the film ends with her at one.",
+  "scenes": [
+    {
+      "id": "ep09_s01",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 9.0,
+      "visual": "Medium shot from the waist up, the warrior mounted, looking down at the ground beside the fallen stones. Flat grey light. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "medium",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "It is only ground. It is the same ground I was born on. I do not believe it has been waiting for me."
+        }
+      ]
+    },
+    {
+      "id": "ep09_s02",
+      "location": "ruined_ireland",
+      "characters": [],
+      "clip_length": "medium",
+      "hold_seconds": 6.0,
+      "visual": "Very wide shot. A riderless white horse standing alone among the fallen mossy stones of a collapsed ring-fort, empty saddle, reins trailing on the ground, bare black thorn trees around the edges of the frame. No people. Enormous flat grey overcast sky. Static camera.",
+      "narration": null,
+      "setup": "wider",
+      "dialogue": [],
+      "seed": "location"
+    },
+    {
+      "id": "ep09_s03",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 11.0,
+      "visual": "Close-up. The princess's face fills much of the frame, the bright green valley soft behind her, her eyes steady and open. She is speaking to someone who is not there. Static camera.",
+      "narration": null,
+      "setup": "reverse",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "I have started counting, the way you wanted. I want you to know that I have started. I am up to one."
+        }
+      ]
+    }
+  ]
+}

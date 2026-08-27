@@ -1,0 +1,158 @@
+{
+  "id": "ep01",
+  "title": "The Fence",
+  "summary": "Paddy and Billy's friendship is tested when they discover their shared garden fence is one inch on the wrong side.",
+  "scenes": [
+    {
+      "id": "ep01_s01",
+      "location": "belfast_streets",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide establishing shot of typical Belfast street with red-brick terraced houses. Camera slowly pans across the row showing contrasting flags - tricolor on left house, Union Jack on right. Peace wall visible in distant background. Warm morning light illuminates the brick facades.",
+      "narration": "Belfast: where neighbors disagree on everything",
+      "dialogue": []
+    },
+    {
+      "id": "ep01_s02",
+      "location": "back_garden",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Paddy in green GAA jersey measuring the garden fence with a tape measure. Camera static, showing his concentrated expression as he stretches the tape along the fence line. Small tricolor pin visible on his jersey.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "Right, let me just measure this"
+        }
+      ]
+    },
+    {
+      "id": "ep01_s03",
+      "location": "back_garden",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up reaction shot of Billy's face over the fence, eyes widening with suspicion. Camera static, focused on his expression of alarm. Blue polo shirt and Union Jack pin visible.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "What are you doing?"
+        }
+      ]
+    },
+    {
+      "id": "ep01_s04",
+      "location": "back_garden",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of Paddy and Billy facing each other over the garden fence. Both men leaning forward, Paddy holding tape measure, Billy with arms crossed. Camera static, showing the fence between them clearly.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "This fence is on my side"
+        }
+      ]
+    },
+    {
+      "id": "ep01_s05",
+      "location": "back_garden",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on Billy's face as he processes this information, mouth opening in shock. Camera static, extreme close-up showing his indignant expression.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "That's impossible!"
+        }
+      ]
+    },
+    {
+      "id": "ep01_s06",
+      "location": "back_garden",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium shot of Paddy triumphantly holding up the tape measure, pointing at the measurement. Camera static, showing his satisfied grin and animated hand gestures as he presents his evidence.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "One whole inch on my side"
+        }
+      ]
+    },
+    {
+      "id": "ep01_s07",
+      "location": "back_garden",
+      "characters": [
+        "billy"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up reaction shot of Billy's face turning red with indignation. Camera static, showing his flustered expression and crossed arms tightening.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "One inch?!"
+        }
+      ]
+    },
+    {
+      "id": "ep01_s08",
+      "location": "back_garden",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of both men now leaning aggressively over the fence toward each other, faces inches apart in heated argument. Camera static, showing their confrontational body language with the disputed fence prominently between them.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "billy",
+          "line": "I'm calling the surveyor!"
+        }
+      ]
+    },
+    {
+      "id": "ep01_s09",
+      "location": "back_garden",
+      "characters": [
+        "paddy"
+      ],
+      "clip_length": "short",
+      "visual": "Close-up on Paddy's defiant face as he grins smugly. Camera static, showing his satisfaction at getting under Billy's skin.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "paddy",
+          "line": "You do that!"
+        }
+      ]
+    },
+    {
+      "id": "ep01_s10",
+      "location": "back_garden",
+      "characters": [
+        "paddy",
+        "billy"
+      ],
+      "clip_length": "long",
+      "visual": "Wide shot pulling back to show both men standing at their respective sides of the tiny fence, arms crossed in identical stubborn poses. Camera slowly zooms out revealing how ridiculous the dispute is over such a small space.",
+      "narration": "And so began another peaceful day",
+      "dialogue": []
+    }
+  ]
+}

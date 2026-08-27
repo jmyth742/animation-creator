@@ -1,0 +1,112 @@
+{
+  "id": "ep02",
+  "title": "The Warning",
+  "summary": "The farewell on the cliff, played as dialogue rather than narration: Oisin asks to go home, Niamh gives him Embarr and the warning that undoes him.",
+  "scenes": [
+    {
+      "id": "ep02_s01",
+      "location": "farewell_cliff",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Wide establishing shot of a high green headland above a calm sea at low golden light, one ancient wind-bent tree on the clifftop, long shadows. No people in frame. Cinematic, photoreal, 35mm, film grain.",
+      "narration": "On the last morning, they came to the cliff",
+      "dialogue": [],
+      "seed": "location"
+    },
+    {
+      "id": "ep02_s02",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "medium",
+      "visual": "Medium two-shot of a dark-haired bearded young warrior in a grey cloak facing a golden-haired woman in an emerald gown, both in profile to each other on a clifftop. Static camera. Low warm sunlight, sea far below. Cinematic, photoreal.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I must see my father again."
+        }
+      ]
+    },
+    {
+      "id": "ep02_s03",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "medium",
+      "visual": "Close-up on the golden-haired woman's face as she answers, static camera, her eyes steady and sad. Low golden light on one cheek, sea out of focus behind her. Cinematic, photoreal, shallow depth of field.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Then take Embarr. He knows the way."
+        }
+      ]
+    },
+    {
+      "id": "ep02_s04",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "medium",
+      "visual": "Close-up on the young warrior's face, static camera, hopeful and uncertain. Warm low light, wind moving his hair. Cinematic, photoreal, shallow depth of field.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "Will you not ride with me?"
+        }
+      ]
+    },
+    {
+      "id": "ep02_s05",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "visual": "Close-up on the golden-haired woman, static camera, very slow push-in. She shakes her head once, then speaks with quiet urgency, eyes fixed. Golden rim light, sea beyond. Cinematic, photoreal, shallow depth of field.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "I cannot cross back. Only you."
+        },
+        {
+          "character": "niamh",
+          "line": "Never let your feet touch Irish soil."
+        }
+      ]
+    },
+    {
+      "id": "ep02_s06",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "medium",
+      "visual": "Close-up on the young warrior's face as he promises, static camera, jaw set, eyes bright. Warm low light. Cinematic, photoreal, shallow depth of field.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I will come back to you."
+        }
+      ]
+    },
+    {
+      "id": "ep02_s07",
+      "location": "farewell_cliff",
+      "characters": [],
+      "clip_length": "long",
+      "visual": "Extreme wide shot of two small figures apart on an enormous clifftop against a pale gold sky and sea, a white horse waiting between them. Camera drifts slowly back. Cinematic, photoreal, 35mm, film grain.",
+      "narration": "She did not answer him",
+      "dialogue": [],
+      "seed": "location"
+    }
+  ]
+}
