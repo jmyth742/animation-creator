@@ -196,6 +196,53 @@ def build_score(seconds: float, out: Path, fade_in: float = 6.0,
     return out
 
 
+# A motif, not just a drone.
+#
+# The score holds one sustained chord and never develops -- no theme, no
+# arrival, nothing that returns. That is fine as atmosphere and useless as
+# structure: an audience is told a film has ended by the music, and ours simply
+# stops.
+#
+# THE COUNTING FIGURE. Five rising notes, played once quietly under the arrival,
+# again under the farewell, and completed at the end when she says "I am up to
+# one". Deliberately plain -- it has to survive being played on top of a drone
+# and under dialogue, and anything more elaborate fights the voice.
+#
+# Intervals are a pentatonic rise from the drone's root, which is why it sits
+# rather than clashes: no semitones to argue with the sustained chord.
+MOTIF_STEPS = [0, 2, 4, 7, 9]          # semitones above the root
+MOTIF_GAP = 0.62                        # seconds between notes
+
+
+def build_motif(out: Path, root: float = 73.42, when: float = 0.0,
+                total: float = 60.0, octave: int = 3, level: float = 0.10,
+                decay: float = 1.5) -> Path:
+    """The counting figure, placed at `when` inside a track of `total` seconds."""
+    base = root * (2 ** octave)
+    ins, filt, tags = [], [], []
+    for i, semis in enumerate(MOTIF_STEPS):
+        hz = base * (2 ** (semis / 12.0))
+        start = when + i * MOTIF_GAP
+        ins += ["-f", "lavfi", "-i",
+                f"sine=frequency={hz:.3f}:sample_rate={SR}:duration={decay:.2f}"]
+        ms = int(start * 1000)
+        # A plucked shape: instant on, long exponential off.
+        filt.append(
+            f"[{i}:a]afade=t=in:st=0:d=0.012,"
+            f"afade=t=out:st=0.06:d={decay-0.06:.2f},"
+            f"volume={level * (1.0 - i * 0.06):.4f},"
+            f"adelay={ms}|{ms}[n{i}]")
+        tags.append(f"[n{i}]")
+    filt.append("".join(tags) +
+                f"amix=inputs={len(tags)}:normalize=0,"
+                f"lowpass=f=3200,apad,atrim=duration={total:.3f}[out]")
+    subprocess.run(["ffmpeg", "-v", "error", "-y"] + ins +
+                   ["-filter_complex", ";".join(filt), "-map", "[out]",
+                    "-t", f"{total:.3f}", "-ar", str(SR), "-ac", "2", str(out)],
+                   check=True)
+    return out
+
+
 def duck_under(bed: Path, voice: Path, out: Path, amount: float = 5.0) -> Path:
     """Sidechain the bed with the voice so dialogue sits in front of it."""
     subprocess.run(
