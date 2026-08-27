@@ -40,6 +40,8 @@ import camera_move as cam                                      # noqa: E402
 import grade as gr                                             # noqa: E402
 import titles as ti                                            # noqa: E402
 import reaction_cuts as rc                                    # noqa: E402
+import shot_match as sm                                       # noqa: E402
+import film_look as fl                                        # noqa: E402
 
 
 ONLY_EPISODES: set[str] = set()
@@ -143,6 +145,8 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--reactions", action="store_true",
                     help="cut to the listener inside longer lines")
+    ap.add_argument("--look", default="subtle", choices=list(fl.LOOKS),
+                    help="halation / grain / vignette on the finished cut")
     ap.add_argument("--post", action="store_true",
                     help="camera moves, per-location grade, title and end cards")
     ap.add_argument("--episodes", help="comma-separated, e.g. ep10 — cut one "
@@ -198,6 +202,37 @@ def main():
         for e in made[:5]:
             print(f"    {e['id']} cuts to {e['reaction_from']}")
 
+    # ── match shots to each other within a location ──────────────────────
+    # Every shot is an independent sample, so its exposure and colour balance
+    # are its own. Measured on the finished film, shots in the SAME location
+    # drift by 19-27 units of luminance and up to 63 in red/blue balance. On a
+    # real set those numbers are a few units, and this is the clearest
+    # remaining signal that the shots were generated separately.
+    if a.post:
+        import numpy as np
+        match_dir = work / "match"; match_dir.mkdir(exist_ok=True)
+        by_loc = {}
+        for e in edit:
+            by_loc.setdefault(e["location"], []).append(e)
+        n_matched = 0
+        for loc, group in by_loc.items():
+            if len(group) < 3:
+                continue
+            stats = {e["id"]: sm.sample(e["clip"]) for e in group}
+            med_rgb = np.median(np.array([v[0] for v in stats.values()]), axis=0)
+            med_lum = float(np.median([v[1] for v in stats.values()]))
+            for e in group:
+                rgb, lum = stats[e["id"]]
+                f = sm.match_filter(rgb, lum, med_rgb, med_lum)
+                if f:
+                    dst = str(match_dir / f"mt_{e['id']}.mp4")
+                    sm.apply_match(e["clip"], f, dst)
+                    e["clip"] = dst
+                    n_matched += 1
+            spread = max(v[1] for v in stats.values()) - min(v[1] for v in stats.values())
+            print(f"  {loc:16} {len(group)} shots, luminance spread {spread:5.1f} -> matched")
+        print(f"  shots corrected: {n_matched}")
+
     # ── post: a camera and a grade on every shot ─────────────────────────
     # Both are edit-time and deterministic, so they can be re-judged and
     # changed without touching the GPU. The camera move is free at 1080p
@@ -245,11 +280,21 @@ def main():
     sd.mix_episode(plan, work, mix, preset=edit[0]["preset"],
                    offsets=offsets, vo_lead=0.0)
 
-    body = work / "body.mp4" if a.post else Path(a.out)
+    body = work / "body.mp4" if (a.post or a.look != "off") else Path(a.out)
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(silent),
                     "-i", str(mix), "-map", "0:v", "-map", "1:a",
                     "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
                     "-shortest", str(body)], check=True)
+
+    # ── the finishing layer, on the whole cut ────────────────────────────
+    # Applied to the assembled film rather than per shot so the grain is
+    # continuous across cuts -- grain that restarts at every edit reads as
+    # compression, not as film.
+    if a.look != "off":
+        looked = work / "looked.mp4"
+        fl.apply_look(str(body), str(looked), a.look)
+        body = looked
+        print(f"  film look: {a.look}")
 
     # ── title and end cards ──────────────────────────────────────────────
     if a.post:

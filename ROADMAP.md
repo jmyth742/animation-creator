@@ -81,6 +81,45 @@ higher quality, with more angles, lifts everything downstream.
 
 ---
 
+## WHAT SEPARATES THIS FROM A STUDIO NOW
+
+Post-production is largely done -- camera, grade, shot matching, film look,
+reaction cuts, titles. What remains is not finishing, it is generation.
+
+### 11. Characters do not DO anything   *(testing: scripts/action_test.py)*
+**42 of 55 shots are a person standing still, talking.** Only 13 describe any
+physical action and most of those are "turns to look". Studio animation has
+bodies doing things -- walking, reaching, sitting, handing something over --
+and the absence of that is the deepest remaining tell, deeper than lip sync or
+resolution.
+
+Two questions in one, and they need separating. WRITING: nearly every visual in
+every episode ends "Static camera. He speaks." If the prompt never asks for
+action, none appears. CAPABILITY: whether S2V will move a body while driving a
+mouth from audio is untested -- it may ignore the clause, or take it and lose
+the face or the sync.
+
+### 12. Two characters in one frame   *(testing: scripts/two_shot_test.py)*
+55 shots, zero two-shots. Every conversation is two people never seen together.
+
+### 13. Voice performance
+With the picture this consistent, Edge-TTS is the loudest artifact left: clear
+but flat, no breath, no hesitation, the same energy from first word to last.
+Only edge-tts is installed. Two routes -- splitting lines into phrases with real
+pauses and varied rate (cheap, CPU), or an expressive local TTS with cloning
+(bigger, better ceiling).
+
+### 14. Backgrounds that live
+Plates are static and I2V adds only slight motion. Real animation has water
+moving, cloth lifting, birds, light shifting. Currently the only thing moving in
+most shots is a face.
+
+### 15. Continuity of action across a cut
+Nobody picks something up in one shot and holds it in the next. Every shot is
+self-contained, which is why the pieces read as a series of statements.
+
+---
+
 ## NOT NEXT, and why
 
 **Phoneme-accurate lip sync.** Research is unambiguous: every locally runnable
