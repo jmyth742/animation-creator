@@ -39,6 +39,7 @@ import sound_design as sd                                      # noqa: E402
 import camera_move as cam                                      # noqa: E402
 import grade as gr                                             # noqa: E402
 import titles as ti                                            # noqa: E402
+import reaction_cuts as rc                                    # noqa: E402
 
 
 ONLY_EPISODES: set[str] = set()
@@ -128,6 +129,9 @@ def build_edit(series: str) -> list[dict]:
             "preset": preset, "staging": sc.get("staging", "medium"),
             "seconds": round(dur, 3),
             "vo": str(vo) if vo.exists() else None,
+            "speaker": (sc["dialogue"][0]["character"]
+                        if sc.get("dialogue") else None),
+            "live": round(live, 3),
         })
     return edit
 
@@ -137,6 +141,8 @@ def main():
     ap.add_argument("series")
     ap.add_argument("-o", "--out", default="/workspace/review/wow/film.mp4")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--reactions", action="store_true",
+                    help="cut to the listener inside longer lines")
     ap.add_argument("--post", action="store_true",
                     help="camera moves, per-location grade, title and end cards")
     ap.add_argument("--episodes", help="comma-separated, e.g. ep10 — cut one "
@@ -161,6 +167,36 @@ def main():
 
     work = Path(a.out).parent / "_film"
     work.mkdir(parents=True, exist_ok=True)
+
+    # ── reaction cuts ────────────────────────────────────────────────────
+    # Cut to the person NOT talking, partway through the line. The slice
+    # REPLACES picture rather than adding it, so durations are unchanged and
+    # the soundtrack -- built on the stitcher's offsets -- stays aligned.
+    # Applied to every other eligible shot: doing it on all of them is just a
+    # different mechanical pattern.
+    if a.reactions:
+        react_dir = work / "react"; react_dir.mkdir(exist_ok=True)
+        n = 0
+        for i, e in enumerate(edit):
+            if not e.get("speaker") or (e.get("live") or 0) < rc.MIN_SPEAKER_LIVE:
+                continue
+            listener = None
+            for j in list(range(i + 1, len(edit))) + list(range(i - 1, -1, -1)):
+                o = edit[j]
+                if o.get("speaker") and o["speaker"] != e["speaker"]:
+                    listener = o; break
+            if listener and n % 2 == 0:
+                got = rc.insert_reaction(e["clip"], listener["clip"],
+                                         str(react_dir / f"rx_{e['id']}.mp4"),
+                                         speaker_live=e["live"])
+                if got:
+                    e["clip"] = got
+                    e["reaction_from"] = listener["id"]
+            n += 1
+        made = [e for e in edit if e.get("reaction_from")]
+        print(f"\n  reaction cuts: {len(made)} of {n} eligible")
+        for e in made[:5]:
+            print(f"    {e['id']} cuts to {e['reaction_from']}")
 
     # ── post: a camera and a grade on every shot ─────────────────────────
     # Both are edit-time and deterministic, so they can be re-judged and
