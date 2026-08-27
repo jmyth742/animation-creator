@@ -6,6 +6,7 @@ Four pieces played end to end are not a film: each was written self-contained,
 so the assembly opens four times, restates itself, and stops just before its
 climax. The EDIT below fixes that structurally, without re-rendering a frame:
 
+  0. PRELUDE   (ep10)  how they met on the Irish cliffs and rode west
   1. ARRIVAL   (ep06)  he cannot stop counting
   2. FAREWELL  (ep05)  she warns him
   3. CROSS-CUT (ep08 x ep07)  her waiting played AGAINST his ruin, alternating
@@ -38,6 +39,9 @@ import sound_design as sd                                      # noqa: E402
 import camera_move as cam                                      # noqa: E402
 import grade as gr                                             # noqa: E402
 import titles as ti                                            # noqa: E402
+
+
+ONLY_EPISODES: set[str] = set()
 
 
 def _interleave(a: list, b: list) -> list:
@@ -75,12 +79,22 @@ def build_edit(series: str) -> list[dict]:
         return json.loads(
             (sr.series_path(series) / "episodes" / f"{ep}.json").read_text())["scenes"]
 
+    prelude = [("ep10", s) for s in scenes("ep10")]
     arrival = [("ep06", s) for s in scenes("ep06")]
     farewell = [("ep05", s) for s in scenes("ep05")]
     her = [("ep08", s) for s in scenes("ep08")]
     him = [("ep07", s) for s in scenes("ep07")]
     ending = [("ep09", s) for s in scenes("ep09")]
-    order = arrival + farewell + _interleave(her, him) + ending
+    # The prelude opens: how they met and rode west. Then the myth in order.
+    order = prelude + arrival + farewell + _interleave(her, him) + ending
+    if ONLY_EPISODES:
+        # Cut a single piece rather than the whole film. Without this the
+        # --title flag was the ONLY thing that changed, so asking for "the
+        # prelude, with a post pass" silently produced the main film wearing
+        # the prelude's title card.
+        order = [(ep, sc) for ep, sc in order if ep in ONLY_EPISODES]
+        if not order:
+            raise SystemExit(f"no shots for episodes {sorted(ONLY_EPISODES)}")
 
     edit = []
     for ep, sc in order:
@@ -122,11 +136,15 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--post", action="store_true",
                     help="camera moves, per-location grade, title and end cards")
+    ap.add_argument("--episodes", help="comma-separated, e.g. ep10 — cut one "
+                                       "piece instead of the whole film")
     ap.add_argument("--title", default="Tir na nOg")
     ap.add_argument("--subtitle", default="a film in four movements")
     a = ap.parse_args()
 
     sr.set_current_series(a.series)
+    if a.episodes:
+        globals()["ONLY_EPISODES"] = {e.strip() for e in a.episodes.split(",")}
     edit = build_edit(a.series)
     total = sum(e["seconds"] for e in edit)
     print(f"  {len(edit)} shots, {total:.1f}s ({total/60:.1f} min)\n")
