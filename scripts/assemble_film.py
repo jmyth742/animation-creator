@@ -45,6 +45,9 @@ import film_look as fl                                        # noqa: E402
 
 
 ONLY_EPISODES: set[str] = set()
+# Trims must land beside the film being built, not in a fixed folder --
+# two assemblies to different outputs were sharing one trim directory.
+WORK_DIR = "/workspace/review/wow/_film"
 
 
 def _interleave(a: list, b: list) -> list:
@@ -119,8 +122,7 @@ def build_edit(series: str) -> list[dict]:
         held = max(0.0, dur - live)
         if dur > 0 and (held / dur > MAX_HELD_SHARE or held > MAX_HELD_SECONDS):
             keep = min(live / (1.0 - MAX_HELD_SHARE), live + MAX_HELD_SECONDS)
-            trimmed = str(Path("/workspace/review/wow/_film") /
-                          f"trim_{sc['id']}.mp4")
+            trimmed = str(Path(WORK_DIR) / f"trim_{sc['id']}.mp4")
             Path(trimmed).parent.mkdir(parents=True, exist_ok=True)
             _trim_to(clip, keep, trimmed)
             print(f"  trimmed {sc['id']} {dur:.2f}s -> {keep:.2f}s "
@@ -158,6 +160,10 @@ def main():
     sr.set_current_series(a.series)
     if a.episodes:
         globals()["ONLY_EPISODES"] = {e.strip() for e in a.episodes.split(",")}
+    # Set before build_edit -- that is where trims are written.
+    _w = Path(a.out).parent / "_film"
+    _w.mkdir(parents=True, exist_ok=True)
+    globals()["WORK_DIR"] = str(_w)
     edit = build_edit(a.series)
     total = sum(e["seconds"] for e in edit)
     print(f"  {len(edit)} shots, {total:.1f}s ({total/60:.1f} min)\n")
@@ -270,10 +276,21 @@ def main():
                     "-pix_fmt", "yuv420p", "-an", str(silent)], check=True)
 
     # ── soundtrack, built once across the whole film ─────────────────────
+    # RE-MEASURE every clip first. The post pass changes durations: zoompan
+    # rounds each shot up to a whole frame, so a 9.938s clip comes back 10.000s.
+    # One frame per shot is nothing; across 55 shots it was 2.7 seconds, and
+    # the mix had been built from the durations recorded BEFORE the post pass.
+    # The result was voice and effects sliding progressively out of sync -- the
+    # whole film drifting, from a rounding error repeated 55 times.
+    for e in edit:
+        actual = sr._get_video_duration(e["clip"])
+        if actual > 0 and abs(actual - e["seconds"]) > 0.001:
+            e["seconds"] = round(actual, 3)
     offsets, t = [], 0.0
     for e in edit:
         offsets.append(t)
         t += e["seconds"]
+    print(f"  timeline re-measured after post: {t:.3f}s")
     plan = [{"id": e["id"], "seconds": e["seconds"], "staging": e["staging"],
              "preset": e["preset"], "vo": e["vo"]} for e in edit]
     mix = work / "film.wav"

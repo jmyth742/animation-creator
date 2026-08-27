@@ -1112,6 +1112,25 @@ def _():
         "an explicit per-scene seed was overridden by the carry-over"
 
 
+@check("assembly: the soundtrack is timed from the FINAL clips, not the source")
+def _():
+    """zoompan rounds each shot up to a whole frame.
+
+    A 9.938s clip comes back 10.000s from the camera pass. One frame per shot
+    is nothing; across 55 shots it was 2.7 seconds, and the mix had been built
+    from durations recorded BEFORE the post pass. The finished film drifted
+    progressively out of sync -- voice and effects sliding later and later --
+    from a rounding error repeated 55 times.
+    """
+    src = (ROOT / "scripts" / "assemble_film.py").read_text()
+    i = src.index("soundtrack, built once across the whole film")
+    j = src.index("sd.mix_episode", i)
+    body = src[i:j]
+    assert "_get_video_duration" in body, (
+        "offsets are still computed from edit['seconds'] without re-measuring "
+        "the clips the post pass actually produced")
+
+
 @check("poll: waiting in the queue does not spend the render's timeout")
 def _():
     """A prompt queued behind a long job used to be abandoned unstarted.
