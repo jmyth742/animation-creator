@@ -83,3 +83,6 @@ training/logs/
 series/*/sets/
 training/character_builds/
 series/*/continuity/
+
+# Hardcoded an API key in line 5. Removed from history; never track it again.
+run_all_enhanced.sh
