@@ -1112,6 +1112,23 @@ def _():
         "an explicit per-scene seed was overridden by the carry-over"
 
 
+@check("assembly: the soundtrack is exactly as long as the picture")
+def _():
+    """The beds crossfade into each other; the picture is a hard concat.
+
+    Subtracting the bed crossfade from the soundtrack's total made the track
+    shorter than the film by crossfade x (shots - 1). At 55 shots and a 0.05s
+    crossfade that is 2.7 seconds -- the mix ran out before the last shot, and
+    everything drifted against the picture on the way there.
+    """
+    src = (ROOT / "scripts" / "sound_design.py").read_text()
+    i = src.index("def mix_episode(")
+    body = src[i:i + 3000]
+    assert "offsets[-1] + scenes[-1]" in body, (
+        "mix_episode still derives its length by subtracting the crossfade, so "
+        "the soundtrack will be shorter than the picture it is laid against")
+
+
 @check("assembly: the soundtrack is timed from the FINAL clips, not the source")
 def _():
     """zoompan rounds each shot up to a whole frame.

@@ -308,7 +308,18 @@ def mix_episode(scenes: list[dict], vo_dir: Path, out: Path,
         raise ValueError(f"{len(offsets)} offsets for {len(scenes)} scenes")
     tmp = out.parent / "_sd"
     tmp.mkdir(parents=True, exist_ok=True)
-    total = sum(sc["seconds"] for sc in scenes) - crossfade * (len(scenes) - 1)
+    # The soundtrack must be exactly as long as the PICTURE. The beds are
+    # crossfaded into each other, but the picture is a hard concat -- so
+    # subtracting the crossfade from the total made the track shorter than the
+    # film by crossfade x (shots - 1). At 55 shots that was 2.7 seconds, and
+    # the mix ran out before the last shot did.
+    #
+    # When explicit offsets are supplied they ARE the picture's timeline; the
+    # end of the film is the last offset plus the last shot.
+    if offsets:
+        total = offsets[-1] + scenes[-1]["seconds"]
+    else:
+        total = sum(sc["seconds"] for sc in scenes) - crossfade * (len(scenes) - 1)
 
     # ── 1. a bed per shot, at that shot's perspective ────────────────────
     beds = []
