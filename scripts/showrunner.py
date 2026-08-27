@@ -377,7 +377,7 @@ MAX_S2V_CHUNKS = 3             # 15.19s. All three depths rendered and scored
 
 
 def hold_tail(clip_path: str, target_seconds: float, out_path: str,
-              settle: float = 0.35, drift: float = 0.03) -> str:
+              settle: float = 0.35, drift: float = 0.012) -> str:
     """Extend a clip to `target_seconds` by HOLDING its last frame.
 
     Padding the audio with silence reduced the mouth moving after a line ended
@@ -394,6 +394,13 @@ def hold_tail(clip_path: str, target_seconds: float, out_path: str,
 
     `settle` dissolves from the live frame into the hold so the transition is
     invisible; `drift` is the scale push across the hold.
+
+    drift is SMALL on purpose. At 0.03 the push resamples every pixel each
+    frame, and measured on ep10_s16 the "held" tail moved MORE than the live
+    speech before it (1.6-4.8 against 0.7-1.9) -- because real cel animation
+    holds large flat areas perfectly steady while a zoom never does. The
+    character stopped moving and the frame kept creeping, which reads as the
+    shot being stuck rather than as a beat.
     """
     live = _get_video_duration(clip_path)
     if live <= 0 or target_seconds <= live + 0.05:

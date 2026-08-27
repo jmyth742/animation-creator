@@ -59,12 +59,15 @@ def _interleave(a: list, b: list) -> list:
 # mostly frozen -- ep07_s04 was 4.0s live and 4.0s held -- so the edit trims
 # them back. This is an editorial cap, applied at assembly, so changing it
 # costs nothing and re-rendering is never required.
-MAX_HELD_SHARE = 0.40
+# A hold is felt in seconds AND as a proportion. 0.40 let a 4-second shot sit
+# frozen for 2.2s of it -- over half the shot -- and several of those in a row
+# read as the film being stuck. Short shots now get short holds.
+MAX_HELD_SHARE = 0.22
 # A hold is perceived in SECONDS, not as a proportion of its shot: two seconds
 # reads as a beat whether the shot is eight seconds or twelve, and five seconds
 # reads as the video having stopped. Capping only by share left 4-5s freezes on
 # the longest shots, which is exactly where they were noticed.
-MAX_HELD_SECONDS = 2.0
+MAX_HELD_SECONDS = 1.6
 
 
 def _trim_to(clip: str, seconds: float, out: str) -> str:
