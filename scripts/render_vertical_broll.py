@@ -24,7 +24,10 @@ SHOTS = [
      "cloak swinging with each stride. Continuous walking."),
     ("stand_vertical", "tir_na_nog", "master", "oisin", "full_body",
      "He stands up slowly from the grass and turns to look down the valley."),
-    ("close_vertical", "farewell_cliff", "closer", "niamh", "close",
+    # "closer" is an Oisin-only setup at this location; Niamh's coverage
+    # angle is "reverse". The old name silently skipped the shot -- and the
+    # close-up is the one that most needs to read at phone size.
+    ("close_vertical", "farewell_cliff", "reverse", "niamh", "close",
      "She looks steadily into the middle distance, wind moving her hair."),
     ("ruin_vertical", "ruined_ireland", "master", "oisin", "three_quarter",
      "He walks forward between the fallen stones, looking up at the ruin."),
