@@ -281,3 +281,37 @@ Part One was "everything silently broken". Part Two is better and harder:
 own tests.** Movement, two-shots, character LoRAs, step counts — each was
 closed by a measurement I had built wrong, and each reopened only when someone
 asked whether I was sure.
+
+---
+
+## T1 — "The fix that wasn't the answer" (record as a pair with the negative-prompt short)
+
+The negative-prompt discovery is the satisfying story: found the cause, here is
+the code, one line explains everything. Then it was measured.
+
+    shot       verb     negative   motion   identity
+    ep11_s03   turns    old         3.575      0.894
+    ep11_s03   turns    new         4.090      0.897
+    ep11_s04   lowers   old         1.832      0.893
+    ep11_s04   lowers   new         1.936      0.852
+    ep11_s06   turns    old         2.443      0.839
+    ep11_s06   turns    new         2.659      0.818
+
+**Mean motion gain 1.10x. Two of three shots LOST identity**, one by 0.041 --
+larger than the entire spread of a well-behaved shot.
+
+The code evidence was unambiguous and the reasoning was sound. WAN really does
+fight stillness by default; my list really did delete that. But the measured
+effect on real footage is small and it is not free.
+
+Where the movement actually is:
+
+    image-to-video, no dialogue       12.1
+    speech-to-video, same character    5.4
+
+No prompt closes a 2.2x gap. Speech-to-video is anchored to a talking head.
+
+**Hook:** "I found the cause, I fixed it, and the fix bought me ten percent."
+
+**The line to end on:** the satisfying explanation and the true one were
+different, and I would have shipped the satisfying one if I had not measured it.
