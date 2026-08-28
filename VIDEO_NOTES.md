@@ -163,3 +163,121 @@ films was tracked; the films were not.
 4. Several of my fixes were worse than the bugs, and measurement caught those too.
 5. The instruments themselves were wrong twice.
 6. What's actually left is not model quality. It's that I wrote 42 talking heads.
+
+---
+
+# PART TWO — the audit, and what it found in my own work
+
+Added after a documentation audit of the prompts and sampler settings against
+Wan2.2's own source. This part is stronger material than Part One, because the
+bugs in Part One were mistakes and these were BELIEFS.
+
+## T1 — "I spent weeks wondering why the characters wouldn't move"
+
+The single best item in the whole project.
+
+WAN 2.2 ships a default negative prompt. Three of its 28 terms are 静态
+(static), 静止 (motionless) and 静止不动的画面 (a completely still picture).
+**The reference implementation fights stillness for you.**
+
+A custom negative REPLACES that string. It does not extend it. Verified in the
+source: `if n_prompt == '': n_prompt = self.sample_neg_prompt` — there is no
+concatenation path anywhere.
+
+My hand-built list deleted all three anti-static terms and substituted six that
+suppress MOTION:
+
+    fast movement, erratic motion, motion blur,
+    camera shake, shaky camera, extreme camera movement
+
+At S2V's cfg 5.0 the negative is extrapolated against at full strength. So on
+roughly 80% of every film I was instructing the model to hold still, then
+concluding the model could not move.
+
+**The honest coda:** fixing it gave 1.14x motion on the shot I tested. Real,
+but small. The big movement win turned out to be structural, not prompt-level
+— see T2. Do not overclaim this one; the story is the mistake, not the fix.
+
+## T1 — "The plate made for walking is the worst one"
+
+    full_body plate + "from the left of the frame to the right" +
+      "he does not stop"                          motion 12.1  travel 42.3
+    walking_away plate + "walks away from camera" motion  5.2
+    same at 20 steps instead of 8                 motion  3.7
+    best that speech-to-video managed, any verb   motion  5.7
+
+Two counter-intuitive results in one table. The plate specifically staged for
+walking produces less than half the motion of a generic full-body plate with an
+explicit screen direction. And more sampling steps made it WORSE.
+
+The real finding underneath: speech-to-video is anchored to a talking head and
+will not walk. Movement has to be written as its own silent shots. Which is how
+animation is cut anyway — you rarely hear someone speak while they cross a room
+in a wide.
+
+## T2 — "Whole-body verbs work, small ones are ignored"
+
+    stands up 5.70   rises 5.59   walks 5.44   crouches 3.62
+    turns 2.97/2.56  lowers 2.25        (no action asked: 3.01)
+
+"Turns to look" does nothing. "Stands up" nearly doubles the motion. A writing
+rule, discovered by writing an episode with action in seven of eleven shots
+after a two-shot test had concluded movement was unavailable.
+
+## T2 — "Two capabilities I declared impossible, wrongly, by testing badly"
+
+Both conclusions were about a MEASUREMENT, not a capability.
+
+The two-shot test seeded from an EMPTY location plate — it gave the model no
+face for either character and then scored it on whether it produced the right
+faces. It also applied a 0.75 threshold built for close-ups to a wide shot
+where each face is a fraction of the frame.
+
+The action test used mostly the weak verbs, on two shots.
+
+A badly built test does not return "unknown". It returns a confident wrong
+answer, and that closes a question for good unless somebody pushes back. Both
+were reopened because the person I was working for asked "are we really
+saying that?"
+
+## T2 — "A third of every prompt was describing what the picture already showed"
+
+Wan's I2V system prompt, verbatim: *"Focus on dynamic content in the video
+description and avoid adding static scene descriptions. If the user's input
+already describes elements visible in the image, remove those static
+descriptions."*
+
+Both shipped ComfyUI templates match it — their positive prompts are subject +
+action only. No background, no style, no palette.
+
+Nearly every shot here is seeded from a staged plate that already shows the
+location, the light and the palette. Ours described all three again. 75 words
+to 50 once removed.
+
+## T3 — settings that were in no documented configuration
+
+    reference repo    shift 3   40 steps  cfg 4.5
+    ComfyUI template  shift 8   20 steps  cfg 6.0
+    this pipeline     shift 12  15 steps  cfg 5.0    <- neither
+
+Not "close to the defaults with a tweak" — a configuration nobody documents,
+with cfg BELOW the ComfyUI value rather than above the repo one.
+
+## T3 — the negative that could not possibly matter
+
+On the distilled branch at cfg 1.0, ComfyUI **discards negative conditioning
+entirely before any forward pass** — `if math.isclose(cond_scale, 1.0): uncond_
+= None`. Not a zero weight, a skipped computation.
+
+So every hour spent tuning that 40-term list was, on those shots, tuning a
+string the model never sees.
+
+---
+
+## What the arc is now
+
+Part One was "everything silently broken". Part Two is better and harder:
+**most of my beliefs about what the model could not do were beliefs about my
+own tests.** Movement, two-shots, character LoRAs, step counts — each was
+closed by a measurement I had built wrong, and each reopened only when someone
+asked whether I was sure.
