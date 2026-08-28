@@ -81,10 +81,22 @@ def main():
         print(f"  nothing to upscale in {ep_dir}")
         return 1
 
-    fps = float(subprocess.run(
+    # avg_frame_rate, NOT r_frame_rate. r_frame_rate is a heuristic -- the
+    # smallest rate that can express every timestamp -- so a handful of
+    # irregular timestamps push it up. The complete film reported r=80/1 while
+    # actually running at 16fps, and tagging the upscale at 80 made a 7-minute
+    # film play in 86 seconds, five times too fast.
+    _r = subprocess.run(
         ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
-         "stream=r_frame_rate", "-of", "csv=p=0", str(src)],
-        capture_output=True, text=True).stdout.strip().split("/")[0])
+         "stream=avg_frame_rate", "-of", "csv=p=0", str(src)],
+        capture_output=True, text=True).stdout.strip()
+    try:
+        num, den = (_r.split("/") + ["1"])[:2]
+        fps = float(num) / float(den or 1)
+    except (ValueError, ZeroDivisionError):
+        fps = 16.0
+    if not (1.0 < fps < 121.0):
+        fps = 16.0
     dur = sr._get_video_duration(str(src))
     print(f"  source {src.name}  {dur:.2f}s @ {fps:.0f}fps -> {OUT_W}x{OUT_H}")
 

@@ -333,10 +333,15 @@ def main():
         parts = []
         for i, seg in enumerate((card, str(body), endc)):
             fixed = str(work / f"part{i}.mp4")
+            # Force a constant frame rate. Without -r/-vsync the concat of a
+            # faded title card and the body left irregular timestamps, which
+            # pushed r_frame_rate to 80/1 on a 16fps film -- harmless to play,
+            # but anything downstream that trusts that field gets it wrong.
             subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", seg,
                             "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo",
                             "-map", "0:v", "-map", "1:a?" if i != 1 else "0:a",
                             "-shortest", "-c:v", "libx264", "-crf", "16",
+                            "-r", "16", "-vsync", "cfr",
                             "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
                             fixed], check=True)
             parts.append(fixed)
