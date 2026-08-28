@@ -365,9 +365,21 @@ def _():
 
 @check("negatives: genuine defects are still suppressed")
 def _():
-    neg = sr.build_negative_prompt({"id": "t", "visual": "A wide shot", "characters": []}).lower()
-    for term in ("blurry", "deformed", "watermark", "extra fingers"):
-        assert term in neg, f'"{term}" dropped from the negative prompt'
+    # The base is now WAN's own default, which covers most of these in Chinese.
+    # Assert the CONCEPT is suppressed in either language rather than assuming
+    # the English wording -- the check was written before the default was
+    # adopted and failed on a change that lost nothing.
+    neg = sr.build_negative_prompt(
+        {"id": "t", "visual": "A wide shot", "characters": []}).lower()
+    for concept, terms in (
+            ("blurry",       ("blurry", "细节模糊不清")),
+            ("deformed",     ("deformed", "畸形的")),
+            ("watermark",    ("watermark",)),          # not in WAN's default
+            ("extra fingers", ("extra fingers", "多余的手指")),
+            ("low quality",  ("low quality", "低质量")),
+    ):
+        assert any(t in neg for t in terms), \
+            f'"{concept}" is no longer suppressed in any language'
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -1146,6 +1158,51 @@ def _():
     assert "_get_video_duration" in body, (
         "offsets are still computed from edit['seconds'] without re-measuring "
         "the clips the post pass actually produced")
+
+
+@check("negative: never suppress motion, and always fight stillness")
+def _():
+    """The audit's sharpest finding: the negative prompt was the cause.
+
+    WAN 2.2 ships a default negative whose terms include 静态 (static), 静止
+    (motionless) and 静止不动的画面 (a completely still picture) -- the
+    reference implementation fights stillness. A user negative REPLACES that
+    string rather than extending it, so the hand-built English list deleted all
+    three and substituted six terms that suppress MOTION: fast movement,
+    erratic motion, motion blur, camera shake, shaky camera, extreme camera
+    movement.
+
+    At S2V's cfg 5.0 the negative is extrapolated against at full strength, so
+    on 80% of every film the pipeline was instructing the model to hold still,
+    and the resulting stillness was blamed on the model.
+    """
+    SUPPRESS = ("fast movement", "erratic motion", "motion blur",
+                "camera shake", "shaky camera", "extreme camera movement")
+    scenes = [
+        {"id": "a", "visual": "Medium shot. He walks across the headland.",
+         "characters": ["oisin"],
+         "dialogue": [{"character": "oisin", "line": "hello"}]},
+        {"id": "b", "visual": "Close-up. Her face fills the frame.",
+         "characters": ["niamh"],
+         "dialogue": [{"character": "niamh", "line": "hello"}]},
+        {"id": "c", "visual": "Wide establishing shot of the cliffs.",
+         "characters": []},
+    ]
+    for sc in scenes:
+        neg = sr.build_negative_prompt(sc)
+        bad = [t for t in SUPPRESS if t in neg]
+        assert not bad, (
+            f"{sc['id']}: negative still suppresses motion with {bad} -- this "
+            f"is what made the characters hold still")
+        assert "静态" in neg and "静止" in neg, (
+            f"{sc['id']}: WAN's own anti-static terms are missing. A user "
+            f"negative REPLACES the default, so dropping them means nothing "
+            f"is fighting stillness at all")
+    moving = sr.build_negative_prompt(scenes[0])
+    still = sr.build_negative_prompt(scenes[1])
+    assert len(moving) > len(still), (
+        "a shot that asks for movement should carry MORE anti-static pressure "
+        "than a close-up that does not")
 
 
 @check("poll: waiting in the queue does not spend the render's timeout")

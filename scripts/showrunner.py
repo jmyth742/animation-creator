@@ -2413,9 +2413,36 @@ def build_negative_prompt(scene: dict) -> str:
     # illustration" here was spending guidance to fight the look we want -- and
     # losing, unevenly, which is what produced two visual styles in one episode.
     # Keep only genuine defects.
-    base = ("low quality, blurry, distorted, deformed, ugly, watermark, text overlay, "
-            "oversaturated, smeared, melting, warped anatomy, extra fingers, "
-            "photorealistic, live action, photograph")
+    # WAN 2.2's own default negative, verbatim from the shipped ComfyUI
+    # template (137 chars, 28 terms). Three of them fight STILLNESS:
+    #   静态           static
+    #   静止           motionless
+    #   静止不动的画面  a completely still picture
+    #
+    # A user negative REPLACES this rather than adding to it --
+    # image2video.py: `if n_prompt == '': n_prompt = self.sample_neg_prompt`.
+    # So the hand-built English list was not extending the default, it was
+    # deleting it, and what replaced it contained six motion-SUPPRESSING terms
+    # (fast movement, erratic motion, motion blur, camera shake, shaky camera,
+    # extreme camera movement) and no anti-static term at all. On every S2V
+    # dialogue shot, at cfg 5.0 where the negative is extrapolated against at
+    # full strength, the pipeline was actively instructing the model to hold
+    # still -- and then the weak movement was blamed on the model.
+    WAN_DEFAULT_NEG = (
+        "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，"
+        "整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，"
+        "画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，"
+        "静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走")
+    # Kept in English on top: the series-specific failures the default does not
+    # cover. Nothing here suppresses motion.
+    # English additions cover only what the default does NOT. Checked term by
+    # term against the 28: blurry (细节模糊不清), deformed (畸形的), extra
+    # fingers (多余的手指), ugly (丑陋的), low quality (低质量) are all present.
+    # Watermark and text overlay are not, and the cel-vs-photoreal pressure is
+    # this series' own requirement.
+    base = (WAN_DEFAULT_NEG +
+            ", watermark, text overlay, photorealistic, live action, "
+            "photograph, smeared, melting")
     visual_lower = scene.get("visual", "").lower()
     is_dialogue = bool(scene.get("dialogue"))
     shot_type = _infer_shot_type(scene.get("visual", ""))
@@ -2437,10 +2464,12 @@ def build_negative_prompt(scene: dict) -> str:
             "green skin", "tinted skin", "monster", "ogre", "orc",
         ])
     if is_dialogue:
+        # Was: fast movement, shaky camera, motion blur, erratic motion,
+        # camera shake, extreme camera movement. Six terms telling the model to
+        # hold still, on the shots that make up 80% of every film. Removed.
+        # What remains are real defects, none of which are about motion.
         extras.extend([
-            "fast movement", "shaky camera", "motion blur", "erratic motion",
-            "camera shake", "blurry faces", "extreme camera movement",
-            "multiple people merging", "face distortion",
+            "blurry faces", "multiple people merging", "face distortion",
         ])
     if shot_type == "establishing":
         extras.extend([
@@ -2448,14 +2477,21 @@ def build_negative_prompt(scene: dict) -> str:
             "portrait", "face",
         ])
     if shot_type == "closeup":
+        # "wide shot, full body, crowd" spent guidance suppressing FRAMINGS,
+        # which the seed plate already determines. Dropped.
         extras.extend([
             "multiple faces", "duplicate person", "merged faces",
-            "wide shot", "full body", "crowd",
         ])
-    if any(w in visual_lower for w in ["runs", "chase", "fight", "action"]):
+    # Any shot that asks for movement gets EXTRA anti-static pressure on top of
+    # the default's three terms. Previously this fired only on "runs/chase/
+    # fight/action" and never matched a single shot in six films.
+    _MOVES = ("walk", "walks", "step", "steps", "stand", "stands", "rise",
+              "rises", "crouch", "crouches", "turn", "turns", "run", "runs",
+              "chase", "fight", "action", "moves", "moving", "cross", "crosses")
+    if any(re.search(rf"(?<![a-z]){w}(?![a-z])", visual_lower) for w in _MOVES):
         extras.extend([
             "static", "frozen", "lifeless", "stiff movement",
-            "still image", "no motion",
+            "still image", "no motion", "motionless",
         ])
 
     if extras:
