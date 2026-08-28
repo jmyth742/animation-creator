@@ -74,7 +74,7 @@ def main():
     anchor = vr._embed_images([Image.open(sr._find_ref(
         sr.series_path(a.series) / "reference_images", who, "char")).convert("RGB")])
 
-    rows = []
+    rows, skipped = [], []
     for name, shift, steps, cfg in VARIANTS:
         prefix = f"samp_{a.scene}_{name}"
         clip = sr.find_latest_clip(prefix)
@@ -93,12 +93,14 @@ def main():
             try:
                 pid = sr.queue_prompt(wf)
                 if not sr.poll_until_done(pid, max_wait=2400 * (1 + extra)):
-                    print("    no output"); continue
+                    print("    no output"); skipped.append((name, "no output"))
+                    continue
             except Exception as e:                             # noqa: BLE001
-                print(f"    {type(e).__name__}: {e}"); continue
+                print(f"    {type(e).__name__}: {e}")
+                skipped.append((name, type(e).__name__)); continue
             clip = sr.find_latest_clip(prefix)
         if not clip:
-            continue
+            skipped.append((name, "no clip found")); continue
         d = sr._get_video_duration(clip)
         ids, cels = [], []
         with tempfile.TemporaryDirectory() as td:
@@ -122,9 +124,22 @@ def main():
         print(f"    identity {rows[-1]['identity']:.3f}  cel {rows[-1]['cel']:.3f}"
               f"  motion {mo:.3f}", flush=True)
 
+    if skipped:
+        print(f"\n  {len(skipped)} variant(s) did NOT render:")
+        for n, why in skipped:
+            print(f"    {n:14} {why}")
     if not rows:
         print("  nothing rendered"); return 1
-    base = rows[0]
+    # base must be the shipped configuration, by name. Taking rows[0] meant
+    # that if "current" failed -- as it did once today, on a disk quota error
+    # -- the baseline silently became shift 8 and every delta was measured
+    # against the wrong reference, in a table that looked complete.
+    base = next((r for r in rows if r["name"] == VARIANTS[0][0]), None)
+    if base is None:
+        print(f"\n  ABORT: the baseline variant '{VARIANTS[0][0]}' did not "
+              f"render, so there is nothing to compare against. Deltas from "
+              f"any other variant would be meaningless.")
+        return 1
     print(f"\n  {a.scene}, seed {SEED} fixed")
     print(f"  {'variant':14} {'shift':>6} {'steps':>6} {'cfg':>5} "
           f"{'identity':>9} {'cel':>7} {'motion':>8}")
