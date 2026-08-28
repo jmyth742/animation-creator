@@ -45,12 +45,21 @@ import verify_render as vr                                     # noqa: E402
 
 SEED = 8800
 
+# ep11 rendered 7 shots with action written in, and the pattern was clear:
+#
+#   stands up 5.70   rises 5.59   walks 5.44   crouches 3.62   <- whole body
+#   turns 2.97/2.56  lowers 2.25                               <- barely moves
+#   (shots with no action asked for averaged 3.01)
+#
+# Whole-body verbs move a body. Small ones are ignored. The first version of
+# this test used mostly small verbs on two shots and concluded movement was not
+# possible, which was wrong.
 ACTIONS = [
     ("still",     ""),
-    ("turn",      " He turns away from the sea as he speaks, then back."),
-    ("step",      " He takes a slow step forward as he speaks."),
-    ("gesture",   " He raises one hand toward the horizon as he speaks."),
-    ("sit",       " He lowers himself slowly to sit on the stone as he speaks."),
+    ("walk",      " He walks slowly across the ground as he speaks."),
+    ("stand_up",  " He stands up from the stone as he speaks."),
+    ("crouch",    " He crouches down toward the ground as he speaks."),
+    ("turn_away", " He turns his whole body away and back as he speaks."),
 ]
 
 
