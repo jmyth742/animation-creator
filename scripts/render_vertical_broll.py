@@ -73,12 +73,27 @@ def main():
                 print(f"    {type(e).__name__}: {e}"); continue
             clip = sr.find_latest_clip(name)
         if clip:
-            subprocess.run(["cp", clip, str(out / f"{name}.mp4")])
+            raw = out / f"{name}_480x832.mp4"
+            subprocess.run(["cp", clip, str(raw)])
+            # Shorts are 1080x1920. WAN's portrait native is 480x832, whose
+            # aspect (0.5769) is very slightly wider than 9:16 (0.5625), so
+            # scaling to 1080 wide gives 1080x1872 and leaves 48px. Pad rather
+            # than crop -- 48px of ground costs nothing, and cropping a
+            # cel-shaded frame throws away composition for the sake of an
+            # aspect ratio nobody will measure.
+            subprocess.run(
+                ["ffmpeg", "-v", "error", "-y", "-i", str(raw),
+                 "-vf", ("scale=1080:-2:flags=lanczos,"
+                         "pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=0x0d0e11,"
+                         "format=yuv420p"),
+                 "-c:v", "libx264", "-crf", "17",
+                 str(out / f"{name}.mp4")], check=True)
             r = subprocess.run(
                 ["ffprobe", "-v", "error", "-select_streams", "v:0",
-                 "-show_entries", "stream=width,height", "-of", "csv=p=0", clip],
+                 "-show_entries", "stream=width,height", "-of", "csv=p=0",
+                 str(out / f"{name}.mp4")],
                 capture_output=True, text=True).stdout.strip()
-            print(f"    {r}  -> {out / (name + '.mp4')}")
+            print(f"    rendered 480x832 -> {r}")
     print(f"\n  {out}")
     return 0
 
