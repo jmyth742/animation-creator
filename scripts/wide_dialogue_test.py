@@ -24,8 +24,8 @@ Renders one shot both ways and compares what actually arrives:
     A  current    S2V, lip synced          (what ships today)
     B  proposed   I2V silent + hold_tail   (wide, voice laid over)
 
-Judged on: does B deliver a WIDE. Measured as the fraction of frame height the
-head occupies -- the whole point is framing, and identity cannot see framing.
+Judged on: does B deliver a WIDE. Scored by CLIP against three framing
+descriptions -- the whole point is framing, and identity cannot see framing.
 
     wide_dialogue_test.py <series> --scene ep07_s01
 """
@@ -46,31 +46,40 @@ OUT = Path("/workspace/review/wide_dialogue")
 SEED = 5150
 
 
-def head_fraction(clip: str) -> float:
+# Framing options for CLIP. The first version of this measured "skin-toned
+# pixels" by an RGB rule and reported ep12_s03 -- a small figure on a ledge --
+# as 0.989, a close-up, because golden grass and a sunset sea are skin-toned by
+# any loose rule. It was measuring warm terrain. This is the same mechanism
+# verify_render uses for style, including the x100 scaling without which the
+# softmax cannot discriminate.
+_FRAMING_OPTIONS = [
+    "an extreme close-up of a person's face filling the frame",
+    "a medium shot of a person from the waist up",
+    "a wide landscape shot with a small distant figure in it",
+]
+
+
+def framing(clip: str) -> tuple[float, str]:
     """
-    Rough proxy for framing: the fraction of frame HEIGHT occupied by the
-    largest skin-toned region. Crude, but it separates a close-up from a
-    figure in a landscape, which is the only distinction this test needs.
-    Returns 0.0 if nothing is found.
+    Probability the shot is a WIDE, plus the winning label.
+
+    Judged by CLIP against three framing descriptions rather than by pixel
+    statistics, because the thing being asked is semantic: is the person small
+    in a landscape, or are they the frame.
     """
     import tempfile
     with tempfile.TemporaryDirectory() as td:
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", clip, "-vf",
-                        "fps=1,scale=160:-1", f"{td}/f_%03d.png"], check=True)
-        fr = sorted(Path(td).glob("f_*.png"))
+                        "fps=1,scale=384:-1", f"{td}/f_%03d.png"], check=True)
+        fr = sorted(Path(td).glob("f_*.png"))[:6]
         if not fr:
-            return 0.0
-        vals = []
-        for f in fr:
-            a = np.asarray(Image.open(f).convert("RGB"), dtype=np.int16)
-            r, g, b = a[..., 0], a[..., 1], a[..., 2]
-            # broad skin range, deliberately loose
-            skin = ((r > 95) & (g > 40) & (b > 20) & (r > g) & (r > b) &
-                    ((r - np.minimum(g, b)) > 15))
-            rows = np.where(skin.sum(axis=1) > 2)[0]
-            vals.append((rows.max() - rows.min()) / a.shape[0] if len(rows) > 1
-                        else 0.0)
-        return float(np.median(vals))
+            return 0.0, "?"
+        imgs = [Image.open(f).convert("RGB").copy() for f in fr]
+        fv = vr._embed_images(imgs)
+        tv = vr._embed_texts(_FRAMING_OPTIONS)
+        probs = ((fv @ tv.T).mean(dim=0) * 100).softmax(dim=-1)
+    i = int(probs.argmax())
+    return float(probs[2]), ["close-up", "medium", "wide"][i]
 
 
 def main():
@@ -132,7 +141,7 @@ def main():
     rows.append(("B_i2v_wide_held", held))
 
     # ── compare ────────────────────────────────────────────────────────
-    print(f"\n  {'variant':18} {'secs':>6} {'head/frame':>11} {'identity':>9}")
+    print(f"\n  {'variant':18} {'secs':>6} {'p(wide)':>11} {'reads as':>10} {'identity':>9}")
     anchor = None
     who = (scene.get("dialogue") or [{}])[0].get("character")
     ref = sr._find_ref(sr.series_path(a.series) / "reference_images", who, "char")
@@ -141,7 +150,7 @@ def main():
     out = []
     for name, c in rows:
         d = sr._get_video_duration(c)
-        hf = head_fraction(c)
+        wide_p, label = framing(c)
         ident = ""
         if anchor is not None:
             import tempfile
@@ -153,14 +162,15 @@ def main():
                 with Image.open(p) as im:
                     v = vr._embed_images([im.convert("RGB").copy()])
             ident = f"{float((v @ anchor.T)[0][0]):.3f}"
-        print(f"  {name:18} {d:6.2f} {hf:11.3f} {ident:>9}", flush=True)
+        print(f"  {name:18} {d:6.2f} {wide_p:11.3f} {label:>10} {ident:>9}",
+              flush=True)
         out.append({"variant": name, "clip": c, "seconds": d,
-                    "head_fraction": hf, "identity": ident})
+                    "p_wide": wide_p, "reads_as": label, "identity": ident})
         subprocess.run(["cp", c, str(OUT / f"{name}.mp4")])
 
     (OUT / f"{a.scene}.json").write_text(json.dumps(out, indent=2))
-    print(f"\n  head/frame near 1.0 is a close-up; a figure in a landscape "
-          f"should be well under 0.3.\n  clips in {OUT}")
+    print(f"\n  p(wide) is CLIP's probability the shot reads as a landscape "
+          f"with a small\n  figure rather than a face. clips in {OUT}")
     return 0
 
 

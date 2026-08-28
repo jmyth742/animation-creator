@@ -40,9 +40,19 @@ for separating speech from movement.
 ## R1 · Dialogue is never wide
 
 Write "wide shot, the warrior small among the stones" and give him a line, and
-you get a head and shoulders. Six times out of eight, measured. Every one was
-seeded from a correct full-body plate; the speech model pulls to the face
-because that is what it was trained to do.
+you get a head and shoulders. Measured across the series, scoring each shot by
+how strongly it reads as a landscape with a small figure in it:
+
+    authored wide, WITH a line     p(wide) 0.048   —  0 of 11 read as wide
+    authored wide, NO line         p(wide) 0.937   —  4 of 4 read as wide
+
+Nineteen times the difference, from the same models, the same plates and the
+same settings. Every collapsed shot was seeded from a correct full-body plate;
+the speech model pulls to the face because that is what it was trained to do.
+
+**Dialogue arrives CLOSE, not medium.** A shot authored "medium shot from the
+waist up" came back head-and-shoulders. So write dialogue as close and be
+right, rather than as medium and be overridden.
 
 **Write instead:** dialogue in medium or closer. If you want the line delivered
 over a landscape, make the shot *silent* and lay the voice over it — nobody
