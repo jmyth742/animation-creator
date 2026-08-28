@@ -374,3 +374,70 @@ correct as evidence, useless as a short — so each renders to a six-second
 1080×1920 push. `add_short.py` is the single place new ones get added; the three
 generators that existed before it were three copies of the same card renderer
 waiting to drift apart.
+
+---
+
+# PART FOUR — the audit answered, and an interaction it nearly hid
+
+## The headline: our undocumented settings were right
+
+The deep-research audit's strongest claim was that our sampler configuration
+appears in no documented source. That is true:
+
+    reference repo    shift  3    40 steps   cfg 4.5
+    ComfyUI template  shift  8    20 steps   cfg 6.0
+    this pipeline     shift 12    15 steps   cfg 5.0     <- in neither
+
+Tested on one dialogue shot at a fixed seed, one variable at a time:
+
+    variant         shift  steps   cfg  identity     cel   motion
+    current          12.0     15   5.0     0.870   1.000    4.228
+    comfy_shift       8.0     15   5.0     0.873   0.999    3.867   0.91x
+    comfy_full        8.0     20   6.0     0.856   1.000    3.913   0.93x
+    repo_shift        3.0     15   5.0     0.874   0.999    3.978   0.94x
+    comfy_shift10     8.0     10   5.0     0.841   0.995    4.004   0.95x
+
+Identity spans 0.018 across every shift from 3 to 12 — noise at this scale.
+Cel style is unaffected. But **every documented alternative loses motion**,
+between 5% and 9%, and motion is the axis the whole project has been trying to
+improve. ComfyUI's own non-distilled pair scored worst on identity *and* cost
+33% more compute to do it.
+
+Nothing to change. The audit found where we differ from the documentation, not
+where we are wrong — and those are not the same finding.
+
+## The interaction the sweep could not see
+
+The last variant is the one that mattered. It scored 0.841 against 0.873 for
+the same shift at 15 steps: a **0.032** drop for dropping to 10 steps.
+
+That contradicts a result this pipeline runs on. An earlier sweep measured
+10 steps as costing only **0.006** against 15, which is why production renders
+at the cheaper count.
+
+Both numbers are correct. The earlier sweep took the resolution config
+unmodified, so it only ever ran at shift 12:
+
+                  15 steps   10 steps   cost of dropping
+    shift 12         0.924      0.918      -0.006
+    shift  8         0.873      0.841      -0.032
+
+The identical change, five times the cost. **Our undocumented shift is what
+makes the cheap step count affordable.**
+
+Had I taken the audit at face value and moved shift to 8, I would have changed
+both together, seen identity fall, and had no way to attribute it — exactly the
+confound recorded in S35, repeated on a larger scale.
+
+(Different shots, so the comparison is between deltas within each experiment,
+not absolutes across them.)
+
+## Worth recording as method
+
+A measurement is only valid at the settings it was taken under, and the steps
+sweep did not record what those were. It reported "10 steps costs 0.006" as
+though it were a property of the model. It is a property of the model *at shift
+12*. Every experiment in this project that varies one parameter has the same
+gap — the result is written down, the surrounding configuration is not.
+
+That is the more useful lesson than the shift number itself.
