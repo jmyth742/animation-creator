@@ -441,3 +441,74 @@ though it were a property of the model. It is a property of the model *at shift
 gap — the result is written down, the surrounding configuration is not.
 
 That is the more useful lesson than the shift number itself.
+
+---
+
+# PART FIVE — writing to the machine instead of fighting it
+
+## The realisation
+
+Every quality problem left in this pipeline is the same problem: the script asks
+for a shot the models do not make. Not a bug, not a setting — a mismatch between
+what was written and what can be rendered.
+
+The models do not make an arbitrary shot. They make a narrow set very well and
+everything else badly, *quietly*. So the fix is not more engineering. It is a
+written grammar, plus a gate that refuses scripts which ignore it.
+
+`docs/PRODUCTION_GRAMMAR.md` and `scripts/lint_episode.py`, now run
+automatically by preflight.
+
+## The one rule
+
+**A shot either talks, or it moves, or it is wide. Never two of those.**
+
+Two numbers carry the whole argument: a talking shot moves at about **3**, a
+silent shot of the same character moves at about **12**.
+
+## The six rules and what taught them
+
+| | rule | evidence |
+|---|---|---|
+| R1 | dialogue is never wide | 6 of 8 wide-authored lines rendered as close-ups |
+| R2 | dialogue never moves | talking tops out at 3.85 motion against 12.13 silent |
+| R3 | one speaker per shot | S2V drives one face from one audio track |
+| R4 | movement wants a full-body plate | 12.13 / 42.3 travel vs 5.17 / 30.1 |
+| R5 | a line fits 15.19s | three chunks, about 39 words |
+| R6 | two in frame is a split panel | 0.888 / 0.790 composite, 0.62 / 0.68 without |
+
+Run against the whole series: **13 errors, 20 warnings. ep09 and ep12 are the
+only clean episodes** — and ep12 is the one authored after the wide collapse was
+understood. That is the evidence that writing to the constraint fixes this, not
+more engineering.
+
+Every error is re-authoring, not re-rendering. Moving a line from a wide to a
+closer shot is a JSON edit.
+
+## The reversal worth its own short
+
+I recorded "two characters in one shot" as impossible. It was not. The test that
+produced that verdict seeded a two-shot from a single-character plate, which
+cannot work. From a composite plate both identities hold (0.888 / 0.790).
+
+What arrives is still not a two-shot: a hard vertical seam, the two at different
+scales, sharing no space. It is a **split panel** — and anime uses split panels
+constantly. So it enters the grammar as a deliberate device, once or twice an
+episode, rather than as a failure.
+
+That is the shape of this whole part: three limitations, reframed as three
+elements of a house style.
+
+## The positive style this points at
+
+- Scenes alternate held speech with silent movement. He crosses the ground; he
+  stops; he speaks; we cut wide as he walks on.
+- Conversations are shot/reverse-shot, close and medium, held 8–15 seconds now
+  that shots can run that long.
+- Wides are silent and carry the landscape, with voiceover laid over freely.
+- Nobody talks while walking. In myth, people stop to speak.
+- The split panel is a beat, not the default coverage.
+
+None of that is a compromise. It is closer to a graphic novel or to older
+limited animation than to full character animation, and every element has a
+reason behind it — which is more than most series can say.
