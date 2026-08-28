@@ -255,6 +255,30 @@ def main():
     say(OK if r.returncode == 0 else FAIL,
         tally[-1].strip() if tally else f"selftest exited {r.returncode}")
 
+    # ── production grammar ───────────────────────────────────────────
+    # The other sections check that the configuration is right. This one
+    # checks that the SCRIPT asks for shots the models will actually deliver.
+    # Six of eight shots authored as wides with a line in them came back as
+    # close-ups -- correct plates, correct seeding, correct config, wrong
+    # shot. No configuration check can see that; only the script can.
+    section("production grammar")
+    r = subprocess.run([sys.executable, str(Path(__file__).parent / "lint_episode.py"),
+                        a.series, "--episode", str(a.episode)],
+                       capture_output=True, text=True)
+    for line in r.stdout.splitlines():
+        t = line.strip()
+        if t.startswith("[ERROR]"):
+            say(FAIL, t[7:].strip())
+        elif t.startswith("[warn"):
+            say(WARN, t.split("]", 1)[-1].strip())
+    tally = [l.strip() for l in r.stdout.splitlines() if "error(s)," in l]
+    if tally:
+        # The loop above already counted each error. Report the tally
+        # without counting it again -- say(FAIL) here made 3 errors read
+        # as 4 failures.
+        print(f"  [{OK if '0 error(s)' in tally[-1] else '    '}] "
+              f"{tally[-1].strip('═ ')}")
+
     print(f"\n═══ {issues['FAIL']} failures, {issues['WARN']} warnings ═══")
     return 1 if issues["FAIL"] else 0
 
