@@ -121,7 +121,7 @@ def pack_readme(man, folders, films):
          "source_material/   the raw renders each finding came from",
          "youtube_package/   three long-form cuts, already scripted",
          "series/            bible, episode JSON, reference images",
-         "VIDEO_NOTES.md     the full written record, Parts One and Two",
+         "VIDEO_NOTES.md     the full written record, Parts One to Three",
          "```", "",
          "## Source material", ""]
     for f in folders:

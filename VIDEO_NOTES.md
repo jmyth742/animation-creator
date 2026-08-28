@@ -315,3 +315,62 @@ No prompt closes a 2.2x gap. Speech-to-video is anchored to a talking head.
 
 **The line to end on:** the satisfying explanation and the true one were
 different, and I would have shipped the satisfying one if I had not measured it.
+
+---
+
+# PART THREE — the shorts series covers the whole project
+
+## What changed
+
+The series was written from what was still in working memory, so it started at
+the walk test and ran forward: 23 shorts, all from the last few days. The
+earlier phase — the part with the best material in it — was missing entirely.
+
+It was not lost. `/workspace/archive` had been holding 22 entries the whole
+time, each written at the moment the thing was found rather than reconstructed
+afterwards, with its before/after pair and the exact prompt that caused it.
+That is better source material than anything written from memory, and it was
+sitting one directory away from the script that needed it.
+
+Twelve became S24–S35. The series is now 38.
+
+**Worth recording as its own short:** the reason I missed them is that I
+searched my own context instead of the disk. The archive index is a file. A
+`ls` would have found it.
+
+## The strongest of the recovered material
+
+| | |
+|---|---|
+| **S24 The green ogre** | Oisín rendered green, every frame. Caused by my own fix for a different bug: moving the style to the front of the prompt put `restrained palette of greens` immediately before his name, so the colour landed on him. The archive has both prompts. |
+| **S25 A LoRA trained on the wrong style** | Not uniformly bad — *inconsistent*, which is worse. I2V leans on its seed and survived; S2V does not and came back photoreal. My own style test had missed it because it built its workflows without LoRAs: I validated a configuration adjacent to the one I was shipping. |
+| **S30 The LoRA that did nothing** | Trained, installed, resolved, wired to the right node. Moved identity by 0.006. The trigger word had never reached the prompt, and every step reported success. |
+| **S34 / S35** | Two shorts about my own reasoning rather than the pipeline: a rule written from half a table, and a probe that changed two things and credited one. |
+
+## Three new findings from packaging it
+
+**S36 — I deleted 867 MB and got nothing back.** The volume filled. I found
+three films stored twice, byte-identical, deleted one copy of each, and a 1 MB
+write still failed. MooseFS keeps deleted files in trash and there is no
+`mfsmeta` mount on this pod to purge it. On this filesystem `rm` is a promise,
+not a transaction — free space has to be arranged before you need it.
+
+**S37 — my own pack was 1.4 GB of the wrong thing.** Asked for "everything", I
+globbed `*_1080p.mp4` recursively and swept every upscaled episode into a
+package whose subject is six-second shorts. Nothing in it was wrong; it was
+answering a different question. The fix was not compression, it was deciding
+what the pack is for. I now list the seven files by name.
+
+**S38 — the disk was fixed, the process was not.** After the volume was
+resized, every shell write succeeded including a 100 GB probe. The renderer,
+running since Tuesday, still failed every sample with `Disk quota exceeded` —
+its FUSE client had cached the old quota. A restart fixed it instantly. This
+one nearly cost an hour of debugging code that was never wrong.
+
+## Production note
+
+Every short is now a playable vertical clip. 26 of the 38 are evidence stills —
+correct as evidence, useless as a short — so each renders to a six-second
+1080×1920 push. `add_short.py` is the single place new ones get added; the three
+generators that existed before it were three copies of the same card renderer
+waiting to drift apart.
