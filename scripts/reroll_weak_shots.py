@@ -113,7 +113,8 @@ def main():
         audio = sr.copy_to_input(padded)
         frames, extra, tail = sr.s2v_chunks_for_duration(
             spoken + sr.S2V_LIVE_TAIL, fps=16, floor_seconds=spoken)
-        best = (base_score, "original")
+        orig_clip = sr.find_latest_clip(sid)
+        best = (base_score, "original", orig_clip)
         for k in range(a.takes):
             prefix = f"rr_{sid}_t{k}"
             clip = sr.find_latest_clip(prefix)
@@ -133,22 +134,27 @@ def main():
                 continue
             s = identity(clip, anchors[who])
             if s > best[0]:
-                best = (s, f"take{k}")
+                best = (s, f"take{k}", clip)
         gain = best[0] - base_score
-        results.append((sid, base_score, best[0], best[1], gain))
+        results.append((sid, base_score, best[0], best[1], gain, best[2],
+                        orig_clip))
         print(f"    {sid:11} {base_score:.3f} -> {best[0]:.3f}  "
               f"({best[1]}, {gain:+.3f})", flush=True)
 
     print(f"\n  {'shot':11} {'was':>7} {'best':>7} {'source':>9} {'gain':>7}")
-    for sid, b, n, src, g in results:
+    for sid, b, n, src, g, _w, _o in results:
         print(f"  {sid:11} {b:7.3f} {n:7.3f} {src:>9} {g:+7.3f}")
     improved = [r for r in results if r[4] > 0.005]
     print(f"\n  {len(improved)} of {len(results)} improved by more than 0.005")
-    out = Path("/workspace/review/reroll"); out.mkdir(parents=True, exist_ok=True)
-    (out / "results.json").write_text(json.dumps(
-        [{"shot": s, "was": b, "best": n, "source": src, "gain": g}
-         for s, b, n, src, g in results], indent=2))
-    print(f"  {out}/results.json — nothing swapped automatically")
+    out = Path("/workspace/review/reroll")
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "results.json").write_text(json.dumps([
+        {"shot": sid, "was": b, "best": n, "source": src, "gain": g,
+         "winner": w, "original": o} for sid, b, n, src, g, w, o in results
+    ], indent=2))
+    print(f"  wrote {out / 'results.json'} (with clip paths, so apply_rerolls"
+          f" can act on it)")
+    print("  nothing swapped automatically — see apply_rerolls.py")
     return 0
 
 
