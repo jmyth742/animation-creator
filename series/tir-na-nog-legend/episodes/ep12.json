@@ -1,0 +1,177 @@
+{
+  "id": "ep12",
+  "title": "The Ride Back",
+  "summary": "Written against the measurement rather than around it. Movement lives in SILENT shots -- I2V with no dialogue, which produced motion 12.1 and travel 42.3 against S2V's best of 5.7 -- and dialogue lives in its own shots. That is how animation is cut anyway: you rarely hear someone speak while they cross a room in a wide. Six of eleven shots carry no dialogue at all and exist purely to move.",
+  "scenes": [
+    {
+      "id": "ep12_s01",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.0,
+      "visual": "Wide shot. The warrior walks from the left of the frame to the right, crossing the valley with long strides, cloak trailing. He does not stop.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "master",
+      "staging": "full_body"
+    },
+    {
+      "id": "ep12_s02",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.5,
+      "visual": "Medium shot from the waist up. The princess watches him go. Static camera.",
+      "narration": null,
+      "setup": "reverse",
+      "staging": "medium",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "He did not look back. I had thought he would look back."
+        }
+      ]
+    },
+    {
+      "id": "ep12_s03",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.0,
+      "visual": "Wide shot. The warrior walks from the left of the frame toward the right along the clifftop, long strides, wind in his cloak.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "master",
+      "staging": "full_body"
+    },
+    {
+      "id": "ep12_s04",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.0,
+      "visual": "Three-quarter shot from the waist up, the warrior stopped at the edge, sea behind him. Static camera.",
+      "narration": null,
+      "setup": "side",
+      "staging": "three_quarter",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "The horse knows the way better than I do. She has done it before."
+        }
+      ]
+    },
+    {
+      "id": "ep12_s05",
+      "location": "sunlight_path",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.0,
+      "visual": "Very wide shot. The warrior walks from the left of the frame to the right across the sunlit water, long steady strides. He does not stop.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "master",
+      "staging": "full_body"
+    },
+    {
+      "id": "ep12_s06",
+      "location": "sunlight_path",
+      "characters": [],
+      "clip_length": "medium",
+      "hold_seconds": 6.0,
+      "visual": "Very wide shot of the open ocean at golden hour, a blazing path of sunlight running to a wall of golden mist. No people.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "side",
+      "seed": "location"
+    },
+    {
+      "id": "ep12_s07",
+      "location": "sunlight_path",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.5,
+      "visual": "Three-quarter shot from the waist up, low sun on his face, calm bright water behind. Static camera.",
+      "narration": null,
+      "setup": "closer",
+      "staging": "three_quarter",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "Three hundred years. I have been saying the number for a day and it still means nothing."
+        }
+      ]
+    },
+    {
+      "id": "ep12_s08",
+      "location": "ruined_ireland",
+      "characters": [],
+      "clip_length": "medium",
+      "hold_seconds": 6.0,
+      "visual": "Wide shot of the collapsed mossy ring-fort under flat grey overcast, bare thorn trees, wet ground. No people.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "master",
+      "seed": "location"
+    },
+    {
+      "id": "ep12_s09",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.0,
+      "visual": "Wide shot. The warrior walks forward between the fallen stones toward camera, slowly, looking up at the ruin as he comes.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "master",
+      "staging": "full_body"
+    },
+    {
+      "id": "ep12_s10",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.5,
+      "visual": "Close shot. The warrior's face, grey light on him, taking in what is in front of him. Static camera.",
+      "narration": null,
+      "setup": "closer",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I knew the hall would be gone. I did not know the hill would look smaller."
+        }
+      ]
+    },
+    {
+      "id": "ep12_s11",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.0,
+      "visual": "Wide shot. The warrior walks from the right of the frame to the left, crossing between the fallen stones with long strides. He does not stop.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "master",
+      "staging": "full_body"
+    }
+  ]
+}

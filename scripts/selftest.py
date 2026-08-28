@@ -1160,6 +1160,32 @@ def _():
         "the clips the post pass actually produced")
 
 
+@check("prompt: static scene description is dropped when an image conditions it")
+def _():
+    """Wan2.2's I2V system prompt, verbatim: "Focus on dynamic content in the
+    video description and avoid adding static scene descriptions. If the user's
+    input already describes elements visible in the image, remove those static
+    descriptions."
+
+    Almost every shot here is seeded from a staged plate that already shows the
+    location, the light and the palette. Describing them again spent about a
+    third of the prompt restating what the image had already settled.
+    """
+    b = _bible()
+    scene = {"id": "t", "location": "farewell_cliff",
+             "visual": "Close-up. Her face fills the frame.",
+             "characters": ["niamh"],
+             "dialogue": [{"character": "niamh", "line": "Go, then."}]}
+    free = sr.build_scene_prompt(scene, b)
+    seeded = sr.build_scene_prompt(scene, b, image_conditioned=True)
+    assert len(seeded) < len(free), (
+        "image_conditioned did not shorten the prompt -- static scene "
+        "description is still being sent alongside an image that shows it")
+    for term in ("palette", "in the background"):
+        assert term not in seeded.lower(), \
+            f'"{term}" survived into an image-conditioned prompt'
+
+
 @check("negative: never suppress motion, and always fight stillness")
 def _():
     """The audit's sharpest finding: the negative prompt was the cause.

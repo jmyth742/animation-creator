@@ -2236,7 +2236,8 @@ CAMERA_MOTION = {
 }
 
 
-def build_scene_prompt(scene: dict, bible: dict) -> str:
+def build_scene_prompt(scene: dict, bible: dict,
+                       image_conditioned: bool = False) -> str:
     """Build a structured video generation prompt optimised for WAN 2.2.
 
     Prompt order matters — earlier tokens carry more weight in diffusion models.
@@ -2317,6 +2318,18 @@ def build_scene_prompt(scene: dict, bible: dict) -> str:
     # was supposed to be on a windswept cliff. Close-ups now get a short setting
     # cue -- enough to anchor the background, not enough to fight the face.
     loc_id = scene.get("location")
+    # Wan2.2's own I2V system prompt, verbatim: "Focus on dynamic content in the
+    # video description and avoid adding static scene descriptions. If the
+    # user's input already describes elements visible in the image, remove those
+    # static descriptions." Both shipped ComfyUI templates match it -- their
+    # positives are subject + action only, with no background, style or palette.
+    #
+    # Nearly every shot here is seeded from a staged plate that ALREADY shows
+    # the location, the light and the palette. Describing them again spends the
+    # prompt on what the image has already settled, and about 40% of ours was
+    # doing exactly that.
+    if image_conditioned:
+        loc_id = None
     if loc_id and is_dialogue and shot_type == "closeup":
         loc_desc = bible.get("world", {}).get("locations", {}).get(loc_id, "")
         if loc_desc:
@@ -2375,6 +2388,7 @@ def build_scene_prompt(scene: dict, bible: dict) -> str:
         if style_part.startswith(short_style.rstrip(".")[:30]):
             # Lead with the RENDERING technique only. A palette clause at the
             # very front lands on whatever follows it, and what follows it is
+            # (skipped entirely when image-conditioned -- see above)
             # the character: "...restrained palette of greens. Oisin." rendered
             # him with green skin, as an ogre. Colour is art direction for the
             # frame, not a description of the subject, so it stays at the back
@@ -2389,7 +2403,11 @@ def build_scene_prompt(scene: dict, bible: dict) -> str:
                 (colour if is_colour else technique).append(c)
             if technique:
                 cleaned = [", ".join(technique)] + cleaned[:-1]
-                if colour:
+                # The palette is art direction for the frame -- and when the
+                # frame is already fixed by a staged plate, it is one more
+                # static description the model does not need. Keep the
+                # rendering technique, drop the colour.
+                if colour and not image_conditioned:
                     cleaned.append(", ".join(colour))
             else:
                 cleaned = [style_part] + cleaned[:-1]
@@ -4907,7 +4925,13 @@ def cmd_produce(args):
                           f"({audio_dur:.2f}s of speech)")
                 frames = max(frames, needed)
 
-        base_prompt = build_scene_prompt(scene, bible)
+        # Whether a seed image will be used is decided further down, but the
+        # prompt has to know NOW: with a conditioning image, Wan's own system
+        # prompt says to drop static scene description. Ask the same function
+        # the render will ask, rather than duplicating the policy.
+        _will_seed = bool(get_scene_seed_image(scene, args.series, current_image))
+        base_prompt = build_scene_prompt(scene, bible,
+                                         image_conditioned=_will_seed)
 
         if use_enhance:
             if clip_prefix in prompt_cache:
