@@ -1,0 +1,319 @@
+{
+  "id": "ep14",
+  "title": "What He Told the Ground",
+  "summary": "Oisin, alone in the ruin, tells the whole of it to nobody. The present is wide and far away; the memories are close enough to touch. Distance is now, closeness is then.",
+  "scenes": [
+    {
+      "id": "ep14_s01",
+      "location": "ruined_ireland",
+      "characters": [],
+      "clip_length": "long",
+      "hold_seconds": 6.5,
+      "setup": "master",
+      "staging": null,
+      "visual": "Very wide shot of the collapsed ring-fort under a low grey sky, moss on fallen stone, bare thorn trees. Nothing moves but the grass. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep14_s02",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.0,
+      "setup": "master",
+      "staging": "full_body",
+      "visual": "Wide shot. The warrior walks slowly forward between the fallen stones and stops, small against the ruin. He does not look up.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep14_s03",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 12.0,
+      "setup": "master",
+      "staging": "close",
+      "visual": "Close shot. The warrior's face, grey light on him, speaking quietly to nobody. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "There is nobody here to tell it to, so I am telling it to the ground. The ground was here before my father and it will do."
+        }
+      ]
+    },
+    {
+      "id": "ep14_s04",
+      "location": "tir_na_nog",
+      "characters": [],
+      "clip_length": "long",
+      "hold_seconds": 6.5,
+      "setup": "master",
+      "staging": null,
+      "visual": "Very wide shot of a golden gateway beneath a green mountain, a waterfall falling into a still lake, flowers through the grass, warm light. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep14_s05",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.5,
+      "setup": "master",
+      "staging": "full_body",
+      "visual": "Wide shot. The princess walks through the gateway into the valley with long easy strides, golden hair bright, small against the mountain.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep14_s06",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 13.8,
+      "setup": "reverse",
+      "staging": "close",
+      "visual": "Close shot. The princess's face in warm light, laughing at something just said. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "You have asked me four times what month it is. There are no months. There is only the light coming and the light going, and it does not keep count of you."
+        }
+      ]
+    },
+    {
+      "id": "ep14_s07",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 12.3,
+      "setup": "master",
+      "staging": "close",
+      "visual": "Close shot. The warrior's face in warm light, younger, easier, half smiling. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "Then I will stop counting. I was only ever counting because I was afraid of running out, and I am not going to run out of anything here."
+        }
+      ]
+    },
+    {
+      "id": "ep14_s08",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.0,
+      "setup": "master",
+      "staging": "full_body",
+      "visual": "Wide shot. The warrior walks away across the valley toward the lake with long strides, small and unhurried, the waterfall behind him.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep14_s09",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.0,
+      "setup": "reverse",
+      "staging": "full_body",
+      "visual": "Very wide shot. The warrior small and still among the fallen stones under grey light, the ruin enormous around him.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep14_s10",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 12.7,
+      "setup": "master",
+      "staging": "close",
+      "visual": "Close shot. The warrior's face, grey light on him, the memory going out of it. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I stopped counting. That is the whole of it. That is the entire crime, and three hundred years came in through the gap where the counting used to be."
+        }
+      ]
+    },
+    {
+      "id": "ep14_s11",
+      "location": "farewell_cliff",
+      "characters": [],
+      "clip_length": "long",
+      "hold_seconds": 6.5,
+      "setup": "reverse",
+      "staging": null,
+      "visual": "Very wide shot of a high green clifftop above a calm sea at golden hour, one wind-bent tree at the edge, long low sunlight on the water. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep14_s12",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.5,
+      "setup": "master",
+      "staging": "full_body",
+      "visual": "Wide shot. The princess walks to the cliff edge and stops beside the bent tree, small against the sea and the low sun.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep14_s13",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 14.6,
+      "setup": "reverse",
+      "staging": "close",
+      "visual": "Close shot. The princess's face in low gold light, wind moving her hair, holding his eye. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Go and see it, then. But keep your hand on the bridle and your feet off the grass, and whatever they say to you, do not get down. Promise me on something you love."
+        }
+      ]
+    },
+    {
+      "id": "ep14_s14",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 13.8,
+      "setup": "master",
+      "staging": "close",
+      "visual": "Close shot. The warrior's face in low gold light, wind in his hair, promising too easily. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "On you, then. I promise it on you. I will be back before the light goes, and you will still be standing under that tree, and you will be insufferable about it."
+        }
+      ]
+    },
+    {
+      "id": "ep14_s15",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 5.5,
+      "setup": null,
+      "staging": null,
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/farewell_cliff/composite__oisin_niamh_medium.png",
+      "visual": "Split panel. Two faces held side by side in one frame in low gold light, a hard line between them, neither speaking. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep14_s16",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 12.7,
+      "setup": "reverse",
+      "staging": "close",
+      "visual": "Close shot. The princess's face, low gold light, watching him go and already knowing. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "I am not going anywhere. That is the one thing I can do. I will be under this tree, and I will be insufferable, and you will come back."
+        }
+      ]
+    },
+    {
+      "id": "ep14_s17",
+      "location": "ruined_ireland",
+      "characters": [],
+      "clip_length": "long",
+      "hold_seconds": 6.5,
+      "setup": "reverse",
+      "staging": null,
+      "visual": "Very wide shot of the ruin under flat grey light, empty, bare thorn trees. Nothing moves. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep14_s18",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 15.0,
+      "setup": "master",
+      "staging": "close",
+      "visual": "Close shot. The warrior's face, grey light almost gone, finishing what he came to say. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "She is still under the tree. That is not a thing I believe, it is a thing I have decided, and there is a difference, and I do not care about the difference any more."
+        }
+      ]
+    },
+    {
+      "id": "ep14_s19",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.5,
+      "setup": "master",
+      "staging": "full_body",
+      "visual": "Very wide shot. The warrior small and alone among the fallen stones, the last light going out of the sky behind him. Nothing moves.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep14_s20",
+      "location": "farewell_cliff",
+      "characters": [],
+      "clip_length": "long",
+      "hold_seconds": 8.0,
+      "setup": "reverse",
+      "staging": null,
+      "visual": "Very wide shot of the empty clifftop at golden hour, the wind-bent tree alone at the edge, the sea beyond it. Nobody is there. Static camera.",
+      "narration": null,
+      "dialogue": []
+    }
+  ]
+}

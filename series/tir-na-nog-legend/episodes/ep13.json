@@ -1,0 +1,219 @@
+{
+  "id": "ep13",
+  "title": "The Ground Between Them",
+  "summary": "Niamh rides into ruined Ireland to bring Oisin home. He has already touched the ground. They stand nine steps apart and cannot cross to each other.",
+  "scenes": [
+    {
+      "id": "ep13_s01",
+      "location": "ruined_ireland",
+      "characters": [],
+      "clip_length": "long",
+      "hold_seconds": 6.0,
+      "visual": "Very wide shot of the collapsed ring-fort under a low grey sky, moss on the fallen stones, bare thorn trees. Nothing moves but the grass. Static camera.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "master",
+      "staging": null
+    },
+    {
+      "id": "ep13_s02",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.0,
+      "visual": "Wide shot. The warrior walks forward between the fallen stones with long strides, small against the ruin, cloak swinging. He does not stop.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "master",
+      "staging": "full_body"
+    },
+    {
+      "id": "ep13_s03",
+      "location": "ruined_ireland",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.0,
+      "visual": "Wide shot. The princess walks into the frame from the far edge, crossing the open ground toward the ruin with steady strides, golden hair bright against the grey.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "reverse",
+      "staging": "full_body"
+    },
+    {
+      "id": "ep13_s04",
+      "location": "ruined_ireland",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 5.5,
+      "visual": "Wide shot. The princess stops and stands still on the open ground, small in the frame, the fallen stones between her and the far side.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "master",
+      "staging": "full_body"
+    },
+    {
+      "id": "ep13_s05",
+      "location": "ruined_ireland",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 13.0,
+      "visual": "Close shot. The princess's face, grey light on her, holding his eye. She does not look away. Static camera.",
+      "narration": null,
+      "setup": "reverse",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "You said you would not get down. You said it on the shore with your hand on the bridle, and I believed you, because I have never once known you to lie."
+        }
+      ]
+    },
+    {
+      "id": "ep13_s06",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 13.0,
+      "visual": "Close shot. The warrior's face, grey light on him, taking his time before he answers. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "There was a stone in the field and two men could not lift it. I have lifted heavier. I did not think. Three hundred years undone in the time it takes to bend."
+        }
+      ]
+    },
+    {
+      "id": "ep13_s07",
+      "location": "ruined_ireland",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 10.0,
+      "visual": "Close shot. The princess's face. She puts out her hand toward him and holds it there. Static camera.",
+      "narration": null,
+      "setup": "reverse",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Then take my hand. The horse remembers the way even if you do not. It is nine steps. I have counted them from here."
+        }
+      ]
+    },
+    {
+      "id": "ep13_s08",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 10.0,
+      "visual": "Close shot. The warrior's face, grey light on him. He looks down at his own hands and then back up. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "Niamh. Look at my hands. They were young when I bent down. I am not going to be able to reach you."
+        }
+      ]
+    },
+    {
+      "id": "ep13_s09",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 5.0,
+      "visual": "Split panel. Two faces held side by side in one frame, a hard line between them, neither speaking. Static camera.",
+      "narration": null,
+      "dialogue": [],
+      "setup": null,
+      "staging": null,
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/ruined_ireland/composite__oisin_niamh_close.png"
+    },
+    {
+      "id": "ep13_s10",
+      "location": "ruined_ireland",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 10.0,
+      "visual": "Close shot. The princess's face, wet-eyed and steady, grey light on her. Static camera.",
+      "narration": null,
+      "setup": "reverse",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "I will come back to this shore every year until the sea takes it. You will not be here. I will come anyway."
+        }
+      ]
+    },
+    {
+      "id": "ep13_s11",
+      "location": "ruined_ireland",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.5,
+      "visual": "Wide shot. The princess turns and walks away from the ruin toward the far edge of the frame with long strides, growing smaller. She does not look back.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "reverse",
+      "staging": "full_body"
+    },
+    {
+      "id": "ep13_s12",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 10.0,
+      "visual": "Close shot. The warrior's face alone, grey light going, speaking to ground that has nobody on it. Static camera.",
+      "narration": null,
+      "setup": "master",
+      "staging": "close",
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "Go on, then. Before I have the chance to ask you to stay, and you have the chance to say no."
+        }
+      ]
+    },
+    {
+      "id": "ep13_s13",
+      "location": "ruined_ireland",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.0,
+      "visual": "Very wide shot. The warrior small and alone among the fallen stones, the light going out of the sky behind him. Nothing moves.",
+      "narration": null,
+      "dialogue": [],
+      "setup": "master",
+      "staging": "full_body"
+    }
+  ]
+}
