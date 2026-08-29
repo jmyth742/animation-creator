@@ -35,10 +35,31 @@ SEED = 8800
 WIDE_ENOUGH = ("full_body", "three_quarter", "wide_figure", "walking_away")
 
 
+
+# The staged library has no real wide plate for anybody -- every framing name
+# resolves to the same head-and-shoulders portrait. The generated library does.
+GEN = {"ruined_ireland": "ruin", "tir_na_nog": "valley",
+       "farewell_cliff": "cliff", "sunlight_path": "valley"}
+
+
+def generated_wide(series, location, who):
+    """A real wide plate for this place and person, if one was generated."""
+    stem = GEN.get(location)
+    if not stem:
+        return None
+    p = (sr.series_path(series) / "sets" / "_generated"
+         / f"gen__{stem}_wide_{who}.png")
+    return p if p.exists() else None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("series")
     ap.add_argument("--shots", default=None)
+    ap.add_argument("--force", action="store_true",
+                    help="re-render even if a take exists")
+    ap.add_argument("--generated", action="store_true",
+                    help="seed from the generated wide plates")
     a = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     sr.set_current_series(a.series)
@@ -55,13 +76,25 @@ def main():
         if not scene:
             print(f"  {sid}: not found"); continue
         seed_img = sr.get_scene_seed_image(scene, a.series, None)
-        if not any(k in str(seed_img) for k in WIDE_ENOUGH):
+        if a.generated:
+            who = (scene.get("dialogue") or [{}])[0].get("character") \
+                  or (scene.get("characters") or [None])[0]
+            g = generated_wide(a.series, scene.get("location", ""), who)
+            if g:
+                seed_img = sr.copy_to_input(str(g))
+                print(f"  {sid}: seeding from generated plate {g.name}")
+            else:
+                print(f"  {sid}: no generated wide for "
+                      f"{scene.get('location')}/{who}; skipping")
+                continue
+        elif not any(k in str(seed_img) for k in WIDE_ENOUGH):
             print(f"  {sid}: seed '{Path(str(seed_img)).name}' is too tight — "
                   f"a wide needs a full-body plate; skipping rather than "
                   f"rendering something that will collapse anyway")
             continue
         prefix = f"rw_{sid}"
-        clip = sr.find_latest_clip(prefix)
+        prefix = f"rwg_{sid}" if a.generated else prefix
+        clip = None if a.force else sr.find_latest_clip(prefix)
         if not clip:
             prompt = sr.build_scene_prompt(scene, bible)
             neg = sr.build_negative_prompt(scene)
@@ -75,7 +108,8 @@ def main():
                     print("    no output"); continue
             except Exception as e:                             # noqa: BLE001
                 print(f"    {type(e).__name__}: {e}"); continue
-            clip = sr.find_latest_clip(prefix)
+            prefix = f"rwg_{sid}" if a.generated else prefix
+        clip = None if a.force else sr.find_latest_clip(prefix)
         if not clip:
             continue
         old = sr.find_latest_clip(sid)

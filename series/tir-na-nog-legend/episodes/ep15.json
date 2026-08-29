@@ -1,0 +1,254 @@
+{
+  "id": "ep15",
+  "title": "What She Came To Ask",
+  "summary": "The cliff where it began. She rides out of the sea-light to ask him a question with only one wrong answer, and he gives it. The first episode built on real two-shots.",
+  "scenes": [
+    {
+      "id": "ep15_s01",
+      "location": "farewell_cliff",
+      "characters": [],
+      "clip_length": "long",
+      "hold_seconds": 7.0,
+      "setup": "reverse",
+      "staging": null,
+      "seed": "location",
+      "visual": "Very wide shot of a high green headland above a calm sea at golden hour, one ancient wind-bent tree at the cliff edge, long low light on the water. Nothing moves but the grass. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep15_s02",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.0,
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/_generated/gen__cliff_wide_oisin.png",
+      "visual": "Extreme wide shot. The warrior stands alone near the cliff edge, small in the frame, looking out to sea. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep15_s03",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.5,
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/_generated/gen__cliff_wide_niamh.png",
+      "visual": "Extreme wide shot. The princess stands at the far edge of the headland, small against the sea and the low sun. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep15_s04",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.5,
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/_generated/gen__cliff_twoshot.png",
+      "visual": "Wide two shot. The warrior and the princess stand a few paces apart on the same clifftop, both full length, facing each other, the sea behind them. The wind moves her hair and his cloak. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep15_s05",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 13.5,
+      "setup": "reverse",
+      "staging": "close",
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/farewell_cliff/reverse__niamh_close__inplace.png",
+      "visual": "Close shot. The princess's face in low gold light, wind moving her hair. She has already decided to ask. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "I have watched you three days from the water and you have not once looked at the sea as though you wanted anything from it. Everyone wants something from the sea."
+        }
+      ]
+    },
+    {
+      "id": "ep15_s06",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 12.0,
+      "setup": "master",
+      "staging": "close",
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/farewell_cliff/master__oisin_close__inplace.png",
+      "visual": "Close shot. The warrior's face in low gold light, taking his time. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "I have buried enough men to know what the sea gives back. I come up here to not want things. It is the only hour of the day I manage it."
+        }
+      ]
+    },
+    {
+      "id": "ep15_s07",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.0,
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/_generated/gen__cliff_twoshot.png",
+      "visual": "Wide two shot. The two of them on the clifftop, neither moving, the low sun between them and the water. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep15_s07b",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 12.0,
+      "setup": "master",
+      "staging": "close",
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/farewell_cliff/master__oisin_close__inplace.png",
+      "visual": "Close shot. The warrior's face, low gold light, looking at her properly for the first time. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "You have not told me what it costs. Everything I have ever been offered had a cost in it somewhere, usually near the end, usually said quietly."
+        }
+      ]
+    },
+    {
+      "id": "ep15_s08",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 13.0,
+      "setup": "reverse",
+      "staging": "close",
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/farewell_cliff/reverse__niamh_close__inplace.png",
+      "visual": "Close shot. The princess's face, steady, holding his eye. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Then I will ask you badly, because there is no good way. Come with me and you will not bury anyone again. Not your father, not your friends. Not ever."
+        }
+      ]
+    },
+    {
+      "id": "ep15_s09",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 12.5,
+      "setup": "master",
+      "staging": "close",
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/farewell_cliff/master__oisin_close__inplace.png",
+      "visual": "Close shot. The warrior's face. The offer has landed and he is not hiding it. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "You have said the one thing I cannot argue with. I want you to know I heard the cost in it. I am going to say yes anyway, and I am going to say it quickly."
+        }
+      ]
+    },
+    {
+      "id": "ep15_s10",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 11.0,
+      "setup": "reverse",
+      "staging": "close",
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/farewell_cliff/reverse__niamh_close__inplace.png",
+      "visual": "Close shot. The princess's face. Relief, and something underneath it she does not say. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Quickly is how everyone says it. I have never once heard anyone take the time. That is not a complaint. It is only a thing I have noticed."
+        }
+      ]
+    },
+    {
+      "id": "ep15_s10b",
+      "location": "farewell_cliff",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 12.5,
+      "setup": "reverse",
+      "staging": "close",
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/farewell_cliff/reverse__niamh_close__inplace.png",
+      "visual": "Close shot. The princess's face. She does not look away, and she does not answer it either. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "It costs you this. The hill, the sea from this side of it, and everyone who is standing on it. I am telling you that now and not near the end."
+        }
+      ]
+    },
+    {
+      "id": "ep15_s11",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.0,
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/_generated/gen__cliff_twoshot.png",
+      "visual": "Wide two shot. The two of them together on the clifftop, the sea and the low sun beyond, the wind-bent tree at the edge of frame. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep15_s11b",
+      "location": "farewell_cliff",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.0,
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/_generated/gen__cliff_wide_oisin.png",
+      "visual": "Extreme wide shot. The warrior stands alone at the cliff edge, small in the frame, looking back the way he came. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep15_s12",
+      "location": "farewell_cliff",
+      "characters": [],
+      "clip_length": "long",
+      "hold_seconds": 8.0,
+      "setup": "reverse",
+      "staging": null,
+      "seed": "location",
+      "visual": "Very wide shot of the empty clifftop at golden hour, the wind-bent tree alone at the edge, the sea beyond it. Nobody is there. Static camera.",
+      "narration": null,
+      "dialogue": []
+    }
+  ]
+}

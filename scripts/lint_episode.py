@@ -35,11 +35,12 @@ THE EVIDENCE BEHIND EACH RULE
   R5  A line must fit three chunks.
       S2V chains to 3 x 81 frames = 15.19s. Longer is silently truncated.
 
-  R6  Two characters in one frame is a SPLIT PANEL, not a two-shot.
-      From a composite seed both faces render recognisably (0.888 / 0.790)
-      but the result is a hard vertical seam with the two at different
-      scales. Usable as a deliberate diptych; not as naturalistic staging.
-      Without a composite seed both collapse (0.62 / 0.68).
+  R6  Two characters in one frame needs a GENERATED two-shot plate.
+      Proven: a FLUX-composed two-shot -- both figures, same ground, same
+      scale -- survives being animated and holds its composition. A
+      COMPOSITE seed gives a split panel with a hard seam instead, which is
+      a device rather than staging. With neither, both identities collapse
+      (0.62 / 0.68).
 """
 import argparse
 import json
@@ -108,12 +109,25 @@ def lint_scene(scene: dict, series: str) -> list[tuple[str, str, str]]:
                                         f"plate gives 12.13 motion against 5.17 "
                                         f"for a tighter one."))
     if len(chars) > 1 and not dialogue:
-        seed = sr.get_scene_seed_image(scene, series, None)
-        if seed and "composite" not in str(seed).lower():
-            out.append((WARN, "R6", "two characters in frame without a composite "
-                                    "seed — both identities collapse (0.62/0.68). "
-                                    "Use a composite plate, and expect a split "
-                                    "panel rather than a staged two-shot."))
+        seed = str(sr.get_scene_seed_image(scene, series, None) or "").lower()
+        # Updated once a generated two-shot plate was actually rendered. The
+        # three cases are genuinely different and the old rule collapsed them:
+        #   generated plate  a real two-shot -- both figures, same ground, same
+        #                    scale, and it survives being animated
+        #   composite plate  a split panel: two faces, a hard seam between them
+        #   neither          both identities collapse (0.62 / 0.68)
+        if "twoshot" in seed or "two_shot" in seed:
+            pass                                   # the good case
+        elif "composite" in seed:
+            out.append((WARN, "R6", "two characters from a COMPOSITE seed — this "
+                                    "gives a split panel with a hard seam, not "
+                                    "staged blocking. Use a generated two-shot "
+                                    "plate unless the panel is deliberate."))
+        else:
+            out.append((WARN, "R6", "two characters in frame with no two-shot "
+                                    "plate — both identities collapse "
+                                    "(0.62/0.68). Generate one with "
+                                    "gen_real_plates.py."))
     return [(lvl, rule, f"{sid}: {msg}") for lvl, rule, msg in out]
 
 

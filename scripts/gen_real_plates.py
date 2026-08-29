@@ -84,6 +84,23 @@ PLATES = [
      f"out of focus at the left edge of frame seen from behind; beyond her, "
      f"facing camera and in focus, {OISIN} stands among the stones at "
      f"medium distance."),
+    ("gen__cliff_wide_oisin", f"Extreme wide shot. {CLIFF}. Far away near the "
+     f"cliff edge, small in the frame, {OISIN} stands alone looking out to sea, "
+     f"his whole body visible and no larger than a tenth of the frame height."),
+    ("gen__valley_wide_niamh", f"Extreme wide shot. {VALLEY}. Far off beside "
+     f"the lake, small in the frame, {NIAMH} walks along the path, her whole "
+     f"body visible. The valley fills the picture."),
+    ("gen__ruin_wide_niamh", f"Extreme wide shot. {RUIN}. Far away among the "
+     f"fallen stones, small in the frame, {NIAMH} stands alone, her whole body "
+     f"visible and no larger than a tenth of the frame height."),
+    ("gen__valley_twoshot", f"Wide two shot. {VALLEY}. {OISIN} on the left and "
+     f"{NIAMH} on the right, standing a few paces apart on the same grass, both "
+     f"full-length and at the same scale, facing each other, the waterfall "
+     f"behind them."),
+    ("gen__ruin_walking", f"Wide shot. {RUIN}. {OISIN} walks from left to right "
+     f"across the open ground in front of the fallen stones, mid-stride, his "
+     f"whole body visible, small in a wide landscape."),
+
 ]
 
 
