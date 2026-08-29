@@ -13,7 +13,8 @@
       "staging": null,
       "visual": "Very wide shot of the collapsed ring-fort under a low grey sky, moss on fallen stone, bare thorn trees. Nothing moves but the grass. Static camera.",
       "narration": null,
-      "dialogue": []
+      "dialogue": [],
+      "seed": "location"
     },
     {
       "id": "ep14_s02",
@@ -25,9 +26,10 @@
       "hold_seconds": 7.0,
       "setup": "master",
       "staging": "full_body",
-      "visual": "Wide shot. The warrior walks slowly forward between the fallen stones and stops, small against the ruin. He does not look up.",
+      "visual": "Wide shot. The warrior stands still among the fallen stones, small against the ruin, head down. Static camera.",
       "narration": null,
-      "dialogue": []
+      "dialogue": [],
+      "seed": "location"
     },
     {
       "id": "ep14_s03",
@@ -58,7 +60,8 @@
       "staging": null,
       "visual": "Very wide shot of a golden gateway beneath a green mountain, a waterfall falling into a still lake, flowers through the grass, warm light. Static camera.",
       "narration": null,
-      "dialogue": []
+      "dialogue": [],
+      "seed": "location"
     },
     {
       "id": "ep14_s05",
@@ -70,9 +73,10 @@
       "hold_seconds": 6.5,
       "setup": "master",
       "staging": "full_body",
-      "visual": "Wide shot. The princess walks through the gateway into the valley with long easy strides, golden hair bright, small against the mountain.",
+      "visual": "Wide shot. The princess stands beneath the golden gateway in the valley, small against the mountain, the waterfall behind her. Static camera.",
       "narration": null,
-      "dialogue": []
+      "dialogue": [],
+      "seed": "location"
     },
     {
       "id": "ep14_s06",
@@ -122,9 +126,10 @@
       "hold_seconds": 7.0,
       "setup": "master",
       "staging": "full_body",
-      "visual": "Wide shot. The warrior walks away across the valley toward the lake with long strides, small and unhurried, the waterfall behind him.",
+      "visual": "Wide shot of the valley and the lake in warm light, the waterfall falling, the figure gone from the path. Static camera.",
       "narration": null,
-      "dialogue": []
+      "dialogue": [],
+      "seed": "location"
     },
     {
       "id": "ep14_s09",
@@ -138,7 +143,8 @@
       "staging": "full_body",
       "visual": "Very wide shot. The warrior small and still among the fallen stones under grey light, the ruin enormous around him.",
       "narration": null,
-      "dialogue": []
+      "dialogue": [],
+      "seed": "location"
     },
     {
       "id": "ep14_s10",
@@ -157,7 +163,8 @@
           "character": "oisin",
           "line": "I stopped counting. That is the whole of it. That is the entire crime, and three hundred years came in through the gap where the counting used to be."
         }
-      ]
+      ],
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/ruined_ireland/master__oisin_close.png"
     },
     {
       "id": "ep14_s11",
@@ -169,7 +176,8 @@
       "staging": null,
       "visual": "Very wide shot of a high green clifftop above a calm sea at golden hour, one wind-bent tree at the edge, long low sunlight on the water. Static camera.",
       "narration": null,
-      "dialogue": []
+      "dialogue": [],
+      "seed": "location"
     },
     {
       "id": "ep14_s12",
@@ -181,9 +189,10 @@
       "hold_seconds": 6.5,
       "setup": "master",
       "staging": "full_body",
-      "visual": "Wide shot. The princess walks to the cliff edge and stops beside the bent tree, small against the sea and the low sun.",
+      "visual": "Wide shot. The princess stands at the cliff edge beside the wind-bent tree, small against the sea and the low sun. Static camera.",
       "narration": null,
-      "dialogue": []
+      "dialogue": [],
+      "seed": "location"
     },
     {
       "id": "ep14_s13",
@@ -202,7 +211,8 @@
           "character": "niamh",
           "line": "Go and see it, then. But keep your hand on the bridle and your feet off the grass, and whatever they say to you, do not get down. Promise me on something you love."
         }
-      ]
+      ],
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/farewell_cliff/reverse__niamh_close.png"
     },
     {
       "id": "ep14_s14",
@@ -221,7 +231,8 @@
           "character": "oisin",
           "line": "On you, then. I promise it on you. I will be back before the light goes, and you will still be standing under that tree, and you will be insufferable about it."
         }
-      ]
+      ],
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/farewell_cliff/master__oisin_close.png"
     },
     {
       "id": "ep14_s15",
@@ -256,7 +267,8 @@
           "character": "niamh",
           "line": "I am not going anywhere. That is the one thing I can do. I will be under this tree, and I will be insufferable, and you will come back."
         }
-      ]
+      ],
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/farewell_cliff/reverse__niamh_close.png"
     },
     {
       "id": "ep14_s17",
@@ -268,7 +280,8 @@
       "staging": null,
       "visual": "Very wide shot of the ruin under flat grey light, empty, bare thorn trees. Nothing moves. Static camera.",
       "narration": null,
-      "dialogue": []
+      "dialogue": [],
+      "seed": "location"
     },
     {
       "id": "ep14_s18",
@@ -287,7 +300,8 @@
           "character": "oisin",
           "line": "She is still under the tree. That is not a thing I believe, it is a thing I have decided, and there is a difference, and I do not care about the difference any more."
         }
-      ]
+      ],
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/ruined_ireland/master__oisin_close.png"
     },
     {
       "id": "ep14_s19",
@@ -301,7 +315,8 @@
       "staging": "full_body",
       "visual": "Very wide shot. The warrior small and alone among the fallen stones, the last light going out of the sky behind him. Nothing moves.",
       "narration": null,
-      "dialogue": []
+      "dialogue": [],
+      "seed": "location"
     },
     {
       "id": "ep14_s20",
@@ -313,7 +328,8 @@
       "staging": null,
       "visual": "Very wide shot of the empty clifftop at golden hour, the wind-bent tree alone at the edge, the sea beyond it. Nobody is there. Static camera.",
       "narration": null,
-      "dialogue": []
+      "dialogue": [],
+      "seed": "location"
     }
   ]
 }

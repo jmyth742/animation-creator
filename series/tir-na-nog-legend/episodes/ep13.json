@@ -13,7 +13,8 @@
       "narration": null,
       "dialogue": [],
       "setup": "master",
-      "staging": null
+      "staging": null,
+      "seed": "location"
     },
     {
       "id": "ep13_s02",
@@ -23,11 +24,12 @@
       ],
       "clip_length": "long",
       "hold_seconds": 6.0,
-      "visual": "Wide shot. The warrior walks forward between the fallen stones with long strides, small against the ruin, cloak swinging. He does not stop.",
+      "visual": "Wide shot. The warrior stands among the fallen stones, small against the ruin, facing the open ground. Static camera.",
       "narration": null,
       "dialogue": [],
       "setup": "master",
-      "staging": "full_body"
+      "staging": "full_body",
+      "seed": "location"
     },
     {
       "id": "ep13_s03",
@@ -37,11 +39,12 @@
       ],
       "clip_length": "long",
       "hold_seconds": 6.0,
-      "visual": "Wide shot. The princess walks into the frame from the far edge, crossing the open ground toward the ruin with steady strides, golden hair bright against the grey.",
+      "visual": "Wide shot. The princess stands at the far edge of the open ground, small in the frame, the ruin between them. Static camera.",
       "narration": null,
       "dialogue": [],
       "setup": "reverse",
-      "staging": "full_body"
+      "staging": "full_body",
+      "seed": "location"
     },
     {
       "id": "ep13_s04",
@@ -55,7 +58,8 @@
       "narration": null,
       "dialogue": [],
       "setup": "master",
-      "staging": "full_body"
+      "staging": "full_body",
+      "seed": "location"
     },
     {
       "id": "ep13_s05",
@@ -176,11 +180,12 @@
       ],
       "clip_length": "long",
       "hold_seconds": 6.5,
-      "visual": "Wide shot. The princess turns and walks away from the ruin toward the far edge of the frame with long strides, growing smaller. She does not look back.",
+      "visual": "Wide shot of the open ground where she was standing. She is not there. The ruin, the grass, nobody. Static camera.",
       "narration": null,
       "dialogue": [],
       "setup": "reverse",
-      "staging": "full_body"
+      "staging": "full_body",
+      "seed": "location"
     },
     {
       "id": "ep13_s12",
@@ -213,7 +218,8 @@
       "narration": null,
       "dialogue": [],
       "setup": "master",
-      "staging": "full_body"
+      "staging": "full_body",
+      "seed": "location"
     }
   ]
 }
