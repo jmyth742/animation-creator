@@ -166,7 +166,10 @@ def main():
               flush=True)
         out.append({"variant": name, "clip": c, "seconds": d,
                     "p_wide": wide_p, "reads_as": label, "identity": ident})
-        subprocess.run(["cp", c, str(OUT / f"{name}.mp4")])
+        # Per-shot names. Fixed ones (A_current_s2v.mp4) meant a second run
+        # silently overwrote the first, and the surviving pair belonged to
+        # whichever shot ran last -- which was the one that failed.
+        subprocess.run(["cp", c, str(OUT / f"{a.scene}_{name}.mp4")])
 
     (OUT / f"{a.scene}.json").write_text(json.dumps(out, indent=2))
     print(f"\n  p(wide) is CLIP's probability the shot reads as a landscape "

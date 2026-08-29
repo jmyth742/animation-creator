@@ -175,9 +175,13 @@ def main():
     # ── post-processing binaries ─────────────────────────────────────
     section("post-processing")
     say(OK if shutil.which("ffmpeg") else FAIL, "ffmpeg")
-    say(WARN if not shutil.which("rife-ncnn-vulkan") else OK,
-        "rife-ncnn-vulkan" + ("" if shutil.which("rife-ncnn-vulkan")
-                              else " absent -> --interpolate falls back to FFmpeg minterpolate"))
+    # rife only matters if --interpolate is actually going to be used, and it
+    # never is. A WARN that fires on every run of every episode is how people
+    # learn to skim the warnings and miss the one that matters.
+    if shutil.which("rife-ncnn-vulkan"):
+        say(OK, "rife-ncnn-vulkan")
+    else:
+        print("  [info] rife-ncnn-vulkan absent — only affects --interpolate")
     # The ncnn CLI is only what showrunner's own --upscale flag uses. The
     # better path no longer needs it: upscale_episode.py runs RealESRGAN anime
     # 6B through ComfyUI, measured on cel frames at 3.25x the line definition

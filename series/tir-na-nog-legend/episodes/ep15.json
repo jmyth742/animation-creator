@@ -83,7 +83,7 @@
         "oisin"
       ],
       "clip_length": "long",
-      "hold_seconds": 12.0,
+      "hold_seconds": 13.4,
       "setup": "master",
       "staging": "close",
       "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/farewell_cliff/master__oisin_close__inplace.png",
@@ -157,7 +157,7 @@
         "oisin"
       ],
       "clip_length": "long",
-      "hold_seconds": 12.5,
+      "hold_seconds": 15.3,
       "setup": "master",
       "staging": "close",
       "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/farewell_cliff/master__oisin_close__inplace.png",
@@ -177,7 +177,7 @@
         "niamh"
       ],
       "clip_length": "long",
-      "hold_seconds": 11.0,
+      "hold_seconds": 12.3,
       "setup": "reverse",
       "staging": "close",
       "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/farewell_cliff/reverse__niamh_close__inplace.png",
@@ -197,7 +197,7 @@
         "niamh"
       ],
       "clip_length": "long",
-      "hold_seconds": 12.5,
+      "hold_seconds": 13.4,
       "setup": "reverse",
       "staging": "close",
       "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/farewell_cliff/reverse__niamh_close__inplace.png",
