@@ -3134,6 +3134,24 @@ def run_ffmpeg(cmd: list, what: str, output: str | Path | None = None,
     return True
 
 
+def _decodes(path) -> bool:
+    """
+    Does this file actually play?
+
+    Path.exists() says a file is there, not that it is valid. A timed-out or
+    killed ffmpeg leaves a truncated mp4 with no moov atom, which exists,
+    reports a size, and cannot be decoded. Accepting one of those is how a
+    42 MB file of nothing reached delivery as ep12_final.mp4.
+    """
+    try:
+        r = subprocess.run(["ffmpeg", "-v", "error", "-i", str(path),
+                            "-f", "null", "-"],
+                           capture_output=True, text=True, timeout=300)
+        return r.returncode == 0 and not r.stderr.strip()
+    except Exception:                                          # noqa: BLE001
+        return False
+
+
 def _get_video_duration(path: str) -> float:
     """
     Duration in seconds via ffprobe, for video OR audio files.
@@ -5386,13 +5404,6 @@ def cmd_produce(args):
 
     current = stitched
 
-    # ─── Upscale ──────────────────────────────────────────────────
-    if getattr(args, "upscale", False) and current.exists():
-        print(f"  Upscaling video...")
-        upscaled = ep_out / f"ep{ep_num:02d}_upscaled.mp4"
-        if upscale_video(current, upscaled, scale=getattr(args, "upscale_factor", 4)):
-            current = upscaled
-
     # ─── Frame interpolation ─────────────────────────────────────
     if getattr(args, "interpolate", False) and current.exists():
         print(f"  Interpolating frames...")
@@ -5401,12 +5412,28 @@ def cmd_produce(args):
             current = interpolated
 
     # ─── Colour grade ────────────────────────────────────────────
+    # BEFORE the upscale, not after. Grading after a 4x upscale means grading
+    # 16x the pixels: on ep12 it hit the 180s ceiling MID-WRITE, leaving a file
+    # with no moov atom, and the subtitle step then propagated that into
+    # ep12_final.mp4 while the job printed "Output:" and exited 0.
     if not args.no_grade and current.exists():
         print(f"  Applying colour grade...")
         graded = ep_out / f"ep{ep_num:02d}_graded.mp4"
         apply_colour_grade(current, graded)
-        if graded.exists():
+        # exists() is not enough: a timed-out ffmpeg leaves a truncated file
+        # behind, and accepting it is how a broken episode reached delivery.
+        if graded.exists() and _decodes(graded):
             current = graded
+        elif graded.exists():
+            print("    grade output does not decode — keeping the ungraded cut")
+            graded.unlink(missing_ok=True)
+
+    # ─── Upscale ──────────────────────────────────────────────────
+    if getattr(args, "upscale", False) and current.exists():
+        print(f"  Upscaling video...")
+        upscaled = ep_out / f"ep{ep_num:02d}_upscaled.mp4"
+        if upscale_video(current, upscaled, scale=getattr(args, "upscale_factor", 4)):
+            current = upscaled
 
     # ─── Subtitles ───────────────────────────────────────────────
     if not args.no_subs and current.exists():
