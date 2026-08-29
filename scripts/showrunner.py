@@ -2831,6 +2831,7 @@ def poll_until_done(prompt_id: str, poll_interval: int = 10,
     waited = 0           # total wall clock, for reporting only
     queued_note = False
     inactive_checks = 0  # how many consecutive polls the job was absent from queue
+    unreachable = 0      # consecutive polls where the API did not answer
     while elapsed < max_wait:
         try:
             r = requests.get(f"{SERVER}/history/{prompt_id}")
@@ -2879,7 +2880,22 @@ def poll_until_done(prompt_id: str, poll_interval: int = 10,
                           f"queue after {elapsed}s without recording an output")
                     return False
         except requests.ConnectionError:
-            print(f"\r    Reconnecting... ({elapsed}s)", end="", flush=True)
+            # Bounded, not forever. ComfyUI can wedge with its process alive,
+            # its API dead and the GPU at 1 MiB -- and this loop would sit
+            # reconnecting for the whole max_wait without the caller ever
+            # learning the server was gone. Twenty poll intervals is generous
+            # for a restart (ours comes back in 55s) and short enough that a
+            # queue runner can move on instead of holding an idle card.
+            unreachable += 1
+            if unreachable >= 20:
+                print(f"\n      ComfyUI unreachable for {unreachable * poll_interval}s "
+                      f"— giving up on this prompt so the caller can move on. "
+                      f"The server is probably wedged; restart it.")
+                return False
+            print(f"\r    Reconnecting... ({elapsed}s, "
+                  f"{unreachable}/20)", end="", flush=True)
+        else:
+            unreachable = 0
         time.sleep(poll_interval)
         waited += poll_interval
     print(f"\n      TIMEOUT after {max_wait}s of execution ({waited}s wall clock) — the job may still be running. "
