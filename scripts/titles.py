@@ -38,8 +38,19 @@ def title_card(text: str, sub: str | None, out: str, seconds: float = 4.0,
                fade: float = 0.9) -> str:
     img = Image.new("RGB", (W, H), BG)
     d = ImageDraw.Draw(img)
-    f_title = ImageFont.truetype(SERIF_B, 74)
+    # Fit the title to the frame instead of assuming it fits. At a fixed 74px
+    # the letter-spaced "TIR NA NOG" is wider than 832px, so the centring
+    # maths ((W - width) / 2) produced a NEGATIVE x and the card rendered as
+    # "IR NA NO" -- the show's name with both ends cut off, on the first
+    # frame of the film.
     t = _spaced(text.upper())
+    size = 74
+    while size > 28:
+        f_title = ImageFont.truetype(SERIF_B, size)
+        bb = d.textbbox((0, 0), t, font=f_title)
+        if (bb[2] - bb[0]) <= W * 0.86:
+            break
+        size -= 2
     bb = d.textbbox((0, 0), t, font=f_title)
     top = H / 2 - 110
     d.text(((W - (bb[2] - bb[0])) / 2, top), t, font=f_title, fill=INK)
