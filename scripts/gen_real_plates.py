@@ -48,6 +48,13 @@ OISIN = ("a young Celtic warrior with dark shoulder-length hair, a short "
 NIAMH = ("a Celtic princess with long flowing golden hair and an emerald "
          "green gown")
 
+
+STORM = ("high black sea cliffs under a storm sky, heavy grey cloud, spray "
+         "breaking white against the rock far below, wind-flattened grass on "
+         "the clifftop, cold and unwelcoming")
+SEA = ("a heaving grey-green sea under low storm cloud, white water on the "
+       "swell, no land in sight, cold flat light")
+
 RUIN = ("a bleak grey Irish landscape under heavy overcast, a collapsed "
         "overgrown ring-fort of moss-covered stone, bare black thorn trees, "
         "cold flat diffuse daylight, grey-green and slate, no sunshine")
@@ -100,6 +107,18 @@ PLATES = [
     ("gen__ruin_walking", f"Wide shot. {RUIN}. {OISIN} walks from left to right "
      f"across the open ground in front of the fallen stones, mid-stride, his "
      f"whole body visible, small in a wide landscape."),
+
+    ("gen__storm_wide_oisin", f"Extreme wide shot. {STORM}. Far away near the "
+     f"cliff edge, small in the frame and braced against the wind, {OISIN} "
+     f"stands looking out, his whole body visible."),
+    ("gen__storm_wide_niamh", f"Extreme wide shot. {STORM}. Far away on the "
+     f"clifftop, small in the frame, {NIAMH} stands with her gown and hair "
+     f"pulled sideways by the wind, her whole body visible."),
+    ("gen__storm_twoshot", f"Wide two shot. {STORM}. {OISIN} on the left and "
+     f"{NIAMH} on the right, a few paces apart on the same clifftop, both "
+     f"full-length and at the same scale, facing each other in the wind."),
+    ("gen__sea_wide", f"Extreme wide shot of {SEA}. Nothing in the frame but "
+     f"water and sky. No figures, no boat, no land."),
 
 ]
 

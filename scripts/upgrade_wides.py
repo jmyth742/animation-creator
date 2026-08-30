@@ -74,6 +74,8 @@ def main():
     ap.add_argument("series"); ap.add_argument("--episode", type=int, required=True)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--steps", type=int, default=8)
+    ap.add_argument("--no-lora", action="store_true",
+                    help="render the plate without character LoRAs")
     a = ap.parse_args()
     sr.set_current_series(a.series)
     bible = sr.load_json(sr.series_path(a.series) / "bible.json")
@@ -99,11 +101,21 @@ def main():
         prefix = f"uw_{scene['id']}"
         clip = sr.find_latest_clip(prefix)
         if not clip:
+            # Pass the character LoRAs. A generated plate has no character
+            # reference in it, so the figure is approximate -- brown hair
+            # instead of black. The LoRAs are measured to HELP i2v (they only
+            # hurt s2v, which is a different checkpoint family), so they pull
+            # the likeness back toward the anchor during the render without
+            # touching the composition the plate is there to provide.
+            loras = sr.get_scene_loras(scene, bible) if not a.no_lora else None
+            if loras:
+                print(f"    with {', '.join(l[0] for l in loras)}", flush=True)
             wf = sr.build_video_workflow(
                 "wan", "i2v", sr.build_scene_prompt(scene, bible), 5150, prefix,
                 sr.MAX_FRAMES, res,
                 negative_prompt=sr.build_negative_prompt(scene),
-                steps=a.steps, image_name=sr.copy_to_input(str(plate)))
+                steps=a.steps, image_name=sr.copy_to_input(str(plate)),
+                loras=loras or None)
             try:
                 pid = sr.queue_prompt(wf)
                 if not sr.poll_until_done(pid, max_wait=1800):

@@ -3150,6 +3150,36 @@ def run_ffmpeg(cmd: list, what: str, output: str | Path | None = None,
     return True
 
 
+def _streams(path) -> set:
+    """Which stream types a file actually carries."""
+    try:
+        r = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
+                            "stream=codec_type", "-of", "csv=p=0", str(path)],
+                           capture_output=True, text=True, timeout=60)
+        return {ln.strip() for ln in r.stdout.splitlines() if ln.strip()}
+    except Exception:                                          # noqa: BLE001
+        return set()
+
+
+def _preserves_streams(src, dst) -> bool:
+    """
+    Did this step keep everything the input had?
+
+    _decodes() returns True for a perfectly valid SILENT file, which is how an
+    upscale that quietly dropped the audio track passed every check and turned
+    two finished episodes into silent films. Decoding is not enough: a step
+    that transforms a video must be asked whether it still has the streams it
+    started with.
+    """
+    have, want = _streams(dst), _streams(src)
+    missing = want - have
+    if missing:
+        print(f"      STREAM LOSS: input had {sorted(want)}, output has "
+              f"{sorted(have)} — lost {sorted(missing)}")
+        return False
+    return True
+
+
 def _decodes(path) -> bool:
     """
     Does this file actually play?
@@ -3158,6 +3188,9 @@ def _decodes(path) -> bool:
     killed ffmpeg leaves a truncated mp4 with no moov atom, which exists,
     reports a size, and cannot be decoded. Accepting one of those is how a
     42 MB file of nothing reached delivery as ep12_final.mp4.
+
+    Note what this does NOT check: whether the file still has the streams its
+    source had. Use _preserves_streams() for that.
     """
     try:
         r = subprocess.run(["ffmpeg", "-v", "error", "-i", str(path),
@@ -3634,10 +3667,25 @@ def _esrgan_via_comfy(input_path, output_path, model="RealESRGAN_x4plus_anime_6B
             with open(lst, "w") as f:
                 for q in parts:
                     f.write(f"file '{q}'\n")
+            joined = f"{td}/joined.mp4"
             subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat",
-                            "-safe", "0", "-i", lst, "-c", "copy",
-                            str(output_path)], check=False)
-        return _decodes(output_path)
+                            "-safe", "0", "-i", lst, "-c", "copy", joined],
+                           check=False)
+            # The chunks are silent by construction, so put the source audio
+            # back over the joined picture.
+            has_audio = subprocess.run(
+                ["ffprobe", "-v", "error", "-select_streams", "a:0",
+                 "-show_entries", "stream=codec_type", "-of", "csv=p=0",
+                 str(input_path)], capture_output=True, text=True).stdout.strip()
+            if has_audio and os.path.exists(joined):
+                subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", joined,
+                                "-i", str(input_path), "-map", "0:v:0",
+                                "-map", "1:a:0", "-c:v", "copy", "-c:a", "aac",
+                                "-b:a", "192k", "-shortest", str(output_path)],
+                               check=False)
+            elif os.path.exists(joined):
+                shutil.copy(joined, output_path)
+        return _decodes(output_path) and _preserves_streams(input_path, output_path)
     try:
         src = copy_to_input(str(input_path))
         fps = 16.0
@@ -3674,8 +3722,26 @@ def _esrgan_via_comfy(input_path, output_path, model="RealESRGAN_x4plus_anime_6B
         out = find_latest_clip(prefix)
         if not out:
             print("      ESRGAN upscale produced nothing"); return False
-        shutil.copy(out, output_path)
-        return _decodes(output_path)
+        # Carry the ORIGINAL audio across. The ComfyUI graph is
+        # LoadVideo -> GetVideoComponents -> images -> CreateVideo -> SaveVideo,
+        # which only ever touches the image stream, so its output is silent.
+        # Copying it straight over turned a finished episode into a silent film.
+        has_audio = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "a:0",
+             "-show_entries", "stream=codec_type", "-of", "csv=p=0",
+             str(input_path)], capture_output=True, text=True).stdout.strip()
+        if has_audio:
+            r = subprocess.run(
+                ["ffmpeg", "-v", "error", "-y", "-i", str(out),
+                 "-i", str(input_path), "-map", "0:v:0", "-map", "1:a:0",
+                 "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                 "-shortest", str(output_path)], capture_output=True, text=True)
+            if r.returncode != 0:
+                print(f"      could not remux audio: {r.stderr[:160]}")
+                return False
+        else:
+            shutil.copy(out, output_path)
+        return _decodes(output_path) and _preserves_streams(input_path, output_path)
     except Exception as e:                                     # noqa: BLE001
         print(f"      ESRGAN via ComfyUI failed: {type(e).__name__}: {e}")
         return False
