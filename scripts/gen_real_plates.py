@@ -127,6 +127,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("series")
     ap.add_argument("--only", default=None)
+    ap.add_argument("--reroll", type=int, default=0,
+                    help="shift the seed; a plate regenerated at the "
+                         "same index is byte-identical without it")
     a = ap.parse_args()
     sr.set_current_series(a.series)
     out_dir = sr.series_path(a.series) / "sets" / "_generated"
@@ -141,8 +144,12 @@ def main():
             print(f"  {name}: exists, skipping"); continue
         prompt = f"{subject}. {STYLE}"
         print(f"  {name} ...", flush=True)
-        wf = sr.build_t2i_workflow(prompt, seed=6100 + i * 137, prefix=name,
-                                   width=832, height=480)
+        # Seed derives from position, so deleting a bad plate and re-running
+        # reproduces it EXACTLY -- renders are deterministic. That is how the
+        # watermarked storm two-shot came back identical. --reroll shifts the
+        # seed so a bad plate can actually be replaced.
+        wf = sr.build_t2i_workflow(prompt, seed=6100 + i * 137 + a.reroll * 9173,
+                                   prefix=name, width=832, height=480)
         try:
             pid = sr.queue_prompt(wf)
             sr.poll_until_done(pid, max_wait=600)

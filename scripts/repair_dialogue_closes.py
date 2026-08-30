@@ -103,11 +103,11 @@ def main():
         # ep13_s12 is a 6.06s line in a 10.06s shot. A repaired take that is
         # four seconds short cannot be installed without shifting everything
         # after it, which is why the installer refused five of six.
-        want = float(scene.get("hold_seconds") or 0)
+        hold = float(scene.get("hold_seconds") or 0)
         have = sr._get_video_duration(clip)
         dst = OUT / f"{sid}.mp4"
-        if want > have + 0.1:
-            sr.hold_tail(clip, want, str(dst))
+        if hold > have + 0.1:
+            sr.hold_tail(clip, hold, str(dst))
             print(f"    held {have:.2f}s -> {sr._get_video_duration(str(dst)):.2f}s "
                   f"to match the authored shot", flush=True)
         else:
