@@ -164,3 +164,17 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+# A corner-artifact check was written here and deleted, because it did not
+# work. FLUX hallucinated a stock-image watermark into gen__storm_twoshot
+# despite a prompt saying "no text, no lettering, no watermark". Edge density
+# in the corner scored the watermarked plate at 1.09 and clean plates between
+# 0.91 and 2.10 -- grass and rock read the same as a logo, so the check could
+# not separate them.
+#
+# A metric that does not discriminate is worse than no metric, because it
+# gives permission to stop looking. Detecting text in an image needs a text
+# detector, not an edge count. Until there is one: LOOK at a generated plate
+# before an episode is built on it, and look at the corners, which is where
+# this one hid.
