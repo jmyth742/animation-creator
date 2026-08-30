@@ -3588,14 +3588,56 @@ def generate_srt(episode: dict, bible: dict, output_path: Path,
 
 
 def _esrgan_via_comfy(input_path, output_path, model="RealESRGAN_x4plus_anime_6B.pth",
-                      out_w=1920, out_h=1080) -> bool:
+                      out_w=1920, out_h=1080, chunk_seconds=12) -> bool:
     """
-    Upscale through ComfyUI with the anime ESRGAN already on disk.
+    Upscale through ComfyUI with the anime ESRGAN already on disk, IN CHUNKS.
 
     upscale_video() looked for the realesrgan-ncnn-vulkan BINARY and fell back
     to lanczos when it was absent. The binary was never installed; the MODEL
-    was, and ComfyUI can run it. So every delivered episode took the fallback.
+    was, and ComfyUI can run it.
+
+    The first version fed a whole episode to one graph and killed ComfyUI. A
+    149-second cut is about 2400 frames, each upscaled to 3328x1920 -- roughly
+    46 GB of image tensors alive at once. The process died accepting the
+    prompt, with no traceback, and took the night's queue with it.
+
+    So: split into chunks, upscale each, concatenate. Twelve seconds is about
+    190 frames, a few GB, and it leaves headroom for whatever else is loaded.
     """
+    import tempfile as _tf
+    dur = _get_video_duration(str(input_path))
+    if dur <= 0:
+        return False
+    n_chunks = max(1, int(dur / chunk_seconds) + (1 if dur % chunk_seconds else 0))
+    if n_chunks > 1:
+        print(f"      upscaling in {n_chunks} chunks of {chunk_seconds}s "
+              f"(one graph per chunk — a whole episode at once OOMs)", flush=True)
+        with _tf.TemporaryDirectory() as td:
+            parts = []
+            for i in range(n_chunks):
+                seg = f"{td}/seg{i:03d}.mp4"
+                subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss",
+                                str(i * chunk_seconds), "-t", str(chunk_seconds),
+                                "-i", str(input_path), "-c", "copy", seg],
+                               check=False)
+                if not os.path.exists(seg) or os.path.getsize(seg) < 1000:
+                    continue
+                up = f"{td}/up{i:03d}.mp4"
+                if not _esrgan_via_comfy(seg, up, model, out_w, out_h,
+                                         chunk_seconds=10 ** 6):
+                    print(f"      chunk {i+1}/{n_chunks} failed"); return False
+                parts.append(up)
+                print(f"      chunk {i+1}/{n_chunks} ok", flush=True)
+            if not parts:
+                return False
+            lst = f"{td}/parts.txt"
+            with open(lst, "w") as f:
+                for q in parts:
+                    f.write(f"file '{q}'\n")
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat",
+                            "-safe", "0", "-i", lst, "-c", "copy",
+                            str(output_path)], check=False)
+        return _decodes(output_path)
     try:
         src = copy_to_input(str(input_path))
         fps = 16.0
