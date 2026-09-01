@@ -108,6 +108,12 @@ def main():
     ap.add_argument("--threshold", type=float, default=1.5)
     ap.add_argument("--takes", type=int, default=2)
     ap.add_argument("--steps", type=int, default=10)
+    ap.add_argument("--limit", type=int, default=0,
+                    help="cap the number of shots, worst ratio first — 38 "
+                         "flagged shots at ~2 takes each is more night than "
+                         "the night has")
+    ap.add_argument("--min-episode", type=int, default=0,
+                    help="skip legacy episodes below this number")
     a = ap.parse_args()
     sr.set_current_series(a.series)
     bible = sr.load_json(sr.series_path(a.series) / "bible.json")
@@ -124,20 +130,38 @@ def main():
     else:
         sys.exit("need --episode or --from-qc")
 
-    results, touched = [], set()
+    # Flatten to (ratio, ep, scene) and take the worst first, so a capped
+    # run spends its takes where the sync is most broken.
+    work = []
     for ep_num, shots in sorted(targets.items()):
+        if ep_num < a.min_episode:
+            continue
         ep = sr.load_json(sr.episode_path(a.series, ep_num))
         for scene in ep["scenes"]:
             if not scene.get("dialogue"):
                 continue
             if shots is not None and scene["id"] not in shots:
                 continue
-            r = fix_shot(a.series, ep_num, scene, bible, a.threshold,
-                         a.takes, a.steps)
-            if r:
-                results.append(r)
-                if r["installed"]:
-                    touched.add(ep_num)
+            cur = sr.find_latest_clip(scene["id"])
+            vo = (Path("output") / a.series / f"ep{ep_num:02d}" / "audio"
+                  / f"{scene['id']}.mp3")
+            r0 = qc.lip_ratio(cur, vo) if (cur and vo.exists()) else None
+            if r0 is not None and r0 < a.threshold:
+                work.append((r0, ep_num, scene))
+    work.sort(key=lambda w: w[0])
+    if a.limit:
+        dropped = len(work) - a.limit
+        work = work[:a.limit]
+        if dropped > 0:
+            print(f"  capped at {a.limit} worst shots ({dropped} deferred)")
+    results, touched = [], set()
+    for _, ep_num, scene in work:
+        r = fix_shot(a.series, ep_num, scene, bible, a.threshold,
+                     a.takes, a.steps)
+        if r:
+            results.append(r)
+            if r["installed"]:
+                touched.add(ep_num)
     fixed = sum(1 for r in results if r["installed"])
     print(f"\n  {fixed}/{len(results)} weak shots improved and installed")
     if touched:
