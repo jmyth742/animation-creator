@@ -31,7 +31,12 @@ import showrunner as sr                                        # noqa: E402
 
 SEQ = re.compile(r"^(?P<stem>.+?)_(?P<n>\d+)_?\.mp4$", re.IGNORECASE)
 GEN = {"ruined_ireland": "ruin", "tir_na_nog": "valley",
-       "farewell_cliff": "cliff", "sunlight_path": "valley"}
+       "farewell_cliff": "cliff",
+       # sunlight_path is NOT a country path: the bible says "a blazing
+       # path of sunlight laid across the water". Mapping it to valley
+       # put a shipped shot of the sea-crossing in the otherworld
+       # meadow, and p(wide) could not object because it IS a wide.
+       "sunlight_path": "sun"}
 
 
 def next_name(original: Path) -> Path:

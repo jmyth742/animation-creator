@@ -55,6 +55,11 @@ STORM = ("high black sea cliffs under a storm sky, heavy grey cloud, spray "
 SEA = ("a heaving grey-green sea under low storm cloud, white water on the "
        "swell, no land in sight, cold flat light")
 
+
+SUNPATH = ("the open ocean at golden hour, a blazing path of sunlight laid "
+           "across calm mirror-bright water toward a wall of golden mist on "
+           "the horizon, vast open sky")
+
 RUIN = ("a bleak grey Irish landscape under heavy overcast, a collapsed "
         "overgrown ring-fort of moss-covered stone, bare black thorn trees, "
         "cold flat diffuse daylight, grey-green and slate, no sunshine")
@@ -119,6 +124,13 @@ PLATES = [
      f"full-length and at the same scale, facing each other in the wind."),
     ("gen__sea_wide", f"Extreme wide shot of {SEA}. Nothing in the frame but "
      f"water and sky. No figures, no boat, no land."),
+
+    ("gen__sun_wide_rider", f"Extreme wide shot. {SUNPATH}. Far out on the "
+     f"path of light, tiny in the frame, a rider on a white horse crosses the "
+     f"water away from camera, silhouetted against the golden mist."),
+    ("gen__sun_wide_oisin", f"Extreme wide shot. {SUNPATH}. Far out on the "
+     f"shining water, small in the frame, {OISIN} rides a white horse along "
+     f"the path of light, his whole figure visible."),
 
 ]
 

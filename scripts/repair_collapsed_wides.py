@@ -39,7 +39,12 @@ WIDE_ENOUGH = ("full_body", "three_quarter", "wide_figure", "walking_away")
 # The staged library has no real wide plate for anybody -- every framing name
 # resolves to the same head-and-shoulders portrait. The generated library does.
 GEN = {"ruined_ireland": "ruin", "tir_na_nog": "valley",
-       "farewell_cliff": "cliff", "sunlight_path": "valley"}
+       "farewell_cliff": "cliff",
+       # sunlight_path is NOT a country path: the bible says "a blazing
+       # path of sunlight laid across the water". Mapping it to valley
+       # put a shipped shot of the sea-crossing in the otherworld
+       # meadow, and p(wide) could not object because it IS a wide.
+       "sunlight_path": "sun"}
 
 
 def generated_wide(series, location, who):
