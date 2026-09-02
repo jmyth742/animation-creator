@@ -39,14 +39,20 @@ import showrunner as sr                                        # noqa: E402
 # has to be said or the model reaches for a sunnier default.
 STYLE = ("Cel-shaded 2D animation, clean confident linework, flat blocks of "
          "colour with simple shading, painted background art, animated film "
-         "still. Restrained desaturated palette of deep greens, slate blue-grey "
-         "and cold stone. Overcast diffuse light, low contrast, muted, no warm "
-         "sunlight, sombre and cool. No text, no lettering, no watermark")
+         "still. No text, no lettering, no watermark")
+# palettes live with the LOCATION constants below — a global "desaturated,
+# no warm sunlight" style muted the summer valley as thoroughly as the
+# winter it was written for
+COOL = (" Restrained desaturated palette of deep greens, slate blue-grey and "
+        "cold stone, overcast diffuse light, low contrast, sombre and cool.")
+WARM = (" Rich saturated palette of vivid greens and gold, warm clear light, "
+        "gentle contrast.")
 
-OISIN = ("a young Celtic warrior with dark shoulder-length hair, a short "
-         "trimmed beard, a brown leather jerkin and a dark green cloak")
-NIAMH = ("a Celtic princess with long flowing golden hair and an emerald "
-         "green gown")
+OISIN = ("a young Celtic warrior with dark shoulder-length hair, warm brown "
+         "eyes, a short trimmed beard, a brown leather jerkin and a dark "
+         "green cloak")
+NIAMH = ("a Celtic princess with long flowing golden hair, bright green "
+         "eyes, and an emerald green gown")
 
 
 STORM = ("high black sea cliffs under a storm sky, heavy grey cloud, spray "
@@ -64,17 +70,46 @@ SUNPATH = ("the open ocean at golden hour, a blazing path of sunlight laid "
 WINTER = ("the lush valley of eternal summer transformed by impossible "
           "snowfall -- snow on the green mountains, the tall waterfalls "
           "thinned to glassy ice, the still lake dark among white banks, "
-          "flakes hanging in cold blue-grey light")
+          "flakes hanging in cold blue-grey light" + COOL)
 
 RUIN = ("a bleak grey Irish landscape under heavy overcast, a collapsed "
         "overgrown ring-fort of moss-covered stone, bare black thorn trees, "
-        "cold flat diffuse daylight, grey-green and slate, no sunshine")
+        "cold flat diffuse daylight, grey-green and slate, no sunshine" + COOL)
 CLIFF = ("a high green headland above an endless calm sea at golden hour, "
-         "one ancient wind-bent tree on the clifftop, long low shadows")
+         "one ancient wind-bent tree on the clifftop, long low shadows" + WARM)
 VALLEY = ("a lush Celtic valley of eternal summer, tall silver waterfalls "
           "spilling from green mountains, a still lake, wildflowers, warm light")
 
 PLATES = [
+    ("gen__cliff_close_oisin", f"Close-up portrait. The face and shoulders "
+     f"of {OISIN}, his whole head in frame with headroom, golden-hour light "
+     f"on his face. Behind him, {CLIFF}, softly out of focus."),
+    ("gen__cliff_close_niamh", f"Close-up portrait. The face and shoulders "
+     f"of {NIAMH}, her whole head in frame with headroom, golden-hour light "
+     f"on her face, wind in her hair. Behind her, {CLIFF}, softly out of "
+     f"focus."),
+    ("gen__ruin_close_oisin", f"Close-up portrait. The face and shoulders "
+     f"of {OISIN}, his whole head in frame with headroom, cold grey light. "
+     f"Behind him, {RUIN}, softly out of focus."),
+    ("gen__ruin_close_niamh", f"Close-up portrait. The face and shoulders "
+     f"of {NIAMH}, her whole head in frame with headroom, cold grey light. "
+     f"Behind her, {RUIN}, softly out of focus."),
+    ("gen__valley_close_oisin", f"Close-up portrait. The face and shoulders "
+     f"of {OISIN}, his whole head in frame with headroom above his hair, "
+     f"looking just past the camera. Behind him, {VALLEY}, softly out of "
+     f"focus."),
+    ("gen__valley_close_niamh", f"Close-up portrait. The face and shoulders "
+     f"of {NIAMH}, her whole head in frame with headroom above her hair, "
+     f"looking just past the camera. Behind her, {VALLEY}, softly out of "
+     f"focus."),
+    ("gen__winter_close_oisin", f"Close-up portrait. The face and shoulders "
+     f"of {OISIN}, breath visible in the cold, his whole head in frame with "
+     f"headroom, looking just past the camera. Behind him, {WINTER}, softly "
+     f"out of focus."),
+    ("gen__winter_close_niamh", f"Close-up portrait. The face and shoulders "
+     f"of {NIAMH}, a heavy wool shawl over her gown, her whole head in frame "
+     f"with headroom, looking just past the camera. Behind her, {WINTER}, "
+     f"softly out of focus."),
     # (name, prompt) -- WIDES: the figure small, the place doing the work
     ("gen__ruin_wide_oisin", f"Extreme wide shot. {RUIN}. Far away in the "
      f"middle distance, small in the frame, {OISIN} stands alone among the "

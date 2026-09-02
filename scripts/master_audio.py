@@ -40,28 +40,47 @@ def measure(path):
     return json.loads(t[i:]) if i >= 0 else {}
 
 
-def master(final: Path) -> bool:
-    m1 = measure(final)
-    if not m1:
-        print("    could not measure"); return False
+def _linear_pass(src: Path, out: Path, m1: dict) -> bool:
     af = (f"loudnorm=I={TARGET_I}:TP={TARGET_TP}:LRA={TARGET_LRA}"
           f":measured_I={m1['input_i']}:measured_TP={m1['input_tp']}"
           f":measured_LRA={m1['input_lra']}"
           f":measured_thresh={m1['input_thresh']}"
           f":offset={m1['target_offset']}:linear=true")
-    out = final.with_name(final.stem.replace("_final", "_mastered") + ".mp4")
-    r = subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(final),
+    r = subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(src),
                         "-c:v", "copy", "-af", af, "-c:a", "aac",
                         "-b:a", "192k", "-ar", "48000", str(out)],
                        capture_output=True, text=True)
     if r.returncode != 0 or not sr._decodes(out) \
-            or not sr._preserves_streams(final, out):
+            or not sr._preserves_streams(src, out):
         print(f"    mastering failed: {r.stderr[:120]}"); return False
+    return True
+
+
+def master(final: Path) -> bool:
+    m1 = measure(final)
+    if not m1:
+        print("    could not measure"); return False
+    out = final.with_name(final.stem.replace("_final", "_mastered") + ".mp4")
+    if not _linear_pass(final, out, m1):
+        return False
     m2 = measure(out)
     got = float(m2.get("input_i", -99))
+    # linear mode refuses to clip true peaks, so a very quiet or very
+    # dynamic mix can land short in one hop (ep12: -24 -> -15.5).
+    # A second iteration measured from the first attempt converges.
     if abs(got - TARGET_I) > 1.0:
-        print(f"    landed at {got} LUFS, off target — keeping the original")
-        out.unlink(missing_ok=True); return False
+        print(f"    first pass landed at {got} LUFS — iterating")
+        out2 = out.with_name(out.stem + "_i2.mp4")
+        if not _linear_pass(out, out2, m2):
+            out.unlink(missing_ok=True); return False
+        m3 = measure(out2)
+        got = float(m3.get("input_i", -99))
+        if abs(got - TARGET_I) > 1.0:
+            print(f"    still {got} LUFS after two passes — keeping original")
+            out.unlink(missing_ok=True); out2.unlink(missing_ok=True)
+            return False
+        shutil.move(out2, out)
+        m2 = m3
     shutil.copy(out, final)
     print(f"    {float(m1['input_i']):.1f} -> {got:.1f} LUFS  "
           f"(range {m1['input_lra']} -> {m2['input_lra']} LU)")
