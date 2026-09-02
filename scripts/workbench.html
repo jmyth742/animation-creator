@@ -142,6 +142,7 @@ a{color:var(--gold)}
  </div>
  <div class="row" style="margin-top:14px">
   <button class="big" onclick="saveDraft()">Save draft</button>
+  <button class="big" id="saveback" style="display:none" onclick="saveBack()">Save back</button>
   <button class="ghost" onclick="importGate()">Import → run gates</button>
   <button class="ghost" onclick="clearAll()">New</button>
  </div>
@@ -159,7 +160,7 @@ a{color:var(--gold)}
   <textarea id="c_visual" placeholder="Broad grey-bearded fianna captain, scarred cheek, wolf-fur cloak over dark iron mail…"></textarea>
   <div class="lab">Personality (optional, guides the writing)</div>
   <input type="text" id="c_pers" placeholder="Slow to speak, never wrong twice.">
-  <div class="row" style="margin-top:12px"><button class="big" onclick="forge('character')">Forge character</button></div>
+  <div class="row" style="margin-top:12px"><button class="big" onclick="forge('character')">Forge character</button><button class="ghost" id="castedit" style="display:none" onclick="saveCast()">Save edits (no re-gen)</button></div>
   <pre id="forgelog" style="display:none;margin-top:10px"></pre>
   <div class="verdict warn" style="margin-top:10px">Forging renders a portrait, stages them into every set, builds close seeds and a wide per location — a few minutes of GPU, queued behind whatever runs.</div>
  </div></section>
@@ -169,7 +170,7 @@ a{color:var(--gold)}
   <div class="row"><input type="text" id="l_id" placeholder="id, e.g. dark_forest" style="flex:1"></div>
   <div class="lab">Description — the bible entry, palette and light included</div>
   <textarea id="l_desc" placeholder="A drowned oak forest under green twilight, still black water between the trunks, cold mist, no sky…"></textarea>
-  <div class="row" style="margin-top:12px"><button class="big" onclick="forge('location')">Forge location</button></div>
+  <div class="row" style="margin-top:12px"><button class="big" onclick="forge('location')">Forge location</button><button class="ghost" id="setedit" style="display:none" onclick="saveSet()">Save edits (no re-gen)</button></div>
   <pre id="forgelog2" style="display:none;margin-top:10px"></pre>
   <div class="verdict warn" style="margin-top:10px">Forging renders the master plate, derives camera setups, and builds a wide per lead plus a two-shot — the location is shootable when it finishes.</div>
  </div></section>
@@ -272,10 +273,11 @@ async function loadEpisodes(){const eps=await(await fetch('api/episodes')).json(
 async function openEp(n){const d=await(await fetch('api/episode/'+n)).json();
  const el=document.getElementById('epdetail');
  el.innerHTML=`<div class="card"><div class="shead"><span class="stype" style="font-size:1.2rem">${d.title}</span>
-  <button class="mini" onclick="showGraph(${n})">Lineage graph</button> <button class="mini gold" onclick="queueRender(${n})">Re-render episode</button></div>
+  <button class="mini" onclick="editEpisode(${n})">Edit in composer</button> <button class="mini" onclick="showGraph(${n})">Lineage graph</button> <button class="mini gold" onclick="queueRender(${n})">Re-render episode</button></div>
   ${d.final?`<video controls preload="metadata" src="media/final/${d.final}" style="margin-top:10px"></video>`:''}
   ${d.scenes.map(s=>`<div class="lab" style="margin-top:16px">${s.id} — ${s.dialogue&&s.dialogue.length?'“'+s.dialogue[0].line.slice(0,60)+'…”':(s.visual||'').slice(0,60)}</div>
-   <div class="takes">${(s.takes||[]).map(t=>`<div class="take ${t.live?'live':''}">
+   <div class="takes"><button class="mini" onclick="rerollShot('${s.id}')" style="margin-bottom:6px">↻ re-roll this shot</button>
+   ${(s.takes||[]).map(t=>`<div class="take ${t.live?'live':''}">
     <video controls preload="none" src="media/clip/${t.file}"></video>
     <div class="m"><span>${t.live?'LIVE':new Date(t.mtime*1000).toLocaleDateString()}</span>
     ${t.live?'':`<button class="mini" onclick="promote('${t.file}',${n})">make live</button>`}</div></div>`).join('')||'<span class="m">no takes</span>'}</div>`).join('')}
@@ -357,20 +359,67 @@ function gsel(kind,ref){const g=window._g, el=document.getElementById('gdetail')
    ${(a.parents||[]).length?`<div class="lab">made from</div><div class="mono">${a.parents.map(p=>p.kind+': '+esc(p.label)).join('\n')}</div>`:''}
    <div class="lab">feeds shots</div><div class="mono">${esc(kids)||'—'}</div>`;}
 }
+let editingEp=null;
+async function editEpisode(n){
+ const d=await(await fetch('api/episode/'+n)).json();
+ editingEp=n; curSlug=null;
+ title.value=d.title||''; summary.value=d.summary||'';
+ shots=(d.scenes||[]).map(sc=>{
+  const chars=sc.characters||[];
+  const dia=(sc.dialogue||[]);
+  let type='figure';
+  if(dia.length)type='close';
+  else if(sc.seed==='location'||!chars.length)type='wide';
+  else if(chars.length>1)type='twoshot';
+  return {type,location:sc.location||'',characters:dia.length?[dia[0].character]:chars,
+          visual:sc.visual||'',line:dia.length?dia[0].line:'',hold:sc.hold_seconds||7}});
+ render();tab('compose');
+ document.getElementById('saveback').style.display='';
+ document.getElementById('saveback').textContent='Save back to ep'+String(n).padStart(2,'0');
+ toast('Editing ep'+n+' — Save back overwrites it (gates re-run)');}
+async function saveBack(){
+ if(editingEp==null)return;
+ const r=await fetch('api/episode/'+editingEp,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(docJSON())});
+ const j=await r.json();
+ const out=document.getElementById('gateout');out.style.display='block';out.textContent=j.log;
+ toast(j.ok?('ep'+editingEp+' saved — gates passed; re-render from Episodes'):'gates refused the edit — see log');
+ if(j.ok)loadEpisodes();}
+async function rerollShot(sid){
+ await fetch('api/reroll',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({shot:sid})});
+ toast('Re-rolling '+sid+' with fresh dice — new take lands live when done');
+ if(window._rrt)clearInterval(window._rrt);
+ window._rrt=setInterval(async()=>{const j=await(await fetch('api/reroll/log?shot='+sid)).json();
+  if(j.done){clearInterval(window._rrt);toast(sid+': '+(j.log.includes('DONE')?'new take is live — re-stitch to fold in':'re-roll FAILED'));}},6000);}
 async function loadBible(){const b=await(await fetch('api/bible')).json();window._bible=b;
  const vs=document.getElementById('c_voice');
  if(vs&&!vs.options.length)vs.innerHTML=b.voices.map(v=>`<option>${v}</option>`).join('');
  document.getElementById('castlist').innerHTML=Object.entries(b.characters).map(([k,v])=>{
   const th=(DATA&&DATA.characters[k]||{}).thumb;
-  return `<div class="eprow"><span class="id">${k}</span>${th?`<img src="${th}" style="width:44px;height:28px;object-fit:cover;border:1px solid var(--edge)">`:''}
+  return `<div class="eprow" onclick="editCast('${k}')"><span class="id">${k}</span>${th?`<img src="${th}" style="width:44px;height:28px;object-fit:cover;border:1px solid var(--edge)">`:''}
    <span class="t" style="font-weight:400;font-size:.78rem">${esc((v.visual||'').slice(0,80))}</span>
-   <span class="m">${v.voice||'no voice'}</span></div>`}).join('');
+   <span class="m">${v.voice||'no voice'} · tap to edit</span></div>`}).join('');
  document.getElementById('setlist').innerHTML=Object.entries(b.locations).map(([k,v])=>{
   const th=(DATA&&DATA.locations[k]||{}).thumb;
   const plates=DATA?Object.keys(DATA.gen).filter(g=>g.includes('__'+({ruined_ireland:'ruin',tir_na_nog:'valley',farewell_cliff:'cliff',sunlight_path:'sun',storm_cliffs:'storm',stormy_sea:'sea'}[k]||k)+'_')).length:0;
-  return `<div class="eprow"><span class="id" style="min-width:8em">${k}</span>${th?`<img src="${th}" style="width:44px;height:28px;object-fit:cover;border:1px solid var(--edge)">`:''}
+  return `<div class="eprow" onclick="editSet('${k}')"><span class="id" style="min-width:8em">${k}</span>${th?`<img src="${th}" style="width:44px;height:28px;object-fit:cover;border:1px solid var(--edge)">`:''}
    <span class="t" style="font-weight:400;font-size:.78rem">${esc(String(v).slice(0,70))}</span>
    <span class="m">${plates} gen plates</span></div>`}).join('')}
+function editCast(k){const v=window._bible.characters[k];
+ c_id.value=k;c_visual.value=v.visual||'';c_pers.value=v.personality||'';
+ if(v.voice)c_voice.value=v.voice;
+ document.getElementById('castedit').style.display='';
+ document.getElementById('castedit').dataset.id=k;
+ c_visual.scrollIntoView({behavior:'smooth'});toast('Editing '+k+' — Save updates the bible; Forge re-generates the pictures');}
+async function saveCast(){const k=document.getElementById('castedit').dataset.id;
+ await fetch('api/edit/character',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:k,visual:c_visual.value,voice:c_voice.value,personality:c_pers.value})});
+ toast(k+' saved to the bible');loadBible();}
+function editSet(k){l_id.value=k;l_desc.value=String(window._bible.locations[k]||'');
+ document.getElementById('setedit').style.display='';
+ document.getElementById('setedit').dataset.id=k;
+ l_desc.scrollIntoView({behavior:'smooth'});toast('Editing '+k);}
+async function saveSet(){const k=document.getElementById('setedit').dataset.id;
+ await fetch('api/edit/location',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:k,desc:l_desc.value})});
+ toast(k+' saved to the bible');loadBible();}
 async function hearVoice(){const v=document.getElementById('c_voice').value;
  const r=await fetch('api/voicetest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({voice:v})});
  new Audio(URL.createObjectURL(await r.blob())).play()}

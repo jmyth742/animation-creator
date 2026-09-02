@@ -68,13 +68,16 @@ def main():
     ap.add_argument("series")
     ap.add_argument("--file", default=None)
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--number", type=int, default=None,
+                    help="overwrite this episode number instead of appending")
     a = ap.parse_args()
     sr.set_current_series(a.series)
     raw = Path(a.file).read_text() if a.file else sys.stdin.read()
     doc = json.loads(raw)
 
     eps = sorted((sr.series_path(a.series) / "episodes").glob("ep*.json"))
-    n = max(int(p.stem[2:]) for p in eps) + 1 if eps else 1
+    n = a.number if a.number else (
+        max(int(p.stem[2:]) for p in eps) + 1 if eps else 1)
     ep_id = f"ep{n:02d}"
     scenes = [resolve_scene(a.series, i + 1, sc, ep_id)
               for i, sc in enumerate(doc.get("scenes", []))]

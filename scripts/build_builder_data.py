@@ -23,6 +23,10 @@ def build(series, out=None):
     sr.set_current_series(series)
     S = sr.series_path(series) / "sets"
     b = sr.load_json(sr.series_path(series) / "bible.json")
+    if not isinstance(b.get("characters"), dict):
+        b["characters"] = {}
+    if not isinstance(b.get("world"), dict):
+        b["world"] = {"locations": {}}
     data = {"locations": {}, "characters": {}, "gen": {}, "inplace": []}
     for k, v in (b.get("world", {}).get("locations", {}) or {}).items():
         m = S / k / "master.png"
@@ -31,15 +35,16 @@ def build(series, out=None):
         data["locations"][k] = {"desc": str(v)[:160],
                                 "thumb": thumb(m) if Path(m).exists() else None}
     for k, v in b.get("characters", {}).items():
-        if not v.get("voice"):
-            continue
         ref = sr._find_ref(sr.series_path(series) / "reference_images", k, "char")
         data["characters"][k] = {"visual": (v.get("visual") or "")[:110],
                                  "voice": v.get("voice"),
                                  "thumb": thumb(ref, 160) if ref else None}
-    for p in sorted((S / "_generated").glob("gen__*.png")):
-        data["gen"][p.stem] = thumb(p)
-    data["inplace"] = sorted(str(p.relative_to(S)) for p in S.glob("*/*__inplace.png"))
+    if (S / "_generated").exists():
+        for p in sorted((S / "_generated").glob("gen__*.png")):
+            data["gen"][p.stem] = thumb(p)
+    data["inplace"] = sorted(str(p.relative_to(S))
+                             for p in S.glob("*/*__inplace.png")) \
+        if S.exists() else []
     Path(out).write_text(json.dumps(data))
     return data
 

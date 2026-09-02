@@ -447,6 +447,70 @@ def voicetest():
     return send_file(out, mimetype="audio/mpeg")
 
 
+
+# ── full control: save-in-place, single-shot reroll, bible edits ─────
+@app.post("/api/episode/<int:n>")
+def save_episode(n):
+    doc = request.get_json(force=True)
+    tmp = "/tmp/wb_save.json"
+    Path(tmp).write_text(json.dumps(doc))
+    r = subprocess.run([sys.executable, str(ROOT / "import_episode.py"),
+                        S(), "--file", tmp, "--number", str(n)],
+                       capture_output=True, text=True, timeout=600)
+    return jsonify({"ok": r.returncode == 0,
+                    "log": (r.stdout + r.stderr)[-4000:]})
+
+
+@app.post("/api/reroll")
+def reroll():
+    shot = request.get_json(force=True).get("shot", "")
+    if not re.fullmatch(r"ep\d+_s\d+[a-z]?", shot):
+        abort(400)
+    log = f"/workspace/wb_reroll_{shot}.log"
+    subprocess.Popen([sys.executable, str(ROOT / "reroll_shot.py"), S(), shot],
+                     stdout=open(log, "w"), stderr=subprocess.STDOUT,
+                     start_new_session=True, cwd=str(ROOT.parent))
+    return jsonify({"rolling": shot, "log": log})
+
+
+@app.get("/api/reroll/log")
+def reroll_log():
+    shot = request.args.get("shot", "")
+    log = Path(f"/workspace/wb_reroll_{shot}.log")
+    t = log.read_text()[-3000:] if log.exists() else ""
+    return jsonify({"log": t, "done": "DONE" in t or "FAILED" in t})
+
+
+@app.post("/api/edit/character")
+def edit_character():
+    d = request.get_json(force=True)
+    cid = d.get("id", "")
+    b = sr.load_json(sr.series_path(S()) / "bible.json")
+    if cid not in b.get("characters", {}):
+        abort(404)
+    for k in ("visual", "voice", "personality"):
+        if d.get(k) is not None:
+            b["characters"][cid][k] = d[k]
+    bp = sr.series_path(S()) / "bible.json"
+    shutil.copy(bp, bp.with_suffix(f".json.bak.{int(time.time())}"))
+    bp.write_text(json.dumps(b, indent=2))
+    return jsonify({"saved": cid})
+
+
+@app.post("/api/edit/location")
+def edit_location():
+    d = request.get_json(force=True)
+    lid = d.get("id", "")
+    b = sr.load_json(sr.series_path(S()) / "bible.json")
+    if lid not in b.get("world", {}).get("locations", {}):
+        abort(404)
+    b["world"]["locations"][lid] = d.get("desc", "")
+    bp = sr.series_path(S()) / "bible.json"
+    shutil.copy(bp, bp.with_suffix(f".json.bak.{int(time.time())}"))
+    bp.write_text(json.dumps(b, indent=2))
+    return jsonify({"saved": lid})
+
+
 if __name__ == "__main__":
     print(f"workbench key: {KEY}")
     app.run(host="0.0.0.0", port=8888, threaded=True)
