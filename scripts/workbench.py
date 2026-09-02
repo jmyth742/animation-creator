@@ -589,6 +589,61 @@ def setdetail(lid):
     return jsonify(out)
 
 
+
+# ── the pulse: what the machine is doing right now ───────────────────
+@app.get("/api/pulse")
+def pulse():
+    gpu = "?"
+    try:
+        r = subprocess.run(["nvidia-smi", "--query-gpu=utilization.gpu",
+                            "--format=csv,noheader,nounits"],
+                           capture_output=True, text=True, timeout=5)
+        gpu = r.stdout.strip().splitlines()[0] + "%"
+    except Exception:
+        pass
+    q = {"queue_running": [], "queue_pending": []}
+    try:
+        import urllib.request
+        with urllib.request.urlopen("http://127.0.0.1:8188/queue",
+                                    timeout=4) as f:
+            q = json.loads(f.read())
+    except Exception:
+        pass
+    jobs = []
+    try:
+        r = subprocess.run(["ps", "-eo", "args"], capture_output=True,
+                           text=True, timeout=5)
+        for ln in r.stdout.splitlines():
+            for tag in ("winter", "night", "produce", "forge_assets",
+                        "reroll_shot", "gen_real_plates"):
+                if tag in ln and "grep" not in ln and ".sh" in ln or \
+                        (tag in ln and "python" in ln and "grep" not in ln):
+                    frag = ln.strip().split("/")[-1][:40]
+                    if frag and frag not in jobs:
+                        jobs.append(frag)
+                    break
+    except Exception:
+        pass
+    # newest activity line from the tranche logs
+    last = ""
+    logs = sorted(Path("/workspace").glob("*.log"),
+                  key=lambda f: f.stat().st_mtime, reverse=True)
+    for lg in logs[:3]:
+        try:
+            for ln in reversed(lg.read_text()[-4000:].splitlines()):
+                if ln.startswith("[") and "===" in ln:
+                    last = f"{lg.stem}: {ln.strip()[:90]}"
+                    break
+        except Exception:
+            continue
+        if last:
+            break
+    return jsonify({"gpu": gpu,
+                    "queue": len(q.get("queue_running", []))
+                    + len(q.get("queue_pending", [])),
+                    "jobs": jobs[:5], "last": last})
+
+
 if __name__ == "__main__":
     print(f"workbench key: {KEY}")
     app.run(host="0.0.0.0", port=8888, threaded=True)

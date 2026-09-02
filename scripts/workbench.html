@@ -125,14 +125,22 @@ a{color:var(--gold)}
  <button class="mini gold" onclick="newShow()">+ new show</button>
 </div>
 <div class="tabs">
- <button class="tab on" data-t="compose" onclick="tab('compose')">Compose</button>
- <button class="tab" data-t="episodes" onclick="tab('episodes')">Episodes</button>
- <button class="tab" data-t="drafts" onclick="tab('drafts')">Drafts</button>
+ <button class="tab on" data-t="home" onclick="tab('home')">Home</button>
  <button class="tab" data-t="cast" onclick="tab('cast')">Cast</button>
  <button class="tab" data-t="sets" onclick="tab('sets')">Sets</button>
-</div></header>
+ <button class="tab" data-t="compose" onclick="tab('compose')">Write</button>
+ <button class="tab" data-t="episodes" onclick="tab('episodes')">Episodes</button>
+ <button class="tab" data-t="drafts" onclick="tab('drafts')">Drafts</button>
+</div>
+<div id="pulse" style="font:.62rem 'JetBrains Mono';color:var(--dim);padding:6px 0 8px"></div></header>
 <main>
-<section id="t-compose">
+<section id="t-home">
+ <div id="homepath"></div>
+ <div class="lab">Episodes</div><div id="posterwall" class="gal" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))"></div>
+ <div class="lab">Cast</div><div id="homecast" class="pills"></div>
+ <div class="lab">Sets</div><div id="homesets" class="pills"></div>
+</section>
+<section id="t-compose" style="display:none">
  <div class="row" style="margin-top:8px">
   <input type="text" id="title" placeholder="Episode title" style="flex:2;min-width:180px">
   <input type="text" id="summary" placeholder="One-line summary" style="flex:3;min-width:220px">
@@ -195,7 +203,7 @@ async function boot(){
  const sel=document.getElementById('showsel');
  sel.innerHTML=sh.shows.map(x=>`<option value="${x.id}" ${x.id===sh.current?'selected':''}>${x.title.toUpperCase()} · ${x.episodes} EP</option>`).join('');
  DATA=await(await fetch('api/data')).json();
- render();loadEpisodes();loadDrafts();loadBible();
+ render();loadEpisodes();loadDrafts();loadBible();loadHome();tab('home');
 }
 async function pickShow(id){
  await fetch('api/selectshow',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
@@ -246,7 +254,7 @@ function render(){const el=document.getElementById('shots');
   const chs=(s.type==='figure'||s.type==='close')?`<div class="lab">Character</div><div class="pills">`+CHARS().map(c=>`<button class="pill ${s.characters[0]===c?'on':''}" onclick="setC(${i},'${c}')">${c}</button>`).join('')+`</div>`:'';
   const line=s.type==='close'?`<div class="lab">The line — ${s.characters[0]||'?'}</div><textarea oninput="setF(${i},'line',this.value)">${s.line||''}</textarea><div class="wc">${(s.line||'').trim().split(/\s+/).filter(Boolean).length} words · ~${holdFor(s)}s</div>`:'';
   return `<div class="shot ${bad?'bad':'okv'}"><div class="shead"><span class="snum">${String(i+1).padStart(2,'0')}</span><span class="stype">${NAMES[s.type]}</span>
-   <span class="row"><button class="mini" onclick="move(${i},-1)">↑</button><button class="mini" onclick="move(${i},1)">↓</button><button class="mini" onclick="del(${i})">✕</button></span></div>
+   <span class="row"><button class="mini" onclick="move(${i},-1)">↑</button><button class="mini" onclick="move(${i},1)">↓</button><button class="mini" onclick="dupShot(${i})" title="duplicate — a close flips the speaker">⧉</button><button class="mini" onclick="del(${i})">✕</button></span></div>
    <div class="lab">Location</div><div class="pills">${locs}</div>${chs}
    <div class="lab">What we see</div><textarea oninput="setF(${i},'visual',this.value)">${s.visual||''}</textarea>${line}
    ${p&&p.img?`<img class="preview" src="${p.img}">`:''}
@@ -258,7 +266,24 @@ function stats(){const n=shots.length,d=shots.filter(s=>s.type==='close').length
  bad=shots.reduce((a,s)=>a+(lint(s).some(x=>x[0]==='bad')?1:0),0);
  const c=(x,g)=>`<span class="stat ${g===true?'ok':g===false?'warn':''}">${x}</span>`;
  document.getElementById('stats').innerHTML=c(n+' shots')+c((t/60).toFixed(1)+' min',t>=100&&t<=260?true:n?false:undefined)+c(sil+'% silent',sil>=50&&sil<=70?true:n?false:undefined)+c(d+' lines',d>=5&&d<=9?true:n?false:undefined)+c(two+' two-shots',two>=1&&two<=4?true:n?false:undefined)+(bad?c(bad+' blocked',false):c('grammar clean',n?true:undefined))}
-function addShot(t){const s={type:t,location:'',characters:t==='twoshot'?CHARS():[],visual:'',line:'',hold:t==='wide'?7:6.5};shots.push(s);render()}
+function addShot(t){
+ const prev=shots[shots.length-1];
+ const loc=prev?prev.location:'';
+ let chars=t==='twoshot'?CHARS():[];
+ if(t==='close'){
+  const lastClose=[...shots].reverse().find(x=>x.type==='close');
+  const c=CHARS();
+  chars=lastClose&&c.length>1?[c.find(x=>x!==lastClose.characters[0])||c[0]]:(c.length?[c[0]]:[]);
+ }
+ if(t==='figure'&&prev&&prev.characters.length===1)chars=[...prev.characters];
+ const s={type:t,location:loc,characters:chars,visual:'',line:'',hold:t==='wide'?7:6.5};
+ shots.push(s);render();
+ if(!Object.keys(DATA.locations).length)toast('This show has no sets yet — forge one first (Sets tab)');
+}
+function dupShot(i){
+ const c=JSON.parse(JSON.stringify(shots[i]));
+ if(c.type==='close'){const ch=CHARS();if(ch.length>1)c.characters=[ch.find(x=>x!==c.characters[0])||ch[0]];c.line='';}
+ shots.splice(i+1,0,c);render();toast(c.type==='close'?'Duplicated & flipped speaker — write the reply':'Shot duplicated');}
 function setL(i,k){shots[i].location=k;render()}
 function setC(i,c){shots[i].characters=[c];render()}
 function setF(i,f,v){shots[i][f]=v;stats()}
@@ -272,10 +297,13 @@ function docJSON(){return{title:title.value||'Untitled',summary:summary.value||'
 async function saveDraft(){const r=await fetch('api/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(docJSON())});const j=await r.json();curSlug=j.slug;toast(`Saved — ${j.slug} v${j.version}`);loadDrafts()}
 async function importGate(){const out=document.getElementById('gateout');out.style.display='block';out.textContent='running gates…';
  const r=await fetch('api/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(docJSON())});
- const j=await r.json();out.textContent=j.log;toast(j.ok?'Gates passed — render from the Episodes tab':'Gates refused it — see the log');if(j.ok)loadEpisodes()}
+ const j=await r.json();out.textContent=j.log;if(j.ok){loadEpisodes();const m=j.log.match(/ep(\d+)/);
+  if(m&&confirm('Gates passed. Render it now?'))queueRenderBare(parseInt(m[1]));
+  else toast('Gates passed — render any time from Episodes');}
+ else toast('Gates refused it — see the log')}
 function tab(t){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
- for(const s of['compose','episodes','drafts','cast','sets'])document.getElementById('t-'+s).style.display=s===t?'':'none';
- if(t==='episodes')loadEpisodes();if(t==='drafts')loadDrafts();if(t==='cast'||t==='sets')loadBible()}
+ for(const s of['home','compose','episodes','drafts','cast','sets'])document.getElementById('t-'+s).style.display=s===t?'':'none';
+ if(t==='episodes')loadEpisodes();if(t==='drafts')loadDrafts();if(t==='cast'||t==='sets')loadBible();if(t==='home')loadHome()}
 async function loadEpisodes(){const eps=await(await fetch('api/episodes')).json();
  document.getElementById('eplist').innerHTML=eps.map(e=>`<div class="eprow" onclick="openEp(${e.n})"><span class="id">${e.id}</span>${e.rendered?`<img class="poster" loading="lazy" src="media/poster/${e.n}" onerror="this.style.display='none'">`:''}<span class="t">${e.title}</span><span class="m">${e.shots} shots${e.seconds?' · '+(e.seconds/60).toFixed(1)+' min':''}</span><span class="stat ${e.rendered?'ok':''}">${e.rendered?'rendered':'authored'}</span></div>`).join('')}
 async function openEp(n){const d=await(await fetch('api/episode/'+n)).json();
@@ -292,6 +320,7 @@ async function openEp(n){const d=await(await fetch('api/episode/'+n)).json();
   <div id="gpanel"></div><pre id="rlog" style="display:none;margin-top:12px"></pre></div>`;
  el.scrollIntoView({behavior:'smooth'})}
 async function promote(f,n){const r=await(await fetch('api/promote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file:f})})).json();toast('Promoted — '+r.note);openEp(n)}
+async function queueRenderBare(n){const r=await(await fetch('api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({episode:n})})).json();toast('Rendering ep'+n+' — watch the pulse line');}
 async function queueRender(n){const r=await(await fetch('api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({episode:n})})).json();
  toast('Render queued for ep'+n);const el=document.getElementById('rlog');el.style.display='block';
  const poll=async()=>{const j=await(await fetch('api/log?f='+encodeURIComponent(r.log))).json();el.textContent=j.log;};
@@ -398,6 +427,38 @@ async function rerollShot(sid){
  if(window._rrt)clearInterval(window._rrt);
  window._rrt=setInterval(async()=>{const j=await(await fetch('api/reroll/log?shot='+sid)).json();
   if(j.done){clearInterval(window._rrt);toast(sid+': '+(j.log.includes('DONE')?'new take is live — re-stitch to fold in':'re-roll FAILED'));}},6000);}
+async function loadHome(){
+ const [eps,b,ds]=await Promise.all([
+  (await fetch('api/episodes')).json(),(await fetch('api/bible')).json(),(await fetch('api/drafts')).json()]);
+ window._bible=b;
+ const steps=[
+  {done:Object.keys(b.characters).length>0,label:'Forge your cast',go:'cast'},
+  {done:Object.keys(b.locations).length>0,label:'Forge your sets',go:'sets'},
+  {done:eps.length>0||ds.length>0,label:'Write your first episode',go:'compose'},
+  {done:eps.some(e=>e.rendered),label:'Render it',go:'episodes'}];
+ const next=steps.find(x=>!x.done);
+ document.getElementById('homepath').innerHTML=
+  `<div class="card"><div class="lab">The path</div>
+   ${steps.map(x=>`<div style="margin:4px 0;color:${x.done?'var(--ok)':'var(--dim)'}">${x.done?'[■]':'[ ]'} ${x.label}
+     ${!x.done&&x===next?`<button class="mini gold" style="margin-left:8px" onclick="tab('${x.go}')">go →</button>`:''}</div>`).join('')}
+   </div>`;
+ document.getElementById('posterwall').innerHTML=eps.filter(e=>e.rendered).map(e=>
+  `<figure onclick="tab('episodes');openEp(${e.n})" style="cursor:pointer"><img loading="lazy" src="media/poster/${e.n}" onerror="this.parentNode.style.display='none'">
+   <figcaption>${e.id} · ${esc(e.title)} · ${(e.seconds/60).toFixed(1)}m</figcaption></figure>`).join('')
+  ||'<div class="empty">nothing rendered yet</div>';
+ document.getElementById('homecast').innerHTML=Object.keys(b.characters).map(k=>
+  `<button class="pill" onclick="tab('cast');setTimeout(()=>editCast('${k}'),200)">${(DATA&&DATA.characters[k]||{}).thumb?`<img src="${DATA.characters[k].thumb}">`:''}${k}</button>`).join('')
+  ||'<div class="empty">no cast yet</div>';
+ document.getElementById('homesets').innerHTML=Object.keys(b.locations).map(k=>
+  `<button class="pill" onclick="tab('sets');setTimeout(()=>editSet('${k}'),200)">${(DATA&&DATA.locations[k]||{}).thumb?`<img src="${DATA.locations[k].thumb}">`:''}${k.replace(/_/g,' ')}</button>`).join('')
+  ||'<div class="empty">no sets yet</div>';
+}
+async function pollPulse(){
+ try{const j=await(await fetch('api/pulse')).json();
+  document.getElementById('pulse').textContent=
+   `GPU ${j.gpu} · render queue ${j.queue}${j.jobs.length?' · running: '+j.jobs.join(', '):''}${j.last?' · '+j.last:''}`;
+ }catch(e){}}
+setInterval(pollPulse,15000);pollPulse();
 async function loadBible(){const b=await(await fetch('api/bible')).json();window._bible=b;
  const vs=document.getElementById('c_voice');
  if(vs&&!vs.options.length)vs.innerHTML=b.voices.map(v=>`<option>${v}</option>`).join('');
