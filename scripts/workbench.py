@@ -72,6 +72,10 @@ def index():
 
 @app.get("/api/data")
 def data():
+    if not Path("/tmp/builder_data.json").exists() or \
+            request.args.get("fresh"):
+        import build_builder_data
+        build_builder_data.build(SERIES)
     return send_file("/tmp/builder_data.json")
 
 
@@ -306,6 +310,74 @@ def graph(n):
         })
     return jsonify({"title": ep.get("title", ""), "shots": shots,
                     "assets": assets})
+
+
+
+# ── the forge: cast and sets from the console ────────────────────────
+VOICES = ["en-IE-ConnorNeural", "en-IE-EmilyNeural", "en-GB-RyanNeural",
+          "en-GB-SoniaNeural", "en-GB-ThomasNeural", "en-GB-LibbyNeural",
+          "en-US-GuyNeural", "en-US-AriaNeural"]
+FORGE_LOG = "/workspace/wb_forge.log"
+
+
+@app.get("/api/bible")
+def bible():
+    b = sr.load_json(sr.series_path(SERIES) / "bible.json")
+    chars = {k: {"visual": v.get("visual", ""), "voice": v.get("voice"),
+                 "personality": v.get("personality", "")}
+             for k, v in b.get("characters", {}).items()}
+    locs = b.get("world", {}).get("locations", {})
+    return jsonify({"characters": chars, "locations": locs, "voices": VOICES})
+
+
+def _forge(args):
+    Path(FORGE_LOG).write_text("")
+    cmd = [sys.executable, str(ROOT / "forge_assets.py")] + args
+    subprocess.Popen(cmd, stdout=open(FORGE_LOG, "a"),
+                     stderr=subprocess.STDOUT, start_new_session=True,
+                     cwd=str(ROOT.parent))
+
+
+@app.post("/api/forge/character")
+def forge_char():
+    d = request.get_json(force=True)
+    cid = re.sub(r"[^a-z0-9_]", "", (d.get("id") or "").lower())
+    if not cid or not d.get("visual") or not d.get("voice"):
+        abort(400)
+    _forge(["character", cid, "--visual", d["visual"],
+            "--voice", d["voice"], "--personality", d.get("personality", "")])
+    return jsonify({"forging": cid, "log": FORGE_LOG})
+
+
+@app.post("/api/forge/location")
+def forge_loc():
+    d = request.get_json(force=True)
+    lid = re.sub(r"[^a-z0-9_]", "", (d.get("id") or "").lower())
+    if not lid or not d.get("desc"):
+        abort(400)
+    _forge(["location", lid, "--desc", d["desc"]])
+    return jsonify({"forging": lid, "log": FORGE_LOG})
+
+
+@app.get("/api/forge/log")
+def forge_log():
+    t = Path(FORGE_LOG).read_text()[-5000:] if Path(FORGE_LOG).exists() else ""
+    done = "[forge] DONE" in t or "FAILED" in t
+    return jsonify({"log": t, "done": done})
+
+
+@app.post("/api/voicetest")
+def voicetest():
+    d = request.get_json(force=True)
+    v = d.get("voice", "")
+    if v not in VOICES:
+        abort(400)
+    text = (d.get("text") or "The sea gives nothing back, and I have "
+            "stopped asking it to.")[:200]
+    out = "/tmp/wb_voicetest.mp3"
+    import asyncio, edge_tts
+    asyncio.run(edge_tts.Communicate(text, v, rate="+4%").save(out))
+    return send_file(out, mimetype="audio/mpeg")
 
 
 if __name__ == "__main__":

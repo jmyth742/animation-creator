@@ -26,6 +26,11 @@ STEM = {"ruined_ireland": "ruin", "tir_na_nog": "valley",
         "storm_cliffs": "storm", "stormy_sea": "sea"}
 
 
+def stem(loc):
+    """Forged locations use their own id as the plate stem."""
+    return STEM.get(loc, loc)
+
+
 def resolve_scene(series, i, sc, ep_id):
     S = sr.series_path(series) / "sets"
     G = S / "_generated"

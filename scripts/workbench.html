@@ -118,6 +118,8 @@ a{color:var(--gold)}
  <button class="tab on" data-t="compose" onclick="tab('compose')">Compose</button>
  <button class="tab" data-t="episodes" onclick="tab('episodes')">Episodes</button>
  <button class="tab" data-t="drafts" onclick="tab('drafts')">Drafts</button>
+ <button class="tab" data-t="cast" onclick="tab('cast')">Cast</button>
+ <button class="tab" data-t="sets" onclick="tab('sets')">Sets</button>
 </div></header>
 <main>
 <section id="t-compose">
@@ -143,6 +145,30 @@ a{color:var(--gold)}
 </section>
 <section id="t-episodes" style="display:none"><div id="eplist" class="card" style="padding:0"></div><div id="epdetail"></div></section>
 <section id="t-drafts" style="display:none"><div id="draftlist"></div></section>
+<section id="t-cast" style="display:none">
+ <div id="castlist"></div>
+ <div class="card"><div class="lab">Forge a new character</div>
+  <div class="row"><input type="text" id="c_id" placeholder="id, e.g. fionn" style="flex:1;min-width:120px">
+   <select id="c_voice" style="background:var(--card2);color:var(--ink);border:1px solid var(--edge);padding:9px;font:inherit"></select>
+   <button class="ghost" onclick="hearVoice()">hear it</button></div>
+  <div class="lab">Visual — what they look like, one breath</div>
+  <textarea id="c_visual" placeholder="Broad grey-bearded fianna captain, scarred cheek, wolf-fur cloak over dark iron mail…"></textarea>
+  <div class="lab">Personality (optional, guides the writing)</div>
+  <input type="text" id="c_pers" placeholder="Slow to speak, never wrong twice.">
+  <div class="row" style="margin-top:12px"><button class="big" onclick="forge('character')">Forge character</button></div>
+  <pre id="forgelog" style="display:none;margin-top:10px"></pre>
+  <div class="verdict warn" style="margin-top:10px">Forging renders a portrait, stages them into every set, builds close seeds and a wide per location — a few minutes of GPU, queued behind whatever runs.</div>
+ </div></section>
+<section id="t-sets" style="display:none">
+ <div id="setlist"></div>
+ <div class="card"><div class="lab">Forge a new location</div>
+  <div class="row"><input type="text" id="l_id" placeholder="id, e.g. dark_forest" style="flex:1"></div>
+  <div class="lab">Description — the bible entry, palette and light included</div>
+  <textarea id="l_desc" placeholder="A drowned oak forest under green twilight, still black water between the trunks, cold mist, no sky…"></textarea>
+  <div class="row" style="margin-top:12px"><button class="big" onclick="forge('location')">Forge location</button></div>
+  <pre id="forgelog2" style="display:none;margin-top:10px"></pre>
+  <div class="verdict warn" style="margin-top:10px">Forging renders the master plate, derives camera setups, and builds a wide per lead plus a two-shot — the location is shootable when it finishes.</div>
+ </div></section>
 </main>
 <div class="toast" id="toast"></div>
 <script>
@@ -153,7 +179,7 @@ const HANDS=/\b(hand|hands|fingers?|grasps?|reach(es|ing)?|holds? out|points?)\b
 const NAMES={wide:'Establishing wide',figure:'Figure in landscape',twoshot:'Two-shot',close:'Dialogue close'};
 fetch('api/data').then(r=>r.json()).then(d=>{DATA=d;render();loadEpisodes();loadDrafts();});
 function CHARS(){return DATA?Object.keys(DATA.characters):[]}
-function plateFor(s){if(!DATA)return null;const st=STEM[s.location]||'';
+function plateFor(s){if(!DATA)return null;const st=STEM[s.location]||s.location;
  if(s.type==='wide')return{sym:'seed:location',img:(DATA.locations[s.location]||{}).thumb};
  if(s.type==='figure'){const walk=MOVE.test(s.visual||'')&&DATA.gen['gen__'+st+'_walking'];
   const k=walk?'gen__'+st+'_walking':'gen__'+st+'_wide_'+(s.characters[0]||'');
@@ -213,7 +239,7 @@ async function importGate(){const out=document.getElementById('gateout');out.sty
  const j=await r.json();out.textContent=j.log;toast(j.ok?'Gates passed — render from the Episodes tab':'Gates refused it — see the log');if(j.ok)loadEpisodes()}
 function tab(t){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
  for(const s of['compose','episodes','drafts'])document.getElementById('t-'+s).style.display=s===t?'':'none';
- if(t==='episodes')loadEpisodes();if(t==='drafts')loadDrafts()}
+ if(t==='episodes')loadEpisodes();if(t==='drafts')loadDrafts();if(t==='cast'||t==='sets')loadBible()}
 async function loadEpisodes(){const eps=await(await fetch('api/episodes')).json();
  document.getElementById('eplist').innerHTML=eps.map(e=>`<div class="eprow" onclick="openEp(${e.n})"><span class="id">${e.id}</span><span class="t">${e.title}</span><span class="m">${e.shots} shots${e.seconds?' · '+(e.seconds/60).toFixed(1)+' min':''}</span><span class="stat ${e.rendered?'ok':''}">${e.rendered?'rendered':'authored'}</span></div>`).join('')}
 async function openEp(n){const d=await(await fetch('api/episode/'+n)).json();
@@ -304,6 +330,35 @@ function gsel(kind,ref){const g=window._g, el=document.getElementById('gdetail')
    ${(a.parents||[]).length?`<div class="lab">made from</div><div class="mono">${a.parents.map(p=>p.kind+': '+esc(p.label)).join('\n')}</div>`:''}
    <div class="lab">feeds shots</div><div class="mono">${esc(kids)||'—'}</div>`;}
 }
+async function loadBible(){const b=await(await fetch('api/bible')).json();window._bible=b;
+ const vs=document.getElementById('c_voice');
+ if(vs&&!vs.options.length)vs.innerHTML=b.voices.map(v=>`<option>${v}</option>`).join('');
+ document.getElementById('castlist').innerHTML=Object.entries(b.characters).map(([k,v])=>{
+  const th=(DATA&&DATA.characters[k]||{}).thumb;
+  return `<div class="eprow"><span class="id">${k}</span>${th?`<img src="${th}" style="width:44px;height:28px;object-fit:cover;border:1px solid var(--edge)">`:''}
+   <span class="t" style="font-weight:400;font-size:.78rem">${esc((v.visual||'').slice(0,80))}</span>
+   <span class="m">${v.voice||'no voice'}</span></div>`}).join('');
+ document.getElementById('setlist').innerHTML=Object.entries(b.locations).map(([k,v])=>{
+  const th=(DATA&&DATA.locations[k]||{}).thumb;
+  const plates=DATA?Object.keys(DATA.gen).filter(g=>g.includes('__'+({ruined_ireland:'ruin',tir_na_nog:'valley',farewell_cliff:'cliff',sunlight_path:'sun',storm_cliffs:'storm',stormy_sea:'sea'}[k]||k)+'_')).length:0;
+  return `<div class="eprow"><span class="id" style="min-width:8em">${k}</span>${th?`<img src="${th}" style="width:44px;height:28px;object-fit:cover;border:1px solid var(--edge)">`:''}
+   <span class="t" style="font-weight:400;font-size:.78rem">${esc(String(v).slice(0,70))}</span>
+   <span class="m">${plates} gen plates</span></div>`}).join('')}
+async function hearVoice(){const v=document.getElementById('c_voice').value;
+ const r=await fetch('api/voicetest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({voice:v})});
+ new Audio(URL.createObjectURL(await r.blob())).play()}
+async function forge(kind){
+ const body=kind==='character'?{id:c_id.value,visual:c_visual.value,voice:c_voice.value,personality:c_pers.value}
+                              :{id:l_id.value,desc:l_desc.value};
+ const r=await fetch('api/forge/'+kind,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+ if(!r.ok){toast('missing fields — id and description are required');return}
+ toast('Forging '+kind+' — watch the log');
+ const el=document.getElementById(kind==='character'?'forgelog':'forgelog2');el.style.display='block';
+ if(window._ft)clearInterval(window._ft);
+ window._ft=setInterval(async()=>{const j=await(await fetch('api/forge/log')).json();
+  el.textContent=j.log||'queued…';
+  if(j.done){clearInterval(window._ft);toast('Forge finished — refreshing data');
+   DATA=await(await fetch('api/data?fresh=1')).json();render();loadBible();}},4000)}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}
 const title=document.getElementById('title'),summary=document.getElementById('summary');
 </script></body></html>
