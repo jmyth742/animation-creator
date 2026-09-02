@@ -1,0 +1,282 @@
+{
+  "id": "ep18",
+  "title": "The First Cold",
+  "summary": "The Quiet Winter, chapter one. A single flake of snow falls over the lake in the land of eternal summer. He is delighted. She recognises it, and says nothing.",
+  "scenes": [
+    {
+      "id": "ep18_s01",
+      "location": "tir_na_nog",
+      "characters": [],
+      "clip_length": "long",
+      "hold_seconds": 9.5,
+      "setup": "master",
+      "staging": null,
+      "seed": "location",
+      "visual": "Very wide shot of the valley in warm golden light, silver waterfalls into the still lake, wildflowers through the grass. Nothing moves but the water. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep18_s02",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.0,
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/_generated/gen__valley_wide_oisin.png",
+      "visual": "Extreme wide shot. The warrior walks along the lake path, small in the frame, unhurried, at ease. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep18_s03",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 11.5,
+      "setup": "master",
+      "staging": "close",
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master__oisin_close__inplace.png",
+      "visual": "Close shot. The warrior's face in warm light, easy, half a smile. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "Three hundred summers, she says, and I have stopped counting them. It turns out a man can get used to anything, even to being happy."
+        }
+      ]
+    },
+    {
+      "id": "ep18_s04",
+      "location": "tir_na_nog",
+      "characters": [],
+      "clip_length": "long",
+      "hold_seconds": 10.0,
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/_generated/gen__winter_first_flake.png",
+      "visual": "Wide shot of the golden valley over the water \u2014 and one small flurry of snow falling over the lake, the only cold thing in a warm frame. It does not melt. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep18_s05",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 10.5,
+      "setup": "master",
+      "staging": "close",
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master__oisin_close__inplace.png",
+      "visual": "Close shot. The warrior's face tilted up, watching something small fall, delighted and puzzled at once. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "Niamh. Come out and look at this. Either the sky is broken or it is snowing in the country where nothing ends."
+        }
+      ]
+    },
+    {
+      "id": "ep18_s06",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.5,
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/_generated/gen__valley_wide_niamh.png",
+      "visual": "Extreme wide shot. The princess comes along the path by the lake, small in the frame, looking up as she walks. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep18_s07",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.5,
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/_generated/gen__valley_twoshot.png",
+      "visual": "Wide two shot. The two of them on the grass by the water, faces to the sky, the waterfall behind them. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep18_s07b",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 12.0,
+      "setup": "reverse",
+      "staging": "close",
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/reverse__niamh_close__inplace.png",
+      "visual": "Close shot. The princess's face tipped back, eyes shut, a flake landing and staying on her lashes. For one breath she is only enjoying it. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "It touches you and then it stays. Rain never stays. No wonder your people wrote songs about it \u2014 it is weather that wants to be kept."
+        }
+      ]
+    },
+    {
+      "id": "ep18_s08",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 11.0,
+      "setup": "reverse",
+      "staging": "close",
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/reverse__niamh_close__inplace.png",
+      "visual": "Close shot. The princess's face in warm light, watching the flake fall \u2014 and something behind her eyes closing like a door. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "So it is. Snow. I have read of it in your songs. It is prettier than the songs let on, and colder."
+        }
+      ]
+    },
+    {
+      "id": "ep18_s09",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 11.5,
+      "setup": "master",
+      "staging": "close",
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master__oisin_close__inplace.png",
+      "visual": "Close shot. The warrior's face, boyish, catching a flake on his open palm held low and out of frame. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "At home this meant the year was dying. Here it can only be a wonder. Nothing dies here. You told me so the first morning, and I have been living on it since."
+        }
+      ]
+    },
+    {
+      "id": "ep18_s10",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 10.0,
+      "setup": "reverse",
+      "staging": "close",
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/reverse__niamh_close__inplace.png",
+      "visual": "Close shot. The princess's face. She makes the smile arrive. It takes a moment longer than it should. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "Then let it be a wonder. Stand in it with me and we will not ask it any questions tonight."
+        }
+      ]
+    },
+    {
+      "id": "ep18_s11",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin",
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.0,
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/_generated/gen__winter_twoshot.png",
+      "visual": "Wide two shot. The two of them in the first thin snow, breath visible, the valley whitening softly around them. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep18_s11b",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 12.5,
+      "setup": "master",
+      "staging": "close",
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master__oisin_close__inplace.png",
+      "visual": "Close shot. The warrior's face, snow in his hair, laughing quietly at something he has just thought of. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "oisin",
+          "line": "My father would not believe a word of this. Snow in paradise and a princess to watch it with. He would say I dreamed it, and he would be half right."
+        }
+      ]
+    },
+    {
+      "id": "ep18_s12",
+      "location": "tir_na_nog",
+      "characters": [
+        "oisin"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 7.0,
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/_generated/gen__winter_wide_oisin.png",
+      "visual": "Extreme wide shot. The warrior walks away through the snow leaving a line of footprints, small in the white, easy. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep18_s12b",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 6.5,
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/_generated/gen__winter_wide_niamh.png",
+      "visual": "Extreme wide shot. The princess stands alone by the frozen falls, small in the white, quite still. Static camera.",
+      "narration": null,
+      "dialogue": []
+    },
+    {
+      "id": "ep18_s13",
+      "location": "tir_na_nog",
+      "characters": [
+        "niamh"
+      ],
+      "clip_length": "long",
+      "hold_seconds": 13.0,
+      "setup": "reverse",
+      "staging": "close",
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/reverse__niamh_close__inplace.png",
+      "visual": "Close shot. The princess's face alone, the warmth gone from the light, snow falling past her. She says it to nobody. Static camera.",
+      "narration": null,
+      "dialogue": [
+        {
+          "character": "niamh",
+          "line": "The land does not dream on its own. It listens. Something in this valley is homesick, and there are only two hearts in it, and it is not mine."
+        }
+      ]
+    },
+    {
+      "id": "ep18_s14",
+      "location": "tir_na_nog",
+      "characters": [],
+      "clip_length": "long",
+      "hold_seconds": 10.5,
+      "reference_image": "/workspace/text-to-video/series/tir-na-nog-legend/sets/_generated/gen__winter_wide_empty.png",
+      "visual": "Very wide shot of the valley under first snow, the falls thinning to ice-glass, the lake dark among white banks, nobody in the frame. Static camera.",
+      "narration": null,
+      "dialogue": []
+    }
+  ]
+}

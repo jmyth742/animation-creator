@@ -60,6 +60,12 @@ SUNPATH = ("the open ocean at golden hour, a blazing path of sunlight laid "
            "across calm mirror-bright water toward a wall of golden mist on "
            "the horizon, vast open sky")
 
+
+WINTER = ("the lush valley of eternal summer transformed by impossible "
+          "snowfall -- snow on the green mountains, the tall waterfalls "
+          "thinned to glassy ice, the still lake dark among white banks, "
+          "flakes hanging in cold blue-grey light")
+
 RUIN = ("a bleak grey Irish landscape under heavy overcast, a collapsed "
         "overgrown ring-fort of moss-covered stone, bare black thorn trees, "
         "cold flat diffuse daylight, grey-green and slate, no sunshine")
@@ -131,6 +137,22 @@ PLATES = [
     ("gen__sun_wide_oisin", f"Extreme wide shot. {SUNPATH}. Far out on the "
      f"shining water, small in the frame, {OISIN} rides a white horse along "
      f"the path of light, his whole figure visible."),
+
+    ("gen__winter_wide_empty", f"Extreme wide establishing shot. {WINTER}. "
+     f"Nobody in the frame, no figures, empty and silent."),
+    ("gen__winter_wide_oisin", f"Extreme wide shot. {WINTER}. Far off in the "
+     f"snow, small in the frame, {OISIN} walks leaving a line of footprints, "
+     f"whole body visible."),
+    ("gen__winter_wide_niamh", f"Extreme wide shot. {WINTER}. Far away by the "
+     f"frozen falls, small in the frame, {NIAMH} stands looking up at the "
+     f"ice, her whole body visible."),
+    ("gen__winter_twoshot", f"Wide two shot. {WINTER}. {OISIN} on the left "
+     f"and {NIAMH} on the right, a few paces apart in the snow, both "
+     f"full-length at the same scale, facing each other, breath visible."),
+    ("gen__winter_first_flake", f"Wide shot. The lush green valley of eternal "
+     f"summer at golden hour, waterfalls and still lake -- and one single "
+     f"small flurry of snow falling over the water, the only cold thing in a "
+     f"warm frame."),
 
 ]
 
