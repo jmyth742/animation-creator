@@ -511,6 +511,84 @@ def edit_location():
     return jsonify({"saved": lid})
 
 
+
+# ── previews of everything ───────────────────────────────────────────
+@app.get("/media/poster/<int:n>")
+def poster(n):
+    """A cached frame from the episode final, for the list rows."""
+    f = OUT_D() / f"ep{n:02d}" / f"ep{n:02d}_final.mp4"
+    if not f.exists():
+        abort(404)
+    cache = WB / "posters" / S()
+    cache.mkdir(parents=True, exist_ok=True)
+    jp = cache / f"ep{n:02d}.jpg"
+    if not jp.exists() or jp.stat().st_mtime < f.stat().st_mtime:
+        d = sr._get_video_duration(f)
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss",
+                        f"{d * 0.35:.1f}", "-i", str(f), "-frames:v", "1",
+                        "-vf", "scale=320:-1", "-q:v", "6", str(jp)],
+                       check=False)
+    if not jp.exists():
+        abort(404)
+    return send_file(jp, conditional=True)
+
+
+@app.get("/api/castdetail/<cid>")
+def castdetail(cid):
+    base = sr.series_path(S())
+    out = {"portrait": None, "plates": []}
+    ref = sr._find_ref(base / "reference_images", cid, "char")
+    if ref:
+        out["portrait"] = str(Path(ref).resolve().relative_to(base.resolve()))
+    setsd = base / "sets"
+    if setsd.exists():
+        for pl in sorted(setsd.glob(f"*/*__{cid}_*.png")):
+            if "tvar__" in pl.name:
+                continue
+            out["plates"].append({"rel": str(pl.relative_to(base)),
+                                  "label": f"{pl.parent.name}/{pl.stem}"})
+        for pl in sorted((setsd / "_generated").glob(f"gen__*_{cid}.png")) \
+                if (setsd / "_generated").exists() else []:
+            out["plates"].append({"rel": str(pl.relative_to(base)),
+                                  "label": pl.stem})
+    return jsonify(out)
+
+
+@app.get("/api/setdetail/<lid>")
+def setdetail(lid):
+    base = sr.series_path(S())
+    d = base / "sets" / lid
+    out = {"master": None, "setups": [], "staged": [], "generated": []}
+    if d.exists():
+        for pl in sorted(d.glob("*.png")):
+            if "tvar__" in pl.name:
+                continue
+            rel = str(pl.relative_to(base))
+            row = {"rel": rel, "label": pl.stem}
+            if "__" not in pl.name:
+                if pl.stem == "master":
+                    out["master"] = rel
+                out["setups"].append(row)
+            else:
+                out["staged"].append(row)
+    G = base / "sets" / "_generated"
+    if G.exists():
+        for pl in sorted(G.glob("gen__*.png")):
+            stem_part = pl.stem.split("__")[1].split("_")[0]
+            if stem_part in (lid, {"ruined_ireland": "ruin",
+                                   "tir_na_nog": "valley",
+                                   "farewell_cliff": "cliff",
+                                   "sunlight_path": "sun",
+                                   "storm_cliffs": "storm",
+                                   "stormy_sea": "sea"}.get(lid, lid)):
+                out["generated"].append({"rel": str(pl.relative_to(base)),
+                                         "label": pl.stem})
+    ref = sr._find_ref(base / "reference_images", lid, "loc")
+    if not out["master"] and ref:
+        out["master"] = str(Path(ref).resolve().relative_to(base.resolve()))
+    return jsonify(out)
+
+
 if __name__ == "__main__":
     print(f"workbench key: {KEY}")
     app.run(host="0.0.0.0", port=8888, threaded=True)

@@ -101,6 +101,12 @@ video{width:100%;background:#000;display:block;border:1px solid var(--edge)}
 pre{background:var(--card2);border:1px solid var(--edge);padding:11px;font-size:.66rem;overflow:auto;max-height:56vh;color:var(--ink);white-space:pre-wrap}
 .empty{color:var(--dim);text-align:center;padding:30px;font-size:.8rem;text-transform:uppercase;letter-spacing:.1em}
 a{color:var(--gold)}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:8px}
+.gal figure{margin:0;background:var(--card2);border:1px solid var(--edge);padding:4px}
+.gal img{width:100%;display:block;border:0}
+.gal figcaption{font:.58rem "JetBrains Mono";color:var(--dim);padding:3px 2px 1px;word-break:break-all}
+.poster{width:76px;height:43px;object-fit:cover;border:1px solid var(--edge);flex-shrink:0;background:#000}
+.bigprev{width:100%;max-width:420px;border:1px solid var(--edge);display:block;margin:8px 0}
 .gwrap{overflow-x:auto;background:var(--card2);border:1px solid var(--edge);margin-top:10px}
 .gnode{cursor:pointer}
 .gnode rect{transition:stroke .15s}
@@ -152,6 +158,7 @@ a{color:var(--gold)}
 <section id="t-drafts" style="display:none"><div id="draftlist"></div></section>
 <section id="t-cast" style="display:none">
  <div id="castlist"></div>
+ <div id="castgal"></div>
  <div class="card"><div class="lab">Forge a new character</div>
   <div class="row"><input type="text" id="c_id" placeholder="id, e.g. fionn" style="flex:1;min-width:120px">
    <select id="c_voice" style="background:var(--card2);color:var(--ink);border:1px solid var(--edge);padding:9px;font:inherit"></select>
@@ -166,6 +173,7 @@ a{color:var(--gold)}
  </div></section>
 <section id="t-sets" style="display:none">
  <div id="setlist"></div>
+ <div id="setgal"></div>
  <div class="card"><div class="lab">Forge a new location</div>
   <div class="row"><input type="text" id="l_id" placeholder="id, e.g. dark_forest" style="flex:1"></div>
   <div class="lab">Description — the bible entry, palette and light included</div>
@@ -216,7 +224,7 @@ function plateFor(s){if(!DATA)return null;const st=STEM[s.location]||s.location;
  if(s.type==='twoshot'){const k='gen__'+st+'_twoshot';return DATA.gen[k]?{sym:k,img:DATA.gen[k]}:null}
  if(s.type==='close'){const w=s.characters[0]||'';
   const c=DATA.inplace.filter(p=>p.startsWith(s.location+'/')&&p.includes('__'+w+'_close'));
-  return c.length?{sym:c[0],img:(DATA.characters[w]||{}).thumb}:null}
+  return c.length?{sym:c[0],img:'media/asset/sets/'+c[0]}:null}
  return null}
 function holdFor(s){if(s.type==='close'){const w=(s.line||'').trim().split(/\s+/).filter(Boolean).length;return Math.round((w/2.6+1.5)*10)/10}return s.hold||7}
 function lint(s){const o=[];
@@ -269,7 +277,7 @@ function tab(t){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle(
  for(const s of['compose','episodes','drafts','cast','sets'])document.getElementById('t-'+s).style.display=s===t?'':'none';
  if(t==='episodes')loadEpisodes();if(t==='drafts')loadDrafts();if(t==='cast'||t==='sets')loadBible()}
 async function loadEpisodes(){const eps=await(await fetch('api/episodes')).json();
- document.getElementById('eplist').innerHTML=eps.map(e=>`<div class="eprow" onclick="openEp(${e.n})"><span class="id">${e.id}</span><span class="t">${e.title}</span><span class="m">${e.shots} shots${e.seconds?' · '+(e.seconds/60).toFixed(1)+' min':''}</span><span class="stat ${e.rendered?'ok':''}">${e.rendered?'rendered':'authored'}</span></div>`).join('')}
+ document.getElementById('eplist').innerHTML=eps.map(e=>`<div class="eprow" onclick="openEp(${e.n})"><span class="id">${e.id}</span>${e.rendered?`<img class="poster" loading="lazy" src="media/poster/${e.n}" onerror="this.style.display='none'">`:''}<span class="t">${e.title}</span><span class="m">${e.shots} shots${e.seconds?' · '+(e.seconds/60).toFixed(1)+' min':''}</span><span class="stat ${e.rendered?'ok':''}">${e.rendered?'rendered':'authored'}</span></div>`).join('')}
 async function openEp(n){const d=await(await fetch('api/episode/'+n)).json();
  const el=document.getElementById('epdetail');
  el.innerHTML=`<div class="card"><div class="shead"><span class="stype" style="font-size:1.2rem">${d.title}</span>
@@ -404,7 +412,22 @@ async function loadBible(){const b=await(await fetch('api/bible')).json();window
   return `<div class="eprow" onclick="editSet('${k}')"><span class="id" style="min-width:8em">${k}</span>${th?`<img src="${th}" style="width:44px;height:28px;object-fit:cover;border:1px solid var(--edge)">`:''}
    <span class="t" style="font-weight:400;font-size:.78rem">${esc(String(v).slice(0,70))}</span>
    <span class="m">${plates} gen plates</span></div>`}).join('')}
-function editCast(k){const v=window._bible.characters[k];
+async function castGallery(k){
+ const d=await(await fetch('api/castdetail/'+k)).json();
+ const el=document.getElementById('castgal');
+ el.innerHTML=`<div class="lab">${k} — everything on file</div>
+  ${d.portrait?`<img class="bigprev" src="media/asset/${d.portrait}">`:'<div class="empty">no portrait yet — forge one</div>'}
+  ${d.plates.length?`<div class="gal">${d.plates.map(x=>`<figure><img loading="lazy" src="media/asset/${x.rel}"><figcaption>${esc(x.label)}</figcaption></figure>`).join('')}</div>`:''}`;
+}
+async function setGallery(k){
+ const d=await(await fetch('api/setdetail/'+k)).json();
+ const el=document.getElementById('setgal');
+ const sec=(t,arr)=>arr.length?`<div class="lab">${t}</div><div class="gal">${arr.map(x=>`<figure><img loading="lazy" src="media/asset/${x.rel}"><figcaption>${esc(x.label)}</figcaption></figure>`).join('')}</div>`:'';
+ el.innerHTML=`<div class="lab">${k} — everything on file</div>
+  ${d.master?`<img class="bigprev" src="media/asset/${d.master}">`:'<div class="empty">no master plate yet</div>'}
+  ${sec('camera setups',d.setups)}${sec('generated plates',d.generated)}${sec('staged characters',d.staged)}`;
+}
+function editCast(k){castGallery(k);const v=window._bible.characters[k];
  c_id.value=k;c_visual.value=v.visual||'';c_pers.value=v.personality||'';
  if(v.voice)c_voice.value=v.voice;
  document.getElementById('castedit').style.display='';
@@ -413,7 +436,7 @@ function editCast(k){const v=window._bible.characters[k];
 async function saveCast(){const k=document.getElementById('castedit').dataset.id;
  await fetch('api/edit/character',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:k,visual:c_visual.value,voice:c_voice.value,personality:c_pers.value})});
  toast(k+' saved to the bible');loadBible();}
-function editSet(k){l_id.value=k;l_desc.value=String(window._bible.locations[k]||'');
+function editSet(k){setGallery(k);l_id.value=k;l_desc.value=String(window._bible.locations[k]||'');
  document.getElementById('setedit').style.display='';
  document.getElementById('setedit').dataset.id=k;
  l_desc.scrollIntoView({behavior:'smooth'});toast('Editing '+k);}
