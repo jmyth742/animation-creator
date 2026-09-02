@@ -69,16 +69,105 @@ def _select_show():
         pass
 
 
+USERS = WB / "users.json"
+SESS = WB / "sessions.json"
+
+
+def _load(f, d):
+    try:
+        return json.loads(f.read_text())
+    except Exception:
+        return d
+
+
+def _user():
+    tok = request.cookies.get("wbsess")
+    if request.cookies.get("wbkey") == KEY or request.args.get("key") == KEY:
+        return "admin"
+    return _load(SESS, {}).get(tok)
+
+
 @app.before_request
 def gate():
-    if request.path == "/health":
+    if request.path in ("/health", "/login", "/manifest.json") \
+            or request.path.startswith("/share/"):
         return
     if request.args.get("key") == KEY:
-        r = redirect(request.path or "/")
+        r = redirect("/")
         r.set_cookie("wbkey", KEY, max_age=86400 * 30, httponly=True)
         return r
-    if request.cookies.get("wbkey") != KEY:
+    if not _user():
+        if request.path == "/":
+            return LOGIN_PAGE, 200, {"Content-Type": "text/html",
+                                     "Cache-Control": "no-store"}
         abort(401)
+
+
+LOGIN_PAGE = """<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'>
+<title>SHOWRUNNER</title><style>body{background:#0A0E0A;color:#8FCF9E;font-family:ui-monospace,monospace;
+display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+form{background:#101710;border:1px solid #1F3322;padding:26px;width:300px}
+h1{color:#5FFF87;font-size:1.5rem;margin:0 0 4px;font-weight:400;letter-spacing:.06em}
+input{width:100%;background:#0D130D;color:#D8FFE0;border:1px solid #1F3322;padding:10px;
+margin:6px 0;font:inherit;box-sizing:border-box}
+button{width:100%;background:#0A2413;color:#5FFF87;border:1px solid #5FFF87;padding:11px;
+font:700 .85rem ui-monospace;cursor:pointer;margin-top:8px;letter-spacing:.08em}
+p{font-size:.7rem;color:#528F63}</style>
+<form method=post action=/login><h1>SHOWRUNNER</h1><p>episode production console</p>
+<input name=u placeholder=username autocomplete=username>
+<input name=p type=password placeholder=password autocomplete=current-password>
+<button>LOG IN</button>
+<p>New here? Same form registers you the first time.</p></form>"""
+
+
+@app.post("/login")
+def login():
+    import hashlib
+    u = re.sub(r"[^a-z0-9_]", "", (request.form.get("u") or "").lower())[:24]
+    pw = request.form.get("p") or ""
+    if not u or len(pw) < 4:
+        return LOGIN_PAGE, 401, {"Content-Type": "text/html"}
+    users = _load(USERS, {})
+    salt = users.get(u, {}).get("salt") or secrets.token_hex(8)
+    h = hashlib.sha256((salt + pw).encode()).hexdigest()
+    if u in users:
+        if users[u]["hash"] != h:
+            return LOGIN_PAGE, 401, {"Content-Type": "text/html"}
+    else:                              # first login registers (try-it-free)
+        users[u] = {"salt": salt, "hash": h, "gpu_minutes": 240}
+        USERS.write_text(json.dumps(users, indent=2))
+    tok = secrets.token_urlsafe(18)
+    sess = _load(SESS, {})
+    sess[tok] = u
+    SESS.write_text(json.dumps(sess))
+    r = redirect("/")
+    r.set_cookie("wbsess", tok, max_age=86400 * 30, httponly=True)
+    return r
+
+
+def _owns(show):
+    """Ownership: admin owns everything; users own shows they created."""
+    u = _user()
+    if u == "admin":
+        return True
+    reg = _load(WB / "owners.json", {})
+    return reg.get(show) == u
+
+
+@app.before_request
+def scope_show():
+    # a non-admin user is always inside a show they own; default to their
+    # first, never to someone else's
+    u = _user()
+    if not u or u == "admin" or request.path in ("/login",):
+        return
+    if not _owns(S()):
+        reg = _load(WB / "owners.json", {})
+        mine = [k for k, v in reg.items() if v == u]
+        if mine:
+            request.cookies = dict(request.cookies)  # readonly workaround
+        else:
+            return  # they can browse nothing until they create a show
 
 
 @app.get("/health")
@@ -124,6 +213,9 @@ def new_show():
                         "background art"},
              "characters": {}, "world": {"locations": {}}}
     (root / "bible.json").write_text(json.dumps(bible, indent=2))
+    reg = _load(WB / "owners.json", {})
+    reg[sid] = _user() or "admin"
+    (WB / "owners.json").write_text(json.dumps(reg, indent=2))
     return jsonify({"created": sid})
 
 
@@ -272,6 +364,19 @@ def do_import():
 @app.post("/api/render")
 def do_render():
     n = int(request.get_json(force=True).get("episode"))
+    # quota: estimate the burn, refuse an empty tank, debit up front
+    u = _user()
+    if u and u != "admin":
+        users = _load(USERS, {})
+        ep = sr.load_json(sr.episode_path(S(), n))
+        d = sum(1 for x in ep["scenes"] if x.get("dialogue"))
+        est = d * 28 + (len(ep["scenes"]) - d) * 16
+        left = users.get(u, {}).get("gpu_minutes", 0)
+        if left < est:
+            return jsonify({"ok": False, "error":
+                            f"needs ~{est} GPU-min, you have {left}"}), 402
+        users[u]["gpu_minutes"] = left - est
+        USERS.write_text(json.dumps(users, indent=2))
     with open(RQ, "a") as f:
         f.write(f"{n}\n")
     _start_runner()
@@ -647,7 +752,8 @@ def pulse():
     return jsonify({"gpu": gpu,
                     "queue": len(q.get("queue_running", []))
                     + len(q.get("queue_pending", [])),
-                    "jobs": jobs[:5], "last": last})
+                    "jobs": jobs[:5], "last": last,
+                    "hibernate": (WB / "hibernate_enabled").exists()})
 
 
 
@@ -721,6 +827,152 @@ done"""
                           env=env, stdout=subprocess.DEVNULL,
                           stderr=subprocess.DEVNULL)
     (WB / "runner.pid").write_text(str(pr.pid))
+
+
+
+# ── bring your own art ───────────────────────────────────────────────
+@app.post("/api/upload")
+def upload():
+    """A user's own portrait, location plate or seed image, into the show.
+    role: portrait|<char id> · location|<loc id> · plate|<free name>"""
+    role = request.form.get("role", "")
+    ident = re.sub(r"[^a-z0-9_]", "", (request.form.get("id") or "").lower())
+    f = request.files.get("file")
+    if not f or not ident or role not in ("portrait", "location", "plate"):
+        abort(400)
+    raw = f.read()
+    if len(raw) > 15 * 1024 * 1024:
+        abort(413)
+    from PIL import Image
+    import io
+    try:
+        im = Image.open(io.BytesIO(raw)).convert("RGB")
+    except Exception:
+        abort(415)
+    im.thumbnail((1664, 960))
+    base = sr.series_path(S())
+    if role == "portrait":
+        dst = base / "reference_images" / f"char_{ident}.png"
+    elif role == "location":
+        d = base / "sets" / ident
+        d.mkdir(parents=True, exist_ok=True)
+        (base / "reference_images").mkdir(exist_ok=True)
+        im.save(base / "reference_images" / f"loc_{ident}.png")
+        dst = d / "master.png"
+    else:
+        d = base / "sets" / "_generated"
+        d.mkdir(parents=True, exist_ok=True)
+        dst = d / f"gen__{ident}.png"
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    im.save(dst)
+    return jsonify({"saved": str(dst.relative_to(base)),
+                    "note": "refresh data to see it in the composer"})
+
+
+@app.get("/api/me")
+def me():
+    u = _user()
+    users = _load(USERS, {})
+    return jsonify({"user": u,
+                    "gpu_minutes": ("∞" if u == "admin"
+                                    else users.get(u, {}).get("gpu_minutes", 0))})
+
+
+# ── share links: a final anyone can watch, no login ──────────────────
+import hmac as _hmac, hashlib as _hl
+
+
+def _sig(show, n):
+    return _hmac.new(KEY.encode(), f"{show}:{n}".encode(),
+                     _hl.sha256).hexdigest()[:20]
+
+
+@app.get("/api/sharelink/<int:n>")
+def sharelink(n):
+    return jsonify({"url": f"/share/{S()}/{n}/{_sig(S(), n)}"})
+
+
+@app.get("/share/<show>/<int:n>/<sig>")
+def share(show, n, sig):
+    if sig != _sig(show, n):
+        abort(403)
+    f = (Path("output") / show / f"ep{n:02d}" / f"ep{n:02d}_final.mp4").resolve()
+    if not f.exists():
+        abort(404)
+    return send_file(f, conditional=True)
+
+
+@app.get("/manifest.json")
+def manifest():
+    return jsonify({"name": "SHOWRUNNER", "short_name": "SHOWRUNNER",
+                    "start_url": "/", "display": "standalone",
+                    "background_color": "#0A0E0A",
+                    "theme_color": "#0A0E0A", "icons": []})
+
+
+# ── script breakdown: lights up when an LLM key is configured ────────
+@app.post("/api/breakdown")
+def breakdown():
+    key = os.environ.get("ANTHROPIC_API_KEY") or \
+        (Path(WB / "llm_key.txt").read_text().strip()
+         if (WB / "llm_key.txt").exists() else "")
+    if not key:
+        return jsonify({"ok": False, "error":
+                        "No LLM key configured. Put one in "
+                        "workbench_data/llm_key.txt and this button will "
+                        "break a pasted script into gated shots."}), 501
+    text = (request.get_json(force=True).get("text") or "")[:8000]
+    import urllib.request
+    body = json.dumps({
+        "model": "claude-haiku-4-5-20251001", "max_tokens": 3000,
+        "messages": [{"role": "user", "content":
+            "Break this story into shots for a 4-type grammar "
+            "(wide=establishing no chars, figure=1 char silent, "
+            "twoshot=2 chars silent, close=1 speaker + line <=39 words). "
+            "Return ONLY JSON: {\"scenes\":[{\"type\":...,\"location\":"
+            "...,\"characters\":[...],\"visual\":...,\"dialogue\":"
+            "[{\"character\":...,\"line\":...}]}]}\n\nSTORY:\n" + text}]})
+    req = urllib.request.Request(
+        "https://api.anthropic.com/v1/messages", body.encode(),
+        {"x-api-key": key, "anthropic-version": "2023-06-01",
+         "content-type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            out = json.loads(r.read())
+        txt = out["content"][0]["text"]
+        m = re.search(r"\{.*\}", txt, re.S)
+        return jsonify({"ok": True, "doc": json.loads(m.group(0))})
+    except Exception as e:                                     # noqa: BLE001
+        return jsonify({"ok": False, "error": str(e)[:200]}), 502
+
+
+
+@app.post("/api/hibernate")
+def hibernate_toggle():
+    if _user() != "admin":
+        abort(403)
+    flag = WB / "hibernate_enabled"
+    on = bool(request.get_json(force=True).get("on"))
+    if on:
+        flag.write_text("on")
+        pidf = WB / "hibernate.pid"
+        alive = False
+        if pidf.exists():
+            try:
+                os.kill(int(pidf.read_text()), 0)
+                alive = True
+            except Exception:
+                pass
+        if not alive:
+            subprocess.Popen(["bash", "scripts/idle_hibernate.sh"],
+                             stdout=subprocess.DEVNULL,
+                             stderr=subprocess.DEVNULL)
+    else:
+        flag.unlink(missing_ok=True)
+    # can the stop actually fire?
+    ok = subprocess.run(["/workspace/runpodctl", "pod", "list"],
+                        capture_output=True, timeout=15).returncode == 0
+    return jsonify({"on": on, "can_stop": ok})
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 <!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json">
 <title>SHOWRUNNER</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=JetBrains+Mono:wght@400;700&display=swap">
 <style>
@@ -122,7 +123,7 @@ a{color:var(--gold)}
 <header><h1>SHOWRUNNER<span class="cursor">▊</span></h1><div class="sub">episode production console · v1</div>
 <div class="row" style="margin:8px 0 2px">
  <select id="showsel" onchange="pickShow(this.value)" style="background:var(--card2);color:var(--ok);border:1px solid var(--edge);padding:7px 10px;font:700 .78rem 'JetBrains Mono';text-transform:uppercase"></select>
- <button class="mini gold" onclick="newShow()">+ new show</button> <a class="mini" style="text-decoration:none" href="api/export">⇩ export show</a>
+ <button class="mini gold" onclick="newShow()">+ new show</button> <a class="mini" style="text-decoration:none" href="api/export">⇩ export</a> <span class="stat" id="mebadge"></span>
 </div>
 <div class="tabs">
  <button class="tab on" data-t="home" onclick="tab('home')">Home</button>
@@ -136,6 +137,10 @@ a{color:var(--gold)}
 <main>
 <section id="t-home">
  <div id="homepath"></div>
+ <div id="hibrow" style="display:none;margin:10px 0">
+  <label style="font-size:.72rem;color:var(--dim);cursor:pointer">
+   <input type="checkbox" id="hibchk" onchange="toggleHib(this)"> auto-stop this pod after 30 idle minutes (hibernate)
+  </label></div>
  <div class="lab">Episodes</div><div id="posterwall" class="gal" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))"></div>
  <div class="lab">Cast</div><div id="homecast" class="pills"></div>
  <div class="lab">Sets</div><div id="homesets" class="pills"></div>
@@ -158,6 +163,7 @@ a{color:var(--gold)}
   <button class="big" onclick="saveDraft()">Save draft</button>
   <button class="big" id="saveback" style="display:none" onclick="saveBack()">Save back</button>
   <button class="ghost" onclick="importGate()">Import → run gates</button>
+  <button class="ghost" onclick="breakdown()">✎ break down a script</button>
   <button class="ghost" onclick="clearAll()">New</button>
  </div>
  <pre id="gateout" style="display:none"></pre>
@@ -176,6 +182,9 @@ a{color:var(--gold)}
   <div class="lab">Personality (optional, guides the writing)</div>
   <input type="text" id="c_pers" placeholder="Slow to speak, never wrong twice.">
   <div class="row" style="margin-top:12px"><button class="big" onclick="forge('character')">Forge character</button><button class="ghost" id="castedit" style="display:none" onclick="saveCast()">Save edits (no re-gen)</button></div>
+  <div class="lab">…or upload your own portrait</div>
+  <div class="row"><input type="file" id="up_c" accept="image/*" style="color:var(--dim);font-size:.72rem">
+   <button class="ghost" onclick="upload('portrait','c_id','up_c')">Upload as portrait</button></div>
   <pre id="forgelog" style="display:none;margin-top:10px"></pre>
   <div class="verdict warn" style="margin-top:10px">Forging renders a portrait, stages them into every set, builds close seeds and a wide per location — a few minutes of GPU, queued behind whatever runs.</div>
  </div></section>
@@ -187,6 +196,9 @@ a{color:var(--gold)}
   <div class="lab">Description — the bible entry, palette and light included</div>
   <textarea id="l_desc" placeholder="A drowned oak forest under green twilight, still black water between the trunks, cold mist, no sky…"></textarea>
   <div class="row" style="margin-top:12px"><button class="big" onclick="forge('location')">Forge location</button><button class="ghost" id="setedit" style="display:none" onclick="saveSet()">Save edits (no re-gen)</button></div>
+  <div class="lab">…or upload your own master plate</div>
+  <div class="row"><input type="file" id="up_l" accept="image/*" style="color:var(--dim);font-size:.72rem">
+   <button class="ghost" onclick="upload('location','l_id','up_l')">Upload as master</button></div>
   <pre id="forgelog2" style="display:none;margin-top:10px"></pre>
   <div class="verdict warn" style="margin-top:10px">Forging renders the master plate, derives camera setups, and builds a wide per lead plus a two-shot — the location is shootable when it finishes.</div>
  </div></section>
@@ -310,7 +322,7 @@ async function loadEpisodes(){const eps=await(await fetch('api/episodes')).json(
 async function openEp(n){const d=await(await fetch('api/episode/'+n)).json();
  const el=document.getElementById('epdetail');
  el.innerHTML=`<div class="card"><div class="shead"><span class="stype" style="font-size:1.2rem">${d.title}</span>
-  <button class="mini" onclick="editEpisode(${n})">Edit in composer</button> <button class="mini" onclick="showGraph(${n})">Lineage graph</button> <button class="mini gold" onclick="queueRender(${n})">Re-render episode</button></div>
+  <button class="mini" onclick="editEpisode(${n})">Edit in composer</button> <button class="mini" onclick="showGraph(${n})">Lineage graph</button> <button class="mini" onclick="shareEp(${n})">⤴ share</button> <button class="mini gold" onclick="queueRender(${n})">Re-render episode</button></div>
   ${d.final?`<video controls preload="metadata" src="media/final/${d.final}" style="margin-top:10px"></video>`:''}
   ${d.scenes.map(s=>`<div class="lab" style="margin-top:16px">${s.id} — ${s.dialogue&&s.dialogue.length?'“'+s.dialogue[0].line.slice(0,60)+'…”':(s.visual||'').slice(0,60)}</div>
    <div class="takes"><button class="mini" onclick="rerollShot('${s.id}')" style="margin-bottom:6px">↻ re-roll this shot</button>
@@ -457,7 +469,8 @@ async function loadHome(){
 async function pollPulse(){
  try{const j=await(await fetch('api/pulse')).json();
   document.getElementById('pulse').textContent=
-   `GPU ${j.gpu} · render queue ${j.queue}${j.jobs.length?' · running: '+j.jobs.join(', '):''}${j.last?' · '+j.last:''}`;
+   `GPU ${j.gpu} · render queue ${j.queue}${j.jobs.length?' · running: '+j.jobs.join(', '):''}${j.hibernate?' · ⏾ hibernate armed':''}${j.last?' · '+j.last:''}`;
+  const hc=document.getElementById('hibchk');if(hc&&document.activeElement!==hc)hc.checked=!!j.hibernate;
  }catch(e){}}
 setInterval(pollPulse,15000);pollPulse();
 async function loadBible(){const b=await(await fetch('api/bible')).json();window._bible=b;
@@ -527,6 +540,35 @@ async function audition(i){const s0=shots[i];
  const r=await fetch('api/audition',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({who:s0.characters[0],line:s0.line})});
  if(!r.ok){toast('that character has no voice yet');return}
  new Audio(URL.createObjectURL(await r.blob())).play();}
+async function upload(role,idField,fileField){
+ const id=document.getElementById(idField).value.trim();
+ const f=document.getElementById(fileField).files[0];
+ if(!id||!f){toast('need an id and a file');return}
+ const fd=new FormData();fd.append('role',role);fd.append('id',id);fd.append('file',f);
+ const r=await fetch('api/upload',{method:'POST',body:fd});
+ if(!r.ok){toast('upload refused ('+r.status+')');return}
+ toast('Uploaded — refreshing');DATA=await(await fetch('api/data?fresh=1')).json();render();loadBible();}
+async function shareEp(n){const j=await(await fetch('api/sharelink/'+n)).json();
+ const url=location.origin+j.url;
+ try{await navigator.clipboard.writeText(url);toast('Share link copied — anyone with it can watch, no login')}
+ catch(e){prompt('Share link:',url)}}
+async function breakdown(){
+ const t=prompt('Paste the story / script text:');if(!t)return;
+ toast('Breaking it down…');
+ const r=await fetch('api/breakdown',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
+ const j=await r.json();
+ if(!j.ok){toast(j.error||'breakdown unavailable');return}
+ shots=(j.doc.scenes||[]).map(sc=>({type:sc.type,location:sc.location||'',
+  characters:sc.characters||[],visual:sc.visual||'',
+  line:(sc.dialogue&&sc.dialogue[0]&&sc.dialogue[0].line)||'',hold:7}));
+ render();toast(shots.length+' shots drafted — review every one before the gates');}
+async function loadMe(){try{const m=await(await fetch('api/me')).json();
+ document.getElementById('mebadge').textContent=(m.user||'?')+' · '+m.gpu_minutes+' GPU-min';
+ if(m.user==='admin'){const h=document.getElementById('hibrow');if(h)h.style.display='';}}catch(e){}}
+async function toggleHib(el){
+ const r=await(await fetch('api/hibernate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on:el.checked})})).json();
+ toast(r.on?(r.can_stop?'Hibernate armed — pod stops after 30 idle minutes':'Hibernate armed, but the RunPod key is not authorised — it will log instead of stopping. Fix: runpodctl config --apiKey …'):'Hibernate off');}
+loadMe();
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}
 const title=document.getElementById('title'),summary=document.getElementById('summary');
 </script></body></html>
