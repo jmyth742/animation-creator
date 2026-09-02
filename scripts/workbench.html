@@ -122,7 +122,7 @@ a{color:var(--gold)}
 <header><h1>SHOWRUNNER<span class="cursor">▊</span></h1><div class="sub">episode production console · v1</div>
 <div class="row" style="margin:8px 0 2px">
  <select id="showsel" onchange="pickShow(this.value)" style="background:var(--card2);color:var(--ok);border:1px solid var(--edge);padding:7px 10px;font:700 .78rem 'JetBrains Mono';text-transform:uppercase"></select>
- <button class="mini gold" onclick="newShow()">+ new show</button>
+ <button class="mini gold" onclick="newShow()">+ new show</button> <a class="mini" style="text-decoration:none" href="api/export">⇩ export show</a>
 </div>
 <div class="tabs">
  <button class="tab on" data-t="home" onclick="tab('home')">Home</button>
@@ -252,7 +252,7 @@ function render(){const el=document.getElementById('shots');
   const locs=Object.keys(DATA.locations).map(k=>{const has=!!plateFor({...s,location:k});
    return `<button class="pill ${s.location===k?'on':''} ${has?'':'dis'}" ${has?`onclick="setL(${i},'${k}')"`:''}>${(DATA.locations[k]||{}).thumb?`<img src="${DATA.locations[k].thumb}">`:''}${k.replace(/_/g,' ')}</button>`}).join('');
   const chs=(s.type==='figure'||s.type==='close')?`<div class="lab">Character</div><div class="pills">`+CHARS().map(c=>`<button class="pill ${s.characters[0]===c?'on':''}" onclick="setC(${i},'${c}')">${c}</button>`).join('')+`</div>`:'';
-  const line=s.type==='close'?`<div class="lab">The line — ${s.characters[0]||'?'}</div><textarea oninput="setF(${i},'line',this.value)">${s.line||''}</textarea><div class="wc">${(s.line||'').trim().split(/\s+/).filter(Boolean).length} words · ~${holdFor(s)}s</div>`:'';
+  const line=s.type==='close'?`<div class="lab">The line — ${s.characters[0]||'?'}</div><textarea oninput="setF(${i},'line',this.value)">${s.line||''}</textarea><div class="wc"><button class="mini" onclick="audition(${i})" title="hear it in their voice">▶ audition</button> ${(s.line||'').trim().split(/\s+/).filter(Boolean).length} words · ~${holdFor(s)}s</div>`:'';
   return `<div class="shot ${bad?'bad':'okv'}"><div class="shead"><span class="snum">${String(i+1).padStart(2,'0')}</span><span class="stype">${NAMES[s.type]}</span>
    <span class="row"><button class="mini" onclick="move(${i},-1)">↑</button><button class="mini" onclick="move(${i},1)">↓</button><button class="mini" onclick="dupShot(${i})" title="duplicate — a close flips the speaker">⧉</button><button class="mini" onclick="del(${i})">✕</button></span></div>
    <div class="lab">Location</div><div class="pills">${locs}</div>${chs}
@@ -265,7 +265,8 @@ function stats(){const n=shots.length,d=shots.filter(s=>s.type==='close').length
  two=shots.filter(s=>s.type==='twoshot').length,
  bad=shots.reduce((a,s)=>a+(lint(s).some(x=>x[0]==='bad')?1:0),0);
  const c=(x,g)=>`<span class="stat ${g===true?'ok':g===false?'warn':''}">${x}</span>`;
- document.getElementById('stats').innerHTML=c(n+' shots')+c((t/60).toFixed(1)+' min',t>=100&&t<=260?true:n?false:undefined)+c(sil+'% silent',sil>=50&&sil<=70?true:n?false:undefined)+c(d+' lines',d>=5&&d<=9?true:n?false:undefined)+c(two+' two-shots',two>=1&&two<=4?true:n?false:undefined)+(bad?c(bad+' blocked',false):c('grammar clean',n?true:undefined))}
+ document.getElementById('stats').innerHTML=c(n+' shots')+c((t/60).toFixed(1)+' min',t>=100&&t<=260?true:n?false:undefined)+c(sil+'% silent',sil>=50&&sil<=70?true:n?false:undefined)+c(d+' lines',d>=5&&d<=9?true:n?false:undefined)+c(two+' two-shots',two>=1&&two<=4?true:n?false:undefined)+(bad?c(bad+' blocked',false):c('grammar clean',n?true:undefined))+
+   c('≈'+Math.round(d*28+(n-d)*16)+' GPU-min',undefined)}
 function addShot(t){
  const prev=shots[shots.length-1];
  const loc=prev?prev.location:'';
@@ -519,6 +520,13 @@ async function forge(kind){
   el.textContent=j.log||'queued…';
   if(j.done){clearInterval(window._ft);toast('Forge finished — refreshing data');
    DATA=await(await fetch('api/data?fresh=1')).json();render();loadBible();}},4000)}
+async function audition(i){const s0=shots[i];
+ if(!(s0.line||'').trim()){toast('write the line first');return}
+ if(!s0.characters[0]){toast('pick the speaker first');return}
+ toast('Reading…');
+ const r=await fetch('api/audition',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({who:s0.characters[0],line:s0.line})});
+ if(!r.ok){toast('that character has no voice yet');return}
+ new Audio(URL.createObjectURL(await r.blob())).play();}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}
 const title=document.getElementById('title'),summary=document.getElementById('summary');
 </script></body></html>

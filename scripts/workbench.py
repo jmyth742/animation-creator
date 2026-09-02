@@ -272,14 +272,12 @@ def do_import():
 @app.post("/api/render")
 def do_render():
     n = int(request.get_json(force=True).get("episode"))
-    log = f"/workspace/wb_render_ep{n}.log"
-    cmd = (f"cd {ROOT.parent} && {sys.executable} scripts/showrunner.py "
-           f"produce {S()} --episode {n} --quality final --upscale "
-           f">> {log} 2>&1 && {sys.executable} scripts/master_audio.py "
-           f"{S()} --episode {n} >> {log} 2>&1")
-    subprocess.Popen(["bash", "-c", cmd], start_new_session=True,
-                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    return jsonify({"queued": n, "log": log})
+    with open(RQ, "a") as f:
+        f.write(f"{n}\n")
+    _start_runner()
+    depth = len(RQ.read_text().splitlines()) if RQ.exists() else 0
+    return jsonify({"queued": n, "position": depth,
+                    "log": f"/workspace/wb_render_ep{n}.log"})
 
 
 @app.get("/api/log")
@@ -452,6 +450,14 @@ def voicetest():
 @app.post("/api/episode/<int:n>")
 def save_episode(n):
     doc = request.get_json(force=True)
+    # every save-in-place keeps the previous version -- overwrites must be
+    # regrettable, never fatal
+    cur = sr.series_path(S()) / "episodes" / f"ep{n:02d}.json"
+    if cur.exists():
+        hist = WB / "ep_history" / S() / f"ep{n:02d}"
+        hist.mkdir(parents=True, exist_ok=True)
+        v = len(list(hist.glob("v*.json"))) + 1
+        shutil.copy(cur, hist / f"v{v:03d}.json")
     tmp = "/tmp/wb_save.json"
     Path(tmp).write_text(json.dumps(doc))
     r = subprocess.run([sys.executable, str(ROOT / "import_episode.py"),
@@ -642,6 +648,79 @@ def pulse():
                     "queue": len(q.get("queue_running", []))
                     + len(q.get("queue_pending", [])),
                     "jobs": jobs[:5], "last": last})
+
+
+
+# ── product hardening ────────────────────────────────────────────────
+@app.get("/api/export")
+def export_show():
+    """The whole show as one zip: bible, episodes, references, plates.
+    A creator's work must leave with them -- portability is trust."""
+    import zipfile, io
+    base = sr.series_path(S())
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        for pat in ("bible.json", "episodes/*.json",
+                    "reference_images/*.png", "sets/**/*.png"):
+            for f in base.glob(pat):
+                if f.is_file() and "tvar__" not in f.name:
+                    z.write(f, f.relative_to(base))
+    buf.seek(0)
+    r = make_response(buf.read())
+    r.headers["Content-Type"] = "application/zip"
+    r.headers["Content-Disposition"] =         f"attachment; filename={S()}-export.zip"
+    return r
+
+
+@app.post("/api/audition")
+def audition():
+    """Hear a line in its character's voice before rendering it."""
+    d = request.get_json(force=True)
+    b = sr.load_json(sr.series_path(S()) / "bible.json")
+    voice = b.get("characters", {}).get(d.get("who", ""), {}).get("voice")
+    text = (d.get("line") or "")[:300]
+    if not voice or not text.strip():
+        abort(400)
+    out = "/tmp/wb_audition.mp3"
+    import asyncio, edge_tts
+    asyncio.run(edge_tts.Communicate(text, voice, rate="+4%").save(out))
+    return send_file(out, mimetype="audio/mpeg")
+
+
+# render queue: strictly one UI-triggered render at a time
+RQ = WB / "render_queue.txt"
+
+
+def _runner_alive():
+    try:
+        pid = int((WB / "runner.pid").read_text())
+        os.kill(pid, 0)
+        return True
+    except Exception:
+        return False
+
+
+def _start_runner():
+    if _runner_alive():
+        return
+    sh = f"""
+while true; do
+  L=$(head -1 {RQ} 2>/dev/null)
+  if [ -z "$L" ]; then sleep 15; continue; fi
+  sed -i 1d {RQ}
+  echo "[runner] rendering ep$L" >> /workspace/wb_runner.log
+  cd {ROOT.parent}
+  {sys.executable} scripts/showrunner.py produce $WBSHOW --episode $L \
+      --quality final --upscale >> /workspace/wb_render_ep$L.log 2>&1
+  {sys.executable} scripts/master_audio.py $WBSHOW --episode $L \
+      >> /workspace/wb_render_ep$L.log 2>&1
+  echo "[runner] done ep$L" >> /workspace/wb_runner.log
+done"""
+    env = dict(os.environ, WBSHOW=S())
+    pr = subprocess.Popen(["bash", "-c", sh], start_new_session=True,
+                          env=env, stdout=subprocess.DEVNULL,
+                          stderr=subprocess.DEVNULL)
+    (WB / "runner.pid").write_text(str(pr.pid))
 
 
 if __name__ == "__main__":
