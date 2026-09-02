@@ -1,80 +1,119 @@
 <!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tír na nÓg Workbench</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap">
+<title>SHOWRUNNER</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=JetBrains+Mono:wght@400;700&display=swap">
 <style>
-:root{--ground:#0F1412;--card:#1A211C;--card2:#141A16;--edge:#2B342E;--rule:#232B26;
---ink:#E9ECE6;--body:#BCC4BC;--dim:#8B948B;--gold:#C9A961;--gold-bg:#241E10;
---ok:#7CC087;--ok-bg:#14231A;--warn:#DEB05C;--warn-bg:#271F12;--bad:#D9695F;--bad-bg:#2A1613}
+:root{--ground:#0A0E0A;--card:#101710;--card2:#0D130D;--edge:#1F3322;--rule:#16241A;
+--ink:#D8FFE0;--body:#8FCF9E;--dim:#528F63;--gold:#FFB000;--gold-bg:#221A05;
+--ok:#5FFF87;--ok-bg:#0A2413;--warn:#FFD75F;--warn-bg:#241D05;--bad:#FF6B5F;--bad-bg:#240B08;
+--acc:#5FD7FF;--acc-bg:#07202A}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){
+--ground:#EFEDE2;--card:#FAF8EE;--card2:#F3F1E5;--edge:#B8B49B;--rule:#D5D2BE;
+--ink:#1E241C;--body:#3E4A3C;--dim:#75806F;--gold:#8A5A00;--gold-bg:#F0E4C4;
+--ok:#1F7A3B;--ok-bg:#DCEFDF;--warn:#8A6510;--warn-bg:#F0E7CB;--bad:#A63428;--bad-bg:#F4DEDA;
+--acc:#155E7E;--acc-bg:#DBEDF5}}
+:root[data-theme="light"]{
+--ground:#EFEDE2;--card:#FAF8EE;--card2:#F3F1E5;--edge:#B8B49B;--rule:#D5D2BE;
+--ink:#1E241C;--body:#3E4A3C;--dim:#75806F;--gold:#8A5A00;--gold-bg:#F0E4C4;
+--ok:#1F7A3B;--ok-bg:#DCEFDF;--warn:#8A6510;--warn-bg:#F0E7CB;--bad:#A63428;--bad-bg:#F4DEDA;
+--acc:#155E7E;--acc-bg:#DBEDF5}
 *{box-sizing:border-box}
-body{background:var(--ground);color:var(--body);margin:0;font-family:"Source Sans 3",system-ui,sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
-header{padding:14px 16px 0;border-bottom:1px solid var(--rule);position:sticky;top:0;background:var(--ground);z-index:5}
-h1{font-family:Fraunces,serif;color:var(--ink);margin:0;font-size:1.3rem;font-weight:700}
-.tabs{display:flex;gap:2px;margin-top:10px}
-.tab{background:none;border:0;color:var(--dim);padding:9px 14px;font:600 .9rem "Source Sans 3";cursor:pointer;border-bottom:2px solid transparent}
-.tab.on{color:var(--gold);border-bottom-color:var(--gold)}
-main{max-width:860px;margin:0 auto;padding:14px 14px 120px}
-input[type=text],textarea{width:100%;background:var(--card2);color:var(--ink);border:1px solid var(--edge);border-radius:6px;padding:10px 12px;font-family:inherit;font-size:.95rem}
-textarea{resize:vertical;min-height:54px}
-.lab{font:700 .6rem "JetBrains Mono";letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:12px 0 5px}
+body{background:var(--ground);color:var(--body);margin:0;
+font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.55;
+-webkit-font-smoothing:antialiased;position:relative}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:99;
+background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,0,0,.07) 2px 3px);mix-blend-mode:multiply}
+@media (prefers-reduced-motion:no-preference){ body::after{opacity:.8} }
+header{padding:12px 16px 0;border-bottom:1px solid var(--edge);position:sticky;top:0;background:var(--ground);z-index:5}
+h1{font-family:VT323,"JetBrains Mono",monospace;color:var(--ok);margin:0;font-size:2rem;
+font-weight:400;letter-spacing:.06em;text-shadow:0 0 6px color-mix(in srgb,var(--ok) 45%,transparent)}
+h1 .cursor{animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.sub{color:var(--dim);font-size:.72rem;margin-top:-2px;text-transform:uppercase;letter-spacing:.14em}
+.tabs{display:flex;gap:4px;margin-top:10px}
+.tab{background:none;border:1px solid transparent;border-bottom:0;color:var(--dim);
+padding:8px 14px 9px;font:700 .74rem "JetBrains Mono";letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+.tab.on{color:var(--ok);border-color:var(--edge);background:var(--card);
+box-shadow:0 1px 0 var(--card)}
+main{max-width:880px;margin:0 auto;padding:14px 14px 120px}
+input[type=text],textarea{width:100%;background:var(--card2);color:var(--ink);
+border:1px solid var(--edge);border-radius:0;padding:9px 11px;font:inherit;font-size:.85rem}
+textarea{resize:vertical;min-height:52px}
+input:focus,textarea:focus,button:focus-visible{outline:1px solid var(--ok);outline-offset:1px}
+.lab{font:700 .62rem "JetBrains Mono";letter-spacing:.16em;text-transform:uppercase;
+color:var(--dim);margin:12px 0 5px}
+.lab::before{content:'» ';color:var(--gold)}
 .stats{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
-.stat{font:700 .68rem "JetBrains Mono";padding:4px 9px;border-radius:4px;background:var(--card);border:1px solid var(--edge);color:var(--dim)}
-.stat.ok{background:var(--ok-bg);color:var(--ok);border-color:transparent}
-.stat.warn{background:var(--warn-bg);color:var(--warn);border-color:transparent}
-.shot,.card{background:var(--card);border:1px solid var(--edge);border-radius:8px;padding:14px;margin:12px 0}
+.stat{font:700 .68rem "JetBrains Mono";padding:3px 8px;background:var(--card);
+border:1px solid var(--edge);color:var(--dim)}
+.stat.ok{color:var(--ok);border-color:var(--ok)}
+.stat.warn{color:var(--warn);border-color:var(--warn)}
+.shot,.card{background:var(--card);border:1px solid var(--edge);padding:13px;margin:12px 0}
 .shot.bad{border-left:3px solid var(--bad)}.shot.okv{border-left:3px solid var(--ok)}
 .shead{display:flex;align-items:center;gap:8px}
-.snum{font:700 .85rem "JetBrains Mono";color:var(--gold);min-width:2.2em}
-.stype{font-family:Fraunces,serif;font-weight:600;color:var(--ink);font-size:1.02rem;flex:1}
-.mini{background:var(--card2);border:1px solid var(--edge);color:var(--dim);border-radius:5px;padding:4px 9px;font-size:.85rem;cursor:pointer}
-.mini:hover{color:var(--ink)}
-.mini.gold{background:var(--gold-bg);color:var(--gold);border-color:var(--gold)}
+.snum{font:700 .85rem "JetBrains Mono";color:var(--gold);min-width:2.4em}
+.snum::before{content:'['}.snum::after{content:']'}
+.stype{font:700 .85rem "JetBrains Mono";text-transform:uppercase;letter-spacing:.08em;color:var(--ink);flex:1}
+.mini{background:var(--card2);border:1px solid var(--edge);color:var(--dim);
+padding:4px 9px;font:inherit;font-size:.8rem;cursor:pointer}
+.mini:hover{color:var(--ok);border-color:var(--ok)}
+.mini.gold{color:var(--gold);border-color:var(--gold)}
 .pills{display:flex;gap:6px;flex-wrap:wrap}
-.pill{border:1px solid var(--edge);background:var(--card2);color:var(--body);border-radius:99px;padding:5px 12px;font-size:.82rem;cursor:pointer;display:flex;align-items:center;gap:6px}
-.pill img{width:22px;height:14px;object-fit:cover;border-radius:3px}
-.pill.on{background:var(--gold-bg);border-color:var(--gold);color:var(--gold);font-weight:600}
-.pill.dis{opacity:.35;cursor:not-allowed}
-.preview{width:100%;border-radius:6px;border:1px solid var(--edge);margin-top:10px;display:block}
-.verdict{font:.72rem "JetBrains Mono";margin-top:8px;padding:7px 10px;border-radius:5px;line-height:1.45}
-.verdict.ok{background:var(--ok-bg);color:var(--ok)}.verdict.warn{background:var(--warn-bg);color:var(--warn)}.verdict.bad{background:var(--bad-bg);color:var(--bad)}
-.wc{font:.68rem "JetBrains Mono";color:var(--dim);text-align:right;margin-top:3px}
+.pill{border:1px solid var(--edge);background:var(--card2);color:var(--body);
+padding:4px 10px;font-size:.76rem;cursor:pointer;display:flex;align-items:center;gap:6px}
+.pill img{width:22px;height:14px;object-fit:cover;filter:saturate(.85)}
+.pill.on{border-color:var(--ok);color:var(--ok);background:var(--ok-bg);font-weight:700}
+.pill.dis{opacity:.3;cursor:not-allowed}
+.preview{width:100%;border:1px solid var(--edge);margin-top:10px;display:block;filter:saturate(.92)}
+.verdict{font:.72rem "JetBrains Mono";margin-top:8px;padding:6px 9px;line-height:1.45;border:1px solid}
+.verdict.ok{color:var(--ok);border-color:var(--ok);background:var(--ok-bg)}
+.verdict.warn{color:var(--warn);border-color:var(--warn);background:var(--warn-bg)}
+.verdict.bad{color:var(--bad);border-color:var(--bad);background:var(--bad-bg)}
+.verdict.ok::before{content:'OK  '}.verdict.warn::before{content:'WARN '}.verdict.bad::before{content:'FAIL '}
+.wc{font:.66rem "JetBrains Mono";color:var(--dim);text-align:right;margin-top:3px}
 .adder{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
 @media(min-width:640px){.adder{grid-template-columns:repeat(4,1fr)}}
-.addcard{background:var(--card);border:1px solid var(--edge);border-radius:8px;padding:12px;cursor:pointer;text-align:left}
-.addcard:hover{border-color:var(--gold)}
-.addcard .t{font-family:Fraunces,serif;font-weight:600;color:var(--ink);font-size:.95rem}
-.addcard .d{font-size:.72rem;color:var(--dim);margin-top:3px;line-height:1.3}
+.addcard{background:var(--card);border:1px dashed var(--edge);padding:11px;cursor:pointer;text-align:left;font:inherit;color:var(--body)}
+.addcard:hover{border-color:var(--ok);border-style:solid}
+.addcard .t{font:700 .8rem "JetBrains Mono";text-transform:uppercase;letter-spacing:.06em;color:var(--ink)}
+.addcard .t::before{content:'+ ';color:var(--ok)}
+.addcard .d{font-size:.68rem;color:var(--dim);margin-top:3px;line-height:1.35}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.big{background:var(--gold);color:#141208;border:0;border-radius:7px;padding:11px 16px;font:600 .92rem "Source Sans 3";cursor:pointer}
-.ghost{background:var(--card2);color:var(--body);border:1px solid var(--edge);border-radius:7px;padding:11px 14px;font-size:.88rem;cursor:pointer}
-.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:9px 16px;border-radius:7px;font-size:.85rem;opacity:0;transition:opacity .25s;pointer-events:none;z-index:9;max-width:88vw}
+.big{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok);
+padding:10px 16px;font:700 .8rem "JetBrains Mono";letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.big:hover{background:var(--ok);color:var(--ground)}
+.ghost{background:var(--card2);color:var(--body);border:1px solid var(--edge);
+padding:10px 14px;font:inherit;font-size:.78rem;cursor:pointer}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+background:var(--ok);color:var(--ground);padding:8px 16px;font:700 .78rem "JetBrains Mono";
+opacity:0;transition:opacity .25s;pointer-events:none;z-index:100;max-width:88vw}
 .toast.show{opacity:1}
-.eprow{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--rule);cursor:pointer}
+.eprow{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--rule);cursor:pointer}
 .eprow:hover{background:var(--card2)}
-.eprow .id{font:700 .85rem "JetBrains Mono";color:var(--gold);min-width:3.4em}
-.eprow .t{flex:1;color:var(--ink);font-weight:600}
-.eprow .m{font:.72rem "JetBrains Mono";color:var(--dim)}
-video{width:100%;border-radius:6px;background:#000;display:block}
+.eprow .id{font:700 .8rem "JetBrains Mono";color:var(--gold);min-width:3.6em}
+.eprow .t{flex:1;color:var(--ink);font-weight:700;font-size:.85rem}
+.eprow .m{font:.68rem "JetBrains Mono";color:var(--dim)}
+video{width:100%;background:#000;display:block;border:1px solid var(--edge)}
 .takes{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:8px}
-.take{background:var(--card2);border:1px solid var(--edge);border-radius:6px;padding:6px}
+.take{background:var(--card2);border:1px solid var(--edge);padding:5px}
 .take.live{border-color:var(--ok)}
-.take .m{font:.62rem "JetBrains Mono";color:var(--dim);margin:5px 2px 2px;display:flex;justify-content:space-between;align-items:center}
-pre{background:var(--card2);border:1px solid var(--edge);border-radius:6px;padding:12px;font-size:.68rem;overflow:auto;max-height:56vh;color:var(--ink);white-space:pre-wrap}
-.empty{color:var(--dim);text-align:center;padding:30px;font-size:.92rem}
+.take .m{font:.6rem "JetBrains Mono";color:var(--dim);margin:5px 2px 2px;display:flex;justify-content:space-between;align-items:center}
+pre{background:var(--card2);border:1px solid var(--edge);padding:11px;font-size:.66rem;overflow:auto;max-height:56vh;color:var(--ink);white-space:pre-wrap}
+.empty{color:var(--dim);text-align:center;padding:30px;font-size:.8rem;text-transform:uppercase;letter-spacing:.1em}
 a{color:var(--gold)}
-.gwrap{overflow-x:auto;background:var(--card2);border:1px solid var(--edge);border-radius:8px;margin-top:10px}
+.gwrap{overflow-x:auto;background:var(--card2);border:1px solid var(--edge);margin-top:10px}
 .gnode{cursor:pointer}
 .gnode rect{transition:stroke .15s}
 .gnode:hover rect{stroke:var(--gold)}
-.gdetail{background:var(--card2);border:1px solid var(--edge);border-radius:8px;padding:12px;margin-top:10px;font-size:.85rem}
-.gdetail .mono{font:.72rem "JetBrains Mono";color:var(--ink);white-space:pre-wrap;background:var(--ground);border:1px solid var(--edge);border-radius:5px;padding:8px;margin:6px 0}
-.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font:.66rem "JetBrains Mono";color:var(--dim)}
-.legend span::before{content:'';display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px}
-.lg-dia::before{background:#84ABCE}.lg-sil::before{background:#7CC087}
-.lg-gen::before{background:#C9A961}.lg-comp::before{background:#DEB05C}
-.lg-loc::before{background:#8B948B}.lg-port::before{background:#D9695F}
+.gdetail{background:var(--card2);border:1px solid var(--edge);padding:12px;margin-top:10px;font-size:.78rem}
+.gdetail .mono{font:.7rem "JetBrains Mono";color:var(--ink);white-space:pre-wrap;background:var(--ground);border:1px solid var(--edge);padding:8px;margin:6px 0}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font:.64rem "JetBrains Mono";color:var(--dim);text-transform:uppercase}
+.legend span::before{content:'';display:inline-block;width:9px;height:9px;margin-right:5px;vertical-align:-1px}
+.lg-dia::before{background:#5FD7FF}.lg-sil::before{background:#5FFF87}
+.lg-gen::before{background:#FFB000}.lg-comp::before{background:#FFD75F}
+.lg-loc::before{background:#75806F}.lg-port::before{background:#FF6B5F}
 </style></head><body>
-<header><h1>Tír na nÓg <span style="color:var(--dim);font-weight:400">Workbench</span></h1>
+<header><h1>SHOWRUNNER<span class="cursor">▊</span></h1><div class="sub">episode production console · v1</div>
 <div class="tabs">
  <button class="tab on" data-t="compose" onclick="tab('compose')">Compose</button>
  <button class="tab" data-t="episodes" onclick="tab('episodes')">Episodes</button>
@@ -203,7 +242,7 @@ async function openDraft(slug,v){const d=await(await fetch('api/draft/'+slug+(v?
  if(d._versions&&d._versions.length>1)toast(`Loaded v${v||d._versions[d._versions.length-1]} of ${d._versions.length} — earlier: ?v=N`)}
 async function showGraph(n){
  const g=await(await fetch('api/graph/'+n)).json();
- const KC={generated:'#C9A961',composite:'#DEB05C',staged:'#a58fd4',location:'#8B948B',portrait:'#D9695F',flux:'#6d766e'};
+ const KC={generated:'#FFB000',composite:'#FFD75F',staged:'#B58FFF',location:'#75806F',portrait:'#FF6B5F',flux:'#528F63'};
  const PXS=9;                                  // px per second of hold
  const SH=118, AH=64, GAP=26;                  // shot band y, asset band height
  // shot x-positions from cumulative time
@@ -218,7 +257,7 @@ async function showGraph(n){
  akeys.forEach((k,i)=>{const row=i%2, aw=150, cx=Math.max(avg(used[k])-aw/2, lastEnd[row]+10);
   apos[k]={x:cx,y:14+row*(AH+8),row}; lastEnd[row]=cx+aw;});
  const H=14+2*(AH+8)+GAP+SH+58;
- let svg=`<svg width="${Math.max(W, x)}" height="${H}" font-family="Source Sans 3">`;
+ let svg=`<svg width="${Math.max(W, x)}" height="${H}" font-family="JetBrains Mono">`;
  // edges asset -> shot
  g.shots.forEach(s=>{if(!s.seed_asset)return;const a=apos[s.seed_asset];if(!a)return;
   const ax=a.x+75, ay=a.y+AH, sx=pos[s.id].x+pos[s.id].w/2, sy=14+2*(AH+8)+GAP;
@@ -233,7 +272,7 @@ async function showGraph(n){
    <text x="${a.x}" y="${a.y+AH+11}" font-size="8.5" fill="${KC[asset.kind]}" font-family="JetBrains Mono">${esc(k).slice(0,24)}</text></g>`;});
  // shot band (the timeline)
  const sy=14+2*(AH+8)+GAP;
- g.shots.forEach((s,i)=>{const p2=pos[s.id], col=s.mode==='s2v'?'#84ABCE':'#7CC087';
+ g.shots.forEach((s,i)=>{const p2=pos[s.id], col=s.mode==='s2v'?'#5FD7FF':'#5FFF87';
   svg+=`<g class="gnode" onclick="gsel('shot',${i})">
    <rect x="${p2.x}" y="${sy}" width="${p2.w}" height="${SH-42}" rx="6" fill="var(--card)" stroke="${col}" stroke-width="1.6"/>
    <text x="${p2.x+6}" y="${sy+15}" font-size="9.5" font-weight="700" fill="${col}" font-family="JetBrains Mono">${s.id.split('_')[1]}</text>
