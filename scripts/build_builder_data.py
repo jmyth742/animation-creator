@@ -18,7 +18,8 @@ def thumb(p, w=280):
             + base64.b64encode(r.stdout).decode()) if r.stdout else None
 
 
-def build(series, out="/tmp/builder_data.json"):
+def build(series, out=None):
+    out = out or f"/tmp/builder_data_{series}.json"
     sr.set_current_series(series)
     S = sr.series_path(series) / "sets"
     b = sr.load_json(sr.series_path(series) / "bible.json")

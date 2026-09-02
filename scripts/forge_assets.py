@@ -26,7 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 import showrunner as sr                                        # noqa: E402
 
-SERIES = "tir-na-nog-legend"
+SERIES = "tir-na-nog-legend"   # overridden by --series
 STYLE = ("Cel-shaded 2D animation, clean confident linework, flat blocks of "
          "colour with simple shading, painted background art. Restrained "
          "desaturated palette of deep greens, slate blue-grey and cold stone, "
@@ -151,10 +151,14 @@ def main():
     c.add_argument("--personality", default="")
     c.add_argument("--trigger", default=None)
     c.add_argument("--seed", type=int, default=4400)
+    c.add_argument("--series", default=SERIES)
     l = sub.add_parser("location")
     l.add_argument("id"); l.add_argument("--desc", required=True)
     l.add_argument("--seed", type=int, default=5500)
+    l.add_argument("--series", default=SERIES)
     a = ap.parse_args()
+    global SERIES
+    SERIES = a.series
     rc = forge_character(a) if a.kind == "character" else forge_location(a)
     import build_builder_data
     build_builder_data.build(SERIES)

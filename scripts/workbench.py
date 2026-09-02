@@ -31,8 +31,23 @@ from flask import (Flask, request, send_file, jsonify, abort,
 sys.path.insert(0, str(Path(__file__).parent))
 import showrunner as sr                                        # noqa: E402
 
-SERIES = "tir-na-nog-legend"
-sr.set_current_series(SERIES)
+DEFAULT_SHOW = "tir-na-nog-legend"
+
+
+def S():
+    """The selected show, per request."""
+    from flask import request
+    v = request.cookies.get("wbshow") or DEFAULT_SHOW
+    return v if (Path("series") / v / "bible.json").exists() else DEFAULT_SHOW
+
+
+def CLIPS_D():
+    return Path("ComfyUI/output/video") / S()
+
+
+def OUT_D():
+    return Path("output") / S()
+
 ROOT = Path(__file__).parent
 WB = ROOT / "workbench_data"
 DRAFTS = WB / "drafts"
@@ -41,11 +56,17 @@ KEYFILE = WB / "key.txt"
 if not KEYFILE.exists():
     KEYFILE.write_text(secrets.token_urlsafe(9))
 KEY = KEYFILE.read_text().strip()
-CLIPS = Path("ComfyUI/output/video") / SERIES
-OUT = Path("output") / SERIES
 SEQ = re.compile(r"^(?P<stem>.+?)_(?P<n>\d+)_?\.mp4$")
 
 app = Flask(__name__)
+
+
+@app.before_request
+def _select_show():
+    try:
+        sr.set_current_series(S())
+    except Exception:
+        pass
 
 
 @app.before_request
@@ -67,25 +88,71 @@ def health():
 
 @app.get("/")
 def index():
-    return send_file(ROOT / "workbench.html")
+    r = make_response(send_file(ROOT / "workbench.html"))
+    r.headers["Cache-Control"] = "no-store"          # a cached console hid
+    return r                                          # whole tabs from its user
+
+
+@app.get("/api/shows")
+def shows():
+    out = []
+    for d in sorted(Path("series").iterdir()):
+        if (d / "bible.json").exists():
+            b = json.loads((d / "bible.json").read_text())
+            eps = len(list((d / "episodes").glob("ep*.json"))) \
+                if (d / "episodes").exists() else 0
+            out.append({"id": d.name,
+                        "title": b.get("series", {}).get("title", d.name),
+                        "episodes": eps,
+                        "characters": len(b.get("characters", {}))})
+    return jsonify({"shows": out, "current": S()})
+
+
+@app.post("/api/shows")
+def new_show():
+    d = request.get_json(force=True)
+    sid = re.sub(r"[^a-z0-9_-]", "", (d.get("id") or "").lower())
+    if not sid or (Path("series") / sid).exists():
+        abort(400)
+    root = Path("series") / sid
+    for sub in ("episodes", "reference_images", "sets/_generated"):
+        (root / sub).mkdir(parents=True, exist_ok=True)
+    bible = {"series": {"title": d.get("title") or sid,
+                        "style": d.get("style") or
+                        "Cel-shaded 2D animation, clean confident linework, "
+                        "flat blocks of colour with simple shading, painted "
+                        "background art"},
+             "characters": {}, "world": {"locations": {}}}
+    (root / "bible.json").write_text(json.dumps(bible, indent=2))
+    return jsonify({"created": sid})
+
+
+@app.post("/api/selectshow")
+def select_show():
+    sid = request.get_json(force=True).get("id", "")
+    if not (Path("series") / sid / "bible.json").exists():
+        abort(404)
+    r = jsonify({"selected": sid})
+    r.set_cookie("wbshow", sid, max_age=86400 * 90)
+    return r
 
 
 @app.get("/api/data")
 def data():
-    if not Path("/tmp/builder_data.json").exists() or \
-            request.args.get("fresh"):
+    blob = f"/tmp/builder_data_{S()}.json"
+    if not Path(blob).exists() or request.args.get("fresh"):
         import build_builder_data
-        build_builder_data.build(SERIES)
-    return send_file("/tmp/builder_data.json")
+        build_builder_data.build(S(), blob)
+    return send_file(blob)
 
 
 @app.get("/api/episodes")
 def episodes():
     out = []
-    for p in sorted((sr.series_path(SERIES) / "episodes").glob("ep*.json")):
+    for p in sorted((sr.series_path(S()) / "episodes").glob("ep*.json")):
         d = json.loads(p.read_text())
         n = int(p.stem[2:])
-        final = OUT / p.stem / f"{p.stem}_final.mp4"
+        final = OUT_D() / p.stem / f"{p.stem}_final.mp4"
         out.append({"n": n, "id": p.stem, "title": d.get("title", ""),
                     "shots": len(d.get("scenes", [])),
                     "rendered": final.exists(),
@@ -96,17 +163,17 @@ def episodes():
 
 @app.get("/api/episode/<int:n>")
 def episode(n):
-    p = sr.series_path(SERIES) / "episodes" / f"ep{n:02d}.json"
+    p = sr.series_path(S()) / "episodes" / f"ep{n:02d}.json"
     if not p.exists():
         abort(404)
     d = json.loads(p.read_text())
     for s in d["scenes"]:
-        takes = sorted(CLIPS.glob(f"{s['id']}_*.mp4"),
+        takes = sorted(CLIPS_D().glob(f"{s['id']}_*.mp4"),
                        key=lambda f: f.stat().st_mtime)
         live = sr.find_latest_clip(s["id"])
         s["takes"] = [{"file": t.name, "live": str(t) == live,
                        "mtime": int(t.stat().st_mtime)} for t in takes]
-    final = OUT / f"ep{n:02d}" / f"ep{n:02d}_final.mp4"
+    final = OUT_D() / f"ep{n:02d}" / f"ep{n:02d}_final.mp4"
     d["final"] = f"ep{n:02d}/ep{n:02d}_final.mp4" if final.exists() else None
     return jsonify(d)
 
@@ -114,15 +181,15 @@ def episode(n):
 @app.get("/media/clip/<path:name>")
 def clip(name):
     p = (CLIPS / name).resolve()
-    if not str(p).startswith(str(CLIPS.resolve())) or not p.exists():
+    if not str(p).startswith(str(CLIPS_D().resolve())) or not p.exists():
         abort(404)
     return send_file(p, conditional=True)
 
 
 @app.get("/media/final/<path:rel>")
 def final(rel):
-    p = (OUT / rel).resolve()
-    if not str(p).startswith(str(OUT.resolve())) or not p.exists():
+    p = (OUT_D() / rel).resolve()
+    if not str(p).startswith(str(OUT_D().resolve())) or not p.exists():
         abort(404)
     return send_file(p, conditional=True)
 
@@ -134,7 +201,7 @@ def promote():
     src = (CLIPS / name).resolve()
     m = SEQ.match(name)
     if not m or not src.exists() or \
-            not str(src).startswith(str(CLIPS.resolve())):
+            not str(src).startswith(str(CLIPS_D().resolve())):
         abort(400)
     stem, n = m.group("stem"), 1
     while (CLIPS / f"{stem}_{n:05d}_.mp4").exists():
@@ -196,7 +263,7 @@ def do_import():
     tmp = "/tmp/wb_import.json"
     Path(tmp).write_text(json.dumps(doc))
     r = subprocess.run([sys.executable, str(ROOT / "import_episode.py"),
-                        SERIES, "--file", tmp],
+                        S(), "--file", tmp],
                        capture_output=True, text=True, timeout=600)
     return jsonify({"ok": r.returncode == 0,
                     "log": (r.stdout + r.stderr)[-4000:]})
@@ -207,9 +274,9 @@ def do_render():
     n = int(request.get_json(force=True).get("episode"))
     log = f"/workspace/wb_render_ep{n}.log"
     cmd = (f"cd {ROOT.parent} && {sys.executable} scripts/showrunner.py "
-           f"produce {SERIES} --episode {n} --quality final --upscale "
+           f"produce {S()} --episode {n} --quality final --upscale "
            f">> {log} 2>&1 && {sys.executable} scripts/master_audio.py "
-           f"{SERIES} --episode {n} >> {log} 2>&1")
+           f"{S()} --episode {n} >> {log} 2>&1")
     subprocess.Popen(["bash", "-c", cmd], start_new_session=True,
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return jsonify({"queued": n, "log": log})
@@ -228,7 +295,7 @@ def taillog():
 # ── the lineage graph ────────────────────────────────────────────────
 @app.get("/media/asset/<path:rel>")
 def asset(rel):
-    base = sr.series_path(SERIES).resolve()
+    base = sr.series_path(S()).resolve()
     q = (base / rel).resolve()
     if not str(q).startswith(str(base)) or not q.exists():
         abort(404)
@@ -237,7 +304,7 @@ def asset(rel):
 
 def _seed_lineage(seed_path):
     """A seed image's parents: how the picture the shot grew from was made."""
-    base = sr.series_path(SERIES)
+    base = sr.series_path(S())
     p = Path(seed_path)
     rel = None
     try:
@@ -273,17 +340,17 @@ def _seed_lineage(seed_path):
 
 @app.get("/api/graph/<int:n>")
 def graph(n):
-    p = sr.series_path(SERIES) / "episodes" / f"ep{n:02d}.json"
+    p = sr.series_path(S()) / "episodes" / f"ep{n:02d}.json"
     if not p.exists():
         abort(404)
     ep = json.loads(p.read_text())
-    bible = sr.load_json(sr.series_path(SERIES) / "bible.json")
+    bible = sr.load_json(sr.series_path(S()) / "bible.json")
     res = sr.get_resolution_config("480p", "wan")
     mc = sr.get_model_config("wan")
     shots, assets = [], {}
     for sc in ep["scenes"]:
         mode = sr.classify_scene_type(sc)
-        seed = sr.get_scene_seed_image(sc, SERIES, None)
+        seed = sr.get_scene_seed_image(sc, S(), None)
         seed_key = None
         if seed:
             src = sr.COMFYUI_INPUT / str(seed)
@@ -306,7 +373,7 @@ def graph(n):
                      f"· shift {res.get('shift')}",
             "seed_asset": seed_key,
             "clip": Path(clip).name if clip else None,
-            "takes": len(list(CLIPS.glob(f"{sc['id']}_*.mp4"))),
+            "takes": len(list(CLIPS_D().glob(f"{sc['id']}_*.mp4"))),
         })
     return jsonify({"title": ep.get("title", ""), "shots": shots,
                     "assets": assets})
@@ -322,7 +389,7 @@ FORGE_LOG = "/workspace/wb_forge.log"
 
 @app.get("/api/bible")
 def bible():
-    b = sr.load_json(sr.series_path(SERIES) / "bible.json")
+    b = sr.load_json(sr.series_path(S()) / "bible.json")
     chars = {k: {"visual": v.get("visual", ""), "voice": v.get("voice"),
                  "personality": v.get("personality", "")}
              for k, v in b.get("characters", {}).items()}
@@ -344,7 +411,7 @@ def forge_char():
     cid = re.sub(r"[^a-z0-9_]", "", (d.get("id") or "").lower())
     if not cid or not d.get("visual") or not d.get("voice"):
         abort(400)
-    _forge(["character", cid, "--visual", d["visual"],
+    _forge(["character", cid, "--series", S(), "--visual", d["visual"],
             "--voice", d["voice"], "--personality", d.get("personality", "")])
     return jsonify({"forging": cid, "log": FORGE_LOG})
 
@@ -355,7 +422,7 @@ def forge_loc():
     lid = re.sub(r"[^a-z0-9_]", "", (d.get("id") or "").lower())
     if not lid or not d.get("desc"):
         abort(400)
-    _forge(["location", lid, "--desc", d["desc"]])
+    _forge(["location", lid, "--series", S(), "--desc", d["desc"]])
     return jsonify({"forging": lid, "log": FORGE_LOG})
 
 

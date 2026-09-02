@@ -114,6 +114,10 @@ a{color:var(--gold)}
 .lg-loc::before{background:#75806F}.lg-port::before{background:#FF6B5F}
 </style></head><body>
 <header><h1>SHOWRUNNER<span class="cursor">▊</span></h1><div class="sub">episode production console · v1</div>
+<div class="row" style="margin:8px 0 2px">
+ <select id="showsel" onchange="pickShow(this.value)" style="background:var(--card2);color:var(--ok);border:1px solid var(--edge);padding:7px 10px;font:700 .78rem 'JetBrains Mono';text-transform:uppercase"></select>
+ <button class="mini gold" onclick="newShow()">+ new show</button>
+</div>
 <div class="tabs">
  <button class="tab on" data-t="compose" onclick="tab('compose')">Compose</button>
  <button class="tab" data-t="episodes" onclick="tab('episodes')">Episodes</button>
@@ -177,7 +181,30 @@ const STEM={ruined_ireland:'ruin',tir_na_nog:'valley',farewell_cliff:'cliff',sun
 const MOVE=/\b(walks?|walking|runs?|running|rides?|riding|cross(es|ing)?|climb(s|ing)?|strides?)\b/i;
 const HANDS=/\b(hand|hands|fingers?|grasps?|reach(es|ing)?|holds? out|points?)\b/i;
 const NAMES={wide:'Establishing wide',figure:'Figure in landscape',twoshot:'Two-shot',close:'Dialogue close'};
-fetch('api/data').then(r=>r.json()).then(d=>{DATA=d;render();loadEpisodes();loadDrafts();});
+async function boot(){
+ const sh=await(await fetch('api/shows')).json();
+ const sel=document.getElementById('showsel');
+ sel.innerHTML=sh.shows.map(x=>`<option value="${x.id}" ${x.id===sh.current?'selected':''}>${x.title.toUpperCase()} · ${x.episodes} EP</option>`).join('');
+ DATA=await(await fetch('api/data')).json();
+ render();loadEpisodes();loadDrafts();loadBible();
+}
+async function pickShow(id){
+ await fetch('api/selectshow',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+ shots=[];curSlug=null;title.value='';summary.value='';
+ DATA=await(await fetch('api/data?fresh=1')).json();
+ render();loadEpisodes();loadDrafts();loadBible();
+ document.getElementById('epdetail').innerHTML='';
+ toast('Switched to '+id);
+}
+async function newShow(){
+ const id=prompt('show id (lowercase, e.g. sea_wolves):');if(!id)return;
+ const t=prompt('title:')||id;
+ const r=await fetch('api/shows',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,title:t})});
+ if(!r.ok){toast('could not create — id taken or invalid');return}
+ await pickShow((await r.json()).created);
+ toast('Show created — forge its cast and sets, then compose');
+}
+boot();
 function CHARS(){return DATA?Object.keys(DATA.characters):[]}
 function plateFor(s){if(!DATA)return null;const st=STEM[s.location]||s.location;
  if(s.type==='wide')return{sym:'seed:location',img:(DATA.locations[s.location]||{}).thumb};
