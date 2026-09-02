@@ -1,0 +1,270 @@
+<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tír na nÓg Workbench</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+:root{--ground:#0F1412;--card:#1A211C;--card2:#141A16;--edge:#2B342E;--rule:#232B26;
+--ink:#E9ECE6;--body:#BCC4BC;--dim:#8B948B;--gold:#C9A961;--gold-bg:#241E10;
+--ok:#7CC087;--ok-bg:#14231A;--warn:#DEB05C;--warn-bg:#271F12;--bad:#D9695F;--bad-bg:#2A1613}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--body);margin:0;font-family:"Source Sans 3",system-ui,sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+header{padding:14px 16px 0;border-bottom:1px solid var(--rule);position:sticky;top:0;background:var(--ground);z-index:5}
+h1{font-family:Fraunces,serif;color:var(--ink);margin:0;font-size:1.3rem;font-weight:700}
+.tabs{display:flex;gap:2px;margin-top:10px}
+.tab{background:none;border:0;color:var(--dim);padding:9px 14px;font:600 .9rem "Source Sans 3";cursor:pointer;border-bottom:2px solid transparent}
+.tab.on{color:var(--gold);border-bottom-color:var(--gold)}
+main{max-width:860px;margin:0 auto;padding:14px 14px 120px}
+input[type=text],textarea{width:100%;background:var(--card2);color:var(--ink);border:1px solid var(--edge);border-radius:6px;padding:10px 12px;font-family:inherit;font-size:.95rem}
+textarea{resize:vertical;min-height:54px}
+.lab{font:700 .6rem "JetBrains Mono";letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:12px 0 5px}
+.stats{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.stat{font:700 .68rem "JetBrains Mono";padding:4px 9px;border-radius:4px;background:var(--card);border:1px solid var(--edge);color:var(--dim)}
+.stat.ok{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+.stat.warn{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+.shot,.card{background:var(--card);border:1px solid var(--edge);border-radius:8px;padding:14px;margin:12px 0}
+.shot.bad{border-left:3px solid var(--bad)}.shot.okv{border-left:3px solid var(--ok)}
+.shead{display:flex;align-items:center;gap:8px}
+.snum{font:700 .85rem "JetBrains Mono";color:var(--gold);min-width:2.2em}
+.stype{font-family:Fraunces,serif;font-weight:600;color:var(--ink);font-size:1.02rem;flex:1}
+.mini{background:var(--card2);border:1px solid var(--edge);color:var(--dim);border-radius:5px;padding:4px 9px;font-size:.85rem;cursor:pointer}
+.mini:hover{color:var(--ink)}
+.mini.gold{background:var(--gold-bg);color:var(--gold);border-color:var(--gold)}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{border:1px solid var(--edge);background:var(--card2);color:var(--body);border-radius:99px;padding:5px 12px;font-size:.82rem;cursor:pointer;display:flex;align-items:center;gap:6px}
+.pill img{width:22px;height:14px;object-fit:cover;border-radius:3px}
+.pill.on{background:var(--gold-bg);border-color:var(--gold);color:var(--gold);font-weight:600}
+.pill.dis{opacity:.35;cursor:not-allowed}
+.preview{width:100%;border-radius:6px;border:1px solid var(--edge);margin-top:10px;display:block}
+.verdict{font:.72rem "JetBrains Mono";margin-top:8px;padding:7px 10px;border-radius:5px;line-height:1.45}
+.verdict.ok{background:var(--ok-bg);color:var(--ok)}.verdict.warn{background:var(--warn-bg);color:var(--warn)}.verdict.bad{background:var(--bad-bg);color:var(--bad)}
+.wc{font:.68rem "JetBrains Mono";color:var(--dim);text-align:right;margin-top:3px}
+.adder{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+@media(min-width:640px){.adder{grid-template-columns:repeat(4,1fr)}}
+.addcard{background:var(--card);border:1px solid var(--edge);border-radius:8px;padding:12px;cursor:pointer;text-align:left}
+.addcard:hover{border-color:var(--gold)}
+.addcard .t{font-family:Fraunces,serif;font-weight:600;color:var(--ink);font-size:.95rem}
+.addcard .d{font-size:.72rem;color:var(--dim);margin-top:3px;line-height:1.3}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.big{background:var(--gold);color:#141208;border:0;border-radius:7px;padding:11px 16px;font:600 .92rem "Source Sans 3";cursor:pointer}
+.ghost{background:var(--card2);color:var(--body);border:1px solid var(--edge);border-radius:7px;padding:11px 14px;font-size:.88rem;cursor:pointer}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:9px 16px;border-radius:7px;font-size:.85rem;opacity:0;transition:opacity .25s;pointer-events:none;z-index:9;max-width:88vw}
+.toast.show{opacity:1}
+.eprow{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--rule);cursor:pointer}
+.eprow:hover{background:var(--card2)}
+.eprow .id{font:700 .85rem "JetBrains Mono";color:var(--gold);min-width:3.4em}
+.eprow .t{flex:1;color:var(--ink);font-weight:600}
+.eprow .m{font:.72rem "JetBrains Mono";color:var(--dim)}
+video{width:100%;border-radius:6px;background:#000;display:block}
+.takes{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:8px}
+.take{background:var(--card2);border:1px solid var(--edge);border-radius:6px;padding:6px}
+.take.live{border-color:var(--ok)}
+.take .m{font:.62rem "JetBrains Mono";color:var(--dim);margin:5px 2px 2px;display:flex;justify-content:space-between;align-items:center}
+pre{background:var(--card2);border:1px solid var(--edge);border-radius:6px;padding:12px;font-size:.68rem;overflow:auto;max-height:56vh;color:var(--ink);white-space:pre-wrap}
+.empty{color:var(--dim);text-align:center;padding:30px;font-size:.92rem}
+a{color:var(--gold)}
+.gwrap{overflow-x:auto;background:var(--card2);border:1px solid var(--edge);border-radius:8px;margin-top:10px}
+.gnode{cursor:pointer}
+.gnode rect{transition:stroke .15s}
+.gnode:hover rect{stroke:var(--gold)}
+.gdetail{background:var(--card2);border:1px solid var(--edge);border-radius:8px;padding:12px;margin-top:10px;font-size:.85rem}
+.gdetail .mono{font:.72rem "JetBrains Mono";color:var(--ink);white-space:pre-wrap;background:var(--ground);border:1px solid var(--edge);border-radius:5px;padding:8px;margin:6px 0}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font:.66rem "JetBrains Mono";color:var(--dim)}
+.legend span::before{content:'';display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.lg-dia::before{background:#84ABCE}.lg-sil::before{background:#7CC087}
+.lg-gen::before{background:#C9A961}.lg-comp::before{background:#DEB05C}
+.lg-loc::before{background:#8B948B}.lg-port::before{background:#D9695F}
+</style></head><body>
+<header><h1>Tír na nÓg <span style="color:var(--dim);font-weight:400">Workbench</span></h1>
+<div class="tabs">
+ <button class="tab on" data-t="compose" onclick="tab('compose')">Compose</button>
+ <button class="tab" data-t="episodes" onclick="tab('episodes')">Episodes</button>
+ <button class="tab" data-t="drafts" onclick="tab('drafts')">Drafts</button>
+</div></header>
+<main>
+<section id="t-compose">
+ <div class="row" style="margin-top:8px">
+  <input type="text" id="title" placeholder="Episode title" style="flex:2;min-width:180px">
+  <input type="text" id="summary" placeholder="One-line summary" style="flex:3;min-width:220px">
+ </div>
+ <div class="stats" id="stats"></div>
+ <div id="shots"><div class="empty">Add the first shot below.</div></div>
+ <div class="lab">Add a shot</div>
+ <div class="adder">
+  <button class="addcard" onclick="addShot('wide')"><span class="t">Establishing wide</span><div class="d">The place, empty. VO sits over these freely.</div></button>
+  <button class="addcard" onclick="addShot('figure')"><span class="t">Figure in landscape</span><div class="d">One person, small. Our best shot.</div></button>
+  <button class="addcard" onclick="addShot('twoshot')"><span class="t">Two-shot</span><div class="d">Both, same ground. Silent.</div></button>
+  <button class="addcard" onclick="addShot('close')"><span class="t">Dialogue close</span><div class="d">One speaker, locked off.</div></button>
+ </div>
+ <div class="row" style="margin-top:14px">
+  <button class="big" onclick="saveDraft()">Save draft</button>
+  <button class="ghost" onclick="importGate()">Import → run gates</button>
+  <button class="ghost" onclick="clearAll()">New</button>
+ </div>
+ <pre id="gateout" style="display:none"></pre>
+</section>
+<section id="t-episodes" style="display:none"><div id="eplist" class="card" style="padding:0"></div><div id="epdetail"></div></section>
+<section id="t-drafts" style="display:none"><div id="draftlist"></div></section>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+let DATA=null, shots=[], curSlug=null;
+const STEM={ruined_ireland:'ruin',tir_na_nog:'valley',farewell_cliff:'cliff',sunlight_path:'sun',storm_cliffs:'storm',stormy_sea:'sea'};
+const MOVE=/\b(walks?|walking|runs?|running|rides?|riding|cross(es|ing)?|climb(s|ing)?|strides?)\b/i;
+const HANDS=/\b(hand|hands|fingers?|grasps?|reach(es|ing)?|holds? out|points?)\b/i;
+const NAMES={wide:'Establishing wide',figure:'Figure in landscape',twoshot:'Two-shot',close:'Dialogue close'};
+fetch('api/data').then(r=>r.json()).then(d=>{DATA=d;render();loadEpisodes();loadDrafts();});
+function CHARS(){return DATA?Object.keys(DATA.characters):[]}
+function plateFor(s){if(!DATA)return null;const st=STEM[s.location]||'';
+ if(s.type==='wide')return{sym:'seed:location',img:(DATA.locations[s.location]||{}).thumb};
+ if(s.type==='figure'){const walk=MOVE.test(s.visual||'')&&DATA.gen['gen__'+st+'_walking'];
+  const k=walk?'gen__'+st+'_walking':'gen__'+st+'_wide_'+(s.characters[0]||'');
+  if(DATA.gen[k])return{sym:k,img:DATA.gen[k]};
+  const r='gen__'+st+'_wide_rider';if(DATA.gen[r])return{sym:r,img:DATA.gen[r]};return null}
+ if(s.type==='twoshot'){const k='gen__'+st+'_twoshot';return DATA.gen[k]?{sym:k,img:DATA.gen[k]}:null}
+ if(s.type==='close'){const w=s.characters[0]||'';
+  const c=DATA.inplace.filter(p=>p.startsWith(s.location+'/')&&p.includes('__'+w+'_close'));
+  return c.length?{sym:c[0],img:(DATA.characters[w]||{}).thumb}:null}
+ return null}
+function holdFor(s){if(s.type==='close'){const w=(s.line||'').trim().split(/\s+/).filter(Boolean).length;return Math.round((w/2.6+1.5)*10)/10}return s.hold||7}
+function lint(s){const o=[];
+ if(!s.location)o.push(['bad','pick a location']);
+ if((s.type==='figure'||s.type==='close')&&!s.characters.length)o.push(['bad','pick a character']);
+ if(s.type==='close'){const w=(s.line||'').trim().split(/\s+/).filter(Boolean).length;
+  if(!w)o.push(['bad','write the line']);
+  if(w>39)o.push(['bad','R5 · '+w+' words — over the 15.2s ceiling']);
+  if(MOVE.test(s.visual||''))o.push(['bad','R2 · talking shots do not move (3.85 vs 12.13)']);
+  if(/\bwide|small\b/i.test(s.visual||''))o.push(['bad','R1 · dialogue renders CLOSE — 0 of 11 wides survived a line']);}
+ if(HANDS.test(s.visual||''))o.push(['warn','hands fail — keep them out of the writing']);
+ if(s.location&&!plateFor(s))o.push(['bad','no plate exists for this combination']);
+ return o}
+function render(){const el=document.getElementById('shots');
+ if(!shots.length){el.innerHTML='<div class="empty">Add the first shot below.</div>';stats();return}
+ el.innerHTML=shots.map((s,i)=>{const p=plateFor(s),L=lint(s),bad=L.some(x=>x[0]==='bad');
+  const locs=Object.keys(DATA.locations).map(k=>{const has=!!plateFor({...s,location:k});
+   return `<button class="pill ${s.location===k?'on':''} ${has?'':'dis'}" ${has?`onclick="setL(${i},'${k}')"`:''}>${(DATA.locations[k]||{}).thumb?`<img src="${DATA.locations[k].thumb}">`:''}${k.replace(/_/g,' ')}</button>`}).join('');
+  const chs=(s.type==='figure'||s.type==='close')?`<div class="lab">Character</div><div class="pills">`+CHARS().map(c=>`<button class="pill ${s.characters[0]===c?'on':''}" onclick="setC(${i},'${c}')">${c}</button>`).join('')+`</div>`:'';
+  const line=s.type==='close'?`<div class="lab">The line — ${s.characters[0]||'?'}</div><textarea oninput="setF(${i},'line',this.value)">${s.line||''}</textarea><div class="wc">${(s.line||'').trim().split(/\s+/).filter(Boolean).length} words · ~${holdFor(s)}s</div>`:'';
+  return `<div class="shot ${bad?'bad':'okv'}"><div class="shead"><span class="snum">${String(i+1).padStart(2,'0')}</span><span class="stype">${NAMES[s.type]}</span>
+   <span class="row"><button class="mini" onclick="move(${i},-1)">↑</button><button class="mini" onclick="move(${i},1)">↓</button><button class="mini" onclick="del(${i})">✕</button></span></div>
+   <div class="lab">Location</div><div class="pills">${locs}</div>${chs}
+   <div class="lab">What we see</div><textarea oninput="setF(${i},'visual',this.value)">${s.visual||''}</textarea>${line}
+   ${p&&p.img?`<img class="preview" src="${p.img}">`:''}
+   ${L.map(([k,t])=>`<div class="verdict ${k}">${t}</div>`).join('')}</div>`}).join('');
+ stats()}
+function stats(){const n=shots.length,d=shots.filter(s=>s.type==='close').length,
+ t=shots.reduce((a,s)=>a+holdFor(s),0),sil=n?Math.round(100*(n-d)/n):0,
+ two=shots.filter(s=>s.type==='twoshot').length,
+ bad=shots.reduce((a,s)=>a+(lint(s).some(x=>x[0]==='bad')?1:0),0);
+ const c=(x,g)=>`<span class="stat ${g===true?'ok':g===false?'warn':''}">${x}</span>`;
+ document.getElementById('stats').innerHTML=c(n+' shots')+c((t/60).toFixed(1)+' min',t>=100&&t<=260?true:n?false:undefined)+c(sil+'% silent',sil>=50&&sil<=70?true:n?false:undefined)+c(d+' lines',d>=5&&d<=9?true:n?false:undefined)+c(two+' two-shots',two>=1&&two<=4?true:n?false:undefined)+(bad?c(bad+' blocked',false):c('grammar clean',n?true:undefined))}
+function addShot(t){const s={type:t,location:'',characters:t==='twoshot'?CHARS():[],visual:'',line:'',hold:t==='wide'?7:6.5};shots.push(s);render()}
+function setL(i,k){shots[i].location=k;render()}
+function setC(i,c){shots[i].characters=[c];render()}
+function setF(i,f,v){shots[i][f]=v;stats()}
+function move(i,d){const j=i+d;if(j<0||j>=shots.length)return;[shots[i],shots[j]]=[shots[j],shots[i]];render()}
+function del(i){shots.splice(i,1);render()}
+function clearAll(){shots=[];curSlug=null;title.value='';summary.value='';render()}
+function docJSON(){return{title:title.value||'Untitled',summary:summary.value||'',slug:curSlug||undefined,grammar:'v1',
+ scenes:shots.map(s=>({type:s.type,location:s.location,characters:s.characters,visual:s.visual||'',
+  dialogue:s.type==='close'?[{character:s.characters[0],line:s.line||''}]:[],
+  hold_seconds:holdFor(s),plate:(plateFor(s)||{}).sym||null}))}}
+async function saveDraft(){const r=await fetch('api/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(docJSON())});const j=await r.json();curSlug=j.slug;toast(`Saved — ${j.slug} v${j.version}`);loadDrafts()}
+async function importGate(){const out=document.getElementById('gateout');out.style.display='block';out.textContent='running gates…';
+ const r=await fetch('api/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(docJSON())});
+ const j=await r.json();out.textContent=j.log;toast(j.ok?'Gates passed — render from the Episodes tab':'Gates refused it — see the log');if(j.ok)loadEpisodes()}
+function tab(t){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+ for(const s of['compose','episodes','drafts'])document.getElementById('t-'+s).style.display=s===t?'':'none';
+ if(t==='episodes')loadEpisodes();if(t==='drafts')loadDrafts()}
+async function loadEpisodes(){const eps=await(await fetch('api/episodes')).json();
+ document.getElementById('eplist').innerHTML=eps.map(e=>`<div class="eprow" onclick="openEp(${e.n})"><span class="id">${e.id}</span><span class="t">${e.title}</span><span class="m">${e.shots} shots${e.seconds?' · '+(e.seconds/60).toFixed(1)+' min':''}</span><span class="stat ${e.rendered?'ok':''}">${e.rendered?'rendered':'authored'}</span></div>`).join('')}
+async function openEp(n){const d=await(await fetch('api/episode/'+n)).json();
+ const el=document.getElementById('epdetail');
+ el.innerHTML=`<div class="card"><div class="shead"><span class="stype" style="font-size:1.2rem">${d.title}</span>
+  <button class="mini" onclick="showGraph(${n})">Lineage graph</button> <button class="mini gold" onclick="queueRender(${n})">Re-render episode</button></div>
+  ${d.final?`<video controls preload="metadata" src="media/final/${d.final}" style="margin-top:10px"></video>`:''}
+  ${d.scenes.map(s=>`<div class="lab" style="margin-top:16px">${s.id} — ${s.dialogue&&s.dialogue.length?'“'+s.dialogue[0].line.slice(0,60)+'…”':(s.visual||'').slice(0,60)}</div>
+   <div class="takes">${(s.takes||[]).map(t=>`<div class="take ${t.live?'live':''}">
+    <video controls preload="none" src="media/clip/${t.file}"></video>
+    <div class="m"><span>${t.live?'LIVE':new Date(t.mtime*1000).toLocaleDateString()}</span>
+    ${t.live?'':`<button class="mini" onclick="promote('${t.file}',${n})">make live</button>`}</div></div>`).join('')||'<span class="m">no takes</span>'}</div>`).join('')}
+  <div id="gpanel"></div><pre id="rlog" style="display:none;margin-top:12px"></pre></div>`;
+ el.scrollIntoView({behavior:'smooth'})}
+async function promote(f,n){const r=await(await fetch('api/promote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file:f})})).json();toast('Promoted — '+r.note);openEp(n)}
+async function queueRender(n){const r=await(await fetch('api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({episode:n})})).json();
+ toast('Render queued for ep'+n);const el=document.getElementById('rlog');el.style.display='block';
+ const poll=async()=>{const j=await(await fetch('api/log?f='+encodeURIComponent(r.log))).json();el.textContent=j.log;};
+ poll();if(window._lt)clearInterval(window._lt);window._lt=setInterval(poll,8000)}
+async function loadDrafts(){const ds=await(await fetch('api/drafts')).json();
+ document.getElementById('draftlist').innerHTML=ds.length?ds.map(d=>`<div class="eprow" onclick="openDraft('${d.slug}')"><span class="t">${d.title}</span><span class="m">${d.shots} shots · v${d.versions} · ${new Date(d.updated*1000).toLocaleString()}</span></div>`).join(''):'<div class="empty">No drafts yet — save one from Compose.</div>'}
+async function openDraft(slug,v){const d=await(await fetch('api/draft/'+slug+(v?'?v='+v:''))).json();
+ curSlug=slug;title.value=d.title||'';summary.value=d.summary||'';
+ shots=(d.scenes||[]).map(s=>({type:s.type,location:s.location,characters:s.characters||[],visual:s.visual||'',line:(s.dialogue&&s.dialogue[0]&&s.dialogue[0].line)||'',hold:s.hold_seconds}));
+ render();tab('compose');
+ if(d._versions&&d._versions.length>1)toast(`Loaded v${v||d._versions[d._versions.length-1]} of ${d._versions.length} — earlier: ?v=N`)}
+async function showGraph(n){
+ const g=await(await fetch('api/graph/'+n)).json();
+ const KC={generated:'#C9A961',composite:'#DEB05C',staged:'#a58fd4',location:'#8B948B',portrait:'#D9695F',flux:'#6d766e'};
+ const PXS=9;                                  // px per second of hold
+ const SH=118, AH=64, GAP=26;                  // shot band y, asset band height
+ // shot x-positions from cumulative time
+ let x=14; const pos={};
+ g.shots.forEach(s=>{const w=Math.max(56,s.hold*PXS); pos[s.id]={x,w}; x+=w+8;});
+ const W=x+14;
+ // asset columns: order by mean x of linked shots; two stagger rows
+ const used={}; g.shots.forEach(s=>{if(s.seed_asset){(used[s.seed_asset]=used[s.seed_asset]||[]).push(pos[s.id].x+pos[s.id].w/2)}});
+ const akeys=Object.keys(used).sort((a,b)=>avg(used[a])-avg(used[b]));
+ function avg(a){return a.reduce((p,c)=>p+c,0)/a.length}
+ const apos={}; let lastEnd=[-1e9,-1e9];
+ akeys.forEach((k,i)=>{const row=i%2, aw=150, cx=Math.max(avg(used[k])-aw/2, lastEnd[row]+10);
+  apos[k]={x:cx,y:14+row*(AH+8),row}; lastEnd[row]=cx+aw;});
+ const H=14+2*(AH+8)+GAP+SH+58;
+ let svg=`<svg width="${Math.max(W, x)}" height="${H}" font-family="Source Sans 3">`;
+ // edges asset -> shot
+ g.shots.forEach(s=>{if(!s.seed_asset)return;const a=apos[s.seed_asset];if(!a)return;
+  const ax=a.x+75, ay=a.y+AH, sx=pos[s.id].x+pos[s.id].w/2, sy=14+2*(AH+8)+GAP;
+  svg+=`<path d="M${ax},${ay} C${ax},${ay+40} ${sx},${sy-40} ${sx},${sy}" fill="none" stroke="${KC[g.assets[s.seed_asset].kind]||'#555'}" stroke-width="1.3" opacity="0.55"/>`;});
+ // parent chips above assets
+ akeys.forEach(k=>{const a=apos[k], asset=g.assets[k];
+  (asset.parents||[]).forEach((par,j)=>{
+   const px=a.x+j*78, py=a.y-1;
+   svg+=`<text x="${px}" y="${py-3}" font-size="8.5" fill="${KC[par.kind]||'#777'}" font-family="JetBrains Mono">▲ ${esc(par.label).slice(0,13)}</text>`;});
+  const th=asset.rel?`<image href="media/asset/${asset.rel}" x="${a.x}" y="${a.y+12}" width="150" height="${AH-14}" preserveAspectRatio="xMidYMid slice"/>`:'';
+  svg+=`<g class="gnode" onclick="gsel('asset','${esc(k)}')"><rect x="${a.x-3}" y="${a.y+9}" width="156" height="${AH-8}" rx="5" fill="var(--card)" stroke="${KC[asset.kind]}" stroke-width="1.4"/>${th}
+   <text x="${a.x}" y="${a.y+AH+11}" font-size="8.5" fill="${KC[asset.kind]}" font-family="JetBrains Mono">${esc(k).slice(0,24)}</text></g>`;});
+ // shot band (the timeline)
+ const sy=14+2*(AH+8)+GAP;
+ g.shots.forEach((s,i)=>{const p2=pos[s.id], col=s.mode==='s2v'?'#84ABCE':'#7CC087';
+  svg+=`<g class="gnode" onclick="gsel('shot',${i})">
+   <rect x="${p2.x}" y="${sy}" width="${p2.w}" height="${SH-42}" rx="6" fill="var(--card)" stroke="${col}" stroke-width="1.6"/>
+   <text x="${p2.x+6}" y="${sy+15}" font-size="9.5" font-weight="700" fill="${col}" font-family="JetBrains Mono">${s.id.split('_')[1]}</text>
+   <text x="${p2.x+6}" y="${sy+29}" font-size="8.5" fill="var(--dim)" font-family="JetBrains Mono">${s.mode} · ${s.hold}s</text>
+   <text x="${p2.x+6}" y="${sy+43}" font-size="8.5" fill="var(--body)">${esc((s.line||s.visual||'').slice(0, Math.max(6,p2.w/5)))}</text>
+   <text x="${p2.x+6}" y="${sy+60}" font-size="8" fill="var(--dim)" font-family="JetBrains Mono">${s.takes} take${s.takes==1?'':'s'}</text></g>`;
+  if(i<g.shots.length-1) svg+=`<text x="${p2.x+p2.w+1}" y="${sy+40}" font-size="10" fill="var(--dim)">→</text>`;});
+ svg+='</svg>';
+ window._g=g;
+ document.getElementById('gpanel').innerHTML=
+  `<div class="lab" style="margin-top:16px">Lineage — time flows left to right; every shot hangs from the asset it grew from</div>
+   <div class="legend"><span class="lg-dia">dialogue</span><span class="lg-sil">silent</span><span class="lg-gen">generated plate</span><span class="lg-comp">composite seed</span><span class="lg-loc">location plate</span><span class="lg-port">portrait</span></div>
+   <div class="gwrap">${svg}</div><div class="gdetail" id="gdetail">Tap a shot or an asset.</div>`;
+ document.getElementById('gpanel').scrollIntoView({behavior:'smooth'});
+}
+function esc(t){return String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function gsel(kind,ref){const g=window._g, el=document.getElementById('gdetail');
+ if(kind==='shot'){const s=g.shots[ref];
+  el.innerHTML=`<b style="color:var(--ink)">${s.id}</b> · ${s.mode} · ${s.hold}s · ${s.takes} takes<br>
+   ${s.line?`<i>“${esc(s.line)}”</i> — ${s.who}<br>`:''}
+   <div class="lab">prompt sent</div><div class="mono">${esc(s.prompt)}</div>
+   <div class="lab">negative (first 400)</div><div class="mono">${esc(s.negative)}</div>
+   <div class="lab">model</div><div class="mono">${esc(s.model)}</div>
+   ${s.seed_asset?`<div class="lab">grew from</div><div class="mono">${esc(s.seed_asset)}</div>`:''}`;
+ } else {const a=g.assets[ref];
+  const kids=g.shots.filter(s=>s.seed_asset===ref).map(s=>s.id).join(', ');
+  el.innerHTML=`<b style="color:var(--ink)">${esc(ref)}</b> · ${a.kind}<br>
+   ${a.rel?`<img src="media/asset/${a.rel}" style="max-width:100%;border-radius:6px;margin:8px 0">`:''}
+   ${(a.parents||[]).length?`<div class="lab">made from</div><div class="mono">${a.parents.map(p=>p.kind+': '+esc(p.label)).join('\n')}</div>`:''}
+   <div class="lab">feeds shots</div><div class="mono">${esc(kids)||'—'}</div>`;}
+}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}
+const title=document.getElementById('title'),summary=document.getElementById('summary');
+</script></body></html>
