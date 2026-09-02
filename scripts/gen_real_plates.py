@@ -37,16 +37,19 @@ import showrunner as sr                                        # noqa: E402
 # the episodes -- prettier, and a different show. The look is not "cel-shaded";
 # it is cel-shaded in a specific cold, desaturated, overcast register, and that
 # has to be said or the model reaches for a sunnier default.
-STYLE = ("Cel-shaded 2D animation, clean confident linework, flat blocks of "
-         "colour with simple shading, painted background art, animated film "
-         "still. No text, no lettering, no watermark")
+STYLE = ("Flat cel-shaded 2D animation still from a hand-drawn animated "
+         "feature. Bold clean silhouettes, simplified graphic shapes, flat "
+         "poster-like colour fields with hard-edged simple shading, crisp "
+         "confident ink linework. Stylised hand-painted animation background, "
+         "not realistic, no photographic detail, no atmospheric haze. "
+         "No text, no lettering, no watermark")
 # palettes live with the LOCATION constants below — a global "desaturated,
 # no warm sunlight" style muted the summer valley as thoroughly as the
 # winter it was written for
 COOL = (" Restrained desaturated palette of deep greens, slate blue-grey and "
         "cold stone, overcast diffuse light, low contrast, sombre and cool.")
 WARM = (" Rich saturated palette of vivid greens and gold, warm clear light, "
-        "gentle contrast.")
+        "gentle contrast, crisp clear air.")
 
 OISIN = ("a young Celtic warrior with dark shoulder-length hair, warm brown "
          "eyes, a short trimmed beard, a brown leather jerkin and a dark "
