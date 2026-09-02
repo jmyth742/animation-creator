@@ -266,7 +266,7 @@ async function importGate(){const out=document.getElementById('gateout');out.sty
  const r=await fetch('api/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(docJSON())});
  const j=await r.json();out.textContent=j.log;toast(j.ok?'Gates passed — render from the Episodes tab':'Gates refused it — see the log');if(j.ok)loadEpisodes()}
 function tab(t){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
- for(const s of['compose','episodes','drafts'])document.getElementById('t-'+s).style.display=s===t?'':'none';
+ for(const s of['compose','episodes','drafts','cast','sets'])document.getElementById('t-'+s).style.display=s===t?'':'none';
  if(t==='episodes')loadEpisodes();if(t==='drafts')loadDrafts();if(t==='cast'||t==='sets')loadBible()}
 async function loadEpisodes(){const eps=await(await fetch('api/episodes')).json();
  document.getElementById('eplist').innerHTML=eps.map(e=>`<div class="eprow" onclick="openEp(${e.n})"><span class="id">${e.id}</span><span class="t">${e.title}</span><span class="m">${e.shots} shots${e.seconds?' · '+(e.seconds/60).toFixed(1)+' min':''}</span><span class="stat ${e.rendered?'ok':''}">${e.rendered?'rendered':'authored'}</span></div>`).join('')}
