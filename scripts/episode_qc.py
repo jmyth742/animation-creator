@@ -147,10 +147,13 @@ def qc_episode(series, ep_num):
                 row["p_wide"] = round(p, 3)
                 if p < WIDE_OK:
                     row["issue"] = f"authored wide, reads {label} ({p:.2f})"
-        # wrong-place check, wides and closes alike, but only confident calls:
-        # a close-up shows little background and the classifier rightly hedges there.
+        # wrong-place check on SILENT shots only. Applied to dialogue closes
+        # it flagged sibling locations off a background sliver -- a golden-lit
+        # close on the sea classified as the golden-lit cliff at 0.98, three
+        # false positives eyeballed 2 Sep. The check was validated on wides;
+        # it runs where it was validated and nowhere else.
         want_loc = s.get("location")
-        if want_loc and "issue" not in row:
+        if want_loc and "issue" not in row and not s.get("dialogue"):
             got, conf = location_of(c, series)
             if got != want_loc and conf >= 0.85:
                 row["issue"] = (f"authored in {want_loc}, frame classifies as "
