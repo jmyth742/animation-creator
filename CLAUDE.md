@@ -635,3 +635,16 @@ Do not change these without testing:
 - **Claude model**: `claude-opus-5` — `CLAUDE_MODEL` in `showrunner.py`, override with `SHOWRUNNER_CLAUDE_MODEL`. Adaptive thinking + structured outputs; effort via `SHOWRUNNER_CLAUDE_EFFORT`.
 - **Static file mounts**: `/static/clips/` → `ComfyUI/output/video/`, `/static/series/` → `series/`, `/static/output/` → `output/`
   (clip paths under this mount are now `<series-slug>/<file>.mp4` — see Clip Storage Layout)
+
+---
+
+## Deterministic 3D render path (proposal)
+
+`docs/DETERMINISTIC_RENDER_PATH.md` — scene-graph + headless Blender as an
+alternative shot generator, with a ControlNet→FLUX style pass. §9 holds the
+project-fit decisions: **hybrid by shot type** (3D owns wides/locomotion/
+blocking; WAN S2V keeps dialogue closes — do NOT replace S2V lips with
+Rhubarb), .blend-per-shot compiler output, canonical VRM skeleton,
+same render queue. Phase 1 proof = rebuild ep16 s11 (the known-bad
+walk-away wide) and A/B it against the diffusion take. No code exists yet;
+answer-changing findings go back into §9.
