@@ -56,6 +56,8 @@ sc.eevee.use_shadows = True
 sc.view_settings.view_transform = 'Standard'
 
 valley_set.build_set(sc)
+import set_assets
+set_assets.dress_valley(sc, floor_z if 'floor_z' in dir() else (lambda x, y: 0.0))
 
 oisin = kit.load_character(f"{MESHES}/oisin_painted.glb", "oisin")
 orig = kit.rig_character(oisin, "oisin")

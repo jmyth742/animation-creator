@@ -10,6 +10,37 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import showrunner as sr                                        # noqa: E402
 
 PROPS = {
+    "niamh34": ("Character sheet, full body, head to feet fully visible. A "
+                "Celtic princess standing in a relaxed A-pose seen from a "
+                "THREE-QUARTER view (turned 30 degrees), arms slightly away "
+                "from her sides. Long flowing golden hair, bright green eyes, "
+                "emerald green gown to the ankle, slippers. Cel-shaded 2D "
+                "animation, clean linework, flat colour blocks, plain light "
+                "grey background, even diffuse light, no scenery, no props, "
+                "no text, no watermark."),
+    "stones": ("A small circle of five ancient weathered standing stones of "
+               "grey granite, mossy, different heights, whole group visible, "
+               "three-quarter view. Painted storybook animation style, soft "
+               "hand-painted texture, plain light grey background, even "
+               "diffuse light, no scenery, no text, no watermark."),
+    "bush": ("A round flowering hawthorn bush with white blossom clusters on "
+             "deep green foliage, whole bush visible, three-quarter view. "
+             "Painted storybook animation style, soft hand-painted texture, "
+             "plain light grey background, even diffuse light, no scenery, "
+             "no text, no watermark."),
+    "oisin34": ("Character sheet, full body, head to feet fully visible. A "
+                "young Celtic warrior standing in a relaxed A-pose seen from "
+                "a THREE-QUARTER view (turned 30 degrees), arms slightly away "
+                "from his sides. Dark shoulder-length hair, warm brown eyes, "
+                "short trimmed beard, brown leather jerkin, dark green cloak, "
+                "boots. Cel-shaded 2D animation, clean linework, flat colour "
+                "blocks, plain light grey background, even diffuse light, no "
+                "scenery, no props, no text, no watermark."),
+    "rock": ("A cluster of three mossy grey granite boulders of different "
+             "sizes, weathered and rounded, whole cluster visible, "
+             "three-quarter view. Cel-shaded painted animation style, "
+             "soft painted texture, plain light grey background, even "
+             "diffuse light, no scenery, no text, no watermark."),
     "hall": ("A small golden Celtic great hall with carved knotwork medallions, "
              "an arched doorway, crenellated parapet and one square tower with "
              "a peaked roof, seen in three-quarter view from ground level. "
@@ -18,14 +49,15 @@ PROPS = {
              "scenery, no text, no watermark."),
     "tree": ("A single wind-shaped rowan tree with a gnarled trunk and a full "
              "green canopy in clumped leaf masses, whole tree visible. "
-             "Cel-shaded 2D animation, clean linework, flat colour blocks, "
-             "isolated on a plain light grey background, no scenery, no text, "
-             "no watermark."),
+             "Painted storybook animation style, soft hand-painted texture, "
+             "isolated on a plain light grey background, even diffuse light, "
+             "no scenery, no text, no watermark."),
     "cross": ("An ancient weathered Celtic high cross of grey stone with a "
               "ring around the crossing and worn carvings, whole monument "
-              "visible, slightly mossy. Cel-shaded 2D animation, clean "
-              "linework, flat colour blocks, isolated on a plain light grey "
-              "background, no scenery, no text, no watermark."),
+              "visible, slightly mossy. Painted storybook animation style, soft "
+              "hand-painted texture, isolated on a plain light grey "
+              "background, even diffuse light, no scenery, no text, "
+              "no watermark."),
 }
 
 name, out = sys.argv[1], sys.argv[2]

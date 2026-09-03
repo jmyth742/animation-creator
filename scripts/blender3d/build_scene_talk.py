@@ -25,6 +25,8 @@ sc.eevee.use_shadows = True
 sc.view_settings.view_transform = 'Standard'
 
 valley_set.build_set(sc)
+import set_assets
+set_assets.dress_valley(sc, floor_z if 'floor_z' in dir() else (lambda x, y: 0.0))
 
 NP = (-1.55, 8.0, 0.0)          # her mark by the cross
 OP = (0.15, 6.9, 0.0)           # his mark, facing her
