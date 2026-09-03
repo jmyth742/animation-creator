@@ -39,9 +39,10 @@ def front_y(z, hw=0.026, dz=0.012):
     return float(band[:, 1].min()) if len(band) else -0.1
 
 MZ, EZ, EX = calib["mouth_z"], calib["eye_z"], calib["eye_x"]
-MOUTH = np.array((0.0, front_y(MZ), MZ))
-EYE_L = np.array((EX, front_y(EZ, hw=0.06), EZ))
-EYE_R = np.array((-EX, front_y(EZ, hw=0.06), EZ))
+FX = calib.get("face_x", 0.0)      # the mesh's face midline vs x=0
+MOUTH = np.array((FX, front_y(MZ), MZ))
+EYE_L = np.array((FX + EX, front_y(EZ, hw=0.06), EZ))
+EYE_R = np.array((FX - EX, front_y(EZ, hw=0.06), EZ))
 
 img = None
 for m in char.data.materials:
@@ -114,30 +115,36 @@ def eye_plate(h, v):
 
 
 def eye_draw(h, v):
-    sw, sh = 0.72 * EX, 0.50 * EX
-    d = math_hypot(h / sw, v / sh)
-    if d > 1.25:
-        return None
-    lash = 0.10 * EX
-    if d <= 1.0:
-        if (h * h + (v - 0.05 * sh) ** 2) ** 0.5 < 0.022 * 10 * EX * 0.045:
-            pass
-        ir = (h * h + v * v) ** 0.5
-        hl = ((h - 0.30 * EX * 0.45) ** 2 + (v - 0.14 * EX) ** 2) ** 0.5
-        if hl < 0.055 * EX:
+    """Calm anime construction: a wide almond aperture, the iris filling
+    most of its height, the upper lid cutting the iris flat. Big-sclera
+    small-iris circles read as startled ("googly") — measured on film."""
+    sw, sh = 0.58 * EX, 0.335 * EX
+    d = math.hypot(h / sw, v / sh)
+    lid_v = 0.42 * sh                  # the flat upper lid line
+    lash_t = 0.16 * EX
+    if d <= 1.0 and v <= lid_v:
+        ir = math.hypot(h, (v + 0.04 * EX) * 1.05)
+        hl = math.hypot(h - 0.10 * EX, v - 0.06 * EX)
+        if hl < 0.045 * EX:
             return (0.98, 0.98, 0.97, 1)
-        if ir < 0.115 * EX:
-            return (0.06, 0.05, 0.05, 1)
-        if ir < 0.30 * EX:
-            f = ir / (0.30 * EX)
-            return (IRIS[0] * (1 - 0.5 * f), IRIS[1] * (1 - 0.5 * f),
-                    IRIS[2] * (1 - 0.5 * f), 1)
-        # sclera, slightly shaded at top
-        s = 0.97 - 0.10 * max(0.0, v / sh)
-        return (s, s, s * 0.99, 1)
-    # lash ring: only the upper arc, thick
-    if d < 1.0 + lash / sh and v > -0.1 * sh:
-        return (0.09, 0.06, 0.06, soft(abs(d - 1.0 - lash / sh / 2) * sh, lash * 0.55))
+        if ir < 0.135 * EX:
+            return (0.05, 0.04, 0.04, 1)
+        if ir < 0.285 * EX:
+            f = ir / (0.285 * EX)
+            top_shade = 0.75 if v > lid_v - 0.10 * EX else 1.0
+            return (IRIS[0] * (1.1 - 0.55 * f) * top_shade,
+                    IRIS[1] * (1.1 - 0.55 * f) * top_shade,
+                    IRIS[2] * (1.1 - 0.55 * f) * top_shade, 1)
+        sc = 0.955
+        return (sc, sc, sc * 0.99, soft((d - 0.97) * sh, 0.06 * sh)
+                if d > 0.97 else 1)
+    # the upper lid + lash: a soft dark band along the top of the aperture
+    if d <= 1.12 and lid_v < v < lid_v + lash_t:
+        a = soft(abs(v - lid_v - lash_t * 0.35), lash_t * 0.5)
+        return (0.10, 0.07, 0.07, a)
+    # lower lash hint at the outer third
+    if 0.95 < d < 1.10 and v < 0 and abs(h) > 0.30 * EX:
+        return (0.35, 0.28, 0.26, 0.5)
     return None
 
 
