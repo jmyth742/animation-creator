@@ -401,3 +401,14 @@ and the user should judge a test close before any episode commits to it.
 5. Rhubarb mouth test on a close-up
 6. Then: compiler grows blocking marks, shot types, and the cinematography
    rules from §4 — the full automated series maker, no diffusion at runtime.
+
+### Trial C — the first pure-3D shot: DONE (2026-09-03)
+`shot_walkaway_v2.py`: the Hunyuan3D character, auto-weighted onto a
+scripted biped armature with a keyframed walk cycle, sheet-projected
+costume, walking away through the depth-terrain valley. 81 frames,
+~55s per render, six art iterations in under an hour.
+Bugs that will bite again: stage to the TERRAIN surface, not z=0 (the
+camera-height float); the mesh faces -Y (turn it for walk-aways);
+single-view projection has no back — head samples the sheet's hair band
+(probed at v≈0.908), a real texture needs the paint stage.
+Artefact: `review/pure3d_walkaway.mp4`.
