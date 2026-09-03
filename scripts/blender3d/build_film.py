@@ -82,13 +82,9 @@ def walk_in(t):
 
 
 def walk_pair(p0, p1):
-    def fn(t):
-        e = t * t * (3 - 2 * t) * 0.2 + t * 0.8
-        x = p0[0] + (p1[0] - p0[0]) * e
-        y = p0[1] + (p1[1] - p0[1]) * e
-        h = math.pi + math.atan2(-(p1[0] - p0[0]), p1[1] - p0[1])
-        return (x, y, floor_z(x, y), h)
-    return fn
+    pts = kit.plan_path(p0, p1, valley_set.OBSTACLES)
+    print("path", p0, "->", p1, "via", len(pts), "points:", pts)
+    return kit.path_fn_from_points(pts, floor_z, ease_end=False)
 
 
 nhead = math.pi + math.atan2(-(OP[0] - NP[0]), OP[1] - NP[1])

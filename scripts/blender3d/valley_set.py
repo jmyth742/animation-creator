@@ -1,3 +1,4 @@
+OBSTACLES = []
 """
 The valley as a REAL 3D set — geometry, toon materials, a sun that casts
 shadows. Not a projected painting: everything here occludes, receives light,
@@ -119,6 +120,11 @@ def build_set(sc):
     # trees: cone canopies on trunks, scattered but not on the path
     spots = [(-3.5, 8, 1.0), (3.4, 12, 1.3), (-4.8, 16, 1.1), (5.5, 18, 0.9),
              (2.8, 30, 1.4), (-3.2, 33, 1.2), (12, 18, 1.5), (-13, 12, 1.3)]
+    global OBSTACLES
+    OBSTACLES = [(tx, ty, 1.05 * ts) for tx, ty, ts in spots]
+    OBSTACLES.append((-2.6, 19, 0.5))          # the cross
+    OBSTACLES.append((7.5, 26, 8.0))           # hall + rise
+    OBSTACLES.append((-8, 19, 8.5))            # the lake — nobody wades
     for i, (tx, ty, ts) in enumerate(spots):
         _obj(f"trunk{i}", bpy.ops.mesh.primitive_cylinder_add, trunk,
              loc=(tx, ty, 0.9 * ts), scale=(0.22 * ts, 0.22 * ts, 0.9 * ts))

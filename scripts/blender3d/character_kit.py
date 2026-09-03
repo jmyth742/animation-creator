@@ -173,6 +173,62 @@ def _key_all(rig, f):
     rig.keyframe_insert("rotation_euler", frame=f)
 
 
+def plan_path(p0, p1, obstacles, clearance=0.55):
+    """Waypoints from p0 to p1 that detour around circular obstacles
+    [(x, y, r), ...]. Greedy tangential detours — good enough for a set,
+    deterministic, and it never walks through a tree again."""
+    pts = [np.array(p0, dtype=float)]
+    goal = np.array(p1, dtype=float)
+    for _ in range(12):
+        cur = pts[-1]
+        seg = goal - cur
+        L = np.linalg.norm(seg)
+        d = seg / L
+        hit = None
+        for (ox, oy, r) in sorted(obstacles, key=lambda o: np.linalg.norm(
+                np.array(o[:2]) - cur)):
+            oc = np.array((ox, oy)) - cur
+            t = float(np.clip(oc @ d, 0, L))
+            close = cur + d * t
+            dist = np.linalg.norm(np.array((ox, oy)) - close)
+            R = r + clearance
+            if dist < R and 0.05 < t < L - 0.05:
+                hit = (ox, oy, R, close, dist)
+                break
+        if hit is None:
+            break
+        ox, oy, R, close, dist = hit
+        away = close - np.array((ox, oy))
+        n = np.linalg.norm(away)
+        away = away / n if n > 1e-6 else np.array((d[1], -d[0]))
+        pts.append(np.array((ox, oy)) + away * (R + 0.15))
+    pts.append(goal)
+    return [tuple(p) for p in pts]
+
+
+def path_fn_from_points(pts, floor_fn, ease_end=True):
+    """A walk path_fn over waypoints, arc-length parameterised."""
+    P = [np.array(p) for p in pts]
+    segs = [np.linalg.norm(P[i + 1] - P[i]) for i in range(len(P) - 1)]
+    total = sum(segs)
+
+    def fn(t):
+        e = t if not ease_end or t < 0.9 else 0.9 + (t - 0.9) * 0.5
+        dist = e * total
+        for i, L in enumerate(segs):
+            if dist <= L or i == len(segs) - 1:
+                a, b = P[i], P[i + 1]
+                u = 0.0 if L < 1e-6 else min(1.0, dist / L)
+                x, y = a + (b - a) * u
+                dxy = b - a
+                h = math.pi + math.atan2(-dxy[0], max(1e-4, dxy[1]))                     if abs(dxy[1]) > 1e-4 else                     math.pi + math.atan2(-dxy[0], dxy[1] + 1e-4)
+                return (float(x), float(y), floor_fn(float(x), float(y)), h)
+            dist -= L
+        x, y = P[-1]
+        return (float(x), float(y), floor_fn(float(x), float(y)), math.pi)
+    return fn
+
+
 def apply_walk(rig, path_fn, f0, f1, fps=16, stride_hz=1.45):
     """path_fn(t in 0..1) -> (x, y, z, heading_rad)."""
     pb = rig.pose.bones
@@ -224,9 +280,11 @@ def apply_idle(rig, f0, f1, pos, heading, fps=16, look_at_fn=None):
         look = 0.0
         if look_at_fn is not None:
             tx, ty = look_at_fn(f)
-            look = math.atan2(-(tx - pos[0]), ty - pos[1]) - heading
-            look = max(-0.55, min(0.55, math.atan2(math.sin(look), math.cos(look))))
-        pb["head"].rotation_euler = (-0.02 + 0.01 * math.sin(tb), 0, 0.8 * look)
+            target_heading = math.pi + math.atan2(-(tx - pos[0]), ty - pos[1])
+            look = target_heading - heading
+            look = math.atan2(math.sin(look), math.cos(look))
+            look = max(-0.35, min(0.35, look))
+        pb["head"].rotation_euler = (-0.01 + 0.01 * math.sin(tb), 0, 0.7 * look)
         for side, sgn in (("L", 1), ("R", -1)):
             pb[f"arm.{side}"].rotation_euler = (0.02 * math.sin(tb + sgn), 0, sgn * 0.05)
             pb[f"fore.{side}"].rotation_euler = (-0.15, 0, 0)
