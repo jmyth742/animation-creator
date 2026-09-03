@@ -504,3 +504,28 @@ faces her. Two shots filmed from the same scene: tracking approach +
 50mm meeting two-shot. Artefact: `review/scene_arrival.mp4`;
 scene file `review/scene_arrival.blend`.
 Next: give her a line — wav → RMS envelope → apply_talk → closeup.
+
+### Trial J — the FACE SYSTEM (user: better talking + expressions)
+Viseme mouth cards + blink lids, bone-bound to the head:
+- 6-shape mouth strip (closed/small/mid/open/ee/oo) drawn procedurally
+  in the character's own sampled skin/lip tones, on a skin plate that
+  covers the painted static lips; column switched per frame from the
+  audio envelope with CONSTANT interpolation (snaps, never slides).
+- Blink lids on a fixed cadence; subtle jaw underneath.
+Hard-won rules: (1) face flesh must be RIGIDLY weighted to the head bone
+— segment-distance skinning put the mouth in the head/spine blend zone
+and cards drifted under head turns; (2) hair overhangs defeat geometric
+nose probes — per-character face calibration (one rest render, three
+numbers in meshes/<name>_face.json) beats every heuristic; (3) sample
+the plate's skin tone from the CHIN (warmth-search fallback for beards);
+(4) size the mouth from EYE SPACING (1.35×), not nose-chin distance.
+Cards bind in REST space before any performance keyframes.
+Artefact: review/scene_talk_face.mp4 (her line, visemes + blinks + jaw).
+
+### Next (user direction): better mesh models — AFTER current steps
+Candidates for higher-fidelity characters: **Hunyuan3D-2mv** (multi-view
+conditioning — front/side/back sheets we can already generate; same infra,
+likely biggest fidelity win per effort), Hunyuan3D-2.1 (PBR), TRELLIS
+(MSR), TripoSG. Also: 2048px texture bake for close-ups (current paint
+softens at 70mm). Evaluate by re-running the same sheets and A/B-ing
+turntables.

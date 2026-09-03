@@ -134,6 +134,14 @@ def rig_character(char, name):
     w /= w.sum(axis=1, keepdims=True)
     crisp = d2[:, 1] - d2[:, 0] > 0.10
     w[crisp, 0], w[crisp, 1] = 1.0, 0.0
+    # everything above the neck is RIGIDLY the head's: segment-distance
+    # skinning puts frontal face flesh in the head/spine blend zone, so a
+    # head turn dragged the mouth 60% of the way and face cards drifted
+    H = P[:, 2].max()
+    head_region = P[:, 2] > 0.872 * H
+    hbi = names.index("head")
+    w[head_region, 0], w[head_region, 1] = 1.0, 0.0
+    near2[head_region, 0] = hbi
     groups = {nm: char.vertex_groups.new(name=nm) for nm in names}
     Q = 64
     for k in (0, 1):
@@ -217,7 +225,7 @@ def apply_idle(rig, f0, f1, pos, heading, fps=16, look_at_fn=None):
         if look_at_fn is not None:
             tx, ty = look_at_fn(f)
             look = math.atan2(-(tx - pos[0]), ty - pos[1]) - heading
-            look = max(-0.9, min(0.9, math.atan2(math.sin(look), math.cos(look))))
+            look = max(-0.55, min(0.55, math.atan2(math.sin(look), math.cos(look))))
         pb["head"].rotation_euler = (-0.02 + 0.01 * math.sin(tb), 0, 0.8 * look)
         for side, sgn in (("L", 1), ("R", -1)):
             pb[f"arm.{side}"].rotation_euler = (0.02 * math.sin(tb + sgn), 0, sgn * 0.05)
@@ -242,3 +250,268 @@ def apply_talk(rig, envelope, f0, nod=True):
                 -0.02 + 0.05 * float(a) * math.sin(i * 0.9), 0,
                 pb["head"].rotation_euler[2])
             pb["head"].keyframe_insert("rotation_euler", frame=f)
+
+
+# ── the face system: viseme mouth card + blink lids ──────────────────
+def _closest_uv_color(char, point):
+    """Sample the painted texture at the vertex nearest a 3D point."""
+    img = None
+    for m in char.data.materials:
+        for nd in m.node_tree.nodes:
+            if nd.type == 'TEX_IMAGE' and nd.image:
+                img = nd.image
+    if img is None:
+        return (0.8, 0.65, 0.55)
+    n = len(char.data.vertices)
+    co = np.empty(n * 3)
+    char.data.vertices.foreach_get("co", co)
+    P = co.reshape(-1, 3)
+    vi = int(np.argmin(np.linalg.norm(P - np.array(point), axis=1)))
+    uvl = char.data.uv_layers[0]
+    for loop in char.data.loops:
+        if loop.vertex_index == vi:
+            u, v = uvl.data[loop.index].uv
+            w, h = img.size
+            x = min(w - 1, int(u * w)); y = min(h - 1, int(v * h))
+            px = img.pixels[(y * w + x) * 4:(y * w + x) * 4 + 3]
+            return tuple(px)
+    return (0.8, 0.65, 0.55)
+
+
+def probe_face(char):
+    """Face anchors from a frontness scan: the nose is the most forward
+    point of the centre-line; the chin is where the profile recedes below
+    it. Works on cartoon heads where fixed ratios lie (hair fringes were
+    being mistaken for noses)."""
+    n = len(char.data.vertices)
+    co = np.empty(n * 3)
+    char.data.vertices.foreach_get("co", co)
+    P = co.reshape(-1, 3)
+    H = P[:, 2].max()
+
+    def front_y(z, hw=0.03, dz=0.009):
+        band = P[(np.abs(P[:, 0]) < hw) & (np.abs(P[:, 2] - z) < dz)]
+        return float(band[:, 1].min()) if len(band) else None
+
+    zs = [0.86 * H + i * (0.975 * H - 0.86 * H) / 44 for i in range(45)]
+    prof = [(z, front_y(z)) for z in zs]
+    prof = [(z, y) for z, y in prof if y is not None]
+    lo, hi = 0.885 * H, 0.965 * H
+    cand = [(z, y) for z, y in prof if lo < z < hi]
+    nose_z, nose_y = min(cand, key=lambda t: t[1])
+    chin_z = 0.885 * H
+    for z, y in sorted(prof, reverse=True):
+        if z < nose_z and y > nose_y + 0.028:
+            chin_z = z
+            break
+    mouth_z = chin_z + 0.45 * (nose_z - chin_z)
+    mouth_y = (front_y(mouth_z) or nose_y) - 0.005
+    eye_z = nose_z + 0.55 * (nose_z - mouth_z)
+    eband = P[(np.abs(P[:, 2] - eye_z) < 0.015) & (P[:, 1] < nose_y + 0.08)]
+    half_w = np.percentile(np.abs(eband[:, 0]), 92) if len(eband) else 0.07
+    eye_x = 0.42 * half_w
+    eye_y = (front_y(eye_z, hw=0.08) or nose_y) - 0.002
+    cheek = (0.6 * eye_x, (front_y(mouth_z, hw=0.08) or nose_y) + 0.008,
+             mouth_z + 0.4 * (eye_z - mouth_z))
+    return {"mouth": (0.0, mouth_y, mouth_z),
+            "eye_L": (eye_x, eye_y, eye_z),
+            "eye_R": (-eye_x, eye_y, eye_z),
+            "cheek": cheek,
+            "scale": (nose_z - chin_z)}
+
+
+def _viseme_strip(name, skin, lip):
+    """6-column mouth strip drawn with numpy: closed, small, mid, open,
+    wide-ee, round-oo. Skin-toned plate behind each mouth hides the painted
+    static lips underneath."""
+    C, R = 128, 128
+    W = C * 6
+    px = np.zeros((R, W, 4), dtype=np.float32)
+    yy, xx = np.mgrid[0:R, 0:C]
+    cx, cy = C / 2, R / 2
+    dark = (0.09, 0.05, 0.05)
+    teeth = (0.93, 0.90, 0.86)
+
+    def ell(col, w, h, oy=0):
+        return (((xx - cx) / (w * C / 2)) ** 2
+                + ((yy - (cy + oy)) / (h * R / 2)) ** 2) <= 1.0
+
+    shapes = [
+        ("closed", 0.0, 0.0), ("small", 0.30, 0.14), ("mid", 0.42, 0.30),
+        ("open", 0.52, 0.48), ("ee", 0.66, 0.20), ("oo", 0.26, 0.34)]
+    for i, (nm, w, h) in enumerate(shapes):
+        s = px[:, i * C:(i + 1) * C]
+        plate = ell(i, 0.88, 0.72)
+        s[plate] = (*skin, 1.0)
+        if nm == "closed":
+            line = ell(i, 0.46, 0.075)
+            s[line] = (*lip, 1.0)
+        else:
+            outer = ell(i, w + 0.10, h + 0.10)
+            inner = ell(i, w, h)
+            s[outer] = (*lip, 1.0)
+            s[inner] = (*dark, 1.0)
+            if nm in ("open", "ee"):
+                tband = inner & (yy < cy - h * R * 0.18)
+                s[tband] = (*teeth, 1.0)
+    img = bpy.data.images.new(name, W, R, alpha=True)
+    img.pixels = px[::-1].ravel().tolist()
+    img.pack()
+    return img
+
+
+def add_face(char, rig, name, calib=None):
+    """Mouth card + blink lids, bone-bound to the head. Returns controls.
+
+    calib: optional dict {mouth_z, eye_z, eye_x} measured once from a rest
+    render — hair overhangs defeat every geometric nose heuristic, so a
+    5-minute human calibration beats a clever probe (measured twice)."""
+    anchors = probe_face(char)
+    if calib:
+        n = len(char.data.vertices)
+        co = np.empty(n * 3)
+        char.data.vertices.foreach_get("co", co)
+        P = co.reshape(-1, 3)
+
+        def front_y(z, hw=0.026, dz=0.012):
+            band = P[(np.abs(P[:, 0]) < hw) & (np.abs(P[:, 2] - z) < dz)]
+            return float(band[:, 1].min()) if len(band) else -0.1
+
+        mz, ez, ex = calib["mouth_z"], calib["eye_z"], calib["eye_x"]
+        anchors["mouth"] = (0.0, front_y(mz) - 0.005, mz)
+        anchors["eye_L"] = (ex, front_y(ez, hw=0.06) - 0.003, ez)
+        anchors["eye_R"] = (-ex, front_y(ez, hw=0.06) - 0.003, ez)
+        anchors["scale"] = calib.get("scale", 2.2 * (ez - mz))
+    # chin first — it matches the mouth surround exactly; warmth search
+    # only rescues beard-dark chins (Oisin)
+    m = anchors["mouth"]; ex = anchors["eye_L"][0]
+    chin = _closest_uv_color(char, (0.0, m[1] + 0.004,
+                                    m[2] - 0.030))[:3]
+    if sum(chin) / 3 > 0.30 and chin[0] > chin[2]:
+        skin = chin
+        cands = []
+    else:
+        cands = [anchors["cheek"],
+             (0.35 * ex, m[1] + 0.006, m[2]),
+             (-0.35 * ex, m[1] + 0.006, m[2]),
+             (0.0, m[1] + 0.004, m[2] - 0.45 * anchors["scale"]),
+             (0.5 * ex, m[1] + 0.008, (m[2] + anchors["eye_L"][2]) / 2)]
+    best = -9
+    if cands:
+        skin = (0.8, 0.65, 0.55)
+    for c in cands:
+        col = _closest_uv_color(char, c)[:3]
+        warm = col[0] * 1.4 - col[2] + 0.6 * sum(col) / 3
+        if warm > best:
+            best, skin = warm, col
+    lip = tuple(c * 0.55 for c in skin[:3])
+    strip = _viseme_strip(f"{name}_visemes", skin, lip)
+    S = anchors["scale"]
+
+    def card(cname, pos, w, h, image=None, color=None):
+        bpy.ops.mesh.primitive_plane_add(size=1)
+        ob = bpy.context.object
+        ob.name = cname
+        ob.scale = (w, h, 1)
+        ob.rotation_euler = (math.radians(90), 0, math.radians(180))
+        ob.location = pos
+        m = bpy.data.materials.new(cname)
+        m.use_nodes = True
+        m.blend_method = 'CLIP'
+        nt = m.node_tree
+        nt.nodes.clear()
+        em = nt.nodes.new("ShaderNodeEmission")
+        out = nt.nodes.new("ShaderNodeOutputMaterial")
+        if image is not None:
+            tc = nt.nodes.new("ShaderNodeTexCoord")
+            mp = nt.nodes.new("ShaderNodeMapping")
+            mp.inputs["Scale"].default_value = (1 / 6, 1, 1)
+            tx = nt.nodes.new("ShaderNodeTexImage")
+            tx.image = image
+            tx.extension = 'CLIP'
+            mixa = nt.nodes.new("ShaderNodeMixShader")
+            tr = nt.nodes.new("ShaderNodeBsdfTransparent")
+            nt.links.new(tc.outputs["UV"], mp.inputs["Vector"])
+            nt.links.new(mp.outputs["Vector"], tx.inputs["Vector"])
+            nt.links.new(tx.outputs["Color"], em.inputs["Color"])
+            nt.links.new(tx.outputs["Alpha"], mixa.inputs["Fac"])
+            nt.links.new(tr.outputs["BSDF"], mixa.inputs[1])
+            nt.links.new(em.outputs["Emission"], mixa.inputs[2])
+            nt.links.new(mixa.outputs["Shader"], out.inputs["Surface"])
+            ctrl = mp
+        else:
+            em.inputs["Color"].default_value = (*color, 1)
+            nt.links.new(em.outputs["Emission"], out.inputs["Surface"])
+            ctrl = None
+        ob.data.materials.append(m)
+        con = ob.constraints.new('CHILD_OF')
+        con.target = rig
+        con.subtarget = "head"
+        # cards are placed in REST space: add_face must run before any
+        # performance keyframes, with the rig untransformed
+        con.inverse_matrix = rig.data.bones["head"].matrix_local.inverted()
+        return ob, ctrl
+
+    ex = abs(anchors["eye_L"][0])
+    mw = 1.35 * ex
+    mouth, mctrl = card(f"{name}_mouth",
+                        anchors["mouth"], mw, mw, image=strip)
+    lids = []
+    ew = 1.05 * ex
+    for side in ("L", "R"):
+        lid, _ = card(f"{name}_lid{side}", anchors[f"eye_{side}"],
+                      ew, ew * 0.7, color=skin)
+        lid.scale = (0.001, 0.001, 1)
+        lids.append(lid)
+    return {"mouth_ctrl": mctrl, "mouth": mouth, "lids": lids,
+            "lid_size": (ew, ew * 0.7)}
+
+
+def apply_talk_face(rig, face, envelope, f0, fps=16, blink_period=3.4):
+    """Viseme card + subtle jaw from the envelope; deterministic blinks."""
+    pb = rig.pose.bones
+    pb["jaw"].rotation_mode = 'XYZ'
+    mp = face["mouth_ctrl"]
+    total = len(envelope)
+
+    def set_col(col, f):
+        mp.inputs["Location"].default_value = (col / 6.0, 0, 0)
+        mp.inputs["Location"].keyframe_insert("default_value", frame=f)
+
+    for i, a in enumerate(envelope):
+        f = f0 + i
+        a = float(a)
+        if a < 0.04:
+            col = 0
+        elif a < 0.25:
+            col = 1
+        elif a < 0.48:
+            col = 5 if (i // 3) % 4 == 2 else 2
+        elif a < 0.72:
+            col = 3
+        else:
+            col = 4
+        set_col(col, f)
+        bpy.context.scene.frame_set(f)
+        pb["jaw"].rotation_euler = (0.15 * a, 0, 0)
+        pb["jaw"].keyframe_insert("rotation_euler", frame=f)
+    # snap between visemes — no sliding strip
+    nt = face["mouth"].data.materials[0].node_tree
+    if nt.animation_data and nt.animation_data.action:
+        for fc in nt.animation_data.action.fcurves:
+            for kp in fc.keyframe_points:
+                kp.interpolation = 'CONSTANT'
+    # blinks: two closed frames on a fixed cadence
+    lw, lh = face["lid_size"]
+    for lid in face["lids"]:
+        lid.scale = (0.001, 0.001, 1)
+        lid.keyframe_insert("scale", frame=f0)
+        for t0 in np.arange(f0 + 9, f0 + total, blink_period * fps):
+            b = int(t0)
+            for f, on in ((b - 1, False), (b, True), (b + 1, True), (b + 2, False)):
+                lid.scale = (lw, lh, 1) if on else (0.001, 0.001, 1)
+                lid.keyframe_insert("scale", frame=f)
+        if lid.animation_data and lid.animation_data.action:
+            for fc in lid.animation_data.action.fcurves:
+                for kp in fc.keyframe_points:
+                    kp.interpolation = 'CONSTANT'
