@@ -975,6 +975,66 @@ def hibernate_toggle():
     return jsonify({"on": on, "can_stop": ok})
 
 
+
+# ── record your own voice for a line ─────────────────────────────────
+@app.post("/api/record")
+def record_line():
+    """Store a browser-recorded performance for one dialogue line.
+
+    form: file (webm/mp4/wav blob), episode (int, optional), scene_id,
+    line (index, default 0). For a saved episode the recording is wired
+    into the JSON and the cached TTS for that scene is invalidated; for a
+    draft the client keeps the returned path in the shot itself.
+    """
+    f = request.files.get("file")
+    sid = re.sub(r"[^a-z0-9_]", "", (request.form.get("scene_id") or "").lower())
+    line = int(request.form.get("line") or 0)
+    if not f or not sid:
+        abort(400)
+    raw = f.read()
+    if len(raw) > 25 * 1024 * 1024:
+        abort(413)
+    d = sr.series_path(S()) / "voice_recordings"
+    d.mkdir(exist_ok=True)
+    tmp = d / f"_up_{sid}"
+    tmp.write_bytes(raw)
+    out = d / f"{sid}_l{line}.mp3"
+    r = subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(tmp),
+                       "-af", "loudnorm=I=-18:TP=-2", "-ar", "24000",
+                        "-ac", "1", str(out)], capture_output=True, text=True)
+    tmp.unlink(missing_ok=True)
+    if r.returncode != 0:
+        return jsonify({"ok": False, "error": r.stderr[:200]}), 415
+    dur = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
+                          "format=duration", "-of", "csv=p=0", str(out)],
+                         capture_output=True, text=True).stdout.strip()
+    ep_n = request.form.get("episode")
+    if ep_n:
+        epf = sr.series_path(S()) / "episodes" / f"ep{int(ep_n):02d}.json"
+        if epf.exists():
+            ep = json.loads(epf.read_text())
+            for sc in ep["scenes"]:
+                if sc["id"].endswith(sid) and sc.get("dialogue") \
+                        and line < len(sc["dialogue"]):
+                    sc["dialogue"][line]["recorded_audio"] = str(out.resolve())
+                    epf.write_text(json.dumps(ep, indent=1, ensure_ascii=False))
+                    # stale TTS would silently win over the new recording
+                    cached = Path("output") / S() / f"ep{int(ep_n):02d}" \
+                        / "audio" / f"{sc['id']}.mp3"
+                    cached.unlink(missing_ok=True)
+                    break
+    return jsonify({"ok": True, "path": str(out.resolve()),
+                    "seconds": round(float(dur or 0), 2)})
+
+
+@app.get("/media/recording/<name>")
+def media_recording(name):
+    f = sr.series_path(S()) / "voice_recordings" / re.sub(r"[^A-Za-z0-9_.]", "", name)
+    if not f.exists():
+        abort(404)
+    return send_file(f.resolve(), conditional=True)
+
+
 if __name__ == "__main__":
     print(f"workbench key: {KEY}")
     app.run(host="0.0.0.0", port=8888, threaded=True)

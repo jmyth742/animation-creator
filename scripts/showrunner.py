@@ -1326,6 +1326,28 @@ def should_use_carry_over(index: int, scene: dict, carry_over_image: str | None,
     return not authored
 
 
+
+def _recorded_line_audio(d: dict, part_file: str) -> bool:
+    """A human recording on a dialogue line replaces TTS for that line.
+
+    S2V is driven by the waveform, so a recorded performance lip-syncs the
+    same way a synthetic one does. Normalised to speech level and mono so it
+    sits in the same mix as the TTS lines around it.
+    """
+    rec = d.get("recorded_audio")
+    if not rec or not Path(rec).exists():
+        return False
+    r = subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(rec),
+                        "-af", "loudnorm=I=-18:TP=-2", "-ar", "24000",
+                        "-ac", "1", part_file],
+                       capture_output=True, text=True)
+    if r.returncode != 0 or _get_video_duration(part_file) <= 0:
+        fatal(f"recorded line audio unusable: {rec}",
+              f"ffmpeg said: {r.stderr[:150]}. Re-record the line or remove "
+              f"recorded_audio to fall back to TTS.")
+    return True
+
+
 def generate_episode_audio(episode: dict, bible: dict, output_dir: Path) -> list[Path]:
     """Generate TTS audio for each scene with per-character voices."""
     audio_dir = output_dir / "audio"
@@ -1421,8 +1443,18 @@ def generate_episode_audio(episode: dict, bible: dict, output_dir: Path) -> list
                               "performance mid-sentence.")
 
                     part_file = str(temp_dir / f"{part_idx:02d}_{char_id}.mp3")
-                    asyncio.run(generate_tts_scene(line_text, char_voice, part_file,
-                                                   rate=char_rate, pitch=char_pitch))
+                    if _recorded_line_audio(d, part_file):
+                        got = _get_video_duration(part_file)
+                        if got > remaining_budget > 0:
+                            fatal(f"{scene['id']}: the recorded take runs "
+                                  f"{got:.1f}s but only {remaining_budget:.1f}s "
+                                  f"of the shot is left",
+                                  'Re-record it shorter, or raise the shot\'s '
+                                  '"hold_seconds". A human take is never '
+                                  "sped up or cut.")
+                    else:
+                        asyncio.run(generate_tts_scene(line_text, char_voice, part_file,
+                                                       rate=char_rate, pitch=char_pitch))
                     audio_parts.append(part_file)
                     part_idx += 1
 
@@ -1477,6 +1509,9 @@ def generate_single_scene_audio(scene: dict, bible: dict, output_dir: Path) -> P
                 char_voice = char.get("voice", narrator_voice)
                 char_rate, char_pitch = _get_character_prosody(char)
                 part_file = str(temp_dir / f"{j+1:02d}_{d['character']}.mp3")
+                if _recorded_line_audio(d, part_file):
+                    audio_parts.append(part_file)
+                    continue
                 asyncio.run(generate_tts_scene(d["line"], char_voice, part_file,
                                                rate=char_rate, pitch=char_pitch))
                 audio_parts.append(part_file)

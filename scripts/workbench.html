@@ -164,6 +164,7 @@ a{color:var(--gold)}
   <button class="big" id="saveback" style="display:none" onclick="saveBack()">Save back</button>
   <button class="ghost" onclick="importGate()">Import → run gates</button>
   <button class="ghost" onclick="breakdown()">✎ break down a script</button>
+  <button class="ghost" onclick="talkPiece()" title="the format this pipeline is best at: one place, two people, alternating close-ups">☕ start a talk piece</button>
   <button class="ghost" onclick="clearAll()">New</button>
  </div>
  <pre id="gateout" style="display:none"></pre>
@@ -264,7 +265,7 @@ function render(){const el=document.getElementById('shots');
   const locs=Object.keys(DATA.locations).map(k=>{const has=!!plateFor({...s,location:k});
    return `<button class="pill ${s.location===k?'on':''} ${has?'':'dis'}" ${has?`onclick="setL(${i},'${k}')"`:''}>${(DATA.locations[k]||{}).thumb?`<img src="${DATA.locations[k].thumb}">`:''}${k.replace(/_/g,' ')}</button>`}).join('');
   const chs=(s.type==='figure'||s.type==='close')?`<div class="lab">Character</div><div class="pills">`+CHARS().map(c=>`<button class="pill ${s.characters[0]===c?'on':''}" onclick="setC(${i},'${c}')">${c}</button>`).join('')+`</div>`:'';
-  const line=s.type==='close'?`<div class="lab">The line — ${s.characters[0]||'?'}</div><textarea oninput="setF(${i},'line',this.value)">${s.line||''}</textarea><div class="wc"><button class="mini" onclick="audition(${i})" title="hear it in their voice">▶ audition</button> ${(s.line||'').trim().split(/\s+/).filter(Boolean).length} words · ~${holdFor(s)}s</div>`:'';
+  const line=s.type==='close'?`<div class="lab">The line — ${s.characters[0]||'?'}</div><textarea oninput="setF(${i},'line',this.value)">${s.line||''}</textarea><div class="wc"><button class="mini" onclick="audition(${i})" title="hear it in their voice">▶ audition</button> <button class="mini" id="rec${i}" onclick="recLine(${i})" title="record this line in your own voice">${s.recorded_audio?'⏺ re-record':'⏺ record'}</button>${s.recorded_audio?` <button class="mini" onclick="playRec(${i})">▶ take</button> <button class="mini" onclick="setF(${i},'recorded_audio','');render()" title="back to synthetic voice">✕</button>`:''} ${(s.line||'').trim().split(/\s+/).filter(Boolean).length} words · ~${holdFor(s)}s</div>`:'';
   return `<div class="shot ${bad?'bad':'okv'}"><div class="shead"><span class="snum">${String(i+1).padStart(2,'0')}</span><span class="stype">${NAMES[s.type]}</span>
    <span class="row"><button class="mini" onclick="move(${i},-1)">↑</button><button class="mini" onclick="move(${i},1)">↓</button><button class="mini" onclick="dupShot(${i})" title="duplicate — a close flips the speaker">⧉</button><button class="mini" onclick="del(${i})">✕</button></span></div>
    <div class="lab">Location</div><div class="pills">${locs}</div>${chs}
@@ -305,7 +306,7 @@ function del(i){shots.splice(i,1);render()}
 function clearAll(){shots=[];curSlug=null;title.value='';summary.value='';render()}
 function docJSON(){return{title:title.value||'Untitled',summary:summary.value||'',slug:curSlug||undefined,grammar:'v1',
  scenes:shots.map(s=>({type:s.type,location:s.location,characters:s.characters,visual:s.visual||'',
-  dialogue:s.type==='close'?[{character:s.characters[0],line:s.line||''}]:[],
+  dialogue:s.type==='close'?[Object.assign({character:s.characters[0],line:s.line||''},s.recorded_audio?{recorded_audio:s.recorded_audio}:{})]:[],
   hold_seconds:holdFor(s),plate:(plateFor(s)||{}).sym||null}))}}
 async function saveDraft(){const r=await fetch('api/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(docJSON())});const j=await r.json();curSlug=j.slug;toast(`Saved — ${j.slug} v${j.version}`);loadDrafts()}
 async function importGate(){const out=document.getElementById('gateout');out.style.display='block';out.textContent='running gates…';
@@ -533,6 +534,50 @@ async function forge(kind){
   el.textContent=j.log||'queued…';
   if(j.done){clearInterval(window._ft);toast('Forge finished — refreshing data');
    DATA=await(await fetch('api/data?fresh=1')).json();render();loadBible();}},4000)}
+function talkPiece(){
+ if(shots.length&&!confirm('Replace the current shots with a talk-piece scaffold?'))return;
+ const cast=Object.keys((window._bible||{}).characters||{});
+ const a=cast[0]||'',b=cast[1]||'';
+ const locs=Object.keys((window._bible||{}).locations||{});const L=locs[0]||'';
+ shots=[
+  {type:'wide',location:L,characters:[],visual:'Very wide shot of the place, still and settled. Static camera.',hold:8},
+  {type:'close',location:L,characters:[a],line:'',visual:'Close shot. Their face as they open the subject. Static camera.',hold:9},
+  {type:'close',location:L,characters:[b],line:'',visual:'Close shot. Their face as they answer. Static camera.',hold:9},
+  {type:'close',location:L,characters:[a],line:'',visual:'Close shot. Pressing the point, gently. Static camera.',hold:9},
+  {type:'twoshot',location:L,characters:[a,b],visual:'Wide two shot. The two of them in the place, neither speaking, letting it sit. Static camera.',hold:7},
+  {type:'close',location:L,characters:[b],line:'',visual:'Close shot. The turn — they say the thing they came to say. Static camera.',hold:10},
+  {type:'close',location:L,characters:[a],line:'',visual:'Close shot. Taking it in, answering quietly. Static camera.',hold:9},
+  {type:'wide',location:L,characters:[],visual:'Very wide shot of the place again, changed by what was said. Static camera.',hold:8}];
+ render();toast('Talk piece scaffolded — write the lines, ⏺ record the turn yourself, keep movement out of it');}
+let _rec=null,_recChunks=[],_recShot=-1;
+async function recLine(i){
+ const btn=document.getElementById('rec'+i);
+ if(_rec&&_rec.state==='recording'){_rec.stop();return}
+ let stream;
+ try{stream=await navigator.mediaDevices.getUserMedia({audio:true})}
+ catch(e){toast('Microphone refused — allow mic access for this site');return}
+ const mime=['audio/webm','audio/mp4',''].find(m=>!m||MediaRecorder.isTypeSupported(m));
+ _rec=new MediaRecorder(stream,mime?{mimeType:mime}:{});_recChunks=[];_recShot=i;
+ _rec.ondataavailable=e=>_recChunks.push(e.data);
+ _rec.onstop=async()=>{
+  stream.getTracks().forEach(t=>t.stop());
+  btn.textContent='⏺ uploading…';
+  const blob=new Blob(_recChunks,{type:_rec.mimeType||'audio/webm'});
+  const fd=new FormData();
+  fd.append('file',blob,'line.webm');
+  fd.append('scene_id','draft_s'+String(_recShot+1).padStart(2,'0'));
+  fd.append('line','0');
+  if(editingEp)fd.append('episode',editingEp);
+  const r=await fetch('api/record',{method:'POST',body:fd});const j=await r.json();
+  if(!j.ok){toast(j.error||'recording failed');render();return}
+  shots[_recShot].recorded_audio=j.path;
+  toast('Recorded '+j.seconds+'s — this voice will drive the lips in the render');
+  render();};
+ _rec.start();btn.textContent='■ stop';
+ toast('Recording… tap ■ stop when done');}
+function playRec(i){
+ const p=shots[i].recorded_audio;if(!p)return;
+ new Audio('media/recording/'+p.split('/').pop()).play();}
 async function audition(i){const s0=shots[i];
  if(!(s0.line||'').trim()){toast('write the line first');return}
  if(!s0.characters[0]){toast('pick the speaker first');return}
