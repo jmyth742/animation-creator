@@ -475,3 +475,17 @@ User paused the diffusion queue to focus here. Two findings:
 Resume diffusion queue later: `bash /workspace/fix_tir_na_nog.sh`
 (checkpointed; skips finished shots).
 Artefact: `review/studio_realwalk.mp4` (orbit → tracking pan → dolly).
+
+### Trial H — texture paint: the character problem is SOLVED
+Hunyuan3D-Paint ran on the pod (189s/character) after: compiling
+custom_rasterizer + mesh_processor from the Tencent repo (nvcc present),
+downloading the delight model, converting the paint text-encoder .bin to
+safetensors (transformers 5.x refuses torch.load on torch 2.5), freeing
+ComfyUI VRAM via POST /free, and decimating to 40k faces. Result:
+a genuine production asset — painted face with eyes, hair, cloak correct
+from every angle (`review/oisin_painted_turntable.png`). build_studio
+auto-detects a painted mesh and uses its own UVs/texture through the
+toon ramp; smooth shading on import kills the faceting.
+Pipeline per character is now: FLUX sheet → shape (4 min) → paint
+(3 min) → deterministic skin+rig → gait. ~10 minutes, one command each.
+Artefact: `review/studio_painted_walk.mp4`.

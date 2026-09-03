@@ -52,6 +52,16 @@ if len(parts) > 1:
     bpy.ops.object.join()
 char = bpy.context.view_layer.objects.active
 char.name = "oisin"
+for poly in char.data.polygons:
+    poly.use_smooth = True
+# a painted mesh arrives with its own UVs + baked texture — find it
+_painted_img = None
+for m in char.data.materials:
+    if m and m.use_nodes:
+        for nd in m.node_tree.nodes:
+            if nd.type == 'TEX_IMAGE' and nd.image:
+                _painted_img = nd.image
+                break
 
 mn = mathutils.Vector((1e9,) * 3); mx = mathutils.Vector((-1e9,) * 3)
 for c in char.bound_box:
@@ -64,13 +74,15 @@ char.location = (-(mn.x + mx.x) / 2 * s, -(mn.y + mx.y) / 2 * s, -mn.z * s)
 bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
 # projected costume, but LIT: two-tone light mask multiplied over the texture
-uv = char.data.uv_layers.new(name="proj")
+uv = None
+if _painted_img is None:
+    uv = char.data.uv_layers.new(name="proj")
 mn2 = mathutils.Vector((1e9,) * 3); mx2 = mathutils.Vector((-1e9,) * 3)
 for v in char.data.vertices:
     mn2 = mathutils.Vector(map(min, mn2, v.co))
     mx2 = mathutils.Vector(map(max, mx2, v.co))
 yc = (mn2.y + mx2.y) / 2
-for poly in char.data.polygons:
+for poly in (char.data.polygons if uv else []):
     for li in poly.loop_indices:
         co = char.data.vertices[char.data.loops[li].vertex_index].co
         u = (co.x - mn2.x) / (mx2.x - mn2.x)
@@ -85,10 +97,15 @@ for poly in char.data.polygons:
                 uv.data[li].uv = (0.50 + u * 0.07, 0.908)   # hair (probed)
         else:
             uv.data[li].uv = (0.28 + u * 0.44, 0.05 + w * 0.90)
-simg = bpy.data.images.load(sheet_path)
+if _painted_img is not None:
+    simg = _painted_img
+    uv_name = char.data.uv_layers[0].name
+else:
+    simg = bpy.data.images.load(sheet_path)
+    uv_name = "proj"
 cmat = bpy.data.materials.new("charmat"); cmat.use_nodes = True
 ct = cmat.node_tree; ct.nodes.clear()
-cuv = ct.nodes.new("ShaderNodeUVMap"); cuv.uv_map = "proj"
+cuv = ct.nodes.new("ShaderNodeUVMap"); cuv.uv_map = uv_name
 ctx = ct.nodes.new("ShaderNodeTexImage"); ctx.image = simg
 diff = ct.nodes.new("ShaderNodeBsdfDiffuse")
 torgb = ct.nodes.new("ShaderNodeShaderToRGB")
