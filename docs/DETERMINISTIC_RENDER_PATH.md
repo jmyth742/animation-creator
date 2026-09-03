@@ -338,3 +338,52 @@ is a hard precondition, not an optimisation. Trial script:
 
 **Review artefacts:** `b3d_ab_walkaway.mp4` (A/B vs the live diffusion take),
 `b3d_style_pass.png` (raw | d45 | d62), sent to the user 2026-09-03.
+
+---
+
+## 11. Pivot: the pure-Blender path (user direction, 2026-09-03)
+
+The hybrid in §9 kept WAN for dialogue. The user's actual target is stronger:
+**Blender is the whole studio.** AI images are seed material only —
+everything on screen is 3D, animated and rendered deterministically.
+No WAN in the animation path.
+
+```
+plates (FLUX)      ──depth──►  terrain + projected environments
+portraits (FLUX)   ──img→3D──► character meshes ──auto-rig──► rigged cast
+                                   │
+motion library (walk/idle/turn) ───┤
+                                   ▼
+             episode JSON ──► scene compiler ──► EEVEE ──► film
+```
+
+### Trial A — scene from an image: PROVEN
+`depth_from_plate.py` (Depth-Anything-V2-Small, CPU) +
+`scene_from_image.py`: every plate pixel becomes a vertex at its estimated
+depth, textured by the plate. The camera dollies **through** the painting
+with true parallax — 81 frames in 46s. Limitation measured: disocclusion
+smear where the source image has no information; keep moves ≤ ~2m push or
+fill with a second projected plate. Artefact: `b3d_scene_flythrough.mp4`.
+
+### Trial B — character from an image: staged
+Chain: portrait → **Hunyuan3D-2** (mesh+texture, weights downloading to
+`training_models/hunyuan3d-2`) → **UniRig** auto-rig → retargeted clip
+library (CMU mocap BVH is free) → the compiler. Needs a free GPU window
+(~10GB); currently contended by ep19 + the restoration queue.
+
+### Faces and dialogue in pure 3D — the honest plan
+Audio-driven S2V lips are out by definition here. The replacement is the
+**limited-animation mouth**: 6–8 viseme texture/shape swaps driven by
+Rhubarb from the existing TTS/recorded audio. That is Samurai Jack /
+South Park grammar — stylised, deterministic, and consistent with the
+show's lineage — but it is a *style change* from the current S2V closes,
+and the user should judge a test close before any episode commits to it.
+
+### Sequencing
+1. ✔ scene-from-image parallax
+2. Hunyuan3D on Oisín's portrait → mesh (first GPU window)
+3. UniRig + one retargeted walk clip on that mesh
+4. The walk-away rebuilt with the real character in the depth terrain
+5. Rhubarb mouth test on a close-up
+6. Then: compiler grows blocking marks, shot types, and the cinematography
+   rules from §4 — the full automated series maker, no diffusion at runtime.
