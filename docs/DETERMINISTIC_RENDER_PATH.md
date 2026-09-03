@@ -412,3 +412,18 @@ camera-height float); the mesh faces -Y (turn it for walk-aways);
 single-view projection has no back — head samples the sheet's hair band
 (probed at v≈0.908), a real texture needs the paint stage.
 Artefact: `review/pure3d_walkaway.mp4`.
+
+### Trial D — the REAL 3D set (user: "this seems superimposed") — DONE
+Correct call: trial C was 2.5D — a painting draped over depth geometry
+with an unlit sticker of a character. `valley_set.py` +
+`shot_walkaway_3d.py` replace it with true scene rendering: modelled
+valley (terrain relief, lake, waterfall, hall with tower, trees, cross,
+flowers, clouds), two-tone toon materials via ShaderToRGB ramps, a sun
+with cast shadows (clouds dapple the grass; `sc.eevee.use_shadows` must
+be set), and the character's projected costume now goes through a lit
+two-tone mix instead of raw emission — he is lit by the scene and
+occluded by it. 81 frames / ~62s. The look is flat-cel primitive-shape
+(closer to Samurai Jack backgrounds than the FLUX painted look) — the
+style gap vs the plates is the next argument for either Hunyuan3D props
+from images or the ControlNet style pass.
+Artefact: `review/real3d_walkaway.mp4`.
