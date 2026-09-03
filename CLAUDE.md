@@ -649,3 +649,11 @@ weights at `training_models/hunyuan3d-2`, Blender 4.2 at
 `/workspace/blender42`). Dialogue closes stay WAN S2V for now (user call).
 Next: UniRig auto-rig → mocap walk → real character in the depth terrain.
 Findings go into the doc's §10/§11, not here.
+
+## Asset pipeline (props/sets)
+
+`docs/ASSET_PIPELINE_HUNYUAN3D.md` — FLUX concept → Hunyuan3D →
+QuadriFlow → bake → linked asset .blend, with manifest + QA gates.
+Adopted for props/sets; characters deliberately stay on the
+`character_kit.py` chain with texture-space faces (see the doc's fit
+assessment).

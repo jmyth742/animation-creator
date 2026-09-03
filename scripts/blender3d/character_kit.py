@@ -467,7 +467,7 @@ def add_face(char, rig, name, calib=None):
             "lid_size": (ew, ew * 0.7)}
 
 
-def apply_talk_face(rig, face, envelope, f0, fps=16, blink_period=3.4):
+def apply_talk_face(rig, face, envelope, f0, fps=16, blink_period=3.4, blinks=True):
     """Viseme card + subtle jaw from the envelope; deterministic blinks."""
     pb = rig.pose.bones
     pb["jaw"].rotation_mode = 'XYZ'
@@ -502,6 +502,8 @@ def apply_talk_face(rig, face, envelope, f0, fps=16, blink_period=3.4):
             for kp in fc.keyframe_points:
                 kp.interpolation = 'CONSTANT'
     # blinks: two closed frames on a fixed cadence
+    if not blinks:
+        return
     lw, lh = face["lid_size"]
     for lid in face["lids"]:
         lid.scale = (0.001, 0.001, 1)
@@ -515,3 +517,76 @@ def apply_talk_face(rig, face, envelope, f0, fps=16, blink_period=3.4):
             for fc in lid.animation_data.action.fcurves:
                 for kp in fc.keyframe_points:
                     kp.interpolation = 'CONSTANT'
+
+
+# ── texture-space face animation (replaces the card system) ──────────
+def enable_face_variants(char, name, faces_dir):
+    """Swap the single texture for a keyframable 7-way switch:
+    base / m1..m5 visemes / blink. Returns the mix inputs to drive."""
+    mat = char.data.materials[0]
+    nt = mat.node_tree
+    tex = [n for n in nt.nodes if n.type == 'TEX_IMAGE'][0]
+    uv_from = tex.inputs["Vector"].links[0].from_socket
+    color_to = [ln.to_socket for ln in tex.outputs["Color"].links]
+    nt.nodes.remove(tex)
+    imgs = {}
+    for key in ("base", "m1", "m2", "m3", "m4", "m5", "blink"):
+        node = nt.nodes.new("ShaderNodeTexImage")
+        node.image = bpy.data.images.load(f"{faces_dir}/{name}_face_{key}.png")
+        node.image.pack()
+        nt.links.new(uv_from, node.inputs["Vector"])
+        imgs[key] = node
+    ctrl = {}
+    cur = imgs["base"].outputs["Color"]
+    for key in ("m1", "m2", "m3", "m4", "m5", "blink"):
+        mix = nt.nodes.new("ShaderNodeMixRGB")
+        mix.inputs["Fac"].default_value = 0.0
+        nt.links.new(cur, mix.inputs["Color1"])
+        nt.links.new(imgs[key].outputs["Color"], mix.inputs["Color2"])
+        cur = mix.outputs["Color"]
+        ctrl[key] = mix.inputs["Fac"]
+    for sock in color_to:
+        nt.links.new(cur, sock)
+    ctrl["_tree"] = nt
+    return ctrl
+
+
+def apply_talk_tex(rig, ctrl, envelope, f0, fps=16, blinks=True,
+                   blink_period=3.4):
+    """Drive the texture switch from the audio envelope, plus subtle jaw."""
+    pb = rig.pose.bones
+    pb["jaw"].rotation_mode = 'XYZ'
+    keys = ("m1", "m2", "m3", "m4", "m5")
+    for i, a in enumerate(envelope):
+        f = f0 + i
+        a = float(a)
+        if a < 0.04:
+            sel = None
+        elif a < 0.25:
+            sel = "m1"
+        elif a < 0.48:
+            sel = "m5" if (i // 3) % 4 == 2 else "m2"
+        elif a < 0.72:
+            sel = "m3"
+        else:
+            sel = "m4"
+        for k in keys:
+            ctrl[k].default_value = 1.0 if k == sel else 0.0
+            ctrl[k].keyframe_insert("default_value", frame=f)
+        bpy.context.scene.frame_set(f)
+        pb["jaw"].rotation_euler = (0.13 * a, 0, 0)
+        pb["jaw"].keyframe_insert("rotation_euler", frame=f)
+    if blinks:
+        total = len(envelope)
+        ctrl["blink"].default_value = 0.0
+        ctrl["blink"].keyframe_insert("default_value", frame=f0)
+        for t0 in np.arange(f0 + 11, f0 + total, blink_period * fps):
+            b = int(t0)
+            for f, on in ((b - 1, 0.0), (b, 1.0), (b + 1, 1.0), (b + 2, 0.0)):
+                ctrl["blink"].default_value = on
+                ctrl["blink"].keyframe_insert("default_value", frame=f)
+    nt = ctrl["_tree"]
+    if nt.animation_data and nt.animation_data.action:
+        for fc in nt.animation_data.action.fcurves:
+            for kp in fc.keyframe_points:
+                kp.interpolation = 'CONSTANT'
