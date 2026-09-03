@@ -10,6 +10,27 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import showrunner as sr                                        # noqa: E402
 
 PROPS = {
+    "snowtree": ("A single rowan tree under heavy snow, bare dark branches "
+                 "with thick white snow lining every limb, whole tree "
+                 "visible, three-quarter view. Painted storybook animation "
+                 "style, soft hand-painted texture, plain light grey "
+                 "background, even diffuse light, no scenery, no text, "
+                 "no watermark."),
+    "snowbush": ("A round hawthorn bush buried under smooth snow, dark twigs "
+                 "showing through, whole bush visible, three-quarter view. "
+                 "Painted storybook animation style, soft hand-painted "
+                 "texture, plain light grey background, even diffuse light, "
+                 "no scenery, no text, no watermark."),
+    "snowrock": ("A cluster of grey granite boulders capped with snow, whole "
+                 "cluster visible, three-quarter view. Painted storybook "
+                 "animation style, soft hand-painted texture, plain light "
+                 "grey background, even diffuse light, no scenery, no text, "
+                 "no watermark."),
+    "frozenwell": ("A small round stone well with icicles under its slate "
+                   "roof and snow on every surface, whole well visible, "
+                   "three-quarter view. Painted storybook animation style, "
+                   "soft hand-painted texture, plain light grey background, "
+                   "even diffuse light, no scenery, no text, no watermark."),
     "ruinfort": ("A collapsed ancient Irish ring-fort of moss-covered grey "
                  "stone, broken circular wall with one surviving arched "
                  "doorway, whole ruin visible, three-quarter view. Painted "
