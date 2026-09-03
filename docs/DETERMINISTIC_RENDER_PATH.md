@@ -529,3 +529,13 @@ likely biggest fidelity win per effort), Hunyuan3D-2.1 (PBR), TRELLIS
 (MSR), TripoSG. Also: 2048px texture bake for close-ups (current paint
 softens at 70mm). Evaluate by re-running the same sheets and A/B-ing
 turntables.
+
+### Trial K — "The Nine Waterfalls": the first complete 3D short
+84s, 12 shots, 5 spoken lines, produced end-to-end in the deterministic
+path: build_film.py (one timeline: walk-in, meeting, dialogue with
+texture-space faces, silent beats, walk-out together) + shots.json (the
+edit as data) + assemble_film.py (edit → line audio at schedule offsets
+over a wind bed → title/end cards → −14.5 LUFS). Staging bugs found by
+LOOKING (OTS blocked by her hair — offset must be perpendicular to the
+eyeline; two-shot foreground loom) — camera fixes re-rendered in minutes.
+Master: review/the_nine_waterfalls.mp4 (77MB, scp).
