@@ -10,6 +10,38 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import showrunner as sr                                        # noqa: E402
 
 PROPS = {
+    "ruinfort": ("A collapsed ancient Irish ring-fort of moss-covered grey "
+                 "stone, broken circular wall with one surviving arched "
+                 "doorway, whole ruin visible, three-quarter view. Painted "
+                 "storybook animation style, soft hand-painted texture, plain "
+                 "light grey background, even diffuse light, no scenery, no "
+                 "text, no watermark."),
+    "benttree": ("A single ancient wind-bent hawthorn tree, trunk swept "
+                 "sideways by years of sea wind, sparse leaves, whole tree "
+                 "visible, three-quarter view. Painted storybook animation "
+                 "style, soft hand-painted texture, plain light grey "
+                 "background, even diffuse light, no scenery, no text, "
+                 "no watermark."),
+    "seastack": ("A tall grey sea stack of layered rock rising to a narrow "
+                 "grassy top, whole formation visible, three-quarter view. "
+                 "Painted storybook animation style, soft hand-painted "
+                 "texture, plain light grey background, even diffuse light, "
+                 "no scenery, no text, no watermark."),
+    "boat": ("A small traditional Irish currach boat of dark tarred hide "
+             "over a wooden frame, beached, whole boat visible, "
+             "three-quarter view. Painted storybook animation style, soft "
+             "hand-painted texture, plain light grey background, even "
+             "diffuse light, no scenery, no text, no watermark."),
+    "well": ("A small round stone well with a mossy slate roof on two "
+             "wooden posts and a rope bucket, whole well visible, "
+             "three-quarter view. Painted storybook animation style, soft "
+             "hand-painted texture, plain light grey background, even "
+             "diffuse light, no scenery, no text, no watermark."),
+    "bridge": ("A small arched stone footbridge of weathered grey blocks "
+               "over nothing, whole bridge visible, three-quarter view. "
+               "Painted storybook animation style, soft hand-painted "
+               "texture, plain light grey background, even diffuse light, "
+               "no scenery, no text, no watermark."),
     "niamh34": ("Character sheet, full body, head to feet fully visible. A "
                 "Celtic princess standing in a relaxed A-pose seen from a "
                 "THREE-QUARTER view (turned 30 degrees), arms slightly away "
@@ -61,7 +93,9 @@ PROPS = {
 }
 
 name, out = sys.argv[1], sys.argv[2]
-wf = sr.build_t2i_workflow(PROPS[name], seed=6400 + hash(name) % 100,
+base = sys.argv[3] if len(sys.argv) > 3 else name        # tree_v2 reuses "tree"
+shift = int(sys.argv[4]) if len(sys.argv) > 4 else 0     # fresh seed per variant
+wf = sr.build_t2i_workflow(PROPS[base], seed=6400 + hash(base) % 100 + shift,
                            prefix=f"prop_{name}", width=640, height=640)
 pid = sr.queue_prompt(wf)
 t0 = time.time()
