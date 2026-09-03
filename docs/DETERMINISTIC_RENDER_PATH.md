@@ -489,3 +489,18 @@ toon ramp; smooth shading on import kills the faceting.
 Pipeline per character is now: FLUX sheet → shape (4 min) → paint
 (3 min) → deterministic skin+rig → gait. ~10 minutes, one command each.
 Artefact: `review/studio_painted_walk.mp4`.
+
+### Trial I — TWO CHARACTERS, ONE SCENE (+ the talking rig)
+Niamh built by the standard chain (sheet 30s → shape 188s → paint 168s).
+`character_kit.py` is now the reusable core: load (painted-texture toon
+material, smooth shading), rig (14 bones incl. a JAW, deterministic
+skinning), and performances: `apply_walk` (articulated gait along any
+path_fn), `apply_idle` (breathing + head TRACKING another character),
+`apply_talk` (jaw + head driven by an audio amplitude envelope — the
+dialogue mechanism, wired but not yet demoed).
+`build_scene_arrival.py`: Niamh waits by the cross watching him approach
+(her head follows his live position); he walks up, eases to a stop and
+faces her. Two shots filmed from the same scene: tracking approach +
+50mm meeting two-shot. Artefact: `review/scene_arrival.mp4`;
+scene file `review/scene_arrival.blend`.
+Next: give her a line — wav → RMS envelope → apply_talk → closeup.
