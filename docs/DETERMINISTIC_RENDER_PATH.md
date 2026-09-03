@@ -450,3 +450,13 @@ same argument: Hunyuan3D's texture-paint stage is the next unlock.
 good"): the depth-terrain painted backlot for the FLUX painted look with
 parallax on modest moves, and the full-3D set for free camera, shadows
 and blocking. film.py doesn't care which kind of stage the .blend holds.
+
+### Trial F — cameras that move IN the scene: DONE
+film.py now keyframes real camera moves: `pan` (fixed position, tracks
+the character each frame via the rig's world position), `dolly:x,y,z`,
+`orbit:degrees`, `crane:dz` — all smoothstepped, all deterministic.
+Showcase (`review/studio_camera_moves.mp4`): orbiting establisher →
+tracking pan as he passes close → low dolly push, one performance.
+Head upgraded to front/back split projection: a real face from the
+front (eyes smear into a band — the projection stretches the sheet's
+eye row; texture paint is still the fix), hair from behind.

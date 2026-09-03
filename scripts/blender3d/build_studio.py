@@ -69,13 +69,20 @@ mn2 = mathutils.Vector((1e9,) * 3); mx2 = mathutils.Vector((-1e9,) * 3)
 for v in char.data.vertices:
     mn2 = mathutils.Vector(map(min, mn2, v.co))
     mx2 = mathutils.Vector(map(max, mx2, v.co))
+yc = (mn2.y + mx2.y) / 2
 for poly in char.data.polygons:
     for li in poly.loop_indices:
         co = char.data.vertices[char.data.loops[li].vertex_index].co
         u = (co.x - mn2.x) / (mx2.x - mn2.x)
         w = (co.z - mn2.z) / (mx2.z - mn2.z)
         if w > 0.84:
-            uv.data[li].uv = (0.50 + u * 0.07, 0.908)   # hair band (probed)
+            if co.y < yc:
+                # front of the head: the sheet's actual face, mapped to the
+                # head's narrow span instead of the full body width
+                hw = (w - 0.84) / 0.16
+                uv.data[li].uv = (0.455 + u * 0.11, 0.845 + hw * 0.085)
+            else:
+                uv.data[li].uv = (0.50 + u * 0.07, 0.908)   # hair (probed)
         else:
             uv.data[li].uv = (0.28 + u * 0.44, 0.05 + w * 0.90)
 simg = bpy.data.images.load(sheet_path)
