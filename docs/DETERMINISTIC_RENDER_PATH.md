@@ -427,3 +427,26 @@ occluded by it. 81 frames / ~62s. The look is flat-cel primitive-shape
 style gap vs the plates is the next argument for either Hunyuan3D props
 from images or the ControlNet style pass.
 Artefact: `review/real3d_walkaway.mp4`.
+
+### Trial E — the VIRTUAL STUDIO (user direction): DONE
+`build_studio.py` saves the whole stage as one .blend (set + rigged,
+dressed character + the walk performance + master camera, textures
+packed — 35MB, `review/studio_valley.blend`). Open it in Blender to
+orbit, scrub the take, pose cameras. `film.py` renders any angle from
+the command line:
+
+    blender -b studio_valley.blend --python film.py -- \
+        <outdir> <cam x,y,z> <target x,y,z> [lens] [f_start] [f_end]
+
+Proof: the SAME 81-frame performance filmed from three cameras (master
+wide 35mm / low-follow 30mm / side profile 40mm) and cut as coverage —
+`review/studio_coverage_cut.mp4`. One take, many angles: the property
+diffusion cannot offer. The side angle shows a true cast shadow; it also
+shows the single-view projection smearing at close range, and the
+walk-away head-hair hack means no face from the front — both are the
+same argument: Hunyuan3D's texture-paint stage is the next unlock.
+
+**Both set types stay in the toolkit** (user: "the 2.5D is also looking
+good"): the depth-terrain painted backlot for the FLUX painted look with
+parallax on modest moves, and the full-3D set for free camera, shadows
+and blocking. film.py doesn't care which kind of stage the .blend holds.
