@@ -460,3 +460,18 @@ tracking pan as he passes close → low dolly push, one performance.
 Head upgraded to front/back split projection: a real face from the
 front (eyes smear into a band — the projection stretches the sheet's
 eye row; texture paint is still the fix), hair from behind.
+
+### Trial G — articulated gait + deterministic skinning (GPU work paused)
+User paused the diffusion queue to focus here. Two findings:
+1. **Blender's bone-heat auto-weighting had been failing SILENTLY on the
+   Hunyuan mesh all along** — bones swung, mesh never followed; every
+   earlier "walk" was body-bob. (Classic silent-failure pattern: verify
+   the deformation, not the fcurves.) Replaced with deterministic numpy
+   skinning: each vertex weighted to its two nearest bone segments,
+   exp falloff, crisp-joint cutoff. Always binds, no solver.
+2. Gait v2 on a 13-bone rig (feet added): stance/swing knee timing,
+   toe-off, pelvis roll countered by the torso, weight-shift sway,
+   contact-timed bob, elbow flexion. The stride now reads as a real walk.
+Resume diffusion queue later: `bash /workspace/fix_tir_na_nog.sh`
+(checkpointed; skips finished shots).
+Artefact: `review/studio_realwalk.mp4` (orbit → tracking pan → dolly).

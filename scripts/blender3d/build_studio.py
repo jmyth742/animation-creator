@@ -130,15 +130,63 @@ bone("spine", (0, 0, 1.15), (0, 0, 1.45), "hips")
 bone("head", (0, 0, 1.45), (0, 0, 1.75), "spine")
 for sgn, side in ((1, "L"), (-1, "R")):
     bone(f"thigh.{side}", (0.10 * sgn, 0, 0.95), (0.11 * sgn, 0, 0.50), "hips")
-    bone(f"shin.{side}", (0.11 * sgn, 0, 0.50), (0.12 * sgn, 0, 0.05), f"thigh.{side}")
+    bone(f"shin.{side}", (0.11 * sgn, 0, 0.50), (0.12 * sgn, 0, 0.08), f"thigh.{side}")
+    bone(f"foot.{side}", (0.12 * sgn, 0, 0.08), (0.12 * sgn, -0.17, 0.02), f"shin.{side}")
     bone(f"arm.{side}", (0.20 * sgn, 0, 1.42), (0.26 * sgn, 0, 1.05), "spine")
     bone(f"fore.{side}", (0.26 * sgn, 0, 1.05), (0.30 * sgn, 0, 0.75), f"arm.{side}")
 bpy.ops.object.mode_set(mode='OBJECT')
-for o in sc.objects:
-    o.select_set(False)
-char.select_set(True); rig.select_set(True)
-bpy.context.view_layer.objects.active = rig
-bpy.ops.object.parent_set(type='ARMATURE_AUTO')
+# Blender's bone-heat weighting fails SILENTLY on marching-cubes meshes
+# (it did here: bones swung, mesh never followed). Deterministic skinning
+# instead: each vertex weighted to its two nearest bone segments.
+import numpy as np
+
+BONES = {
+    "hips": ((0, 0, 0.95), (0, 0, 1.15)),
+    "spine": ((0, 0, 1.15), (0, 0, 1.45)),
+    "head": ((0, 0, 1.45), (0, 0, 1.75)),
+}
+for sgn, side in ((1, "L"), (-1, "R")):
+    BONES[f"thigh.{side}"] = ((0.10 * sgn, 0, 0.95), (0.11 * sgn, 0, 0.50))
+    BONES[f"shin.{side}"] = ((0.11 * sgn, 0, 0.50), (0.12 * sgn, 0, 0.08))
+    BONES[f"foot.{side}"] = ((0.12 * sgn, 0, 0.08), (0.12 * sgn, -0.17, 0.02))
+    BONES[f"arm.{side}"] = ((0.20 * sgn, 0, 1.42), (0.26 * sgn, 0, 1.05))
+    BONES[f"fore.{side}"] = ((0.26 * sgn, 0, 1.05), (0.30 * sgn, 0, 0.75))
+
+n = len(char.data.vertices)
+co = np.empty(n * 3)
+char.data.vertices.foreach_get("co", co)
+P = co.reshape(-1, 3)
+names = list(BONES)
+D = np.empty((n, len(names)))
+for bi, nm in enumerate(names):
+    a = np.array(BONES[nm][0]); b = np.array(BONES[nm][1])
+    ab = b - a
+    tt = np.clip(((P - a) @ ab) / (ab @ ab), 0, 1)
+    D[:, bi] = np.linalg.norm(P - (a + tt[:, None] * ab), axis=1)
+order = np.argsort(D, axis=1)
+near2 = order[:, :2]
+d2 = np.take_along_axis(D, near2, axis=1)
+w = np.exp(-d2 / 0.05)
+w /= w.sum(axis=1, keepdims=True)
+# a vertex much closer to one bone belongs to it outright (crisp joints)
+crisp = d2[:, 1] - d2[:, 0] > 0.10
+w[crisp, 0], w[crisp, 1] = 1.0, 0.0
+
+groups = {nm: char.vertex_groups.new(name=nm) for nm in names}
+Q = 64
+for k in (0, 1):
+    qw = np.round(w[:, k] * Q) / Q
+    for bi, nm in enumerate(names):
+        sel = near2[:, k] == bi
+        for lvl in np.unique(qw[sel]):
+            if lvl <= 0:
+                continue
+            idx = np.where(sel & (qw == lvl))[0]
+            groups[nm].add(idx.tolist(), float(lvl), 'ADD')
+
+char.parent = rig
+mod = char.modifiers.new("rig", 'ARMATURE')
+mod.object = rig
 
 def floor_z(x, y):
     r = math.hypot(x, y - 20)
@@ -156,7 +204,9 @@ for f in range(1, FRAMES + 1):
     pt = 0.12 + 0.33 * t
     px = 0.9 - 2.6 * pt + 0.5 * math.sin(pt * 5)
     py = -4 + 22 * pt
-    rig.location = (px, py, floor_z(px, py) + 0.02 * abs(math.sin(ph)))
+    sway = 0.028 * math.sin(ph)
+    bob = 0.030 - 0.030 * abs(math.cos(ph))
+    rig.location = (px + sway, py, floor_z(px, py) + bob)
     # face along the direction of travel (away from camera)
     d = 0.01
     px2 = 0.9 - 2.6 * (pt + d) + 0.5 * math.sin((pt + d) * 5)
@@ -164,18 +214,42 @@ for f in range(1, FRAMES + 1):
     rig.rotation_euler = (0, 0, math.radians(180) + heading)
     rig.keyframe_insert("location"); rig.keyframe_insert("rotation_euler")
     for side, sgn in (("L", 1), ("R", -1)):
+        sl = math.sin(ph) * sgn              # this leg's swing phase
+        # thigh: fuller swing, slight forward bias (walkers lean into it)
         pb[f"thigh.{side}"].rotation_mode = 'XYZ'
-        pb[f"thigh.{side}"].rotation_euler = (sgn * 0.45 * math.sin(ph), 0, 0)
+        pb[f"thigh.{side}"].rotation_euler = (0.50 * sl + 0.06, 0, 0)
         pb[f"thigh.{side}"].keyframe_insert("rotation_euler")
+        # knee: big flex through swing (leg coming forward), near-straight
+        # in stance with a soft loading dip at contact
+        swing = max(0.0, -math.sin(ph + 0.55) * sgn)
+        stance_dip = 0.12 * max(0.0, math.sin(ph - 0.3) * sgn)
         pb[f"shin.{side}"].rotation_mode = 'XYZ'
-        pb[f"shin.{side}"].rotation_euler = (max(0.0, -sgn * 0.9 * math.sin(ph + 0.6)), 0, 0)
+        pb[f"shin.{side}"].rotation_euler = (0.95 * swing ** 1.3 + stance_dip, 0, 0)
         pb[f"shin.{side}"].keyframe_insert("rotation_euler")
+        # foot: toe-off push behind, lift toes through swing
+        pb[f"foot.{side}"].rotation_mode = 'XYZ'
+        pb[f"foot.{side}"].rotation_euler = (
+            -0.35 * max(0.0, math.sin(ph - 2.4) * sgn)
+            + 0.25 * swing, 0, 0)
+        pb[f"foot.{side}"].keyframe_insert("rotation_euler")
+        # arm: counter-swing from the shoulder, elbow always a little bent
+        # and bending more as the arm comes forward
         pb[f"arm.{side}"].rotation_mode = 'XYZ'
-        pb[f"arm.{side}"].rotation_euler = (-sgn * 0.30 * math.sin(ph), 0, 0)
+        pb[f"arm.{side}"].rotation_euler = (-0.38 * sl, 0, sgn * 0.06)
         pb[f"arm.{side}"].keyframe_insert("rotation_euler")
+        pb[f"fore.{side}"].rotation_mode = 'XYZ'
+        pb[f"fore.{side}"].rotation_euler = (-0.20 - 0.22 * max(0.0, -sl), 0, 0)
+        pb[f"fore.{side}"].keyframe_insert("rotation_euler")
+    # pelvis rolls with the stride; the torso counters it; the head stays put
+    pb["hips"].rotation_mode = 'XYZ'
+    pb["hips"].rotation_euler = (0, 0.10 * math.sin(ph), 0.09 * math.sin(ph))
+    pb["hips"].keyframe_insert("rotation_euler")
     pb["spine"].rotation_mode = 'XYZ'
-    pb["spine"].rotation_euler = (0.03, 0, 0.05 * math.sin(ph))
+    pb["spine"].rotation_euler = (0.06, -0.07 * math.sin(ph), -0.12 * math.sin(ph))
     pb["spine"].keyframe_insert("rotation_euler")
+    pb["head"].rotation_mode = 'XYZ'
+    pb["head"].rotation_euler = (-0.04, -0.03 * math.sin(ph), 0.04 * math.sin(ph))
+    pb["head"].keyframe_insert("rotation_euler")
 bpy.ops.object.mode_set(mode='OBJECT')
 
 bpy.ops.file.pack_all()          # textures travel inside the .blend
