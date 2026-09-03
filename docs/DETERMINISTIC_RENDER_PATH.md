@@ -296,3 +296,45 @@ bring-your-own-asset path new shows already use.
 Whether projected-plate sets or the ControlNet pass better match the
 established cel look is an empirical question — it is phase 1/4's job to
 answer it with an A/B, not this document's to guess.
+
+---
+
+## 10. Phase-1 trial results (2026-09-03)
+
+Rebuilt ep16 s11 (the walk-away wide) with `scripts/blender3d/trial_walkaway.py`.
+Blender 4.2.9 LTS headless at `/workspace/blender42` (+ libSM/libEGL apt deps).
+
+**Proven:**
+- The loop: shot params → bpy → EEVEE Next → frames → ffmpeg. **81 frames in
+  44 seconds** on CPU-contended hardware, vs ~10–15 GPU-minutes for the same
+  shot through WAN. Deterministic: same script → same frames.
+- **AI plate as the 3D set** (the driving idea): the FLUX valley master
+  window-projected as emission makes the rendered background pixel-identical
+  to the validated plate. Zero drift, zero palette risk, and the figure
+  moves through it with correct perspective shrink.
+- Iteration speed: three figure revisions at ~45s each. A diffusion shot
+  gives one roll per 12 minutes.
+
+**Learned the hard way:**
+- EEVEE Next defaults motion blur ON — smeared the walk into a translucent
+  ghost. Cel has none; `use_motion_blur = False`.
+- Inverted-hull outlines consume small parts at wide-shot scale; skip
+  outlines below ~30px on-screen height.
+- Emission colours are linear; pick them ~1 stop darker than the sRGB target.
+
+**The asset ceiling, confirmed:** a procedural cone-and-spheres figure reads
+as a cone. Geometry, travel and gait are right; the *drawing* is absent.
+The front-loaded cost the doc promises is real and it is exactly here:
+a proper character mesh (VRoid VRM made on a workstation, uploaded through
+the console) is the gate to phase 2.
+
+**Style pass (phase-4 preview, single frame):** FLUX img2img over the 3D
+frame at denoise 0.45 keeps the environment beautifully and **erases the
+small figure**; 0.62 re-invents a different figure elsewhere. Plain img2img
+cannot pin a small character — ControlNet conditioning (depth/line AOVs,
+Union ~3.5GB download) or a WAN-side video restyle (VACE, not installed)
+is a hard precondition, not an optimisation. Trial script:
+`scripts/blender3d/style_pass_trial.py`.
+
+**Review artefacts:** `b3d_ab_walkaway.mp4` (A/B vs the live diffusion take),
+`b3d_style_pass.png` (raw | d45 | d62), sent to the user 2026-09-03.
