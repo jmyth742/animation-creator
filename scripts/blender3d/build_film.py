@@ -112,7 +112,7 @@ for L, f0 in zip(lines, starts):
 
 # ── the edit, as data ────────────────────────────────────────────────
 CLOSE_N = {"cam": "1.2,6.85,1.8", "tgt": "-1.55,8.05,1.45", "lens": 45}
-CLOSE_O = {"cam": "-2.75,8.55,1.75", "tgt": "0.15,6.9,1.5", "lens": 50}
+CLOSE_O = {"cam": "-2.2,6.0,1.62", "tgt": "-0.45,7.25,1.57", "lens": 55}
 TWO = {"cam": "5.5,7.6,1.45", "tgt": "-0.8,7.5,1.35", "lens": 50}
 shots = [
     {"name": "s01_est", "f0": 1, "f1": 110, "cam": "-14,-6,5",
@@ -121,18 +121,25 @@ shots = [
      "tgt": "0,2,1.2", "lens": 42, "move": "pan"},
     {"name": "s03_meet", "f0": 197, "f1": starts[0] - 1, "move": "static", **TWO},
 ]
+def _push(c):
+    """A barely-perceptible push-in: 6% of the way to the subject."""
+    cam = [float(v) for v in c["cam"].split(",")]
+    tgt = [float(v) for v in c["tgt"].split(",")]
+    p1 = [cam[k] + 0.06 * (tgt[k] - cam[k]) for k in range(3)]
+    return {**c, "move": "dolly:%.3f,%.3f,%.3f" % tuple(p1)}
+
+
 for i, (L, f0) in enumerate(zip(lines, starts)):
     f1 = f0 + L["frames"] + (GAP // 2)
     c = CLOSE_N if L["who"] == "niamh" else CLOSE_O
+    j = f0 + 7                       # J-cut: hear the voice, then see the face
     if i == 3:                       # the long line: cut to her listening
         cut = f0 + int(L["frames"] * 0.62)
-        shots.append({"name": f"s0{4+i}a", "f0": f0 - GAP // 2, "f1": cut,
-                      "move": "static", **c})
+        shots.append({"name": f"s0{4+i}a", "f0": j, "f1": cut, **_push(c)})
         shots.append({"name": f"s0{4+i}b", "f0": cut + 1, "f1": f1,
                       "move": "static", **CLOSE_N})
     else:
-        shots.append({"name": f"s0{4+i}", "f0": f0 - GAP // 2, "f1": f1,
-                      "move": "static", **c})
+        shots.append({"name": f"s0{4+i}", "f0": j, "f1": f1, **_push(c)})
     if i == 2:                       # the silent beat, held wide
         shots.append({"name": "s07_beat", "f0": f1 + 1,
                       "f1": f1 + BEAT_MID, "cam": "0.0,3.6,1.5",

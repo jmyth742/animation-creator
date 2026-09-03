@@ -156,7 +156,7 @@ def build_set(sc):
     sc.world = w
     w.use_nodes = True
     bg = w.node_tree.nodes["Background"]
-    bg.inputs["Color"].default_value = (0.42, 0.68, 0.88, 1)
+    bg.inputs["Color"].default_value = (0.55, 0.66, 0.82, 1)
     bg.inputs["Strength"].default_value = 1.0
     cloud = toon("cloud", (0.96, 0.97, 0.95), shadow_mult=0.95)
     for i, (cx, cz, cs) in enumerate([(-20, 26, 4), (8, 30, 5), (28, 24, 3.5),
@@ -164,11 +164,28 @@ def build_set(sc):
         _obj(f"cloud{i}", bpy.ops.mesh.primitive_ico_sphere_add, cloud,
              loc=(cx, 60, cz), scale=(cs, cs * 0.5, cs * 0.35), subdivisions=2)
 
-    # the sun — real shadows
+    # golden hour: low warm key, long shadows, cool fill from the sky,
+    # a rim sun from upstage to cut characters off the background
     sun = bpy.data.lights.new("sun", 'SUN')
-    sun.energy = 3.5
+    sun.energy = 4.2
     sun.angle = 0.05
+    sun.color = (1.0, 0.82, 0.60)
     so = bpy.data.objects.new("sun", sun)
-    so.rotation_euler = (math.radians(62), math.radians(-8), math.radians(55))
+    so.rotation_euler = (math.radians(70), math.radians(-6), math.radians(62))
     sc.collection.objects.link(so)
+    rim = bpy.data.lights.new("rim", 'SUN')
+    rim.energy = 1.6
+    rim.angle = 0.2
+    rim.color = (1.0, 0.92, 0.80)
+    rim.use_shadow = False
+    ro = bpy.data.objects.new("rim", rim)
+    ro.rotation_euler = (math.radians(65), 0, math.radians(200))
+    sc.collection.objects.link(ro)
+    fill = bpy.data.lights.new("fill", 'SUN')
+    fill.energy = 0.5
+    fill.color = (0.75, 0.82, 1.0)
+    fill.use_shadow = False
+    fo = bpy.data.objects.new("fill", fill)
+    fo.rotation_euler = (math.radians(30), 0, math.radians(-40))
+    sc.collection.objects.link(fo)
     return {"grass": grass}

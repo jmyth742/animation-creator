@@ -106,11 +106,44 @@ def soft(d, edge=0.0012):
 
 SK = None  # sampled around the mouth for lids
 
+
+def ring_sampler(anchor, rx, rz):
+    """Colours sampled on a ring just outside the erase region; a pixel
+    inside blends them by angle — local inpainting, so plates inherit the
+    face's own shading instead of one flat tone (the 'glasses' look)."""
+    cols = []
+    for k in range(16):
+        a = 2 * math.pi * k / 16
+        pt = (anchor[0] + rx * 1.25 * math.cos(a), 0,
+              anchor[2] + rz * 1.25 * math.sin(a))
+        pt = (pt[0], front_y(pt[2], hw=0.09) + 0.002 if front_y(pt[2], hw=0.09) else anchor[1], pt[2])
+        c = kit._closest_uv_color(char, pt)[:3]
+        # reject hair/dark samples toward the skin average
+        if sum(c) / 3 < 0.30:
+            c = None
+        cols.append(c)
+    good = [c for c in cols if c]
+    avg = tuple(np.mean([c[i] for c in good]) for i in range(3)) if good         else (0.8, 0.65, 0.55)
+    cols = [c if c else avg for c in cols]
+
+    def sample(h, v):
+        a = math.atan2(v / rz, h / rx) % (2 * math.pi)
+        f = a / (2 * math.pi) * 16
+        i = int(f) % 16
+        j = (i + 1) % 16
+        t = f - int(f)
+        return tuple((1 - t) * cols[i][k] + t * cols[j][k] for k in range(3))
+    return sample
+
+EYE_RING = None
+
+
 def eye_plate(h, v):
-    """Erase the original smudged eye before drawing the new one."""
+    """Erase the original smudged eye with LOCAL skin (ring-inpainted)."""
     d = math.hypot(h / (1.35 * EX), v / (0.85 * EX))
     if d <= 1.0:
-        return (SK[0], SK[1], SK[2], min(1.0, 1.6 - d * 0.8))
+        c = EYE_RING(h, v)
+        return (c[0], c[1], c[2], min(1.0, 1.6 - d * 0.8))
     return None
 
 
@@ -138,13 +171,10 @@ def eye_draw(h, v):
         sc = 0.955
         return (sc, sc, sc * 0.99, soft((d - 0.97) * sh, 0.06 * sh)
                 if d > 0.97 else 1)
-    # the upper lid + lash: a soft dark band along the top of the aperture
-    if d <= 1.12 and lid_v < v < lid_v + lash_t:
-        a = soft(abs(v - lid_v - lash_t * 0.35), lash_t * 0.5)
-        return (0.10, 0.07, 0.07, a)
-    # lower lash hint at the outer third
-    if 0.95 < d < 1.10 and v < 0 and abs(h) > 0.30 * EX:
-        return (0.35, 0.28, 0.26, 0.5)
+    # ONLY an upper lash line — any ring around the eye reads as glasses
+    if abs(h) < sw * 1.02 and lid_v < v < lid_v + lash_t * 0.8:
+        a = soft(abs(v - lid_v - lash_t * 0.25), lash_t * 0.45)
+        return (0.12, 0.08, 0.08, 0.9 * a)
     return None
 
 
@@ -153,11 +183,14 @@ math_hypot = math.hypot
 
 
 def lid_draw(h, v):
-    sw, sh = 0.74 * EX, 0.54 * EX
+    sw, sh = 0.66 * EX, 0.40 * EX
     d = math.hypot(h / sw, v / sh)
-    if d <= 1.05:
-        f = min(1.0, 1.15 - d * 0.15)
-        return (SK[0], SK[1], SK[2], f)
+    if d <= 1.0:
+        c = EYE_RING(h, v)
+        # a soft lash-line where the closed lid meets
+        if abs(v) < 0.05 * EX:
+            return (0.30, 0.22, 0.20, 0.8)
+        return (c[0] * 0.96, c[1] * 0.94, c[2] * 0.93, min(1.0, 1.2 - d * 0.2))
     return None
 
 
@@ -179,11 +212,12 @@ def mouth_draw(shape):
     w *= EX; hgt *= EX
 
     def fn(h, v):
-        # plate: gently blend a skin oval to erase the painted lips
+        # plate: erase the painted lips with LOCAL skin
         pd = math.hypot(h / (0.62 * EX), v / (0.42 * EX))
         out = None
         if pd <= 1.0:
-            out = (SK[0], SK[1], SK[2], min(1.0, 1.3 - pd))
+            c = MOUTH_RING(h, v)
+            out = (c[0], c[1], c[2], min(1.0, 1.3 - pd))
         d = math.hypot(h / w, v / hgt)
         if shape == "closed":
             if d <= 1.0:
@@ -206,8 +240,10 @@ SK = kit._closest_uv_color(char, (0.0, MOUTH[1] + 0.004, MZ - 0.030))[:3]
 if sum(SK) / 3 < 0.3:
     SK = kit._closest_uv_color(char, (0.5 * EX, front_y((MZ + EZ) / 2, hw=0.08) + 0.008, (MZ + EZ) / 2))[:3]
 
+MOUTH_RING = ring_sampler(MOUTH, 0.62 * EX, 0.42 * EX)
 out = np.array(base)
 for anchor in (EYE_L, EYE_R):
+    EYE_RING = ring_sampler(anchor, 1.35 * EX, 0.85 * EX)
     paint(out, anchor, 0.07, eye_plate)
     paint(out, anchor, 0.06, eye_draw)
 paint(out, MOUTH, 0.05, mouth_draw("closed"))
@@ -228,6 +264,7 @@ for i, shape in enumerate(("small", "mid", "open", "ee", "oo"), start=1):
     save(v, f"m{i}")
 b = np.array(basefixed)
 for anchor in (EYE_L, EYE_R):
+    EYE_RING = ring_sampler(anchor, 1.35 * EX, 0.85 * EX)
     paint(b, anchor, 0.07, eye_plate)
     paint(b, anchor, 0.06, lid_draw)
     paint(b, anchor, 0.06, lash_line)

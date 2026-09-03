@@ -54,7 +54,8 @@ subprocess.run(["ffmpeg", "-v", "error", "-y", *inputs,
 # 4. mux + title/end cards + grade
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 vf = (
-    "eq=saturation=0.95:gamma=0.98,noise=alls=5:allf=t,"
+    "colorbalance=rh=0.06:gh=0.02:bh=-0.08:rm=0.03:bm=-0.04,"
+    "eq=saturation=1.02:gamma=0.99,noise=alls=5:allf=t,"
     f"drawtext=fontfile={FONT}:text='TIR NA NOG':fontcolor=white:fontsize=64:"
     "x=(w-text_w)/2:y=h*0.38:alpha='if(lt(t,0.8),t/0.8,if(lt(t,4),1,if(lt(t,5),(5-t),0)))',"
     f"drawtext=fontfile={FONT}:text='The Nine Waterfalls':fontcolor=white:fontsize=30:"
