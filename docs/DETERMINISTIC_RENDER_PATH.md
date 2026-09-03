@@ -365,11 +365,25 @@ with true parallax — 81 frames in 46s. Limitation measured: disocclusion
 smear where the source image has no information; keep moves ≤ ~2m push or
 fill with a second projected plate. Artefact: `b3d_scene_flythrough.mp4`.
 
-### Trial B — character from an image: staged
-Chain: portrait → **Hunyuan3D-2** (mesh+texture, weights downloading to
-`training_models/hunyuan3d-2`) → **UniRig** auto-rig → retargeted clip
-library (CMU mocap BVH is free) → the compiler. Needs a free GPU window
-(~10GB); currently contended by ep19 + the restoration queue.
+### Trial B — character from an image: mesh PROVEN, rig pending
+`character_from_image.py` (Hunyuan3D-2 shape, 30 steps, ~4 min/mesh):
+- The head-and-shoulders portrait produced a faithful **bust** — image→3D
+  gives you exactly the framing you feed it. Full characters need
+  full-body seeds.
+- `fullbody_sheet.py` generates an A-pose character sheet with FLUX
+  (plain ground, no props), and that meshed into a clean **210k-vert
+  full-body figure**: separated limbs, modelled cloak, boots — riggable
+  geometry. `series/tir-na-nog-legend/meshes/oisin_fullbody.glb`.
+- Identity note: the FLUX sheet drifted younger/less beard than the
+  canonical portrait — sheet prompts need the same eye/beard pinning as
+  the plates, and the head can be judged before rigging.
+Next: **UniRig** auto-rig → CMU BVH walk retarget → the depth-terrain
+walk-away with a real character. Texture: Hunyuan3D paint stage, or
+projected portrait — decide after the rig proves out.
+
+### S2V decision (user, 2026-09-03)
+Dialogue closes stay S2V for now — the mouth question is parked, not
+solved. The pure-Blender path owns scenes, movement, blocking, wides.
 
 ### Faces and dialogue in pure 3D — the honest plan
 Audio-driven S2V lips are out by definition here. The replacement is the

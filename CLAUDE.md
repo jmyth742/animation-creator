@@ -640,11 +640,12 @@ Do not change these without testing:
 
 ## Deterministic 3D render path (proposal)
 
-`docs/DETERMINISTIC_RENDER_PATH.md` — scene-graph + headless Blender as an
-alternative shot generator, with a ControlNet→FLUX style pass. §9 holds the
-project-fit decisions: **hybrid by shot type** (3D owns wides/locomotion/
-blocking; WAN S2V keeps dialogue closes — do NOT replace S2V lips with
-Rhubarb), .blend-per-shot compiler output, canonical VRM skeleton,
-same render queue. Phase 1 proof = rebuild ep16 s11 (the known-bad
-walk-away wide) and A/B it against the diffusion take. No code exists yet;
-answer-changing findings go back into §9.
+`docs/DETERMINISTIC_RENDER_PATH.md` — the pure-Blender path (§11, user
+direction): AI images are seed material, everything on screen is 3D.
+PROVEN so far: plate→depth→terrain flythrough with true parallax
+(`scripts/blender3d/scene_from_image.py`, 81f/46s) and portrait→full-body
+character mesh (FLUX A-pose sheet → Hunyuan3D-2, `character_from_image.py`,
+weights at `training_models/hunyuan3d-2`, Blender 4.2 at
+`/workspace/blender42`). Dialogue closes stay WAN S2V for now (user call).
+Next: UniRig auto-rig → mocap walk → real character in the depth terrain.
+Findings go into the doc's §10/§11, not here.
