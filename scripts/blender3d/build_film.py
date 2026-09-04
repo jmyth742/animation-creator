@@ -10,6 +10,7 @@ Run: blender -b --factory-startup --python build_film.py -- \
 """
 import json
 import math
+import pathlib
 import sys
 import bpy
 import numpy as np
@@ -59,12 +60,12 @@ valley_set.build_set(sc)
 import set_assets
 set_assets.dress_valley(sc, floor_z if 'floor_z' in dir() else (lambda x, y: 0.0))
 
-oisin = kit.load_character(f"{MESHES}/oisin_painted.glb", "oisin")
-orig = kit.rig_character(oisin, "oisin")
-niamh = kit.load_character(f"{MESHES}/niamh_painted.glb", "niamh", height=1.68)
-nrig = kit.rig_character(niamh, "niamh")
-octrl = kit.enable_face_variants(oisin, "oisin", f"{MESHES}/faces")
-nctrl = kit.enable_face_variants(niamh, "niamh", f"{MESHES}/faces")
+oisin = kit.load_character(f"{MESHES}/props/oisin34_painted.glb", "oisin34")
+orig = kit.rig_character(oisin, "oisin34")
+niamh = kit.load_character(f"{MESHES}/props/niamh34_painted.glb", "niamh34", height=1.68)
+nrig = kit.rig_character(niamh, "niamh34")
+octrl = kit.enable_face_variants(oisin, "oisin34", f"{MESHES}/props")
+nctrl = kit.enable_face_variants(niamh, "niamh34", f"{MESHES}/props")
 
 # ── performances ─────────────────────────────────────────────────────
 def his_xy(f):
@@ -93,11 +94,24 @@ nhead = math.pi + math.atan2(-(OP[0] - NP[0]), OP[1] - NP[1])
 ohead = math.pi + math.atan2(-(NP[0] - OP[0]), NP[1] - OP[1])
 
 kit.apply_walk(orig, walk_in, 1, WALK_END, fps=FPS)
+# the acting: speakers gesture on their lines, listeners react
+o_g, n_g = [], []
+for i, (L, f0) in enumerate(zip(lines, starts)):
+    fmid = f0 + L["frames"] // 2
+    fend = f0 + L["frames"]
+    if L["who"] == "niamh":
+        n_g.append((f0 + 6, fmid + 8, "hand_raise" if i == 0 else "shake"
+                    if i == 2 else "nod"))
+        o_g.append((fend - 10, fend + 12, "nod"))
+    else:
+        o_g.append((f0 + 6, fmid + 8, "lean_in" if i == 3 else "nod"))
+        n_g.append((fend - 10, fend + 12, "nod" if i == 1 else "look_away"))
+    o_g.append((fend + 2, fend + 18, "weight_shift"))
 kit.apply_idle(orig, WALK_END + 1, WALK2_START - 1,
                (OP[0], OP[1], floor_z(*OP)), ohead, fps=FPS,
-               look_at_fn=lambda f: NP)
+               look_at_fn=lambda f: NP, gestures=o_g)
 kit.apply_idle(nrig, 1, WALK2_START - 1, (NP[0], NP[1], floor_z(*NP)),
-               nhead, fps=FPS, look_at_fn=lambda f: his_xy(f))
+               nhead, fps=FPS, look_at_fn=lambda f: his_xy(f), gestures=n_g)
 kit.apply_walk(orig, walk_pair(OP, (4.6, 16.5)), WALK2_START, FRAMES,
                fps=FPS, stride_hz=1.15)
 kit.apply_walk(nrig, walk_pair(NP, (3.0, 17.3)), WALK2_START, FRAMES,
@@ -109,8 +123,10 @@ for who, (r, fc) in rigs.items():
     kit.apply_talk_tex(r, fc, [0.0] * FRAMES, 1, fps=FPS)
 for L, f0 in zip(lines, starts):
     env = np.load(f"{audio_dir}/l{L['i']}_env.npy")
+    vis_p = pathlib.Path(f"{audio_dir}/l{L['i']}_vis.npy")
+    vis = np.load(vis_p) if vis_p.exists() else None
     r, fc = rigs[L["who"]]
-    kit.apply_talk_tex(r, fc, env, f0, fps=FPS, blinks=False)
+    kit.apply_talk_tex(r, fc, env, f0, fps=FPS, blinks=False, visemes=vis)
 
 # ── the edit, as data ────────────────────────────────────────────────
 CLOSE_N = {"cam": "1.2,6.85,1.8", "tgt": "-1.55,8.05,1.45", "lens": 45}

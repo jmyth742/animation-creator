@@ -10,6 +10,30 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import showrunner as sr                                        # noqa: E402
 
 PROPS = {
+    "grasstex": ("Seamless hand-painted grass meadow texture seen from "
+                 "directly above, soft painted brushstrokes, small tufts and "
+                 "subtle colour variation, rich summer green, no objects, no "
+                 "shadows of objects, even light, fills the whole frame edge "
+                 "to edge. Painted storybook animation style, no text, "
+                 "no watermark."),
+    "pathtex": ("Seamless hand-painted dirt path texture seen from directly "
+                "above, packed warm earth with small stones and faint wheel "
+                "ruts, soft painted brushstrokes, fills the whole frame edge "
+                "to edge, even light. Painted storybook animation style, "
+                "no text, no watermark."),
+    "rocktex": ("Seamless hand-painted grey mountain rock face texture, "
+                "layered stone with moss in the cracks, soft painted "
+                "brushstrokes, fills the whole frame edge to edge, even "
+                "light. Painted storybook animation style, no text, "
+                "no watermark."),
+    "watertex": ("Seamless hand-painted lake water texture seen from above, "
+                 "deep teal blue with soft painted ripples and light "
+                 "sparkles, fills the whole frame edge to edge. Painted "
+                 "storybook animation style, no text, no watermark."),
+    "fallstex": ("Seamless hand-painted waterfall texture, vertical streaks "
+                 "of white and pale blue falling water with foam, fills the "
+                 "whole frame edge to edge. Painted storybook animation "
+                 "style, no text, no watermark."),
     "snowtree": ("A single rowan tree under heavy snow, bare dark branches "
                  "with thick white snow lining every limb, whole tree "
                  "visible, three-quarter view. Painted storybook animation "

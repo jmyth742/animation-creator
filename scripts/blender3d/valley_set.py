@@ -10,6 +10,55 @@ import math
 import bpy
 
 
+TEX = "/workspace/text-to-video/series/tir-na-nog-legend/meshes/textures"
+
+
+def toon_tex(name, image_path, tile=8.0, shadow_mult=0.6, scroll=0.0):
+    """Painted-texture cel material: world-space tiled texture through the
+    two-tone light ramp. scroll animates V (waterfall)."""
+    import os
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    nt = m.node_tree
+    nt.nodes.clear()
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    mp = nt.nodes.new("ShaderNodeMapping")
+    mp.inputs["Scale"].default_value = (1 / tile, 1 / tile, 1 / tile)
+    tx = nt.nodes.new("ShaderNodeTexImage")
+    tx.image = bpy.data.images.load(os.path.join(TEX, image_path))
+    diff = nt.nodes.new("ShaderNodeBsdfDiffuse")
+    torgb = nt.nodes.new("ShaderNodeShaderToRGB")
+    ramp = nt.nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.interpolation = 'CONSTANT'
+    ramp.color_ramp.elements[0].color = (shadow_mult,) * 3 + (1,)
+    ramp.color_ramp.elements[1].position = 0.52
+    ramp.color_ramp.elements[1].color = (1, 1, 1, 1)
+    mix = nt.nodes.new("ShaderNodeMixRGB")
+    mix.blend_type = 'MULTIPLY'
+    mix.inputs["Fac"].default_value = 1.0
+    em = nt.nodes.new("ShaderNodeEmission")
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    nt.links.new(tc.outputs["Generated" if scroll else "Object"],
+                 mp.inputs["Vector"])
+    nt.links.new(mp.outputs["Vector"], tx.inputs["Vector"])
+    nt.links.new(diff.outputs["BSDF"], torgb.inputs["Shader"])
+    nt.links.new(torgb.outputs["Color"], ramp.inputs["Fac"])
+    nt.links.new(ramp.outputs["Color"], mix.inputs["Color1"])
+    nt.links.new(tx.outputs["Color"], mix.inputs["Color2"])
+    nt.links.new(mix.outputs["Color"], em.inputs["Color"])
+    nt.links.new(em.outputs["Emission"], out.inputs["Surface"])
+    if scroll:
+        loc = mp.inputs["Location"]
+        loc.default_value = (0, 0, 0)
+        loc.keyframe_insert("default_value", frame=1)
+        loc.default_value = (0, scroll, 0)
+        loc.keyframe_insert("default_value", frame=1600)
+        for fc in nt.animation_data.action.fcurves:
+            for kp in fc.keyframe_points:
+                kp.interpolation = 'LINEAR'
+    return m
+
+
 def toon(name, rgb, shadow_mult=0.55, gloss=0.0):
     """Two-tone cel material: lit colour / shadow colour, hard boundary."""
     m = bpy.data.materials.new(name)
@@ -47,13 +96,19 @@ def build_set(sc):
     import random
     rnd = random.Random(6100)
 
-    grass = toon("grass", (0.23, 0.42, 0.18))
+    import os
+    grass = toon_tex("grass", "grasstex.png", tile=1.6) \
+        if os.path.exists(TEX + "/grasstex.png") else toon("grass", (0.23, 0.42, 0.18))
     grass_dk = toon("grassdk", (0.16, 0.33, 0.14))
     rock = toon("rock", (0.34, 0.38, 0.33))
-    mount = toon("mount", (0.25, 0.36, 0.28))
-    water = toon("water", (0.13, 0.33, 0.38), shadow_mult=0.8)
-    falls = toon("falls", (0.88, 0.93, 0.95), shadow_mult=0.9)
-    path_m = toon("path", (0.58, 0.48, 0.33))
+    mount = toon("mount", (0.25, 0.36, 0.28))   # distant flats read better
+    water = toon_tex("water", "watertex.png", tile=9.0, shadow_mult=0.85) \
+        if os.path.exists(TEX + "/watertex.png") else toon("water", (0.13, 0.33, 0.38), shadow_mult=0.8)
+    falls = toon_tex("falls", "fallstex.png", tile=4.0, shadow_mult=0.92,
+                     scroll=-40.0) \
+        if os.path.exists(TEX + "/fallstex.png") else toon("falls", (0.88, 0.93, 0.95), shadow_mult=0.9)
+    path_m = toon_tex("path", "pathtex.png", tile=1.3) \
+        if os.path.exists(TEX + "/pathtex.png") else toon("path", (0.58, 0.48, 0.33))
     gold = toon("gold", (0.72, 0.60, 0.25))
     gold_dk = toon("golddk", (0.55, 0.44, 0.16))
     leaf = toon("leaf", (0.14, 0.30, 0.13))

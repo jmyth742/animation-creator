@@ -263,20 +263,48 @@ def apply_walk(rig, path_fn, f0, f1, fps=16, stride_hz=1.45):
             pb[nm].keyframe_insert("rotation_euler", frame=f)
 
 
-def apply_idle(rig, f0, f1, pos, heading, fps=16, look_at_fn=None):
-    """Standing idle: breath, sway — and the head follows look_at_fn(f)."""
+# gesture offsets: (head_x, head_z, spine_x, spine_z, armR_x, foreR_x,
+#                    hips_y) each a function of phase u in 0..1
+GESTURES = {
+    "nod": lambda u: (0.14 * math.sin(u * math.pi * 2) * math.sin(u * math.pi),
+                      0, 0, 0, 0, 0, 0),
+    "shake": lambda u: (0, 0.10 * math.sin(u * math.pi * 3) * math.sin(u * math.pi),
+                        0, 0, 0, 0, 0),
+    "hand_raise": lambda u: (0, 0, 0, 0,
+                             -0.85 * math.sin(u * math.pi),
+                             -0.55 * math.sin(u * math.pi), 0),
+    "look_away": lambda u: (0.03 * math.sin(u * math.pi),
+                            -0.38 * math.sin(u * math.pi), 0, 0, 0, 0, 0),
+    "lean_in": lambda u: (0.04 * math.sin(u * math.pi), 0,
+                          0.10 * math.sin(u * math.pi), 0, 0, 0, 0),
+    "weight_shift": lambda u: (0, 0, 0, 0.05 * math.sin(u * math.pi),
+                               0, 0, 0.12 * math.sin(u * math.pi)),
+}
+
+
+def apply_idle(rig, f0, f1, pos, heading, fps=16, look_at_fn=None,
+               gestures=None):
+    """Standing idle: breath, sway, head tracking — plus scheduled gestures
+    [(fa, fb, kind)] blended in with a sine envelope so nothing pops."""
     pb = rig.pose.bones
     for b in pb:
         b.rotation_mode = 'XYZ'
+    gestures = gestures or []
     for f in range(f0, f1 + 1):
         bpy.context.scene.frame_set(f)
         tb = 2 * math.pi * 0.22 * (f - f0) / fps          # breath
         ts = 2 * math.pi * 0.07 * (f - f0) / fps          # slow sway
+        g = [0.0] * 7
+        for (fa, fb, kind) in gestures:
+            if fa <= f <= fb and kind in GESTURES:
+                u = (f - fa) / max(1, fb - fa)
+                for k, v in enumerate(GESTURES[kind](u)):
+                    g[k] += v
         rig.location = pos
         rig.rotation_euler = (0, 0, heading)
         _key_all(rig, f)
-        pb["spine"].rotation_euler = (0.03 + 0.015 * math.sin(tb),
-                                      0.01 * math.sin(ts), 0)
+        pb["spine"].rotation_euler = (0.03 + 0.015 * math.sin(tb) + g[2],
+                                      0.01 * math.sin(ts), g[3])
         look = 0.0
         if look_at_fn is not None:
             tx, ty = look_at_fn(f)
@@ -284,10 +312,15 @@ def apply_idle(rig, f0, f1, pos, heading, fps=16, look_at_fn=None):
             look = target_heading - heading
             look = math.atan2(math.sin(look), math.cos(look))
             look = max(-0.35, min(0.35, look))
-        pb["head"].rotation_euler = (-0.01 + 0.01 * math.sin(tb), 0, 0.7 * look)
+        pb["head"].rotation_euler = (-0.01 + 0.01 * math.sin(tb) + g[0], 0,
+                                     0.7 * look + g[1])
+        pb["hips"].rotation_euler = (0, g[6], 0)
+        pb["hips"].keyframe_insert("rotation_euler", frame=f)
         for side, sgn in (("L", 1), ("R", -1)):
-            pb[f"arm.{side}"].rotation_euler = (0.02 * math.sin(tb + sgn), 0, sgn * 0.05)
-            pb[f"fore.{side}"].rotation_euler = (-0.15, 0, 0)
+            ax = 0.02 * math.sin(tb + sgn) + (g[4] if side == "R" else 0)
+            fx = -0.15 + (g[5] if side == "R" else 0)
+            pb[f"arm.{side}"].rotation_euler = (ax, 0, sgn * 0.05)
+            pb[f"fore.{side}"].rotation_euler = (fx, 0, 0)
             pb[f"arm.{side}"].keyframe_insert("rotation_euler", frame=f)
             pb[f"fore.{side}"].keyframe_insert("rotation_euler", frame=f)
         for nm in ("spine", "head"):
@@ -610,15 +643,20 @@ def enable_face_variants(char, name, faces_dir):
 
 
 def apply_talk_tex(rig, ctrl, envelope, f0, fps=16, blinks=True,
-                   blink_period=3.4):
-    """Drive the texture switch from the audio envelope, plus subtle jaw."""
+                   blink_period=3.4, visemes=None):
+    """Drive the texture switch from Rhubarb visemes when given (phoneme
+    accurate), else from the audio envelope; subtle jaw from the envelope
+    either way."""
     pb = rig.pose.bones
     pb["jaw"].rotation_mode = 'XYZ'
     keys = ("m1", "m2", "m3", "m4", "m5")
     for i, a in enumerate(envelope):
         f = f0 + i
         a = float(a)
-        if a < 0.04:
+        if visemes is not None:
+            col = int(visemes[i]) if i < len(visemes) else 0
+            sel = None if col == 0 else f"m{col}"
+        elif a < 0.04:
             sel = None
         elif a < 0.25:
             sel = "m1"
