@@ -6,9 +6,13 @@ from pathlib import Path
 
 S = Path(sys.argv[1])          # scratch dir with film/, film_audio/, film_shots.json
 OUT = Path(sys.argv[2])
-d = json.load(open(S / "film_shots.json"))
+SUBTITLE = sys.argv[3] if len(sys.argv) > 3 else "The Nine Waterfalls"
+FILMDIR = sys.argv[4] if len(sys.argv) > 4 else "film"
+SHOTS = sys.argv[5] if len(sys.argv) > 5 else "film_shots.json"
+AUDIO = sys.argv[6] if len(sys.argv) > 6 else "film_audio"
+d = json.load(open(S / SHOTS))
 FPS = d["fps"]
-lines = json.load(open(S / "film_audio/lines.json"))
+lines = json.load(open(S / AUDIO / "lines.json"))
 
 # 1. one frame sequence in edit order
 seq = S / "film_seq"
@@ -19,7 +23,7 @@ i, prev = 0, 0
 for s in d["shots"]:
     f0 = max(s["f0"], prev + 1)
     prev = s["f1"]
-    src = S / "film" / s["name"]
+    src = S / FILMDIR / s["name"]
     for fr in range(f0, s["f1"] + 1):
         p = src / f"frame_{fr:04d}.png"
         if not p.exists():
@@ -41,7 +45,7 @@ inputs, filters, amix = ["-f", "lavfi", "-t", str(dur),
 filters.append("[0]lowpass=f=280,volume=0.5[wind]")
 amix.append("[wind]")
 for k, (L, f0) in enumerate(zip(lines, d["line_starts"]), start=1):
-    inputs += ["-i", str(S / f"film_audio/l{L['i']}.mp3")]
+    inputs += ["-i", str(S / AUDIO / f"l{L['i']}.mp3")]
     ms = int((f0 - 1) / FPS * 1000)
     filters.append(f"[{k}]adelay={ms}|{ms}[l{k}]")
     amix.append(f"[l{k}]")
@@ -62,7 +66,7 @@ vf = (
     "noise=alls=5:allf=t,"
     f"drawtext=fontfile={FONT}:text='TIR NA NOG':fontcolor=white:fontsize=64:"
     "x=(w-text_w)/2:y=h*0.38:alpha='if(lt(t,0.8),t/0.8,if(lt(t,4),1,if(lt(t,5),(5-t),0)))',"
-    f"drawtext=fontfile={FONT}:text='The Nine Waterfalls':fontcolor=white:fontsize=30:"
+    f"drawtext=fontfile={FONT}:text='{SUBTITLE}':fontcolor=white:fontsize=30:"
     "x=(w-text_w)/2:y=h*0.55:alpha='if(lt(t,1.2),0,if(lt(t,2),(t-1.2)/0.8,if(lt(t,4),1,if(lt(t,5),(5-t),0))))',"
     "fade=t=in:st=0:d=1.0"
 )

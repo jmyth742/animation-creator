@@ -23,6 +23,9 @@ lens = float(args[3]) if len(args) > 3 else 35.0
 f0 = int(args[4]) if len(args) > 4 else 1
 f1 = int(args[5]) if len(args) > 5 else 81
 move = args[6] if len(args) > 6 else "static"
+if len(args) > 8:
+    bpy.context.scene.render.resolution_x = int(args[7])
+    bpy.context.scene.render.resolution_y = int(args[8])
 
 sc = bpy.context.scene
 cam = bpy.data.cameras.new("shotcam")

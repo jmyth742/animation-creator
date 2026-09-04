@@ -92,16 +92,25 @@ def _obj(name, mesh_op, mat, loc=(0, 0, 0), scale=(1, 1, 1), rot=(0, 0, 0), **kw
     return ob
 
 
-def build_set(sc):
+def build_set(sc, winter=False):
     import random
     rnd = random.Random(6100)
 
     import os
-    grass = toon_tex("grass", "grasstex.png", tile=1.6) \
-        if os.path.exists(TEX + "/grasstex.png") else toon("grass", (0.23, 0.42, 0.18))
-    grass_dk = toon("grassdk", (0.16, 0.33, 0.14))
+    import os
+    if winter and os.path.exists(TEX + "/snowtex.png"):
+        grass = toon_tex("grass", "snowtex.png", tile=2.2, shadow_mult=0.78)
+    elif winter:
+        grass = toon("grass", (0.88, 0.90, 0.94), shadow_mult=0.75)
+    elif os.path.exists(TEX + "/grasstex.png"):
+        grass = toon_tex("grass", "grasstex.png", tile=1.6)
+    else:
+        grass = toon("grass", (0.23, 0.42, 0.18))
+    grass_dk = toon("grassdk", (0.75, 0.78, 0.86), shadow_mult=0.8) if winter \
+        else toon("grassdk", (0.16, 0.33, 0.14))
     rock = toon("rock", (0.34, 0.38, 0.33))
-    mount = toon("mount", (0.25, 0.36, 0.28))   # distant flats read better
+    mount = toon("mount", (0.82, 0.85, 0.92), shadow_mult=0.72) if winter \
+        else toon("mount", (0.25, 0.36, 0.28))
     water = toon_tex("water", "watertex.png", tile=9.0, shadow_mult=0.85) \
         if os.path.exists(TEX + "/watertex.png") else toon("water", (0.13, 0.33, 0.38), shadow_mult=0.8)
     falls = toon_tex("falls", "fallstex.png", tile=4.0, shadow_mult=0.92,
@@ -211,7 +220,8 @@ def build_set(sc):
     sc.world = w
     w.use_nodes = True
     bg = w.node_tree.nodes["Background"]
-    bg.inputs["Color"].default_value = (0.55, 0.66, 0.82, 1)
+    bg.inputs["Color"].default_value = (0.72, 0.76, 0.85, 1) if winter \
+        else (0.55, 0.66, 0.82, 1)
     bg.inputs["Strength"].default_value = 1.0
     cloud = toon("cloud", (0.96, 0.97, 0.95), shadow_mult=0.95)
     for i, (cx, cz, cs) in enumerate([(-20, 26, 4), (8, 30, 5), (28, 24, 3.5),
@@ -222,9 +232,9 @@ def build_set(sc):
     # golden hour: low warm key, long shadows, cool fill from the sky,
     # a rim sun from upstage to cut characters off the background
     sun = bpy.data.lights.new("sun", 'SUN')
-    sun.energy = 4.2
+    sun.energy = 3.0 if winter else 4.2
     sun.angle = 0.05
-    sun.color = (1.0, 0.82, 0.60)
+    sun.color = (0.85, 0.90, 1.0) if winter else (1.0, 0.82, 0.60)
     so = bpy.data.objects.new("sun", sun)
     so.rotation_euler = (math.radians(70), math.radians(-6), math.radians(62))
     sc.collection.objects.link(so)

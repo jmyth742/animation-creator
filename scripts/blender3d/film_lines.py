@@ -10,12 +10,13 @@ import numpy as np
 import edge_tts
 
 OUT = Path(sys.argv[1])
+SCRIPT = Path(sys.argv[2]) if len(sys.argv) > 2 else None
 OUT.mkdir(parents=True, exist_ok=True)
 bible = json.load(open("series/tir-na-nog-legend/bible.json"))
 V = {c: bible["characters"][c].get("voice", "en-IE-EmilyNeural")
      for c in ("niamh", "oisin")}
 
-LINES = [
+LINES = json.load(open(SCRIPT)) if SCRIPT else [
     ("niamh", "You took the long way again. The lake path is shorter, and you have known that for three hundred years."),
     ("oisin", "The long way keeps the hall in sight. I like the walk back better when I can see where it ends."),
     ("niamh", "You walk the borders like a sentry on a wall. We have no enemies here. What is it you are guarding?"),

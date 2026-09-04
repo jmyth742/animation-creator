@@ -80,7 +80,7 @@ def place(glb, name, loc, height, rot_z=0.0, floor_fn=None):
     return ob
 
 
-def dress_valley(sc, floor_fn):
+def dress_valley(sc, floor_fn, winter=False):
     """Swap primitives for painted assets wherever the mesh exists.
     Call AFTER valley_set.build_set; removes the placeholder objects it
     replaces. Returns the list of asset names actually placed."""
@@ -103,7 +103,8 @@ def dress_valley(sc, floor_fn):
                   (12, 18, 6.2, 1.4), (-13, 12, 5.4, 5.1)]
     ok = False
     for i, (tx, ty, th, rz) in enumerate(tree_spots):
-        if place(f"{PROPS}/tree_painted.glb", f"tree_asset{i}", (tx, ty), th,
+        tglb = f"{PROPS}/snowtree_painted.glb" if winter else f"{PROPS}/tree_painted.glb"
+        if place(tglb, f"tree_asset{i}", (tx, ty), th,
                  rot_z=rz, floor_fn=floor_fn):
             ok = True
     if ok:
@@ -114,22 +115,28 @@ def dress_valley(sc, floor_fn):
              rot_z=math.radians(-15), floor_fn=floor_fn):
         drop(("crossv", "crossh"))
         placed.append("cross")
+    rglb = f"{PROPS}/snowrock_painted.glb" if winter else f"{PROPS}/rock_painted.glb"
     for i, (rx, ry, rh, rz) in enumerate([(4.6, 9.5, 0.9, 0.4),
                                           (-5.8, 12.5, 1.1, 2.0),
                                           (9.5, 22, 1.4, 4.2)]):
-        if place(f"{PROPS}/rock_painted.glb", f"rock_asset{i}", (rx, ry), rh,
+        if place(rglb, f"rock_asset{i}", (rx, ry), rh,
                  rot_z=rz, floor_fn=floor_fn):
             if i == 0:
                 placed.append("rocks")
     for i, (bx, by, bh, bz) in enumerate([(-6.5, 9, 1.3, 1.0),
                                           (6.8, 14.5, 1.5, 3.3),
                                           (-2.0, 25.5, 1.4, 0.2)]):
-        if place(f"{PROPS}/bush_painted.glb", f"bush_asset{i}", (bx, by), bh,
+        bglb = f"{PROPS}/snowbush_painted.glb" if winter else f"{PROPS}/bush_painted.glb"
+        if place(bglb, f"bush_asset{i}", (bx, by), bh,
                  rot_z=bz, floor_fn=floor_fn):
             if i == 0:
                 placed.append("bushes")
     if place(f"{PROPS}/stones_painted.glb", "stones_asset", (-9.5, 13.5), 2.2,
              rot_z=math.radians(30), floor_fn=floor_fn):
         placed.append("stones")
+    if winter and place(f"{PROPS}/frozenwell_painted.glb", "well_asset",
+                        (1.9, 9.6), 1.9, rot_z=math.radians(-25),
+                        floor_fn=floor_fn):
+        placed.append("well")
     print("DRESSED:", placed)
     return placed
