@@ -10,6 +10,36 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import showrunner as sr                                        # noqa: E402
 
 PROPS = {
+    "oisin_back": ("Character sheet, full body, head to feet fully visible, "
+                   "seen directly FROM BEHIND, back view. A young Celtic "
+                   "warrior standing in a relaxed A-pose. Dark shoulder-length "
+                   "hair covering the back of his head, a dark green cloak "
+                   "draped over his back and shoulders down to his knees, "
+                   "boots. Cel-shaded 2D animation, clean linework, flat "
+                   "colour blocks, plain light grey background, even diffuse "
+                   "light, no scenery, no text, no watermark."),
+    "oisin_left": ("Character sheet, full body, head to feet fully visible, "
+                   "seen in full LEFT SIDE PROFILE view. A young Celtic "
+                   "warrior standing in a relaxed A-pose, facing left. Dark "
+                   "shoulder-length hair, short beard, brown leather jerkin, "
+                   "dark green cloak hanging behind him, boots. Cel-shaded "
+                   "2D animation, clean linework, flat colour blocks, plain "
+                   "light grey background, even diffuse light, no scenery, "
+                   "no text, no watermark."),
+    "niamh_back": ("Character sheet, full body, head to feet fully visible, "
+                   "seen directly FROM BEHIND, back view. A Celtic princess "
+                   "standing in a relaxed A-pose. Long flowing golden hair "
+                   "down her back to her waist, emerald green gown to the "
+                   "ankle. Cel-shaded 2D animation, clean linework, flat "
+                   "colour blocks, plain light grey background, even diffuse "
+                   "light, no scenery, no text, no watermark."),
+    "niamh_left": ("Character sheet, full body, head to feet fully visible, "
+                   "seen in full LEFT SIDE PROFILE view. A Celtic princess "
+                   "standing in a relaxed A-pose, facing left. Long flowing "
+                   "golden hair, emerald green gown to the ankle. Cel-shaded "
+                   "2D animation, clean linework, flat colour blocks, plain "
+                   "light grey background, even diffuse light, no scenery, "
+                   "no text, no watermark."),
     "grasstex": ("Seamless hand-painted grass meadow texture seen from "
                  "directly above, soft painted brushstrokes, small tufts and "
                  "subtle colour variation, rich summer green, no objects, no "

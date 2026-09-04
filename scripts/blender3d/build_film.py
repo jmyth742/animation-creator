@@ -60,12 +60,12 @@ valley_set.build_set(sc)
 import set_assets
 set_assets.dress_valley(sc, floor_z if 'floor_z' in dir() else (lambda x, y: 0.0))
 
-oisin = kit.load_character(f"{MESHES}/props/oisin34_painted.glb", "oisin34")
-orig = kit.rig_character(oisin, "oisin34")
-niamh = kit.load_character(f"{MESHES}/props/niamh34_painted.glb", "niamh34", height=1.68)
-nrig = kit.rig_character(niamh, "niamh34")
-octrl = kit.enable_face_variants(oisin, "oisin34", f"{MESHES}/props")
-nctrl = kit.enable_face_variants(niamh, "niamh34", f"{MESHES}/props")
+oisin = kit.load_character(f"{MESHES}/props/oisin_mv_painted.glb", "oisin_mv")
+orig = kit.rig_character(oisin, "oisin_mv")
+niamh = kit.load_character(f"{MESHES}/props/niamh_mv_painted.glb", "niamh_mv", height=1.68)
+nrig = kit.rig_character(niamh, "niamh_mv")
+octrl = kit.enable_face_variants(oisin, "oisin_mv", f"{MESHES}/props")
+nctrl = kit.enable_face_variants(niamh, "niamh_mv", f"{MESHES}/props")
 
 # ── performances ─────────────────────────────────────────────────────
 def his_xy(f):

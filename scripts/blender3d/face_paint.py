@@ -16,7 +16,9 @@ import bpy
 import numpy as np
 import mathutils
 
-glb, calib_f, height, outdir, name, iris_s = sys.argv[-6:]
+args = [a for a in sys.argv if a != "--keep-eyes"]
+KEEP_EYES = "--keep-eyes" in sys.argv
+glb, calib_f, height, outdir, name, iris_s = args[-6:]
 height = float(height)
 IRIS = tuple(float(c) for c in iris_s.split(","))
 calib = json.load(open(calib_f))
@@ -183,14 +185,14 @@ math_hypot = math.hypot
 
 
 def lid_draw(h, v):
-    sw, sh = 0.66 * EX, 0.40 * EX
+    sw, sh = 0.84 * EX, 0.52 * EX
     d = math.hypot(h / sw, v / sh)
     if d <= 1.0:
         c = EYE_RING(h, v)
         # a soft lash-line where the closed lid meets
         if abs(v) < 0.05 * EX:
-            return (0.30, 0.22, 0.20, 0.8)
-        return (c[0] * 0.96, c[1] * 0.94, c[2] * 0.93, min(1.0, 1.2 - d * 0.2))
+            return (0.30, 0.22, 0.20, 0.9)
+        return (c[0] * 0.96, c[1] * 0.94, c[2] * 0.93, 1.0)
     return None
 
 
@@ -242,10 +244,11 @@ if sum(SK) / 3 < 0.3:
 
 MOUTH_RING = ring_sampler(MOUTH, 0.62 * EX, 0.42 * EX)
 out = np.array(base)
-for anchor in (EYE_L, EYE_R):
-    EYE_RING = ring_sampler(anchor, 1.35 * EX, 0.85 * EX)
-    paint(out, anchor, 0.07, eye_plate)
-    paint(out, anchor, 0.06, eye_draw)
+if not KEEP_EYES:
+    for anchor in (EYE_L, EYE_R):
+        EYE_RING = ring_sampler(anchor, 1.35 * EX, 0.85 * EX)
+        paint(out, anchor, 0.07, eye_plate)
+        paint(out, anchor, 0.06, eye_draw)
 paint(out, MOUTH, 0.05, mouth_draw("closed"))
 basefixed = np.array(out)
 
@@ -265,7 +268,8 @@ for i, shape in enumerate(("small", "mid", "open", "ee", "oo"), start=1):
 b = np.array(basefixed)
 for anchor in (EYE_L, EYE_R):
     EYE_RING = ring_sampler(anchor, 1.35 * EX, 0.85 * EX)
-    paint(b, anchor, 0.07, eye_plate)
+    if not KEEP_EYES:
+        paint(b, anchor, 0.07, eye_plate)
     paint(b, anchor, 0.06, lid_draw)
     paint(b, anchor, 0.06, lash_line)
 save(b, "blink")
