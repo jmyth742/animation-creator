@@ -90,9 +90,13 @@ def dress_valley(sc, floor_fn):
             if any(o.name.startswith(p) for p in prefixes):
                 bpy.data.objects.remove(o, do_unlink=True)
 
+    # drop the primitives FIRST — the placed asset's own name ("hall_asset")
+    # matched the "hall" prefix and the new hall deleted itself
+    import os
+    if os.path.exists(f"{PROPS}/hall_painted.glb"):
+        drop(("hall", "tower", "towerroof", "door", "col", "cren"))
     if place(f"{PROPS}/hall_painted.glb", "hall_asset", (7.5, 26), 9.5,
              rot_z=math.radians(12), floor_fn=floor_fn):
-        drop(("hall", "tower", "towerroof", "door", "col", "cren"))
         placed.append("hall")
     tree_spots = [(-3.5, 8, 4.6, 0.3), (3.4, 12, 5.4, 1.8), (-4.8, 16, 4.9, 3.1),
                   (5.5, 18, 4.2, 0.9), (2.8, 30, 5.8, 2.2), (-3.2, 33, 5.0, 4.0),
