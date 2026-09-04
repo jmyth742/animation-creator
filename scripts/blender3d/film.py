@@ -27,9 +27,15 @@ if len(args) > 8:
     bpy.context.scene.render.resolution_x = int(args[7])
     bpy.context.scene.render.resolution_y = int(args[8])
 
+import os
 sc = bpy.context.scene
+if os.environ.get("FILM_SAMPLES"):
+    sc.eevee.taa_render_samples = int(os.environ["FILM_SAMPLES"])
 cam = bpy.data.cameras.new("shotcam")
 cam.lens = lens
+if os.environ.get("FILM_DOF"):
+    cam.dof.use_dof = True
+    cam.dof.aperture_fstop = float(os.environ["FILM_DOF"])
 co = bpy.data.objects.new("shotcam", cam)
 sc.collection.objects.link(co)
 sc.camera = co
@@ -70,6 +76,9 @@ for f in range(f0, f1 + 1):
     co.rotation_euler = aim(pos, target)
     co.keyframe_insert("location")
     co.keyframe_insert("rotation_euler")
+    if cam.dof.use_dof:
+        cam.dof.focus_distance = (target - mathutils.Vector(pos)).length
+        cam.dof.keyframe_insert("focus_distance")
 
 sc.frame_start, sc.frame_end = f0, f1
 sc.render.filepath = outdir + "/frame_"
