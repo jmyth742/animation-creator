@@ -10,6 +10,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import showrunner as sr                                        # noqa: E402
 
 PROPS = {
+    "snowtex": ("Seamless hand-painted fresh snow texture seen from directly "
+                "above, soft blue-white with subtle sparkle and gentle drifts, "
+                "faint footprint-free surface, fills the whole frame edge to "
+                "edge, even light. Painted storybook animation style, no "
+                "text, no watermark."),
     "oisin_back": ("Character sheet, full body, head to feet fully visible, "
                    "seen directly FROM BEHIND, back view. A young Celtic "
                    "warrior standing in a relaxed A-pose. Dark shoulder-length "

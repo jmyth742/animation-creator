@@ -99,7 +99,7 @@ def build_set(sc, winter=False):
     import os
     import os
     if winter and os.path.exists(TEX + "/snowtex.png"):
-        grass = toon_tex("grass", "snowtex.png", tile=2.2, shadow_mult=0.78)
+        grass = toon_tex("grass", "snowtex.png", tile=6.5, shadow_mult=0.82)
     elif winter:
         grass = toon("grass", (0.88, 0.90, 0.94), shadow_mult=0.75)
     elif os.path.exists(TEX + "/grasstex.png"):
@@ -143,6 +143,8 @@ def build_set(sc, winter=False):
              vertices=24, radius1=1.0, radius2=0.12)
 
     # the lake, left of the path
+    if winter:
+        water = toon("ice", (0.78, 0.86, 0.92), shadow_mult=0.85)
     _obj("lake", bpy.ops.mesh.primitive_circle_add, water,
          loc=(-8, 19, 0.06), scale=(10, 8, 1), fill_type='NGON')
 

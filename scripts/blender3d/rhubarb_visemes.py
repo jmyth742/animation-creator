@@ -10,8 +10,7 @@ import subprocess
 import sys
 import numpy as np
 
-RB = ("/tmp/claude-0/-workspace/ff8063a2-884f-41b0-8ae0-53d58f36b62e/"
-      "scratchpad/Rhubarb-Lip-Sync-1.13.0-Linux/rhubarb")
+RB = "/workspace/tools/Rhubarb-Lip-Sync-1.13.0-Linux/rhubarb"
 MAP = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 5, "F": 5, "G": 1, "H": 2, "X": 0}
 
 def visemes_for(wav, frames, fps=16):

@@ -36,7 +36,8 @@ GEN = {"ruined_ireland": "ruin", "tir_na_nog": "valley",
        # path of sunlight laid across the water". Mapping it to valley
        # put a shipped shot of the sea-crossing in the otherworld
        # meadow, and p(wide) could not object because it IS a wide.
-       "sunlight_path": "sun"}
+       "sunlight_path": "sun",
+       "storm_cliffs": "storm", "stormy_sea": "sea"}
 
 
 def next_name(original: Path) -> Path:
