@@ -22,11 +22,11 @@
 - [ ] C-cam passes for both episodes -> review/*_ccam.mp4
 - [ ] Backlot ambiences for storm/cliff/ruin (depth builds are re-runnable
       from sets/*/master.png) -> review/ambience_<loc>_30min.mp4
-- [ ] Poster stills: one composed beauty frame per episode at 1664x960 ->
+- [x] Poster stills: one composed beauty frame per episode at 1664x960 ->  <- done by marathon
       review/poster_ep1.png, poster_ep2.png (thumbnail material)
-- [ ] Subtitles: generate SRT per episode from lines.json timings ->
+- [x] Subtitles: generate SRT per episode from lines.json timings ->  <- done by marathon
       review/*.srt
-- [ ] YouTube metadata: title/description/tags per finished video ->
+- [x] YouTube metadata: title/description/tags per finished video ->  <- done by marathon
       review/metadata_<video>.md
 - [ ] Proper 45-60s trailer cut with title cards + mixed lines audio ->
       review/trailer_60s.mp4
