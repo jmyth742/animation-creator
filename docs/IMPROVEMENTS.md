@@ -41,4 +41,4 @@
 - [ ] Ambience audio upgrade: layered wind + birdsong synth + water for the
       loops (ffmpeg filters only) — remaster both 30-min loops
 - [ ] 4K-class master of ep1 (3328x1920) if render time <2h -> review/
-- [ ] Episode 1+2 combined "pilot" cut with recap card between -> review/
+- [x] Episode 1+2 combined "pilot" cut with recap card between -> review/  <- done by marathon
