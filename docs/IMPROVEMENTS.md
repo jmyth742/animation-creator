@@ -9,7 +9,7 @@
       characters from the existing MV view sets, QA turntables to
       review/qa_*_v21.png. Also records whether 2.5's 4K-texture weights
       are public (loopwork/hy3d25_probe.json) — if yes, test-drive them.
-- [ ] FACE QUALITY part 2: face-region HD repaint via
+- [x] FACE QUALITY part 2: face-region HD repaint via  <- done by marathon
       scripts/blender3d/face_repaint.py (see its header for the 3-line
       FACE_BASE wire-up in face_paint.py). Run on the winning mesh from the
       2.1 A/B, QA a close-up render before adopting; then rebuild both
