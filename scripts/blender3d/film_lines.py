@@ -34,7 +34,8 @@ async def make():
                         "-ar", "16000", "-ac", "1", str(wav)], check=True)
         w = wave.open(str(wav))
         a = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(float)
-        sr, fps = w.getframerate(), 16
+        import os
+        sr, fps = w.getframerate(), int(os.environ.get("FILM_FPS", 16))
         n = len(a) // (sr // fps)
         env = np.array([np.sqrt((a[j*sr//fps:(j+1)*sr//fps]**2).mean()) for j in range(n)])
         env = env / (env.max() + 1e-9)

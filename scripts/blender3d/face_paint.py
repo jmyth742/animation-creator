@@ -47,10 +47,15 @@ EYE_L = np.array((FX + EX, front_y(EZ, hw=0.06), EZ))
 EYE_R = np.array((FX - EX, front_y(EZ, hw=0.06), EZ))
 
 img = None
-for m in char.data.materials:
-    for nd in m.node_tree.nodes:
-        if nd.type == 'TEX_IMAGE' and nd.image:
-            img = nd.image
+import os
+if os.environ.get("FACE_BASE"):
+    # an HD-repainted base (face_repaint.py) replaces the embedded texture
+    img = bpy.data.images.load(os.environ["FACE_BASE"])
+else:
+    for m in char.data.materials:
+        for nd in m.node_tree.nodes:
+            if nd.type == 'TEX_IMAGE' and nd.image:
+                img = nd.image
 W, H = img.size
 base = np.array(img.pixels[:], dtype=np.float32).reshape(H, W, 4)
 

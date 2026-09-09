@@ -3,6 +3,17 @@
 # /workspace/review/; keep working state under /workspace (never /tmp);
 # run /workspace/export_outcomes.sh after every iteration.
 
+- [x] FACE QUALITY (user priority): run `bash /workspace/upgrade_hy3d21.sh` —  <- done by marathon
+      fetches Hunyuan3D-2.1 (open PBR pipeline; verify import paths against
+      its demo.py, modules moved to hy3dshape/hy3dpaint), re-meshes both
+      characters from the existing MV view sets, QA turntables to
+      review/qa_*_v21.png. Also records whether 2.5's 4K-texture weights
+      are public (loopwork/hy3d25_probe.json) — if yes, test-drive them.
+- [ ] FACE QUALITY part 2: face-region HD repaint via
+      scripts/blender3d/face_repaint.py (see its header for the 3-line
+      FACE_BASE wire-up in face_paint.py). Run on the winning mesh from the
+      2.1 A/B, QA a close-up render before adopting; then rebuild both
+      film blends and re-render the dialogue shots.
 - [ ] Regenerate the tmp-wipe losses: rebuild film_shots.json + film2_shots.json
       (run build_film.py / build_film2.py with audio dirs re-made by
       film_lines.py + rhubarb), then re-render + assemble the DOF cut of ep1

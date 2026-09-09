@@ -21,7 +21,8 @@ import character_kit as kit                                    # noqa: E402
 
 audio_dir, out_blend, shots_out = sys.argv[-3:]
 MESHES = "/workspace/text-to-video/series/tir-na-nog-legend/meshes"
-FPS = 16
+import os
+FPS = int(os.environ.get("FILM_FPS", 16))
 lines = json.load(open(f"{audio_dir}/lines.json"))
 
 # ── the schedule, computed from real line lengths ────────────────────
