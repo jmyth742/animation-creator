@@ -14,7 +14,7 @@
       FACE_BASE wire-up in face_paint.py). Run on the winning mesh from the
       2.1 A/B, QA a close-up render before adopting; then rebuild both
       film blends and re-render the dialogue shots.
-- [ ] Regenerate the tmp-wipe losses: rebuild film_shots.json + film2_shots.json
+- [x] Regenerate the tmp-wipe losses: rebuild film_shots.json + film2_shots.json  <- done by marathon
       (run build_film.py / build_film2.py with audio dirs re-made by
       film_lines.py + rhubarb), then re-render + assemble the DOF cut of ep1
       (dialogue shots FILM_DOF=2.4) -> review/nine_waterfalls_dof.mp4
