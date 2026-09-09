@@ -19,8 +19,8 @@
       film_lines.py + rhubarb), then re-render + assemble the DOF cut of ep1
       (dialogue shots FILM_DOF=2.4) -> review/nine_waterfalls_dof.mp4
 - [x] ep2 hi-res master 1664x960 -> review/first_snow_1080.mp4  <- done by marathon
-- [ ] C-cam passes for both episodes -> review/*_ccam.mp4
-- [ ] Backlot ambiences for storm/cliff/ruin (depth builds are re-runnable
+- [x] C-cam passes for both episodes -> review/*_ccam.mp4  <- done by marathon
+- [x] Backlot ambiences for storm/cliff/ruin (depth builds are re-runnable  <- done by marathon
       from sets/*/master.png) -> review/ambience_<loc>_30min.mp4
 - [x] Poster stills: one composed beauty frame per episode at 1664x960 ->  <- done by marathon
       review/poster_ep1.png, poster_ep2.png (thumbnail material)
