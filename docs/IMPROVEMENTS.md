@@ -28,7 +28,7 @@
       review/*.srt
 - [x] YouTube metadata: title/description/tags per finished video ->  <- done by marathon
       review/metadata_<video>.md
-- [ ] Proper 45-60s trailer cut with title cards + mixed lines audio ->
+- [x] Proper 45-60s trailer cut with title cards + mixed lines audio ->  <- done by marathon
       review/trailer_60s.mp4
 - [ ] Episode 3 script + full production in the cliff backlot or 3D cliff set
       (write 5 lines in-voice; reuse build_film machinery; new location)
