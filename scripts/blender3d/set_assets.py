@@ -103,7 +103,13 @@ def dress_valley(sc, floor_fn, winter=False):
                   (12, 18, 6.2, 1.4), (-13, 12, 5.4, 5.1)]
     ok = False
     for i, (tx, ty, th, rz) in enumerate(tree_spots):
-        tglb = f"{PROPS}/snowtree_painted.glb" if winter else f"{PROPS}/tree_painted.glb"
+        VARIANT_MIX = [f"{PROPS}/tree_painted.glb", f"{PROPS}/tree_v2_painted.glb",
+                       f"{PROPS}/tree_v3_painted.glb"]
+        import os as _os
+        cand = VARIANT_MIX[i % len(VARIANT_MIX)]
+        if not _os.path.exists(cand):
+            cand = f"{PROPS}/tree_painted.glb"
+        tglb = f"{PROPS}/snowtree_painted.glb" if winter else cand
         if place(tglb, f"tree_asset{i}", (tx, ty), th,
                  rot_z=rz, floor_fn=floor_fn):
             ok = True
