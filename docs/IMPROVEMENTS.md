@@ -30,6 +30,19 @@
       review/metadata_<video>.md
 - [x] Proper 45-60s trailer cut with title cards + mixed lines audio ->  <- done by marathon
       review/trailer_60s.mp4
+- [x] Freestyle lineset attr fixed for Blender 4.2 (select_by_collection);  <- done 15 Sep
+      FILM_LINES=0 now means off; crease off by default; FILM_LINE_MINLEN;
+      FILM_LINE_MODE=ext; Freestyle culling on. Cause of all P6 empty renders.
+- [x] Normal editing adopted (CHAR_NORMALFIX=1, interpolated); CHAR_SMOOTH  <- done 15 Sep
+      retired (shreds meshes at 40 iterations). Grids: review/day1b_*..day1d_*
+- [ ] Line stack in the DIALOGUE closes at master resolution: confirm 2.0px
+      holds up at 1664x960 (day1_linewidth_ab.mp4) and on Niamh's hair.
+- [ ] Freestyle cost: 15s/frame is the set, not the cast — try a lines-only
+      view layer with the set as holdout/occluder, or Line Art modifier, to
+      get the 0.35s/frame render back with occlusion intact.
+- [ ] Loose shells: the cast meshes have ~700 disconnected pieces (hair
+      strands); a merge-by-distance / shell cull at load would clean both the
+      line pass and the normal transfer.
 - [ ] Episode 3 script + full production in the cliff backlot or 3D cliff set
       (write 5 lines in-voice; reuse build_film machinery; new location)
 - [ ] Full 3D cliff stage: benttree + seastack + rocks + sea plane module,

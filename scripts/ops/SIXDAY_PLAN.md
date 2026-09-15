@@ -13,6 +13,36 @@
   in motion, denoise winner into the viseme chain
 DELIVERABLES: char stacks judged, 2 episodes re-mastered, grids exported
 
+## Day 1 VERDICT (judged 15 Sep, fresh session) — see review/day1b_*, day1c_*, day1d_*
+- ROOT CAUSE of every empty verdict render (marathon3 P6, marathon4 P4):
+  film.py used the Blender 2.7x name `select_by_group`; 4.2 = `select_by_collection`.
+  Fixed + verified (3-frame render). Freestyle also treated FILM_LINES=0 as ON.
+- CHAR_SMOOTH=40 is DESTRUCTIVE: 40 Laplacian iterations shred hair/cloth
+  into tatters (the "black scribble" columns were shredded meshes, not lines).
+  Dropped. Do not revive without a <=5-iteration test first.
+- NORMAL EDITING (CHAR_NORMALFIX=1): softer, rounder face terminator; the
+  nearest-polygon mapping grains the skin, POLYINTERP_NEAREST (now default)
+  does not. ADOPTED.
+- LINES: crease edges = scribbles on AI meshes (off by default now);
+  silhouette-only + chains <20px dropped is clean; 2.0px reads most "drawn".
+  ADOPTED: FILM_LINES=2.0 FILM_LINE_MINLEN=20. Ext-contour-only is too faint.
+- COST: Freestyle is CPU-bound, ~15s/frame on the full set (culling on);
+  frames without lines are 0.35s. render_episode.sh renders 6 shots in
+  parallel (256 cores) so an episode is ~1h wall, not 5h.
+- Grids: turntables used the factory default lineset on top of ours — fixed
+  in turn_grid.py (clears linesets first). marathon4's own grids are invalid.
+- OUTSTANDING from Day 1, running in marathon5 P1: both v2cast masters +
+  day1_linewidth_ab.mp4 (1.4/2.0/2.6 in motion). Flat-palette-in-motion sweep
+  deferred to Day 5 integration (marathon3's flat variants exist as stills).
+
+## Day 2 AS LAUNCHED (studio_marathon5.sh, go5.sh) — 15 Sep
+- P1 Day-1 masters with the adopted stack (parallel shots), P2 three venv
+  installs (UniRig / CharacterGen / TRELLIS.2 under /workspace/envs) in
+  parallel with P1, P4 UniRig rig+skin+merge on both leads + rig_test.py walk
+  render, P5 CharacterGen on the 34 sheets -> A/B turntables vs current cast,
+  P6 TRELLIS.2 on leads + hall + benttree vs Hunyuan, P7 prop sweep bank.
+  Judge: day2_unirig_walk_*.mp4, day2_charactergen_ab_*.png, day2_trellis_ab_*.png
+
 ## Day 2 — New generation models (CharacterGen + UniRig + TRELLIS.2)
 - Install CharacterGen (anime-native img->3D) + UniRig (auto skeleton+skin)
 - Run our existing sheets through it; UniRig-rig the winners
