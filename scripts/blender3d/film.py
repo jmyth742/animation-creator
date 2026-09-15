@@ -45,7 +45,7 @@ if os.environ.get("FILM_LINES"):
     ls.select_silhouette = True
     ls.select_border = False
     ls.select_crease = True
-    ls.select_by_group = True
+    ls.select_by_collection = True
     grp = bpy.data.collections.get("cast_lines")
     if grp is None:
         grp = bpy.data.collections.new("cast_lines")
