@@ -9,6 +9,7 @@ Run: blender -b --factory-startup --python build_film.py -- \
        <audio_dir> <out.blend> <shots.json>
 """
 import json
+import os
 import math
 import pathlib
 import sys
