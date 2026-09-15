@@ -4,12 +4,6 @@ set -u; cd /workspace/text-to-video
 W=/workspace/loopwork; V=/workspace/venv/bin/python; B=/workspace/blender42/blender; R=/workspace/review; D3=$W/day3
 log(){ echo "[d3redo $(date +%H:%M:%S)] $*"; }
 export CHAR_NORMALFIX=1 CHAR_NORMALFIX_INTERP=1 FILM_LINES=2.0 FILM_LINE_MINLEN=20 FILM_LINE_CREASE=0; unset CHAR_SMOOTH
-for T in ep1 ep2 ep1b ep2b; do [ -f $R/day3_lipsync_ab_$T.mp4 ] && mv $R/day3_lipsync_ab_$T.mp4 $R/day3_lipsync_ab_${T}_rawthresh.mp4; done
-for EP in film_audio film2_audio; do
-  $V scripts/day3/arkit_bridge.py $W/$EP $D3/$EP 16 2>&1 | grep -vE "^$"
-  rm -f $R/day3_curves_${EP%_audio}_l*.png
-  ffmpeg -v error -y $(for f in $D3/$EP/l*_curves.png; do echo -n "-i $f "; done) -filter_complex "vstack=inputs=$(ls $D3/$EP/l*_curves.png | wc -l)" $R/day3_arkit_curves_${EP%_audio}.png && log "curves sheet ${EP%_audio}"
-done
 CHAR_NORMALFIX=0 FILM_VIS_SUFFIX=_lam FILM_ENV_SUFFIX=_lam $B -b --factory-startup --python scripts/blender3d/build_film.py -- $W/film_audio $R/film_nine_waterfalls_lam.blend $W/film_shots_lam.json < /dev/null > $W/d3r_build1.log 2>&1; log "ep1 lam blend: $(grep -c 'FILM SCENE SAVED' $W/d3r_build1.log)"
 CHAR_NORMALFIX=0 FILM_VIS_SUFFIX=_lam FILM_ENV_SUFFIX=_lam $B -b --factory-startup --python scripts/blender3d/build_film2.py -- $W/film2_audio $R/film2_first_snow_lam.blend $W/film2_shots_lam.json < /dev/null > $W/d3r_build2.log 2>&1; log "ep2 lam blend: $(grep -c 'FILM SCENE SAVED' $W/d3r_build2.log)"
 ab(){ TAG=$1; BL0=$2; BL1=$3; CAM=$4; TGT=$5; LENS=$6; F0=$7; F1=$8; MOVE=$9; AUD=${10}; LF0=${11}

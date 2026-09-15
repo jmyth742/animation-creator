@@ -34,7 +34,7 @@ def load_character(mesh_path, name, height=1.75):
     for poly in char.data.polygons:
         poly.use_smooth = True
     import os
-    if os.environ.get("CHAR_NORMALFIX"):
+    if os.environ.get("CHAR_NORMALFIX", "0") not in ("", "0"):
         # anime-industry normal editing, automated: copy custom normals
         # from a blurred proxy so the shading terminator ignores lumps
         proxy = char.copy()
@@ -61,7 +61,7 @@ def load_character(mesh_path, name, height=1.75):
                            else 'NEAREST_POLYNOR')
         proxy.hide_render = True
         proxy.hide_viewport = True
-    if os.environ.get("CHAR_SMOOTH"):
+    if os.environ.get("CHAR_SMOOTH", "0") not in ("", "0"):
         # kill the marching-cubes lumps without touching UVs: heavy
         # Laplacian relaxation applied as a modifier stack
         m1 = char.modifiers.new("desilt", 'SMOOTH')
