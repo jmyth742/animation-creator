@@ -27,7 +27,7 @@ render_shot(){   # NAME CAM TGT LENS F0 F1 MOVE
   for ATTEMPT in 1 2 3; do
     rm -rf $D; mkdir -p $D
     $B -b --factory-startup /workspace/review/$BL --python $F -- $D "$CAM" "$TGT" $LENS $F0 $F1 "$MOVE" \
-      < /dev/null > $W/$TAG.$NAME.log 2>&1
+      < /dev/null 2>&1 | grep -vE "^Fra:|Visibility computations" > $W/$TAG.$NAME.log   # Freestyle progress = 100MB logs
     # count only NON-EMPTY frames: a full disk quota writes 0-byte PNGs silently
     N=$(find $D -name 'frame_*.png' -size +1k 2>/dev/null | wc -l)
     Z=$(find $D -name 'frame_*.png' -size -1k 2>/dev/null | wc -l)
