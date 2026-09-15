@@ -15,14 +15,22 @@ import o_voxel
 
 src, out = sys.argv[1], sys.argv[2]
 dec = int(sys.argv[3]) if len(sys.argv) > 3 else 200000
-envmap = EnvMap(torch.tensor(cv2.cvtColor(cv2.imread('assets/hdri/forest.exr', cv2.IMREAD_UNCHANGED),
-                                          cv2.COLOR_BGR2RGB), dtype=torch.float32, device='cuda'))
+envmap = None   # only for the optional PBR preview; this box's OpenCV has no OpenEXR
+try:
+    hdr = cv2.imread('assets/hdri/forest.exr', cv2.IMREAD_UNCHANGED)
+    if hdr is None:
+        import imageio.v3 as iio
+        hdr = iio.imread('assets/hdri/forest.exr')[..., :3][..., ::-1]
+    envmap = EnvMap(torch.tensor(cv2.cvtColor(hdr, cv2.COLOR_BGR2RGB), dtype=torch.float32, device='cuda'))
+except Exception as e:
+    print("envmap unavailable, preview skipped:", e)
 pipeline = Trellis2ImageTo3DPipeline.from_pretrained("microsoft/TRELLIS.2-4B")
 pipeline.cuda()
 image = Image.open(src)
 mesh = pipeline.run(image)[0]
 mesh.simplify(16777216)
 try:
+    assert envmap is not None, 'no envmap'
     video = render_utils.make_pbr_vis_frames(render_utils.render_video(mesh, envmap=envmap))
     imageio.mimsave(out.replace(".glb", "_turn.mp4"), video, fps=15)
 except Exception as e:  # the GLB is the deliverable; the preview is optional
