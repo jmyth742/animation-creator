@@ -74,6 +74,35 @@ if os.environ.get("FILM_LINES", "0") not in ("", "0"):
     if minlen > 0:
         ls.linestyle.use_length_min = True
         ls.linestyle.length_min = minlen
+if os.environ.get("CHAR_NORMALFIX", "0") == "1":
+    # normal editing at RENDER time (build_film keyframes 1000+ frames and
+    # would re-evaluate a build-time transfer on every one): copy custom
+    # normals from a heavily smoothed proxy of each cast mesh
+    for ob in list(sc.objects):
+        nm = ob.name.lower()
+        if ob.type != 'MESH' or not any(k in nm for k in ("oisin", "niamh")) or nm.endswith("_nproxy"):
+            continue
+        if any(m.type == 'DATA_TRANSFER' for m in ob.modifiers):
+            continue
+        proxy = ob.copy(); proxy.data = ob.data.copy(); proxy.name = ob.name + "_nproxy"
+        proxy.animation_data_clear(); proxy.modifiers.clear(); proxy.parent = None
+        proxy.matrix_world = ob.matrix_world.copy()
+        sc.collection.objects.link(proxy)
+        pm = proxy.modifiers.new("blur", 'SMOOTH'); pm.factor = 1.0; pm.iterations = 60
+        dg = bpy.context.evaluated_depsgraph_get()
+        me = bpy.data.meshes.new_from_object(proxy.evaluated_get(dg))
+        proxy.modifiers.clear(); proxy.data = me
+        dt = ob.modifiers.new("normals", 'DATA_TRANSFER')
+        dt.object = proxy; dt.use_loop_data = True; dt.data_types_loops = {'CUSTOM_NORMAL'}
+        dt.loop_mapping = 'POLYINTERP_NEAREST'
+        # the transfer must see the REST mesh: put it before the armature deform
+        for _ in range(len(ob.modifiers)):
+            bpy.context.view_layer.objects.active = ob
+            if ob.modifiers[0].name == "normals":
+                break
+            bpy.ops.object.modifier_move_up(modifier="normals")
+        proxy.hide_render = True; proxy.hide_viewport = True
+        print("NORMALFIX applied to", ob.name)
 cam = bpy.data.cameras.new("shotcam")
 cam.lens = lens
 if os.environ.get("FILM_DOF"):

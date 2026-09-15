@@ -72,6 +72,13 @@ DELIVERABLES: verdict on replacing mesh source and numpy skinning
   huggingface_hub 0.25 for diffusers 0.24, CUDA env for nvdiffrast).
 - Day-1 masters: both v2cast episodes verified frame-by-frame (480p verdict
   renders); ep1's closing shot was re-rendered after the quota incident.
+- CORRECTION (15 Sep 10:40): the v2cast masters carry the new LINES but NOT
+  the normal editing — CHAR_NORMALFIX only acted inside build_film (blend
+  build time) and the film blends predate it; film.py never read it. Normal
+  editing now happens at RENDER time in film.py (no per-frame cost measured).
+  Build-time NORMALFIX also stalls build_film for an hour (the transfer is
+  re-evaluated on every keyframed frame) — never export CHAR_NORMALFIX into
+  a build. v3cast masters (complete stack) queued: loopwork/masters_v3.sh.
 - MASTER RECIPE (judged 15 Sep 08:20, review/day1_lines_480vs960.png): 4.0px
   @1664x960 matches 2.0px @480p. Single instance 19s/frame at 960p; keep
   hi-res parallelism at 2-3 (six instances contend 8x). Day 5 masters:
