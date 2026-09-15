@@ -22,20 +22,42 @@ bones = list(rig.pose.bones)
 print("RIG bones", len(bones), [b.name for b in bones][:40])
 skinned = [m for m in meshes if any(md.type == 'ARMATURE' for md in m.modifiers)]
 print("RIG skinned meshes", len(skinned), "vgroups", [len(m.vertex_groups) for m in meshes])
-# pick limb-ish bones by name, else the 4 longest chains' second bones
-def pick(keys):
-    return [b for b in bones if any(k in b.name.lower() for k in keys)]
-legs = pick(("leg", "thigh", "hip", "upleg")) or bones[len(bones)//2:len(bones)//2+2]
-arms_ = pick(("arm", "shoulder", "clavicle")) or bones[1:3]
-print("RIG driving", [b.name for b in legs[:2]], [b.name for b in arms_[:2]])
+# UniRig bones are unnamed (bone_N): pick limbs by REST GEOMETRY.
+#   root  = the parentless bone (hips)
+#   legs  = root's children that point down and are long
+#   arms  = first bones whose head leaves the torso laterally
+def W(v): return rig.matrix_world @ v
+db = rig.data.bones
+zs = [W(b.head_local).z for b in db] + [W(b.tail_local).z for b in db]
+H = max(zs) - min(zs)
+root = next(b for b in db if b.parent is None)
+def down(b): return (W(b.tail_local).z - W(b.head_local).z) < -0.15 * H
+legs_up = sorted([b for b in root.children if down(b)], key=lambda b: W(b.head_local).x)
+legs_lo = [next(iter(b.children), None) for b in legs_up]
+lat = 0.06 * H
+arms_up = sorted([b for b in db if b.parent is not None and b not in legs_up
+                  and abs(W(b.head_local).x) > lat and abs(W(b.parent.head_local).x) <= lat
+                  and W(b.head_local).z > min(zs) + 0.5 * H], key=lambda b: W(b.head_local).x)
+print("RIG height", round(H, 2), "root", root.name,
+      "legs", [b.name for b in legs_up], "knees", [b.name for b in legs_lo if b],
+      "arms", [b.name for b in arms_up])
+PB = rig.pose.bones
+legs = [PB[b.name] for b in legs_up[:2]]
+knees = [PB[b.name] for b in legs_lo[:2] if b]
+arms_ = [PB[b.name] for b in arms_up[:2]]
+if len(legs) < 2 or len(arms_) < 2:
+    print("RIG FAIL could not identify limbs"); sys.exit(1)
 F0, F1 = 1, 48
 for f in range(F0, F1 + 1):
     t = 2 * math.pi * (f - F0) / 24.0
-    for i, b in enumerate(legs[:2]):
-        b.rotation_mode = 'XYZ'; b.rotation_euler = (math.radians(30) * math.sin(t + i * math.pi), 0, 0)
+    for i, b in enumerate(legs):
+        b.rotation_mode = 'XYZ'; b.rotation_euler = (math.radians(32) * math.sin(t + i * math.pi), 0, 0)
         b.keyframe_insert("rotation_euler", frame=f)
-    for i, b in enumerate(arms_[:2]):
-        b.rotation_mode = 'XYZ'; b.rotation_euler = (math.radians(25) * math.sin(t + i * math.pi + math.pi), 0, 0)
+    for i, b in enumerate(knees):   # knee bends only on the swing-back half
+        b.rotation_mode = 'XYZ'; b.rotation_euler = (math.radians(45) * max(0.0, -math.sin(t + i * math.pi)), 0, 0)
+        b.keyframe_insert("rotation_euler", frame=f)
+    for i, b in enumerate(arms_):   # counter-phase to the legs
+        b.rotation_mode = 'XYZ'; b.rotation_euler = (math.radians(28) * math.sin(t + i * math.pi + math.pi), 0, 0)
         b.keyframe_insert("rotation_euler", frame=f)
 # light, world, camera framing the whole rig
 sun = bpy.data.objects.new('sun', bpy.data.lights.new('s', 'SUN')); sun.data.energy = 3.5

@@ -26,6 +26,10 @@ DELIVERABLES: char stacks judged, 2 episodes re-mastered, grids exported
 - LINES: crease edges = scribbles on AI meshes (off by default now);
   silhouette-only + chains <20px dropped is clean; 2.0px reads most "drawn".
   ADOPTED: FILM_LINES=2.0 FILM_LINE_MINLEN=20. Ext-contour-only is too faint.
+- LINE WEIGHT IN MOTION (day1_linewidth_ab.mp4, judged 07:25): 1.4 faint,
+  2.0 right, 2.6 clumps in hair. Freestyle thickness is ABSOLUTE pixels and
+  the film blends are 832x480, so the Day-5 1664x960 masters need ~4.0 to
+  match; v2cast masters are 480p verdict renders, not finals.
 - COST: Freestyle is CPU-bound, ~15s/frame on the full set (culling on);
   frames without lines are 0.35s. render_episode.sh renders 6 shots in
   parallel (256 cores) so an episode is ~1h wall, not 5h.
