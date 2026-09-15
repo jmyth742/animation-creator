@@ -29,6 +29,10 @@ if len(args) > 8:
 
 import os
 sc = bpy.context.scene
+if len(args) <= 8 and os.environ.get("FILM_RES"):      # e.g. FILM_RES=1664x960
+    rx, ry = os.environ["FILM_RES"].lower().split("x")
+    sc.render.resolution_x, sc.render.resolution_y = int(rx), int(ry)
+    sc.render.resolution_percentage = 100
 if os.environ.get("FILM_SAMPLES"):
     sc.eevee.taa_render_samples = int(os.environ["FILM_SAMPLES"])
 if os.environ.get("FILM_LINES", "0") not in ("", "0"):

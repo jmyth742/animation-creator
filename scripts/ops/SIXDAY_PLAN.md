@@ -54,6 +54,27 @@ DELIVERABLES: char stacks judged, 2 episodes re-mastered, grids exported
 - Turntable A/Bs vs current cast; walk test on a UniRig skeleton
 DELIVERABLES: verdict on replacing mesh source and numpy skinning
 
+## Day 2 VERDICT (judged 15 Sep 08:00)
+- UniRig WORKS: both leads rigged from the painted glb in ~4 min each —
+  real humanoid skeletons (Oisin 28 bones incl. fingers; Niamh 47 incl. hair
+  chains), skinned, and they animate in Blender (review/day2_unirig_walk_*.mp4,
+  day2_unirig_strip_*.png). Bones are UNNAMED (bone_N): scripts/day2/rig_test.py
+  picks limbs by rest geometry; the arm picker must skip head-height chains
+  (it grabbed Niamh's hair). VERDICT: replace the 14-bone numpy skinning with
+  UniRig rigs — Day 4's motion library retargets onto these skeletons.
+- TRELLIS.2: installed, imports, 16 GB weights cached, but its image encoder
+  facebook/dinov3-vitl16-pretrain-lvd1689m is GATED (HF 401). USER: accept the
+  DINOv3 license on huggingface.co and put HF_TOKEN in /workspace/.env, then
+  `bash /workspace/loopwork/p6_redo.sh`. Also: this box's OpenCV has no
+  OpenEXR, so the PBR preview is optional (driver handles it).
+- CharacterGen: NOT run — 19 GB of weights need the disk-space decision
+  (see workspace-environment-traps). Installer is fixed (per-package pip,
+  huggingface_hub 0.25 for diffusers 0.24, CUDA env for nvdiffrast).
+- Day-1 masters: both v2cast episodes verified frame-by-frame (480p verdict
+  renders); ep1's closing shot was re-rendered after the quota incident.
+- Sweep bank after Day 2: ep1 at 1664x960 with FILM_LINES=4.0 ->
+  review/nine_waterfalls_v2cast_1080.mp4 (answers "does 2.0@480p == 4.0@960p").
+
 ## Day 3 — Facial acting chain (the exponential unlock)
 - NVIDIA Audio2Face-3D samples: install, run on its sample head ->
   prove audio -> ARKit blendshape animation -> Blender import end-to-end

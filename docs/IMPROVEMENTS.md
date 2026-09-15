@@ -35,6 +35,12 @@
       FILM_LINE_MODE=ext; Freestyle culling on. Cause of all P6 empty renders.
 - [x] Normal editing adopted (CHAR_NORMALFIX=1, interpolated); CHAR_SMOOTH  <- done 15 Sep
       retired (shreds meshes at 40 iterations). Grids: review/day1b_*..day1d_*
+- [x] UniRig rigs adopted in principle (Day 2): both leads rig + skin in  <- done 15 Sep
+      ~4 min; walk test proves deformation. Next: name bones by geometry
+      (head-height chains are hair, not arms), retarget Day-4 motion onto them.
+- [ ] TRELLIS.2 A/B blocked on the gated DINOv3 encoder (user: accept license
+      + HF_TOKEN), then bash /workspace/loopwork/p6_redo.sh
+- [ ] CharacterGen A/B blocked on disk space (19 GB weights) — user decision
 - [ ] Line stack in the DIALOGUE closes at master resolution: confirm 2.0px
       holds up at 1664x960 (day1_linewidth_ab.mp4) and on Niamh's hair.
 - [ ] Freestyle cost: 15s/frame is the set, not the cast — try a lines-only
