@@ -43,10 +43,10 @@
 - [ ] CharacterGen A/B blocked on disk space (19 GB weights) — user decision
 - [ ] Line stack in the DIALOGUE closes at master resolution: confirm 2.0px
       holds up at 1664x960 (day1_linewidth_ab.mp4) and on Niamh's hair.
-- [ ] HI-RES LINES COST: at 1664x960 Freestyle's *stroke rendering* takes
-      ~2 min/frame (view map stays 32s) — an 8h episode. Masters need a
-      different line pass (Line Art modifier, or lines rendered at 480p and
-      composited at 2x). Probe: review/day1_hires_lines_probe_s04.*
+- [x] HI-RES LINES: 4.0px @1664x960 == 2.0px @832x480 (review/day1_lines_480vs960.png).  <- judged 15 Sep
+      A single Blender renders a 960p frame in ~19s; SIX in parallel took
+      ~150s/frame (GPU-side contention grows with pixels). Master renders:
+      FILM_RES=1664x960 FILM_LINES=4.0 FILM_LINE_MINLEN=40, parallel 2-3, ~3-4h/episode.
 - [ ] Freestyle cost: 15s/frame is the set, not the cast — try a lines-only
       view layer with the set as holdout/occluder, or Line Art modifier, to
       get the 0.35s/frame render back with occlusion intact.

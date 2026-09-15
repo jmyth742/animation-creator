@@ -72,8 +72,10 @@ DELIVERABLES: verdict on replacing mesh source and numpy skinning
   huggingface_hub 0.25 for diffusers 0.24, CUDA env for nvdiffrast).
 - Day-1 masters: both v2cast episodes verified frame-by-frame (480p verdict
   renders); ep1's closing shot was re-rendered after the quota incident.
-- Sweep bank after Day 2: ep1 at 1664x960 with FILM_LINES=4.0 ->
-  review/nine_waterfalls_v2cast_1080.mp4 (answers "does 2.0@480p == 4.0@960p").
+- MASTER RECIPE (judged 15 Sep 08:20, review/day1_lines_480vs960.png): 4.0px
+  @1664x960 matches 2.0px @480p. Single instance 19s/frame at 960p; keep
+  hi-res parallelism at 2-3 (six instances contend 8x). Day 5 masters:
+  FILM_RES=1664x960 FILM_LINES=4.0 FILM_LINE_MINLEN=40.
 
 ## Day 3 — Facial acting chain (the exponential unlock)
 - NVIDIA Audio2Face-3D samples: install, run on its sample head ->
