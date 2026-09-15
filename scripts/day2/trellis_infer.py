@@ -3,6 +3,7 @@ from the TRELLIS.2 checkout:  python trellis_infer.py <image.png> <out.glb> [dec
 """
 import os, sys
 os.environ.setdefault("HF_HOME", "/workspace/hf_cache")
+sys.path.insert(0, "/workspace/TRELLIS.2"); os.chdir("/workspace/TRELLIS.2")  # trellis2 pkg + assets/hdri
 os.environ['OPENCV_IO_ENABLE_OPENEXR'] = '1'
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 import cv2, imageio, torch
