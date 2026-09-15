@@ -31,7 +31,7 @@ import os
 sc = bpy.context.scene
 if os.environ.get("FILM_SAMPLES"):
     sc.eevee.taa_render_samples = int(os.environ["FILM_SAMPLES"])
-if os.environ.get("FILM_LINES"):
+if os.environ.get("FILM_LINES", "0") not in ("", "0"):
     # drawn outlines on the CAST only — the single loudest "drawn by an
     # adult" cue in cel animation
     sc.render.use_freestyle = True
@@ -39,12 +39,19 @@ if os.environ.get("FILM_LINES"):
     vl = sc.view_layers[0]
     vl.use_freestyle = True
     fs = vl.freestyle_settings
+    # Freestyle is CPU-bound and walks the WHOLE set each frame: cull what
+    # the camera cannot see (measured: the dominant per-frame cost)
+    fs.use_culling = True
     while fs.linesets:
         fs.linesets.remove(fs.linesets[0])
     ls = fs.linesets.new("cast")
-    ls.select_silhouette = True
+    # FILM_LINE_MODE=ext: outer contour only (no interior lump marks)
+    ext = os.environ.get("FILM_LINE_MODE", "sil") == "ext"
+    ls.select_silhouette = not ext
+    ls.select_external_contour = ext
     ls.select_border = False
-    ls.select_crease = True
+    # crease edges on AI meshes = black scribbles (day1 grids); default off
+    ls.select_crease = os.environ.get("FILM_LINE_CREASE", "0") == "1"
     ls.select_by_collection = True
     grp = bpy.data.collections.get("cast_lines")
     if grp is None:
@@ -58,6 +65,11 @@ if os.environ.get("FILM_LINES"):
     ls.collection = grp
     ls.linestyle.thickness = float(os.environ.get("FILM_LINES", "1.4"))
     ls.linestyle.color = (0.06, 0.04, 0.05)
+    # drop stroke chains shorter than N px: kills the residual hatching
+    minlen = float(os.environ.get("FILM_LINE_MINLEN", "6"))
+    if minlen > 0:
+        ls.linestyle.use_length_min = True
+        ls.linestyle.length_min = minlen
 cam = bpy.data.cameras.new("shotcam")
 cam.lens = lens
 if os.environ.get("FILM_DOF"):

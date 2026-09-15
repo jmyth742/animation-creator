@@ -54,7 +54,11 @@ def load_character(mesh_path, name, height=1.75):
         dt.object = proxy
         dt.use_loop_data = True
         dt.data_types_loops = {'CUSTOM_NORMAL'}
-        dt.loop_mapping = 'NEAREST_POLYNOR'
+        # POLYINTERP_NEAREST interpolates the proxy's normals across the
+        # face instead of snapping to one polygon: no pixel-scale grain
+        dt.loop_mapping = ('POLYINTERP_NEAREST'
+                           if os.environ.get("CHAR_NORMALFIX_INTERP", "1") == "1"
+                           else 'NEAREST_POLYNOR')
         proxy.hide_render = True
         proxy.hide_viewport = True
     if os.environ.get("CHAR_SMOOTH"):
