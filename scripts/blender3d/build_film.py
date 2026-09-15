@@ -123,8 +123,14 @@ rigs = {"oisin": (orig, octrl), "niamh": (nrig, nctrl)}
 for who, (r, fc) in rigs.items():
     kit.apply_talk_tex(r, fc, [0.0] * FRAMES, 1, fps=FPS)
 for L, f0 in zip(lines, starts):
-    env = np.load(f"{audio_dir}/l{L['i']}_env.npy")
-    vis_p = pathlib.Path(f"{audio_dir}/l{L['i']}_vis.npy")
+    # FILM_VIS_SUFFIX / FILM_ENV_SUFFIX (e.g. "_lam") select alternative
+    # per-line viseme/envelope arrays for A/Bs; fall back to the plain ones
+    VS, ES = os.environ.get("FILM_VIS_SUFFIX", ""), os.environ.get("FILM_ENV_SUFFIX", "")
+    env_p = pathlib.Path(f"{audio_dir}/l{L['i']}_env{ES}.npy")
+    env = np.load(env_p if env_p.exists() else f"{audio_dir}/l{L['i']}_env.npy")
+    vis_p = pathlib.Path(f"{audio_dir}/l{L['i']}_vis{VS}.npy")
+    if not vis_p.exists():
+        vis_p = pathlib.Path(f"{audio_dir}/l{L['i']}_vis.npy")
     vis = np.load(vis_p) if vis_p.exists() else None
     r, fc = rigs[L["who"]]
     kit.apply_talk_tex(r, fc, env, f0, fps=FPS, blinks=False, visemes=vis)
