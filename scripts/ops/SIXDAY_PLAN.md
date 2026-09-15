@@ -99,7 +99,7 @@ DELIVERABLES: verdict on replacing mesh source and numpy skinning
   upload; ARP quick-rig gives blendshapes+visemes for free
 DELIVERABLES: working audio->face-acting chain on at least one head
 
-## Day 3 VERDICT (in progress, 15 Sep 12:40)
+## Day 3 VERDICT (15 Sep, complete 19:25)
 - CHAIN WORKS: LAM Audio2Expression (Apache-2.0) -> ARKit-52 @30fps for all
   10 lines; scripts/day3/arkit_bridge.py maps them onto the 6-column texture
   visemes. LAM carries mouth opening mostly in mouthLowerDown (~0.8) not
@@ -109,6 +109,13 @@ DELIVERABLES: working audio->face-acting chain on at least one head
   (open + teeth-wide on stressed syllables); Rhubarb stays small/mid. Timing
   must be judged BY EAR on the mp4 (line audio is muxed). If LAM over-opens,
   raise the column-3/4 thresholds in arkit_bridge.py (0.58 / 0.85).
+- ALL FOUR A/Bs DONE: review/day3_lipsync_ab_{ep1,ep1b,ep2,ep2b}.mp4 (+_mouths.png).
+  ep1 (Niamh) and ep2b (Niamh) are the judgeable ones: the drivers disagree
+  on ~10% of instants (e.g. ep2b Rhubarb opens at 1.7s/4.1s, LAM at
+  2.9s/3.5s/4.1s) — DECIDE BY EAR on the mp4s. ep1b/ep2 (Oisin) are profiles.
+- Adoption path if LAM wins: build_film*.py already take FILM_VIS_SUFFIX=_lam
+  FILM_ENV_SUFFIX=_lam; the bridge also writes l<i>_blink_lam.npy (unused yet:
+  apply_talk_tex could take real blink events instead of the fixed cadence).
 - OmniFaceRig: no code released (dataset only). NVIDIA A2F-3D SDK: C++ +
   TensorRT 10.13 / CUDA 12.8 — not runnable here without a toolkit upgrade.
 - USER TASK still open (decisive for real mouths): VRoid both leads -> VRM
