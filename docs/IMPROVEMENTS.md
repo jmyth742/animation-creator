@@ -41,6 +41,11 @@
 - [ ] TRELLIS.2 A/B blocked on the gated DINOv3 encoder (user: accept license
       + HF_TOKEN), then bash /workspace/loopwork/p6_redo.sh
 - [ ] CharacterGen A/B blocked on disk space (19 GB weights) — user decision
+- [ ] OISIN CLOSE IS A PROFILE (ep1 CLOSE_O cam -2.2,6.0,1.62 -> -0.45,7.25,1.57):
+      texture visemes cannot show opening side-on and the jaw rotation
+      (0.13*a rad) is too subtle — move his dialogue close to a 3/4 front
+      angle in build_film.py, and/or raise the jaw drive to ~0.3 rad.
+      Evidence: review/day3_lipsync_ab_ep1b_mouths.png (both rows static).
 - [ ] Line stack in the DIALOGUE closes at master resolution: confirm 2.0px
       holds up at 1664x960 (day1_linewidth_ab.mp4) and on Niamh's hair.
 - [x] HI-RES LINES: 4.0px @1664x960 == 2.0px @832x480 (review/day1_lines_480vs960.png).  <- judged 15 Sep
