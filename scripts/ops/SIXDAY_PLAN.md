@@ -79,6 +79,11 @@ DELIVERABLES: verdict on replacing mesh source and numpy skinning
   Build-time NORMALFIX also stalls build_film for an hour (the transfer is
   re-evaluated on every keyframed frame) — never export CHAR_NORMALFIX into
   a build. v3cast masters (complete stack) queued: loopwork/masters_v3.sh.
+- v3cast masters (complete stack) done 15 Sep 17:41, both frame-verified.
+  At 480p a v2cast/v3cast frame is near-identical: normal editing is a
+  close-up/hi-res refinement, not a film-scale change. BOTH episodes stage
+  Oisin's dialogue close in profile (ep2 CLOSE cam 1.7,7.4 -> -0.75,8.75 too)
+  — restage to 3/4 before Day 5 masters or his mouth never reads.
 - MASTER RECIPE (judged 15 Sep 08:20, review/day1_lines_480vs960.png): 4.0px
   @1664x960 matches 2.0px @480p. Single instance 19s/frame at 960p; keep
   hi-res parallelism at 2-3 (six instances contend 8x). Day 5 masters:
