@@ -31,6 +31,33 @@ import os
 sc = bpy.context.scene
 if os.environ.get("FILM_SAMPLES"):
     sc.eevee.taa_render_samples = int(os.environ["FILM_SAMPLES"])
+if os.environ.get("FILM_LINES"):
+    # drawn outlines on the CAST only — the single loudest "drawn by an
+    # adult" cue in cel animation
+    sc.render.use_freestyle = True
+    sc.render.line_thickness = float(os.environ.get("FILM_LINES", "1.4"))
+    vl = sc.view_layers[0]
+    vl.use_freestyle = True
+    fs = vl.freestyle_settings
+    while fs.linesets:
+        fs.linesets.remove(fs.linesets[0])
+    ls = fs.linesets.new("cast")
+    ls.select_silhouette = True
+    ls.select_border = False
+    ls.select_crease = True
+    ls.select_by_group = True
+    grp = bpy.data.collections.get("cast_lines")
+    if grp is None:
+        grp = bpy.data.collections.new("cast_lines")
+        sc.collection.children.link(grp)
+        for ob in sc.objects:
+            nm = ob.name.lower()
+            if ob.type == 'MESH' and any(k in nm for k in
+                                         ("oisin", "niamh", "char")):
+                grp.objects.link(ob)
+    ls.collection = grp
+    ls.linestyle.thickness = float(os.environ.get("FILM_LINES", "1.4"))
+    ls.linestyle.color = (0.06, 0.04, 0.05)
 cam = bpy.data.cameras.new("shotcam")
 cam.lens = lens
 if os.environ.get("FILM_DOF"):

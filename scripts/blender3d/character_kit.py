@@ -33,6 +33,17 @@ def load_character(mesh_path, name, height=1.75):
     char.name = name
     for poly in char.data.polygons:
         poly.use_smooth = True
+    import os
+    if os.environ.get("CHAR_SMOOTH"):
+        # kill the marching-cubes lumps without touching UVs: heavy
+        # Laplacian relaxation applied as a modifier stack
+        m1 = char.modifiers.new("desilt", 'SMOOTH')
+        m1.factor = 0.9
+        m1.iterations = int(os.environ.get("CHAR_SMOOTH"))
+        m2 = char.modifiers.new("recover", 'CORRECTIVE_SMOOTH')
+        m2.factor = 0.5
+        m2.iterations = 10
+        m2.smooth_type = 'LENGTH_WEIGHTED'
 
     # painted texture through a two-tone cel ramp
     img = None
