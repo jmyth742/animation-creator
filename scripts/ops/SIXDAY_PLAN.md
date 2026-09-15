@@ -94,6 +94,23 @@ DELIVERABLES: verdict on replacing mesh source and numpy skinning
   upload; ARP quick-rig gives blendshapes+visemes for free
 DELIVERABLES: working audio->face-acting chain on at least one head
 
+## Day 3 VERDICT (in progress, 15 Sep 12:40)
+- CHAIN WORKS: LAM Audio2Expression (Apache-2.0) -> ARKit-52 @30fps for all
+  10 lines; scripts/day3/arkit_bridge.py maps them onto the 6-column texture
+  visemes. LAM carries mouth opening mostly in mouthLowerDown (~0.8) not
+  jawOpen (~0.35): per-line p95 normalisation fixed a mostly-closed first
+  pass. Open/closed agreement with Rhubarb 0.83-0.96 per line.
+- A/B (review/day3_lipsync_ab_ep1.mp4 + _mouths.png): LAM articulates more
+  (open + teeth-wide on stressed syllables); Rhubarb stays small/mid. Timing
+  must be judged BY EAR on the mp4 (line audio is muxed). If LAM over-opens,
+  raise the column-3/4 thresholds in arkit_bridge.py (0.58 / 0.85).
+- OmniFaceRig: no code released (dataset only). NVIDIA A2F-3D SDK: C++ +
+  TensorRT 10.13 / CUDA 12.8 — not runnable here without a toolkit upgrade.
+- USER TASK still open (decisive for real mouths): VRoid both leads -> VRM
+  with ARKit blendshapes; LAM's curves then drive them directly.
+- Ops lessons today: python3.10 venvs need get-pip; any non-empty
+  CHAR_NORMALFIX stalled build_film (fixed: "0" = off); quota hit 3x.
+
 ## Day 4 — Motion library
 - Motion Gen addon (8GB VRAM) or HY-Motion weights: text->motion
 - Build the action library: walk styles, idle, turn, sit, kneel, point,
