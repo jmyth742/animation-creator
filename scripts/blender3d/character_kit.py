@@ -34,6 +34,29 @@ def load_character(mesh_path, name, height=1.75):
     for poly in char.data.polygons:
         poly.use_smooth = True
     import os
+    if os.environ.get("CHAR_NORMALFIX"):
+        # anime-industry normal editing, automated: copy custom normals
+        # from a blurred proxy so the shading terminator ignores lumps
+        proxy = char.copy()
+        proxy.data = char.data.copy()
+        proxy.name = char.name + "_nproxy"
+        bpy.context.scene.collection.objects.link(proxy)
+        pm = proxy.modifiers.new("blur", 'SMOOTH')
+        pm.factor = 1.0
+        pm.iterations = 60
+        dg = bpy.context.evaluated_depsgraph_get()
+        pe = proxy.evaluated_get(dg)
+        me = bpy.data.meshes.new_from_object(pe)
+        old = proxy.data
+        proxy.modifiers.clear()
+        proxy.data = me
+        dt = char.modifiers.new("normals", 'DATA_TRANSFER')
+        dt.object = proxy
+        dt.use_loop_data = True
+        dt.data_types_loops = {'CUSTOM_NORMAL'}
+        dt.loop_mapping = 'NEAREST_POLYNOR'
+        proxy.hide_render = True
+        proxy.hide_viewport = True
     if os.environ.get("CHAR_SMOOTH"):
         # kill the marching-cubes lumps without touching UVs: heavy
         # Laplacian relaxation applied as a modifier stack
