@@ -6,6 +6,7 @@ the 3D stage, back-projection on). Run inside the charactergen venv:
 Writes <outdir>/view{0..3}.png, views.png (strip), output.glb, output.obj.
 """
 import os, sys, shutil
+os.environ.setdefault("HF_HOME", "/workspace/hf_cache")
 src, out = os.path.abspath(sys.argv[1]), os.path.abspath(sys.argv[2])
 os.chdir("/workspace/CharacterGen")
 sys.path += [".", "2D_Stage", "3D_Stage"]

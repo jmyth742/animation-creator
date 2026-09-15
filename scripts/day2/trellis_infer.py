@@ -2,6 +2,7 @@
 from the TRELLIS.2 checkout:  python trellis_infer.py <image.png> <out.glb> [decimation]
 """
 import os, sys
+os.environ.setdefault("HF_HOME", "/workspace/hf_cache")
 os.environ['OPENCV_IO_ENABLE_OPENEXR'] = '1'
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 import cv2, imageio, torch

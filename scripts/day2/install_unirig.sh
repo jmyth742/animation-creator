@@ -3,6 +3,7 @@
 # main venv so the wheels are known-good on this box). Idempotent.
 set -u
 E=/workspace/envs/unirig; R=/workspace/UniRig
+export HF_HOME=/workspace/hf_cache PIP_CACHE_DIR=/workspace/.pipcache
 log(){ echo "[unirig $(date +%H:%M:%S)] $*"; }
 [ -d $R ] || git clone -q https://github.com/VAST-AI-Research/UniRig.git $R
 [ -x $E/bin/python ] || python3.11 -m venv $E
