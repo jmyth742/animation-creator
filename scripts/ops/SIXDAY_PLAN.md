@@ -145,6 +145,41 @@ DELIVERABLES: three episodes, one coherent new-quality bar
 - Full final export; IMPROVEMENTS.md groomed for the next campaign
 DELIVERABLES: releasable 3-episode season package on GitHub
 
+## Days 5-6 REVISED (written 16 Sep from the Day 1-4 findings)
+Principle: every item ends in an A/B or a frame-verified master, exported.
+GPU never idle: each day's script ends with a sweep bank.
+
+### Day 5 — Put the wins ON SCREEN (studio_marathon8.sh)
+1. RIGGED CAST IN THE FILM (the largest visible upgrade):
+   character_kit gains load_rigged_character(glb) + apply_motion(rig, glb/bvh)
+   so build_film can stage the UniRig rigs driven by Day-4 retargeted MoMask
+   motion (walk-in, idle, turn, point) instead of the 14-bone numpy gait.
+   A/B: ep1 s02_walk + s03_meet restaged -> review/day5_rigged_cast_ab.mp4.
+2. RESTAGE OISIN'S CLOSES to 3/4 front in BOTH episodes (CLOSE_O cams) and
+   raise the jaw drive 0.13 -> 0.3 rad: his mouth must read. A/B stills.
+3. MOUTHS: adopt the user's LAM/Rhubarb verdict (FILM_VIS_SUFFIX=_lam) and
+   use LAM's real blink events (l<i>_blink_lam.npy) instead of the fixed
+   3.4 s cadence -> apply_talk_tex(blinks=events).
+4. LOOSE SHELLS: merge-by-distance / tiny-shell cull at load (~700 shells per
+   lead) -> fewer interior line dashes; grid before/after.
+5. v4 MASTERS at 1664x960, FILM_LINES=4.0 MINLEN=40, parallel 3, both
+   episodes, frame-verified, exported (~3-4 h each).
+6. Sweep bank: CharacterGen + TRELLIS.2 (if DINOv3 unblocked) mesh A/Bs ->
+   verdict on the mesh source for Episode 3.
+
+### Day 6 — Episode 3 + release (studio_marathon9.sh)
+1. EPISODE 3 written in-voice (5 lines, word budgets per wan-clip limits) and
+   produced in the cliff stage with the full stack: rigged cast, restaged
+   closes, chosen visemes, hi-res lines. The proof the pipeline compounds.
+2. Regression: selftest green; probe_shot + preflight gates run before the
+   episode render; deterministic-seed check on one shot rendered twice.
+3. Trailer v2 (with ep3 shots) + pilot v2 (3 episodes) + upload kit refresh.
+4. Docs: CLAUDE.md + docs/ refreshed (kit env hooks, ops layer, quota rules,
+   export branch) so a new session can run the whole studio unattended.
+5. Full export; IMPROVEMENTS.md groomed for the next campaign.
+USER INPUTS THAT RAISE THE CEILING: LAM-vs-Rhubarb verdict (Day 5.3);
+HF_TOKEN + DINOv3 licence (Day 5.6); VRoid leads -> real blendshape mouths.
+
 ## Standing orders (all six days)
 - All working state under /workspace; never /tmp
 - Every phase: verify an artifact (frame/probe) before checking off
