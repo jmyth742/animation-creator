@@ -32,6 +32,7 @@ for D in $(ls -d $M/generation/day4/animations/*/ | sort); do
   BVH=$(ls $D/*repeat0*_ik.bvh 2>/dev/null | head -1); [ -n "$BVH" ] || BVH=$(ls $D/*.bvh | head -1)
   cp "$BVH" $D4/$NAME.bvh
   for WHO in oisin_mv niamh_mv; do
+    rm -rf $D4/r_${NAME}_$WHO   # never encode stale frames from an earlier pass
     $B -b --factory-startup --python scripts/day4/retarget.py -- $W/day2/${WHO}_rigged.glb $D4/$NAME.bvh $D4/r_${NAME}_$WHO ${NAME}_$WHO 20 1 < /dev/null > $W/m7_rt_${NAME}_$WHO.log 2>&1 &
   done; wait
   for WHO in oisin_mv niamh_mv; do
