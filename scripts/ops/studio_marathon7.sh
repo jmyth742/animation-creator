@@ -42,7 +42,7 @@ for D in $(ls -d $M/generation/day4/animations/*/ | sort); do
 done
 # contact sheet: frame 40% into each motion, Oisin row over Niamh row
 for WHO in oisin_mv niamh_mv; do IN=""; for NAME in "${NAMES[@]}"; do F=$(ls $D4/r_${NAME}_$WHO/*.png 2>/dev/null | sort | awk '{a[NR]=$0} END{print a[int(NR*0.4)+1]}'); [ -n "$F" ] && IN="$IN -i $F"; done
-  [ -n "$IN" ] && ffmpeg -v error -y $IN -filter_complex "hstack=inputs=$(echo $IN | grep -o '\-i' | wc -l)" $D4/sheet_$WHO.png; done
+  NI=$(echo $IN | grep -o '\-i' | wc -l); if [ "$NI" -gt 1 ]; then ffmpeg -v error -y $IN -filter_complex "hstack=inputs=$NI" $D4/sheet_$WHO.png; elif [ "$NI" = 1 ]; then cp ${IN#-i } $D4/sheet_$WHO.png; fi; done
 [ -f $D4/sheet_oisin_mv.png ] && [ -f $D4/sheet_niamh_mv.png ] && ffmpeg -v error -y -i $D4/sheet_oisin_mv.png -i $D4/sheet_niamh_mv.png -filter_complex vstack $R/day4_motion_library_sheet.png && log "day4_motion_library_sheet.png"
 export_pass
 
@@ -50,7 +50,7 @@ log "P4: acting A/B — procedural gait (current) | MoMask walk retargeted"
 for CFG in "oisin_mv 1.75" "niamh_mv 1.68"; do set -- $CFG; WHO=$1; H=$2
   $B -b --factory-startup --python scripts/day4/gait_ab.py -- $WHO $H $D4/g_$WHO proc_$WHO 48 < /dev/null > $W/m7_gait_$WHO.log 2>&1
   ffmpeg -v error -y -framerate 16 -i $D4/g_$WHO/proc_${WHO}_%04d.png -c:v libx264 -pix_fmt yuv420p -crf 19 $D4/proc_$WHO.mp4
-  [ -f $R/day4_motion_walk_$WHO.mp4 ] && ffmpeg -v error -y -i $D4/proc_$WHO.mp4 -i $R/day4_motion_walk_$WHO.mp4 -filter_complex "[0]scale=640:480[a];[1]scale=640:480[b];[a][b]hstack" -c:v libx264 -pix_fmt yuv420p -crf 19 $R/day4_gait_ab_$WHO.mp4 && log "day4_gait_ab_$WHO.mp4 (procedural | MoMask)"
+  [ -f $R/day4_motion_walk_$WHO.mp4 ] && ffmpeg -v error -y -i $D4/proc_$WHO.mp4 -i $R/day4_motion_walk_$WHO.mp4 -filter_complex "[0]fps=16,scale=640:480[a];[1]fps=16,scale=640:480[b];[a][b]hstack" -shortest -c:v libx264 -pix_fmt yuv420p -crf 19 $R/day4_gait_ab_$WHO.mp4 && log "day4_gait_ab_$WHO.mp4 (procedural | MoMask)"
 done
 export_pass
 for d in $D4/r_*/; do find $d -name "*.png" -delete; done; rm -rf $D4/g_*/   # frame dumps only (keep the .glb rigs)
