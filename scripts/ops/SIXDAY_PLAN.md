@@ -67,6 +67,13 @@ DELIVERABLES: verdict on replacing mesh source and numpy skinning
   DINOv3 license on huggingface.co and put HF_TOKEN in /workspace/.env, then
   `bash /workspace/loopwork/p6_redo.sh`. Also: this box's OpenCV has no
   OpenEXR, so the PBR preview is optional (driver handles it).
+- CharacterGen (run 16 Sep, review/day2_charactergen_ab_oisin.png, _faces_):
+  2D stage gives four clean, consistent turnaround views straight from our
+  sheet (review/day2_charactergen_views_oisin.png) — better source material
+  than the FLUX left/back views. 3D stage: BETTER BODY than Hunyuan-mv
+  (proportions, T-pose, cape/boots intact, faithful hair colour) but a WORSE
+  FACE texture (smeared eyes). Meshes face +Y (turn_grid TURN_YAW=180).
+  Day-5 candidate: CharacterGen body + our FACE_BASE HD repaint, then UniRig.
 - CharacterGen: NOT run — 19 GB of weights need the disk-space decision
   (see workspace-environment-traps). Installer is fixed (per-package pip,
   huggingface_hub 0.25 for diffusers 0.24, CUDA env for nvdiffrast).
