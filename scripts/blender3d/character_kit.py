@@ -760,6 +760,23 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=0.0):
             if vg: vg.name = kit_name
     for pb in rig.pose.bones:
         pb.rotation_mode = 'XYZ'
+    # the animators put the ARMATURE ORIGIN on the floor (kit convention);
+    # UniRig's origin is mid-body — shift bones and mesh so the feet sit at z=0
+    bpy.context.view_layer.update()
+    M_mesh_to_rig = rig.matrix_world.inverted() @ char.matrix_world
+    zs = [(M_mesh_to_rig @ v.co).z for v in char.data.vertices]
+    feet = min(zs)
+    if abs(feet) > 1e-4:
+        bpy.context.view_layer.objects.active = rig
+        bpy.ops.object.mode_set(mode='EDIT')
+        for eb in rig.data.edit_bones:
+            eb.head.z -= feet; eb.tail.z -= feet
+        bpy.ops.object.mode_set(mode='OBJECT')
+        inv = M_mesh_to_rig.to_3x3().inverted()
+        d = inv @ mathutils.Vector((0, 0, feet))
+        for v in char.data.vertices:
+            v.co -= d
+        bpy.context.view_layer.update()
     # scale to height (rig + mesh share the armature parent)
     s = height / H
     rig.scale = (s, s, s)
@@ -785,5 +802,7 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=0.0):
         f = 1.0 - abs(P[i, 2] - (jz0 + jz1) / 2) / (0.5 * (jz1 - jz0))
         if f > 0: jaw_g.add([int(i)], min(0.85, float(f)), 'ADD')
     for poly in char.data.polygons: poly.use_smooth = True
-    print("RIGGED", name, "bones", len(rig.data.bones), "renamed", [k for k in ren.values() if k in rig.data.bones], "jaw verts", len(jsel))
+    bpy.context.view_layer.update()
+    zmin_w = min((char.matrix_world @ v.co).z for v in char.data.vertices)
+    print("RIGGED", name, "bones", len(rig.data.bones), "renamed", [k for k in ren.values() if k in rig.data.bones], "jaw verts", len(jsel), "feet z", round(zmin_w, 3))
     return char, rig
