@@ -22,7 +22,9 @@ for ob in list(sc.objects):
     bpy.data.objects.remove(ob, do_unlink=True)
 ch = kit.load_character(mesh_path, who, height=height)
 if os.environ.get("TURN_YAW"):        # e.g. 180 for meshes that face +Y (CharacterGen)
-    ch.rotation_euler.z += math.radians(float(os.environ["TURN_YAW"]))
+    # glTF imports use quaternion rotation mode: rotate the world matrix, not the euler
+    ch.matrix_world = mathutils.Matrix.Rotation(math.radians(float(os.environ["TURN_YAW"])), 4, 'Z') @ ch.matrix_world
+    bpy.context.view_layer.update()
 
 if os.environ.get("FILM_LINES", "0") not in ("", "0"):
     sc.render.use_freestyle = True
