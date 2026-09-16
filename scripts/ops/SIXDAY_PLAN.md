@@ -212,6 +212,13 @@ GPU never idle: each day's script ends with a sweep bank.
   oisin mouth 1.45 / eyes 1.53, niamh 1.46 / 1.525; their own eyes kept).
   review/day5_cg_faces_*.png. FILM_CAST=cg switches the film to the
   CharacterGen rigs (props/cg_*_rigged.glb + cg_*_face_*.png).
+- DONE 16 Sep 14:31: CharacterGen cast VALIDATED IN THE FILM (FILM_CAST=cg):
+  review/day5_cg_cast_facing.png — pair face each other, Niamh's close reads,
+  mouths/blinks work. Facing is now detected from the toe bones and BAKED into
+  bone+mesh data (kit facing = toes along -Y; the animators overwrite object
+  rotation, so an object yaw never worked). At close range the CG face
+  textures are rougher than the current cast's -> keep the mv cast for the v4
+  masters; run face_repaint (FACE_BASE) on the CG textures before switching.
 3. MOUTHS: adopt the user's LAM/Rhubarb verdict (FILM_VIS_SUFFIX=_lam) and
    use LAM's real blink events (l<i>_blink_lam.npy) instead of the fixed
    3.4 s cadence -> apply_talk_tex(blinks=events).
