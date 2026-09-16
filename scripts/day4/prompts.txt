@@ -1,0 +1,10 @@
+a person walks forward at a relaxed pace
+a person walks forward slowly with head down, sad
+a person runs forward
+a person stands still, shifting weight, idle
+a person turns around to face the other way
+a person sits down on a chair
+a person kneels down on one knee
+a person points forward with the right arm
+a person opens both arms wide for a hug
+a person waves hello with the right hand
