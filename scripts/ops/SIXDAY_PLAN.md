@@ -230,6 +230,13 @@ GPU never idle: each day's script ends with a sweep bank.
    verdict on the mesh source for Episode 3.
 
 ### Day 6 — Episode 3 + release
+- TRAP (16 Sep 15:05): glTF armatures import in QUATERNION rotation mode; the
+  animators set rotation_euler, so a rigged cast silently ignores every
+  heading unless the loader sets rig.rotation_mode='XYZ'. The facing-bake
+  rewrite dropped that line; Episode 3's first build had both leads facing
+  -Y regardless of blocking. Verified fixed (mesh follows rig z in a probe).
+  Also: never kill by a SHARED helper name (render_shot / xargs) — it took
+  out the v4 master of ep1 with the ep3 render; both re-queued (ep1 then ep2).
 - LAUNCHED 16 Sep 14:45: EPISODE 3 "The Farewell Cliff" — scripts/ops/ep3_produce.sh
   (cliff_set.py stage from the marathon2 headland + boat/seastacks, five lines
   in voice continuing the waterfall motif, build_film3.py with 3/4 closes,
