@@ -9,7 +9,7 @@ glb, name, height, outdir, tag = args[0], args[1], float(args[2]), args[3], args
 N = int(args[5]) if len(args) > 5 else 48
 os.makedirs(outdir, exist_ok=True); sc = bpy.context.scene
 for ob in list(sc.objects): bpy.data.objects.remove(ob, do_unlink=True)
-char, rig = kit.load_rigged_character(glb, name, height=height, yaw_deg=180, skirt=(name.startswith("niamh")))
+char, rig = kit.load_rigged_character(glb, name, height=height, yaw_deg=(0 if name.startswith("cg_") else 180), skirt=("niamh" in name))
 path = kit.path_fn_from_points([(0.0, -1.5), (0.0, 1.5)], lambda x, y: 0.0)
 kit.apply_walk(rig, path, 1, N, fps=16)
 sc.render.fps = 16

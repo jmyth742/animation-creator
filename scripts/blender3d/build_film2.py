@@ -65,8 +65,9 @@ CAST = os.environ.get("FILM_CAST", "mv")     # mv = Hunyuan-mv meshes, cg = Char
 if os.environ.get("FILM_RIG", "numpy") == "unirig":
     # Day-5: UniRig-skinned cast (real skeletons + skin weights), same animators
     ON, NN = ("cg_oisin", "cg_niamh") if CAST == "cg" else ("oisin_mv", "niamh_mv")
-    oisin, orig = kit.load_rigged_character(f"{MESHES}/props/{ON}_rigged.glb", ON, height=1.75, yaw_deg=180)   # UniRig glbs face +Y
-    niamh, nrig = kit.load_rigged_character(f"{MESHES}/props/{NN}_rigged.glb", NN, height=1.68, yaw_deg=180, skirt=True)
+    YAW = 0 if CAST == "cg" else 180     # UniRig flips: -Y meshes come back +Y (needs 180), +Y CharacterGen meshes come back -Y
+    oisin, orig = kit.load_rigged_character(f"{MESHES}/props/{ON}_rigged.glb", ON, height=1.75, yaw_deg=YAW)
+    niamh, nrig = kit.load_rigged_character(f"{MESHES}/props/{NN}_rigged.glb", NN, height=1.68, yaw_deg=YAW, skirt=True)
 else:
     oisin = kit.load_character(f"{MESHES}/props/oisin_mv_painted.glb", "oisin_mv")
     orig = kit.rig_character(oisin, "oisin_mv")
