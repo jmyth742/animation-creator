@@ -239,6 +239,11 @@ GPU never idle: each day's script ends with a sweep bank.
    verdict on the mesh source for Episode 3.
 
 ### Day 6 — Episode 3 + release
+- QUEUED 16 Sep 16:10 (all detached, in dependency order): ep3 480p master
+  (scripts/ops/ep3_v2master.sh -> review/farewell_cliff_v1.mp4) -> release_v2.sh
+  (ep3 .srt + metadata, pilot_v2_ep1_ep2_ep3.mp4, trailer_v2.mp4); v4 1664x960
+  masters ep1 -> ep2 -> ep3 (loopwork/masters_v4_ep{1,2,3}.sh ->
+  review/*_v4.mp4). Logs: loopwork/{ep3_v2master,release_v2,masters_v4_ep*}.log.
 - TRAP (16 Sep 15:05): glTF armatures import in QUATERNION rotation mode; the
   animators set rotation_euler, so a rigged cast silently ignores every
   heading unless the loader sets rig.rotation_mode='XYZ'. The facing-bake
