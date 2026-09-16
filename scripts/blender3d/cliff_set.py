@@ -24,12 +24,22 @@ def build_set(sc):
     sky = bpy.data.worlds.new("w"); sc.world = sky; sky.use_nodes = True
     sky.node_tree.nodes["Background"].inputs["Color"].default_value = (0.62, 0.70, 0.82, 1)
     # headland shelf (top at FLOOR_Z), cliff face, sea
+    rocktex = valley_set.toon_tex("crt", "rocktex.png", tile=6.0, shadow_mult=0.55) if __import__("os").path.exists(valley_set.TEX + "/rocktex.png") else rock
+    def _uv_scale(ob, k):
+        # primitive cubes map each face to the full 0-1 texture: retile so a
+        # 36 m face does not turn the grass into one giant blade
+        uv = ob.data.uv_layers.active
+        if uv:
+            for l in uv.data: l.uv = (l.uv[0] * k, l.uv[1] * k)
     bpy.ops.mesh.primitive_cube_add(location=(0, 8, FLOOR_Z - 3)); ob = bpy.context.object
-    ob.name = "headland"; ob.scale = (18, 12, 3); ob.data.materials.append(grass)
-    bpy.ops.mesh.primitive_cube_add(location=(0, 20.5, -1)); ob = bpy.context.object
-    ob.name = "cliff"; ob.scale = (18, 0.8, 5.6); ob.data.materials.append(rock)
+    ob.name = "headland"; ob.scale = (18, 12, 3); ob.data.materials.append(grass); _uv_scale(ob, 22)
+    # the cliff face: three staggered rock slabs, not one flat wall
+    for i, (x, y, sx, sy, sz, rz) in enumerate([(-7, 20.6, 8, 0.9, 5.6, 0.05), (4, 20.3, 9, 1.1, 5.8, -0.07), (13, 20.8, 7, 0.8, 5.4, 0.12)]):
+        bpy.ops.mesh.primitive_cube_add(location=(x, y, -1)); ob = bpy.context.object
+        ob.name = f"cliff{i}"; ob.scale = (sx, sy, sz); ob.rotation_euler = (0.06 * (i - 1), 0, rz)
+        ob.data.materials.append(rocktex); _uv_scale(ob, 6)
     bpy.ops.mesh.primitive_cube_add(location=(24, 6, FLOOR_Z - 3.5)); ob = bpy.context.object
-    ob.name = "shoulder"; ob.scale = (7, 14, 3); ob.rotation_euler.z = 0.2; ob.data.materials.append(grass)
+    ob.name = "shoulder"; ob.scale = (7, 14, 3); ob.rotation_euler.z = 0.2; ob.data.materials.append(grass); _uv_scale(ob, 12)
     bpy.ops.mesh.primitive_plane_add(size=260, location=(0, 70, SEA_Z)); ob = bpy.context.object
     ob.name = "sea"; ob.data.materials.append(sea)
     # a shingle shore at the cliff foot, where the boat waits

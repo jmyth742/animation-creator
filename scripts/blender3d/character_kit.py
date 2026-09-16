@@ -816,6 +816,7 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False
     # BAKED into bones + mesh. Detect facing from the foot -> toe bones and
     # rotate the rest so the toes point along KIT_FACING (+Y: what apply_walk /
     # apply_idle headings assume, measured on the film). yaw_deg overrides.
+    rig.rotation_mode = 'XYZ'     # glTF armatures import in QUATERNION mode: the animators' rotation_euler would be ignored
     KIT_FACING = math.radians(-90.0)   # toes along -Y (verified on the film: +Y turned every close-up away)
     yaw = None
     if yaw_deg is None:
