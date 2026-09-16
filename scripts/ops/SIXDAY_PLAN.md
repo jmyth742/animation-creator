@@ -199,6 +199,13 @@ GPU never idle: each day's script ends with a sweep bank.
   the jaw drive raised 0.13 -> 0.30 rad. Probe: review/day5_oisin_close_restaged.png.
 2. RESTAGE OISIN'S CLOSES to 3/4 front in BOTH episodes (CLOSE_O cams) and
    raise the jaw drive 0.13 -> 0.3 rad: his mouth must read. A/B stills.
+- DONE 16 Sep 13:55: Niamh's skirt weights handed to the hips (17.6k verts;
+  no more tenting — loopwork probe). FILM_BLINK=lam switch built; A/B
+  rendering -> review/day5_blink_ab_ep2b.mp4 (fixed cadence | LAM events).
+  CharacterGen leads rigged (loopwork/day5/cg_*_rigged.glb, all roles mapped);
+  face variants for their UVs being painted (auto-calibrated from probe_face,
+  CHAR_YAW=180) -> review/day5_cg_faces_*.png. v4 masters rendering with the
+  UniRig cast + restaged closes + skirt fix (loopwork/day5_prod.log).
 3. MOUTHS: adopt the user's LAM/Rhubarb verdict (FILM_VIS_SUFFIX=_lam) and
    use LAM's real blink events (l<i>_blink_lam.npy) instead of the fixed
    3.4 s cadence -> apply_talk_tex(blinks=events).
