@@ -74,6 +74,10 @@ DELIVERABLES: verdict on replacing mesh source and numpy skinning
   (proportions, T-pose, cape/boots intact, faithful hair colour) but a WORSE
   FACE texture (smeared eyes). Meshes face +Y (turn_grid TURN_YAW=180).
   Day-5 candidate: CharacterGen body + our FACE_BASE HD repaint, then UniRig.
+- CharacterGen Niamh (review/day2_charactergen_ab_niamh.png, _faces_): WINS
+  on body AND face (full dress silhouette, clear eyes + smile) vs the
+  current washed face. MESH-SOURCE VERDICT: CharacterGen for both leads;
+  Oisin's face via FACE_BASE HD repaint; then UniRig (T-pose helps).
 - CharacterGen: NOT run — 19 GB of weights need the disk-space decision
   (see workspace-environment-traps). Installer is fixed (per-package pip,
   huggingface_hub 0.25 for diffusers 0.24, CUDA env for nvdiffrast).
@@ -157,7 +161,8 @@ Principle: every item ends in an A/B or a frame-verified master, exported.
 GPU never idle: each day's script ends with a sweep bank.
 
 ### Day 5 — Put the wins ON SCREEN (studio_marathon8.sh)
-1. RIGGED CAST IN THE FILM (the largest visible upgrade):
+1. RIGGED CAST IN THE FILM (the largest visible upgrade) — on the
+   CharacterGen meshes (Day-2 verdict), UniRig-rigged, Oisin face repainted:
    character_kit gains load_rigged_character(glb) + apply_motion(rig, glb/bvh)
    so build_film can stage the UniRig rigs driven by Day-4 retargeted MoMask
    motion (walk-in, idle, turn, point) instead of the 14-bone numpy gait.
