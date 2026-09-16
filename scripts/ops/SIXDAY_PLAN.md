@@ -244,6 +244,9 @@ GPU never idle: each day's script ends with a sweep bank.
    verdict on the mesh source for Episode 3.
 
 ### Day 6 — Episode 3 + release
+- DONE 16 Sep 23:56: review/farewell_cliff_v4.mp4 — ep3 at 1664x960, 8 px lines,
+  79.6 s, 12 shots frame-verified; full-res check clean (loopwork/v4e3_check.png).
+  ep1's rebuild (weld + LAM blinks) + 8 px re-render is the last job in the chain.
 - DONE 16 Sep 21:54: review/first_snow_v4.mp4 — ep2 at 1664x960, 8 px lines,
   80.1 s, 12 shots frame-verified; full-res check clean (loopwork/v4e2_check.png).
   ep3 v4 rendering next, then ep1's re-render replaces its 16 px v4.
