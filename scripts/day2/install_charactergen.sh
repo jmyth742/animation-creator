@@ -24,6 +24,17 @@ SP=$($P -c "import site; print(site.getsitepackages()[0])"); mkdir -p $SP/gradio
 echo '"""stub: CharacterGen webui imports gradio at module level; the UI is never built."""' > $SP/gradio/__init__.py
 $P -m pip install -q --ignore-requires-python rm_anime_bg || log "rm_anime_bg FAILED"
 $P -c "import nvdiffrast" 2>/dev/null || $P -m pip install -q --no-build-isolation git+https://github.com/NVlabs/nvdiffrast || log "nvdiffrast build failed"
+# python 3.11 rejects dataclass-instance defaults (the README's 3.9 target): rewrite to default_factory
+$P - <<'PYD'
+import re, pathlib
+for p in list(pathlib.Path("3D_Stage/lrm").rglob("*.py")):
+    s = p.read_text(); o = s
+    s = re.sub(r"^(\s+\w+\s*:\s*)([A-Za-z_][\w\.]*)(\s*=\s*)\2\(\)\s*$", lambda m: f"{m.group(1)}{m.group(2)}{m.group(3)}field(default_factory={m.group(2)})", s, flags=re.M)
+    if s != o:
+        if not re.search(r"^from dataclasses import .*\bfield\b", s, re.M):
+            s = re.sub(r"^(from dataclasses import [^\n]+)$", r"\1, field", s, count=1, flags=re.M) if re.search(r"^from dataclasses import", s, re.M) else "from dataclasses import field\n" + s
+        p.write_text(s)
+PYD
 # weights: 2D stage (SD2.1-derived MV unet + image encoder) and 3D stage (LRM)
 HF=$E/bin/hf; [ -x $HF ] || HF="$E/bin/huggingface-cli"
 $HF download zjpshadow/CharacterGen --include "2D_Stage/*" --local-dir . > /workspace/loopwork/cg_dl2d.log 2>&1
