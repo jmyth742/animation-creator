@@ -53,35 +53,57 @@ T_order = []  # hierarchy order
 st = [b for b in T.data.bones if b.parent is None]
 while st: b = st.pop(0); T_order.append(b); st.extend(b.children)
 hips_t = roles["hips"]; hips_s = "Hips"
+# per mapped bone: world rotation A taking the target's rest bone direction onto the source's
+# rest bone direction, so the target tracks the source's world direction (twist ignored).
+# Without this, a T-pose source walking arms-down folds an A-pose target's arms across its chest.
+Y = mathutils.Vector((0, 1, 0))
+ALIGN = {}
+for tname, sname in pairs.items():
+    t_dir = (T_rest[tname] @ Y).normalized(); s_dir = (S_rest[sname] @ Y).normalized()
+    ALIGN[tname] = t_dir.rotation_difference(s_dir).to_matrix()
 hips_rest_s = (S.matrix_world @ S.data.bones[hips_s].matrix_local).translation
 hips_rest_t = (T.matrix_world @ T.data.bones[hips_t].matrix_local).translation
 
-f0, f1 = sc.frame_start, sc.frame_end
+act = S.animation_data.action
+f0, f1 = int(act.frame_range[0]), int(act.frame_range[1])
+sc.frame_start, sc.frame_end = f0, f1
 for pb in T.pose.bones: pb.rotation_mode = 'QUATERNION'
+# BVH root positions are absolute: measure hips travel from the FIRST animated frame, not the rest offset
+sc.frame_set(f0); hips_ref_s = (S.matrix_world @ S.pose.bones[hips_s].matrix).translation.copy()
 for f in range(f0, f1 + 1):
     sc.frame_set(f)
-    deltas = {}  # target bone name -> world rotation delta (Matrix 3x3)
+    # world rotation D per target bone. Hips: full delta (facing). Every other
+    # mapped bone: SWING-ONLY aim — rotate the bone's current direction (under
+    # its already-posed parent) onto the source bone's world direction; no
+    # twist is transferred (bone rolls differ between rigs). Unmapped bones
+    # ride along with their parent.
+    deltas = {}
     for b in T_order:
+        Dp = deltas[b.parent.name] if b.parent else mathutils.Matrix.Identity(3)
         if b.name in pairs:
             sname = pairs[b.name]
             pose_rot = (S.matrix_world @ S.pose.bones[sname].matrix).to_3x3()
-            deltas[b.name] = pose_rot @ S_rest[sname].inverted()
+            if b.name == hips_t:
+                D = pose_rot @ S_rest[sname].inverted() @ ALIGN[b.name]
+            else:
+                cur_dir = (Dp @ T_rest[b.name] @ Y).normalized()
+                want_dir = (pose_rot @ Y).normalized()
+                D = cur_dir.rotation_difference(want_dir).to_matrix() @ Dp
         else:
-            deltas[b.name] = deltas[b.parent.name] if b.parent else mathutils.Matrix.Identity(3)
-    for b in T_order:
+            D = Dp
+        deltas[b.name] = D
         pb = T.pose.bones[b.name]
-        Dp = deltas[b.parent.name] if b.parent else mathutils.Matrix.Identity(3)
-        Rloc = T_rest[b.name].inverted() @ Dp.inverted() @ deltas[b.name] @ T_rest[b.name]
+        Rloc = T_rest[b.name].inverted() @ Dp.inverted() @ D @ T_rest[b.name]
         pb.rotation_quaternion = Rloc.to_quaternion()
         pb.keyframe_insert("rotation_quaternion", frame=f)
     # hips translation (world delta, scaled) expressed in the hips' rest frame
     hp = (S.matrix_world @ S.pose.bones[hips_s].matrix).translation
-    dw = (hp - hips_rest_s) * scale
+    dw = (hp - hips_ref_s) * scale
     pb = T.pose.bones[hips_t]
     pb.location = T_rest[hips_t].inverted() @ (T.matrix_world.to_3x3().inverted() @ dw)
     pb.keyframe_insert("location", frame=f)
 S.hide_render = True; S.hide_viewport = True
-print("RETARGET keyed", f1 - f0 + 1, "frames, scale", round(scale, 3))
+print("RETARGET keyed", f1 - f0 + 1, "frames, scale", round(scale, 3), "hips travel", round(((S.matrix_world @ S.pose.bones[hips_s].matrix).translation - hips_ref_s).length * scale, 2))
 
 # export the animated rig for Day-5 integration
 bpy.ops.object.select_all(action='DESELECT')
@@ -102,9 +124,10 @@ if RENDER:
         sc.frame_set(f); p = (T.matrix_world @ T.pose.bones[hips_t].matrix).translation; xs.append(p.x); ys.append(p.y)
     cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
     span = max(max(xs) - min(xs), max(ys) - min(ys), H_t)
-    ctr = mathutils.Vector((cx, cy, hips_rest_t.z))
-    a = math.radians(35); d = 2.4 * span + 1.5
-    cam.location = (ctr.x + d * math.sin(a), ctr.y - d * math.cos(a), ctr.z + 0.25 * H_t)
+    t_zs = [(T.matrix_world @ b.head_local).z for b in T.data.bones] + [(T.matrix_world @ b.tail_local).z for b in T.data.bones]
+    ctr = mathutils.Vector((cx, cy, (min(t_zs) + max(t_zs)) / 2))
+    a = math.radians(35); d = 2.2 * max(span, H_t) + 1.0
+    cam.location = (ctr.x + d * math.sin(a), ctr.y - d * math.cos(a), ctr.z + 0.12 * H_t)
     dv = ctr - cam.location; cam.rotation_euler = dv.to_track_quat('-Z', 'Y').to_euler()
     sc.render.resolution_x, sc.render.resolution_y = 640, 480
     sc.frame_start, sc.frame_end = f0, f1
