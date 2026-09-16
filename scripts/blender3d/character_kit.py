@@ -655,7 +655,8 @@ def enable_face_variants(char, name, faces_dir):
     mat = char.data.materials[0]
     nt = mat.node_tree
     tex = [n for n in nt.nodes if n.type == 'TEX_IMAGE'][0]
-    uv_from = tex.inputs["Vector"].links[0].from_socket
+    # glb exports (UniRig) leave the Vector input unlinked = default UV map
+    uv_from = tex.inputs["Vector"].links[0].from_socket if tex.inputs["Vector"].links else None
     color_to = [ln.to_socket for ln in tex.outputs["Color"].links]
     nt.nodes.remove(tex)
     imgs = {}
@@ -663,7 +664,8 @@ def enable_face_variants(char, name, faces_dir):
         node = nt.nodes.new("ShaderNodeTexImage")
         node.image = bpy.data.images.load(f"{faces_dir}/{name}_face_{key}.png")
         node.image.pack()
-        nt.links.new(uv_from, node.inputs["Vector"])
+        if uv_from is not None:
+            nt.links.new(uv_from, node.inputs["Vector"])
         imgs[key] = node
     ctrl = {}
     cur = imgs["base"].outputs["Color"]
