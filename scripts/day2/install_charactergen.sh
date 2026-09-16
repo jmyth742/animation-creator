@@ -16,9 +16,12 @@ cd $R
 # one package per call so a single failure cannot abort the rest
 for PKG in "huggingface_hub==0.25.2" "diffusers==0.24.0" "transformers<4.47" accelerate ipdb einops omegaconf imageio onnxruntime \
   pytorch_lightning jaxtyping wandb lpips ninja open3d trimesh pymeshlab pygltflib \
-  "numpy<2" opencv-python-headless gradio; do
+  "numpy<2" opencv-python-headless; do
   $P -m pip install -q "$PKG" || log "pip $PKG FAILED"
 done
+# webui.py imports gradio at module level; a stub avoids gradio's hub>=1.0 pin (breaks diffusers 0.24)
+SP=$($P -c "import site; print(site.getsitepackages()[0])"); mkdir -p $SP/gradio
+echo '"""stub: CharacterGen webui imports gradio at module level; the UI is never built."""' > $SP/gradio/__init__.py
 $P -m pip install -q --ignore-requires-python rm_anime_bg || log "rm_anime_bg FAILED"
 $P -c "import nvdiffrast" 2>/dev/null || $P -m pip install -q --no-build-isolation git+https://github.com/NVlabs/nvdiffrast || log "nvdiffrast build failed"
 # weights: 2D stage (SD2.1-derived MV unet + image encoder) and 3D stage (LRM)
