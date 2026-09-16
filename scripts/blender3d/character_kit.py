@@ -724,3 +724,64 @@ def apply_talk_tex(rig, ctrl, envelope, f0, fps=16, blinks=True,
         for fc in nt.animation_data.action.fcurves:
             for kp in fc.keyframe_points:
                 kp.interpolation = 'CONSTANT'
+
+
+# ── UniRig-rigged cast (Day 5): real skin weights, same animators ────────
+def load_rigged_character(glb_path, name, height=1.75, yaw_deg=0.0):
+    """Import a UniRig-rigged GLB and rename its (unnamed) bones to the kit
+    convention via the geometric mapper, so apply_walk / apply_idle /
+    apply_talk_tex drive it unchanged. Adds the kit's 'jaw' bone + weights.
+    Returns (char_mesh, rig). Scales the rig so the character is `height`."""
+    import sys as _sys
+    _sys.path.insert(0, "/workspace/text-to-video/scripts/day4")
+    from rig_map import map_unirig
+    before = set(bpy.context.scene.objects)
+    bpy.ops.import_scene.gltf(filepath=glb_path)
+    new = [o for o in bpy.context.scene.objects if o not in before]
+    rig = [o for o in new if o.type == 'ARMATURE'][0]
+    meshes = [o for o in new if o.type == 'MESH' and any(m.type == 'ARMATURE' for m in o.modifiers)]
+    char = meshes[0]
+    for o in new:
+        if o.type == 'MESH' and o is not char:
+            bpy.data.objects.remove(o, do_unlink=True)
+    rig.name, char.name = f"{name}_rig", name
+    roles = map_unirig(rig); H = roles.pop("_height")
+    ren = {"hips": "hips", "spine0": "spine", "L_upperleg": "thigh.L", "L_lowerleg": "shin.L", "L_foot": "foot.L",
+           "R_upperleg": "thigh.R", "R_lowerleg": "shin.R", "R_foot": "foot.R",
+           "L_upperarm": "arm.L", "L_forearm": "fore.L", "R_upperarm": "arm.R", "R_forearm": "fore.R"}
+    ren["head" if "head" in roles else "neck"] = "head"
+    for role, kit_name in ren.items():
+        if role in roles:
+            b = rig.data.bones[roles[role]]
+            vg = char.vertex_groups.get(b.name)
+            b.name = kit_name
+            if vg: vg.name = kit_name
+    for pb in rig.pose.bones:
+        pb.rotation_mode = 'XYZ'
+    # scale to height (rig + mesh share the armature parent)
+    s = height / H
+    rig.scale = (s, s, s)
+    if yaw_deg:
+        rig.rotation_mode = 'XYZ'; rig.rotation_euler.z += math.radians(yaw_deg)
+    bpy.context.view_layer.update()
+    # jaw: child of head, lower-front head slice weighted like rig_character
+    bpy.context.view_layer.objects.active = rig
+    bpy.ops.object.mode_set(mode='EDIT')
+    hb = rig.data.edit_bones["head"]
+    jb = rig.data.edit_bones.new("jaw")
+    jb.head = hb.head.copy(); jb.tail = hb.head + mathutils.Vector((0, -0.12 * H / height, -0.06 * H / height))
+    jb.parent = hb
+    bpy.ops.object.mode_set(mode='OBJECT')
+    n = len(char.data.vertices); co = np.empty(n * 3); char.data.vertices.foreach_get("co", co); P = co.reshape(-1, 3)
+    P = P @ np.array(char.matrix_world.to_3x3()).T + np.array(char.matrix_world.translation)
+    zmax, zmin = P[:, 2].max(), P[:, 2].min(); Hm = zmax - zmin
+    jaw_g = char.vertex_groups.new(name="jaw")
+    jz0, jz1 = zmin + 0.86 * Hm, zmin + 0.92 * Hm
+    ymid = np.median(P[:, 1])
+    jsel = np.where((P[:, 2] > jz0) & (P[:, 2] < jz1) & (P[:, 1] < ymid - 0.02 * Hm))[0]
+    for i in jsel:
+        f = 1.0 - abs(P[i, 2] - (jz0 + jz1) / 2) / (0.5 * (jz1 - jz0))
+        if f > 0: jaw_g.add([int(i)], min(0.85, float(f)), 'ADD')
+    for poly in char.data.polygons: poly.use_smooth = True
+    print("RIGGED", name, "bones", len(rig.data.bones), "renamed", [k for k in ren.values() if k in rig.data.bones], "jaw verts", len(jsel))
+    return char, rig
