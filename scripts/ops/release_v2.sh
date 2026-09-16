@@ -40,8 +40,8 @@ log "3: trailer v2 — moments from all three masters (global frame -> seconds, 
 $V - <<'PY' > $W/trailer2_cut.txt
 import json
 FPS = 16.0
-picks = [("nine_waterfalls_v3cast", "film_shots.json", "s01_est", 0.15, 0.7), ("first_snow_v3cast", "film2_shots.json", "s01_est", 0.1, 0.6),
-         ("farewell_cliff_v1", "film3_shots.json", "s01_est", 0.1, 0.7), ("nine_waterfalls_v3cast", "film_shots.json", "s02_walk", 0.1, 0.9),
+picks = [("nine_waterfalls_v3cast", "film_shots.json", "s01_est", 0.6, 0.98), ("first_snow_v3cast", "film2_shots.json", "s01_est", 0.6, 0.98),
+         ("farewell_cliff_v1", "film3_shots.json", "s01_est", 0.6, 0.98), ("nine_waterfalls_v3cast", "film_shots.json", "s02_walk", 0.1, 0.9),
          ("farewell_cliff_v1", "film3_shots.json", "s03_meet", 0.0, 1.0), ("first_snow_v3cast", "film2_shots.json", "s05", 0.2, 0.6),
          ("nine_waterfalls_v3cast", "film_shots.json", "s04", 0.2, 0.55), ("farewell_cliff_v1", "film3_shots.json", "s07b", 0.0, 0.8),
          ("first_snow_v3cast", "film2_shots.json", "s07_beat", 0.0, 1.0), ("nine_waterfalls_v3cast", "film_shots.json", "s07a", 0.3, 0.8),
