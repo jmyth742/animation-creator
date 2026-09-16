@@ -226,6 +226,11 @@ GPU never idle: each day's script ends with a sweep bank.
 3. MOUTHS: adopt the user's LAM/Rhubarb verdict (FILM_VIS_SUFFIX=_lam) and
    use LAM's real blink events (l<i>_blink_lam.npy) instead of the fixed
    3.4 s cadence -> apply_talk_tex(blinks=events).
+- FLAT PALETTE IN MOTION (16 Sep 16:30, review/day5_flat_ab_ep2b.mp4 + _strip):
+  the 14-colour textures dull the eyes (green-grey) and muddy the skin; the
+  current textures keep their contrast. NOT adopted. The Day-1 deferral is
+  closed; palette discipline, if wanted, should be a cel ramp change, not a
+  texture quantisation.
 - LOOSE SHELLS (16 Sep 15:45, review/day5_shellcull_*_oisin.png): after a
   merge-by-distance the "700 shells" collapse to ONE — they were unshared
   marching-cubes seams, not fragments. The weld gives continuous normals
