@@ -24,7 +24,7 @@ def _weld_shells(char, name):
         # merge coincident verts, then delete shells with fewer than N faces.
         # Kills interior line dashes and stray normal-transfer targets.
         import bmesh
-        N = int(os.environ["CHAR_SHELLCULL"])
+        N = int(os.environ.get("CHAR_SHELLCULL", "1"))
         bm = bmesh.new(); bm.from_mesh(char.data)
         bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0008)
         bm.faces.ensure_lookup_table()
