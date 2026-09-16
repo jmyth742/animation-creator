@@ -25,12 +25,17 @@ def build_set(sc):
     sky.node_tree.nodes["Background"].inputs["Color"].default_value = (0.62, 0.70, 0.82, 1)
     # headland shelf (top at FLOOR_Z), cliff face, sea
     rocktex = valley_set.toon_tex("crt", "rocktex.png", tile=6.0, shadow_mult=0.55) if __import__("os").path.exists(valley_set.TEX + "/rocktex.png") else rock
+    if rocktex is not rock:
+        # the image is sampled by XY: vertical faces streak. Box projection.
+        for nd in rocktex.node_tree.nodes:
+            if nd.type == 'TEX_IMAGE':
+                nd.projection = 'BOX'; nd.projection_blend = 0.25
     def _uv_scale(ob, k):
-        # primitive cubes map each face to the full 0-1 texture: retile so a
-        # 36 m face does not turn the grass into one giant blade
-        uv = ob.data.uv_layers.active
-        if uv:
-            for l in uv.data: l.uv = (l.uv[0] * k, l.uv[1] * k)
+        # toon_tex samples OBJECT-local coordinates: bake the object scale into
+        # the mesh so a 36 m slab tiles like the valley floor (unscaled grid)
+        bpy.ops.object.select_all(action='DESELECT'); ob.select_set(True)
+        bpy.context.view_layer.objects.active = ob
+        bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
     bpy.ops.mesh.primitive_cube_add(location=(0, 8, FLOOR_Z - 3)); ob = bpy.context.object
     ob.name = "headland"; ob.scale = (18, 12, 3); ob.data.materials.append(grass); _uv_scale(ob, 22)
     # the cliff face: three staggered rock slabs, not one flat wall
@@ -41,13 +46,13 @@ def build_set(sc):
     bpy.ops.mesh.primitive_cube_add(location=(24, 6, FLOOR_Z - 3.5)); ob = bpy.context.object
     ob.name = "shoulder"; ob.scale = (7, 14, 3); ob.rotation_euler.z = 0.2; ob.data.materials.append(grass); _uv_scale(ob, 12)
     bpy.ops.mesh.primitive_plane_add(size=260, location=(0, 70, SEA_Z)); ob = bpy.context.object
-    ob.name = "sea"; ob.data.materials.append(sea)
+    ob.name = "sea"; ob.data.materials.append(sea); _uv_scale(ob, 1)
     # a shingle shore at the cliff foot, where the boat waits
     bpy.ops.mesh.primitive_cube_add(location=(6, 24, SEA_Z + 0.15)); ob = bpy.context.object
-    ob.name = "shore"; ob.scale = (7, 3.5, 0.3); ob.data.materials.append(rock)
+    ob.name = "shore"; ob.scale = (7, 3.5, 0.3); ob.data.materials.append(rocktex); _uv_scale(ob, 1)
     set_assets.place(f"{PROPS}/benttree_painted.glb", "bent", (5.5, 16), 4.2, rot_z=0.6, floor_fn=floor_fn)
-    set_assets.place(f"{PROPS}/seastack_painted.glb", "stack", (-9, 34), 9.5, floor_fn=lambda x, y: SEA_Z)
-    set_assets.place(f"{PROPS}/seastack_painted.glb", "stack2", (18, 44), 6.5, rot_z=1.9, floor_fn=lambda x, y: SEA_Z)
+    set_assets.place(f"{PROPS}/seastack_painted.glb", "stack", (-14, 38), 9.5, floor_fn=lambda x, y: SEA_Z)
+    set_assets.place(f"{PROPS}/seastack_painted.glb", "stack2", (26, 40), 6.5, rot_z=1.9, floor_fn=lambda x, y: SEA_Z)
     set_assets.place(f"{PROPS}/rock_painted.glb", "r1", (-4, 14), 1.1, floor_fn=floor_fn)
     set_assets.place(f"{PROPS}/rock_v2_painted.glb", "r2", (-8.5, 8), 0.9, rot_z=2.1, floor_fn=floor_fn)
     set_assets.place(f"{PROPS}/stones_painted.glb", "st1", (9, 10), 0.7, rot_z=0.8, floor_fn=floor_fn)
