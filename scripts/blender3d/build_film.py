@@ -142,7 +142,7 @@ for L, f0 in zip(lines, starts):
 
 # ── the edit, as data ────────────────────────────────────────────────
 CLOSE_N = {"cam": "1.2,6.85,1.8", "tgt": "-1.55,8.05,1.45", "lens": 45}
-CLOSE_O = {"cam": "-2.2,7.23,1.62", "tgt": "-0.45,7.25,1.57", "lens": 55}   # 3/4 front (was a profile)
+CLOSE_O = {"cam": "-2.0,7.4,1.62", "tgt": "0.0,6.95,1.57", "lens": 55}   # 3/4 front on his real head position (was a profile aimed at a stale point)
 TWO = {"cam": "5.5,7.6,1.45", "tgt": "-0.8,7.5,1.35", "lens": 50}
 shots = [
     {"name": "s01_est", "f0": 1, "f1": 110, "cam": "-14,-6,5",
