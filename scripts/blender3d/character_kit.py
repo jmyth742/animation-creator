@@ -734,7 +734,7 @@ def apply_talk_tex(rig, ctrl, envelope, f0, fps=16, blinks=True,
 
 
 # ── UniRig-rigged cast (Day 5): real skin weights, same animators ────────
-def load_rigged_character(glb_path, name, height=1.75, yaw_deg=0.0, skirt=False):
+def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False):
     """Import a UniRig-rigged GLB and rename its (unnamed) bones to the kit
     convention via the geometric mapper, so apply_walk / apply_idle /
     apply_talk_tex drive it unchanged. Adds the kit's 'jaw' bone + weights.
@@ -811,8 +811,34 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=0.0, skirt=False)
     Hm = max(zs_m) - min(zs_m)
     s = height / Hm
     rig.scale = (s, s, s)
-    if yaw_deg:
-        rig.rotation_mode = 'XYZ'; rig.rotation_euler.z += math.radians(yaw_deg)
+    # FACING: UniRig exports flip inconsistently per mesh, and the animators
+    # overwrite the armature object's rotation every frame — so the yaw must be
+    # BAKED into bones + mesh. Detect facing from the foot -> toe bones and
+    # rotate the rest so the toes point along KIT_FACING (+Y: what apply_walk /
+    # apply_idle headings assume, measured on the film). yaw_deg overrides.
+    KIT_FACING = math.radians(-90.0)   # toes along -Y (verified on the film: +Y turned every close-up away)
+    yaw = None
+    if yaw_deg is None:
+        fwd = mathutils.Vector((0, 0, 0))
+        for fn in ("foot.L", "foot.R"):
+            if fn in rig.data.bones:
+                fb = rig.data.bones[fn]; toe = fb.children[0] if fb.children else fb
+                d = rig.matrix_world.to_3x3() @ (toe.tail_local - toe.head_local); d.z = 0
+                if d.length > 1e-6: fwd += d.normalized()
+        if fwd.length > 1e-6:
+            yaw = KIT_FACING - math.atan2(fwd.y, fwd.x)
+            print("FACING", name, "toes ->", (round(fwd.x, 2), round(fwd.y, 2)), "baked yaw", round(math.degrees(yaw), 1))
+    elif yaw_deg:
+        yaw = math.radians(yaw_deg)
+    if yaw:
+        Rz = mathutils.Matrix.Rotation(yaw, 4, 'Z')
+        bpy.context.view_layer.objects.active = rig
+        bpy.ops.object.mode_set(mode='EDIT')
+        for eb in rig.data.edit_bones:
+            eb.head = Rz @ eb.head; eb.tail = Rz @ eb.tail; eb.roll = eb.roll   # roll is relative: unchanged
+        bpy.ops.object.mode_set(mode='OBJECT')
+        Rm = M_mesh_to_rig.inverted() @ Rz @ M_mesh_to_rig
+        char.data.transform(Rm); char.data.update()
     bpy.context.view_layer.update()
     # jaw: child of head, lower-front head slice weighted like rig_character
     bpy.context.view_layer.objects.active = rig
