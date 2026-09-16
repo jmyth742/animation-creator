@@ -34,6 +34,32 @@ def load_character(mesh_path, name, height=1.75):
     for poly in char.data.polygons:
         poly.use_smooth = True
     import os
+    if os.environ.get("CHAR_SHELLCULL", "1") not in ("", "0"):   # default: weld seams (the "700 shells" were unshared marching-cubes seams), cull shells < N faces
+        # AI meshes come with hundreds of loose shells (hair strands, crumbs):
+        # merge coincident verts, then delete shells with fewer than N faces.
+        # Kills interior line dashes and stray normal-transfer targets.
+        import bmesh
+        N = int(os.environ["CHAR_SHELLCULL"])
+        bm = bmesh.new(); bm.from_mesh(char.data)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0008)
+        bm.faces.ensure_lookup_table()
+        seen = set(); removed = 0; shells = 0
+        for f0 in bm.faces:
+            if f0.index in seen: continue
+            comp = []; stack = [f0]
+            while stack:
+                f = stack.pop()
+                if f.index in seen: continue
+                seen.add(f.index); comp.append(f)
+                for e in f.edges:
+                    for g in e.link_faces:
+                        if g.index not in seen: stack.append(g)
+            shells += 1
+            if len(comp) < N:
+                bmesh.ops.delete(bm, geom=comp, context='FACES'); removed += len(comp)
+                bm.faces.ensure_lookup_table()
+        bm.to_mesh(char.data); bm.free(); char.data.update()
+        print("SHELLCULL", name, "shells", shells, "faces removed", removed, "faces left", len(char.data.polygons))
     if os.environ.get("CHAR_YAW"):
         # bake a yaw into the mesh data (CharacterGen meshes face +Y; the kit
         # and probe_face expect the face toward -Y)

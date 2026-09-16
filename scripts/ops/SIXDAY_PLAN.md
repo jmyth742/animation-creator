@@ -226,6 +226,11 @@ GPU never idle: each day's script ends with a sweep bank.
 3. MOUTHS: adopt the user's LAM/Rhubarb verdict (FILM_VIS_SUFFIX=_lam) and
    use LAM's real blink events (l<i>_blink_lam.npy) instead of the fixed
    3.4 s cadence -> apply_talk_tex(blinks=events).
+- LOOSE SHELLS (16 Sep 15:45, review/day5_shellcull_*_oisin.png): after a
+  merge-by-distance the "700 shells" collapse to ONE — they were unshared
+  marching-cubes seams, not fragments. The weld gives continuous normals
+  (the chin/neck terminator loses its step). ADOPTED as the load default
+  (CHAR_SHELLCULL=1; =N also culls real shells under N faces; 0 = off).
 4. LOOSE SHELLS: merge-by-distance / tiny-shell cull at load (~700 shells per
    lead) -> fewer interior line dashes; grid before/after.
 5. v4 MASTERS at 1664x960, FILM_LINES=4.0 MINLEN=40, parallel 3, both
