@@ -44,7 +44,9 @@ picks = [("nine_waterfalls_v3cast", "film_shots.json", "s01_est", 0.15, 0.7), ("
          ("farewell_cliff_v1", "film3_shots.json", "s01_est", 0.1, 0.7), ("nine_waterfalls_v3cast", "film_shots.json", "s02_walk", 0.1, 0.9),
          ("farewell_cliff_v1", "film3_shots.json", "s03_meet", 0.0, 1.0), ("first_snow_v3cast", "film2_shots.json", "s05", 0.2, 0.6),
          ("nine_waterfalls_v3cast", "film_shots.json", "s04", 0.2, 0.55), ("farewell_cliff_v1", "film3_shots.json", "s07b", 0.0, 0.8),
-         ("first_snow_v3cast", "film2_shots.json", "s07_beat", 0.0, 1.0), ("farewell_cliff_v1", "film3_shots.json", "s11_away", 0.2, 0.9)]
+         ("first_snow_v3cast", "film2_shots.json", "s07_beat", 0.0, 1.0), ("nine_waterfalls_v3cast", "film_shots.json", "s07a", 0.3, 0.8),
+         ("farewell_cliff_v1", "film3_shots.json", "s05", 0.25, 0.7), ("first_snow_v3cast", "film2_shots.json", "s11_away", 0.3, 0.8),
+         ("nine_waterfalls_v3cast", "film_shots.json", "s10_beat", 0.0, 1.0), ("farewell_cliff_v1", "film3_shots.json", "s11_away", 0.2, 0.95)]
 for master, sj, name, a, z in picks:
     d = json.load(open(f"/workspace/loopwork/{sj}")); s = [x for x in d["shots"] if x["name"] == name][0]
     # the assembled film plays shots in list order with edit-order frames = cumulative; use cumulative offsets
