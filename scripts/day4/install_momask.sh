@@ -30,6 +30,8 @@ s = re.sub(r"^(\s*)import numpy\.core\.umath_tests as ut$", lambda m: m.group(1)
 p.write_text(s)
 PYP
 done
+# matplotlib>=3.7: Axes.lines/collections are read-only
+sed -i 's/ax\.lines = \[\]/[l.remove() for l in list(ax.lines)]/; s/ax\.collections = \[\]/[c.remove() for c in list(ax.collections)]/' utils/plot_script.py
 if [ ! -f checkpoints/t2m/t2m_nlayer8_nhead6_ld384_ff1024_cdp0.1_rvq6ns/model/latest.tar ]; then
   HF=$E/bin/hf; [ -x $HF ] || HF=$E/bin/huggingface-cli
   $HF download geedog/momask-codes-models --local-dir checkpoints > /workspace/loopwork/momask_dl.log 2>&1 || log "checkpoint download FAILED"
