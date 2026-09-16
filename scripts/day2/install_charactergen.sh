@@ -40,7 +40,7 @@ HF=$E/bin/hf; [ -x $HF ] || HF="$E/bin/huggingface-cli"
 $HF download zjpshadow/CharacterGen --include "2D_Stage/*" --local-dir . > /workspace/loopwork/cg_dl2d.log 2>&1
 $HF download zjpshadow/CharacterGen --include "3D_Stage/*" --local-dir . > /workspace/loopwork/cg_dl3d.log 2>&1
 sed -i "s#stabilityai/stable-diffusion-2-1#sd2-community/stable-diffusion-2-1#" 2D_Stage/configs/infer.yaml
-$HF download sd2-community/stable-diffusion-2-1 --include "scheduler/*" "tokenizer/*" "text_encoder/*" "vae/*" "unet/*" "*.json" > /workspace/loopwork/cg_dlsd.log 2>&1 || log "SD2.1 prefetch failed (runtime will retry)"
+$HF download sd2-community/stable-diffusion-2-1 --include "scheduler/*" "tokenizer/*" "*.json" "text_encoder/model.safetensors" "vae/diffusion_pytorch_model.safetensors" "unet/diffusion_pytorch_model.safetensors" > /workspace/loopwork/cg_dlsd.log 2>&1 || log "SD2.1 prefetch failed (runtime will retry)"
 ls 2D_Stage/models/checkpoint/pytorch_model.bin 3D_Stage/models/lrm.ckpt > /dev/null 2>&1 && log "weights present" || log "weights MISSING"
 cd $R/2D_Stage && $P - <<'PYX' && echo "INSTALL charactergen OK" || echo "INSTALL charactergen FAIL"
 import torch, diffusers, xformers, onnxruntime, nvdiffrast, rm_anime_bg
