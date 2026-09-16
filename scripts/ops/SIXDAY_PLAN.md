@@ -206,6 +206,12 @@ GPU never idle: each day's script ends with a sweep bank.
   face variants for their UVs being painted (auto-calibrated from probe_face,
   CHAR_YAW=180) -> review/day5_cg_faces_*.png. v4 masters rendering with the
   UniRig cast + restaged closes + skirt fix (loopwork/day5_prod.log).
+- DONE 16 Sep 14:00: CharacterGen cast has FACE VARIANTS (face_paint on
+  its own UVs; auto-calibration from probe_face fails on these meshes — the
+  hair fringe reads as the nose — so calibration was set from a check render:
+  oisin mouth 1.45 / eyes 1.53, niamh 1.46 / 1.525; their own eyes kept).
+  review/day5_cg_faces_*.png. FILM_CAST=cg switches the film to the
+  CharacterGen rigs (props/cg_*_rigged.glb + cg_*_face_*.png).
 3. MOUTHS: adopt the user's LAM/Rhubarb verdict (FILM_VIS_SUFFIX=_lam) and
    use LAM's real blink events (l<i>_blink_lam.npy) instead of the fixed
    3.4 s cadence -> apply_talk_tex(blinks=events).

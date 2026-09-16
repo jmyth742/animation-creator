@@ -61,17 +61,19 @@ valley_set.build_set(sc, winter=True)
 import set_assets
 set_assets.dress_valley(sc, floor_z, winter=True)
 
+CAST = os.environ.get("FILM_CAST", "mv")     # mv = Hunyuan-mv meshes, cg = CharacterGen meshes (Day-2 verdict)
 if os.environ.get("FILM_RIG", "numpy") == "unirig":
     # Day-5: UniRig-skinned cast (real skeletons + skin weights), same animators
-    oisin, orig = kit.load_rigged_character(f"{MESHES}/props/oisin_mv_rigged.glb", "oisin_mv", height=1.75, yaw_deg=180)   # UniRig glbs face +Y
-    niamh, nrig = kit.load_rigged_character(f"{MESHES}/props/niamh_mv_rigged.glb", "niamh_mv", height=1.68, yaw_deg=180, skirt=True)
+    ON, NN = ("cg_oisin", "cg_niamh") if CAST == "cg" else ("oisin_mv", "niamh_mv")
+    oisin, orig = kit.load_rigged_character(f"{MESHES}/props/{ON}_rigged.glb", ON, height=1.75, yaw_deg=180)   # UniRig glbs face +Y
+    niamh, nrig = kit.load_rigged_character(f"{MESHES}/props/{NN}_rigged.glb", NN, height=1.68, yaw_deg=180, skirt=True)
 else:
     oisin = kit.load_character(f"{MESHES}/props/oisin_mv_painted.glb", "oisin_mv")
     orig = kit.rig_character(oisin, "oisin_mv")
     niamh = kit.load_character(f"{MESHES}/props/niamh_mv_painted.glb", "niamh_mv", height=1.68)
     nrig = kit.rig_character(niamh, "niamh_mv")
-octrl = kit.enable_face_variants(oisin, "oisin_mv", f"{MESHES}/props")
-nctrl = kit.enable_face_variants(niamh, "niamh_mv", f"{MESHES}/props")
+octrl = kit.enable_face_variants(oisin, oisin.name, f"{MESHES}/props")
+nctrl = kit.enable_face_variants(niamh, niamh.name, f"{MESHES}/props")
 
 # ── performances ─────────────────────────────────────────────────────
 def his_xy(f):
