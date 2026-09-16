@@ -16,7 +16,7 @@ cd $R
 # one package per call so a single failure cannot abort the rest
 for PKG in "huggingface_hub==0.25.2" "diffusers==0.24.0" "transformers<4.47" accelerate ipdb einops omegaconf imageio onnxruntime \
   pytorch_lightning jaxtyping wandb lpips ninja open3d trimesh pymeshlab pygltflib \
-  "numpy<2" opencv-python-headless; do
+  "numpy<2" opencv-python-headless gradio; do
   $P -m pip install -q "$PKG" || log "pip $PKG FAILED"
 done
 $P -m pip install -q --ignore-requires-python rm_anime_bg || log "rm_anime_bg FAILED"
