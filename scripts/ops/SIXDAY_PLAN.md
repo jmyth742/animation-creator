@@ -244,6 +244,9 @@ GPU never idle: each day's script ends with a sweep bank.
    verdict on the mesh source for Episode 3.
 
 ### Day 6 — Episode 3 + release
+- DONE 16 Sep 21:54: review/first_snow_v4.mp4 — ep2 at 1664x960, 8 px lines,
+  80.1 s, 12 shots frame-verified; full-res check clean (loopwork/v4e2_check.png).
+  ep3 v4 rendering next, then ep1's re-render replaces its 16 px v4.
 - LINE THICKNESS CORRECTED (16 Sep 19:30, review/day6_line_thickness_check.png):
   Freestyle's scene unit thickness MULTIPLIES the linestyle thickness; film.py
   set both to FILM_LINES, so 2.0 at 480p was 4 px (fine) but 4.0 at 960p was
