@@ -25,11 +25,12 @@ def build_set(sc):
     sky.node_tree.nodes["Background"].inputs["Color"].default_value = (0.62, 0.70, 0.82, 1)
     # headland shelf (top at FLOOR_Z), cliff face, sea
     rocktex = valley_set.toon_tex("crt", "rocktex.png", tile=6.0, shadow_mult=0.55) if __import__("os").path.exists(valley_set.TEX + "/rocktex.png") else rock
-    if rocktex is not rock:
-        # the image is sampled by XY: vertical faces streak. Box projection.
-        for nd in rocktex.node_tree.nodes:
-            if nd.type == 'TEX_IMAGE':
-                nd.projection = 'BOX'; nd.projection_blend = 0.25
+    for mat in (rocktex, grass, sea):
+        # images are sampled by XY: vertical faces streak. Box projection.
+        if mat.use_nodes:
+            for nd in mat.node_tree.nodes:
+                if nd.type == 'TEX_IMAGE':
+                    nd.projection = 'BOX'; nd.projection_blend = 0.25
     def _uv_scale(ob, k):
         # toon_tex samples OBJECT-local coordinates: bake the object scale into
         # the mesh so a 36 m slab tiles like the valley floor (unscaled grid)
