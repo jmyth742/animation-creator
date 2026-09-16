@@ -708,7 +708,7 @@ def apply_talk_tex(rig, ctrl, envelope, f0, fps=16, blinks=True,
             ctrl[k].default_value = 1.0 if k == sel else 0.0
             ctrl[k].keyframe_insert("default_value", frame=f)
         bpy.context.scene.frame_set(f)
-        pb["jaw"].rotation_euler = (0.13 * a, 0, 0)
+        pb["jaw"].rotation_euler = (0.30 * a, 0, 0)   # was 0.13: unreadable at 3/4
         pb["jaw"].keyframe_insert("rotation_euler", frame=f)
     if blinks:
         total = len(envelope)
