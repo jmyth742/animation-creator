@@ -252,6 +252,8 @@ GPU never idle: each day's script ends with a sweep bank.
   480p = 4.0, 1664x960 = 8.0 (verified against the 480p reference). All ops
   scripts, docs and the plan were rewritten to the new numbers. ep1's v4 is
   re-rendered at the end of the chain; ep2/ep3 restarted with 8.0.
+  Verified 19:35 on ep2's first hi-res shot: an even ~8 px outline that reads
+  as drawn (loopwork/v4_ep2_check.png).
 - 16 Sep 17:15: ep2 + ep3 blends rebuilt with the seam weld (now applied in
   the rigged loader too — it had only run on the numpy path) and LAM blinks
   before their v4 renders (loopwork/v4_rebuild.log: weld=2 each); ep1's v4 (already
