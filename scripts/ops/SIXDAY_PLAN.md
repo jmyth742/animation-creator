@@ -244,6 +244,10 @@ GPU never idle: each day's script ends with a sweep bank.
    verdict on the mesh source for Episode 3.
 
 ### Day 6 — Episode 3 + release
+- 16 Sep 17:00: ep2 + ep3 blends rebuilt with the seam weld and LAM blinks
+  before their v4 renders (loopwork/v4_rebuild.log); ep1's v4 (already
+  rendering on the pre-weld blend) is re-rendered at the end of the chain
+  (masters_v4_ep1b.sh) so all three v4 masters share one stack.
 - DONE 16 Sep 16:55: RELEASE PACKAGE v2 — review/pilot_v2_ep1_ep2_ep3.mp4
   (239.5 s), trailer_v2.mp4 (14 moments from all three masters), farewell_cliff.srt,
   metadata_farewell_cliff.md. Contact sheet review/day6_trailer_v2_contact.png.
