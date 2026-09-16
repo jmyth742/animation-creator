@@ -139,6 +139,14 @@ for L, f0 in zip(lines, starts):
     vis = np.load(vis_p) if vis_p.exists() else None
     r, fc = rigs[L["who"]]
     kit.apply_talk_tex(r, fc, env, f0, fps=FPS, blinks=False, visemes=vis)
+    # FILM_BLINK=lam: real blink EVENTS from the LAM curves replace the fixed
+    # cadence during the line (l<i>_blink_lam.npy, 1 = lids closed)
+    bl_p = pathlib.Path(f"{audio_dir}/l{L['i']}_blink_lam.npy")
+    if os.environ.get("FILM_BLINK", "") == "lam" and bl_p.exists():
+        bl = np.load(bl_p)
+        for k, on in enumerate(bl):
+            fc["blink"].default_value = 1.0 if on else 0.0
+            fc["blink"].keyframe_insert("default_value", frame=f0 + k)
 
 # ── the edit, as data ────────────────────────────────────────────────
 CLOSE_N = {"cam": "-1.6,8.5,1.75", "tgt": "0.6,10.15,1.45", "lens": 45}
