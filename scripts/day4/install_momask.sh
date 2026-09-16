@@ -11,7 +11,9 @@ P=$E/bin/python
 $P -m pip --version > /dev/null 2>&1 || curl -sS https://bootstrap.pypa.io/get-pip.py | $P - -q || { log "pip bootstrap FAILED"; exit 1; }
 $P -m pip install -q --upgrade pip wheel setuptools
 # the repo pins torch 1.12/cu113; torch 2.1.2 cu121 runs it fine and matches the driver
-$P -m pip install -q torch==2.1.2 torchvision==0.16.2 --index-url https://download.pytorch.org/whl/cu121
+# keep whatever CUDA torch already works (a quota-time reinstall left 2.14+cu130, which runs MoMask fine)
+$P -c "import torch, torchvision; assert torch.cuda.is_available()" > /dev/null 2>&1 || \
+  $P -m pip install -q torch==2.1.2 torchvision==0.16.2 --index-url https://download.pytorch.org/whl/cu121
 for PKG in "numpy<2" "einops==0.6.1" ffmpy ftfy "matplotlib<3.9" "Pillow<11" PyYAML scikit-learn scipy "smplx==0.1.28" tqdm trimesh "vector-quantize-pytorch==1.6.30" chumpy joblib huggingface_hub; do
   $P -m pip install -q "$PKG" || log "pip $PKG FAILED"
 done
