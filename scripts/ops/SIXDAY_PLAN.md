@@ -229,7 +229,13 @@ GPU never idle: each day's script ends with a sweep bank.
 6. Sweep bank: CharacterGen + TRELLIS.2 (if DINOv3 unblocked) mesh A/Bs ->
    verdict on the mesh source for Episode 3.
 
-### Day 6 — Episode 3 + release (studio_marathon9.sh)
+### Day 6 — Episode 3 + release
+- LAUNCHED 16 Sep 14:45: EPISODE 3 "The Farewell Cliff" — scripts/ops/ep3_produce.sh
+  (cliff_set.py stage from the marathon2 headland + boat/seastacks, five lines
+  in voice continuing the waterfall motif, build_film3.py with 3/4 closes,
+  UniRig cast, 480p verdict master -> review/farewell_cliff_v1.mp4,
+  probes -> review/day6_ep3_probes.png). Docs: CLAUDE.md studio section added.
+ (studio_marathon9.sh)
 1. EPISODE 3 written in-voice (5 lines, word budgets per wan-clip limits) and
    produced in the cliff stage with the full stack: rigged cast, restaged
    closes, chosen visemes, hi-res lines. The proof the pipeline compounds.
