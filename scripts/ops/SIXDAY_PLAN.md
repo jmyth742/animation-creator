@@ -244,6 +244,11 @@ GPU never idle: each day's script ends with a sweep bank.
    verdict on the mesh source for Episode 3.
 
 ### Day 6 — Episode 3 + release
+- DONE 16 Sep 16:44: EPISODE 3 MASTER review/farewell_cliff_v1.mp4 (79.6 s, 12
+  shots frame-verified; contact sheet review/day6_ep3_master_contact.png).
+  Three episodes now exist on one stack: UniRig cast, restaged closes, LAM
+  blinks available, seam weld, 2.0 px lines. Release package running
+  (release_v2.sh); v4 hi-res masters for all three in the queue.
 - QUEUED 16 Sep 16:10 (all detached, in dependency order): ep3 480p master
   (scripts/ops/ep3_v2master.sh -> review/farewell_cliff_v1.mp4) -> release_v2.sh
   (ep3 .srt + metadata, pilot_v2_ep1_ep2_ep3.mp4, trailer_v2.mp4); v4 1664x960
