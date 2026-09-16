@@ -188,6 +188,9 @@ GPU never idle: each day's script ends with a sweep bank.
    so build_film can stage the UniRig rigs driven by Day-4 retargeted MoMask
    motion (walk-in, idle, turn, point) instead of the 14-bone numpy gait.
    A/B: ep1 s02_walk + s03_meet restaged -> review/day5_rigged_cast_ab.mp4.
+- DONE 16 Sep 13:12: Oisin's closes restaged to 3/4 front in both episodes
+  (ep1 cam -2.0,7.4 -> tgt 0.0,6.95; ep2 cam 0.97,9.05 -> tgt -0.75,8.75) and
+  the jaw drive raised 0.13 -> 0.30 rad. Probe: review/day5_oisin_close_restaged.png.
 2. RESTAGE OISIN'S CLOSES to 3/4 front in BOTH episodes (CLOSE_O cams) and
    raise the jaw drive 0.13 -> 0.3 rad: his mouth must read. A/B stills.
 3. MOUTHS: adopt the user's LAM/Rhubarb verdict (FILM_VIS_SUFFIX=_lam) and
