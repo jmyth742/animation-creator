@@ -182,6 +182,12 @@ Principle: every item ends in an A/B or a frame-verified master, exported.
 GPU never idle: each day's script ends with a sweep bank.
 
 ### Day 5 — Put the wins ON SCREEN (studio_marathon8.sh)
+- DONE 16 Sep 13:40: UniRig cast IN THE FILM. kit.load_rigged_character
+  renames the mapped bones to the kit names (+ a jaw bone), puts the feet at
+  the origin, scales by mesh extent, yaws 180 (UniRig glbs face +Y); the
+  existing animators and face variants drive it unchanged. FILM_RIG=unirig
+  in build_film*.py. Probes: review/day5_rigged_cast_s0{2,3,4}*.png — same
+  blocking, real skinning. ADOPTED for the v4 masters (rendering).
 1. RIGGED CAST IN THE FILM (the largest visible upgrade) — on the
    CharacterGen meshes (Day-2 verdict), UniRig-rigged, Oisin face repainted:
    character_kit gains load_rigged_character(glb) + apply_motion(rig, glb/bvh)
