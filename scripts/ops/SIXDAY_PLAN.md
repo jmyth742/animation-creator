@@ -156,6 +156,27 @@ DELIVERABLES: three episodes, one coherent new-quality bar
 - Full final export; IMPROVEMENTS.md groomed for the next campaign
 DELIVERABLES: releasable 3-episode season package on GitHub
 
+## Day 4 VERDICT (16 Sep 13:00)
+- MOTION LIBRARY WORKS: MoMask (MIT, ~1 min for 10 prompts x 2 takes) -> BVH
+  -> scripts/day4/retarget.py onto the UniRig rigs. Retarget method that
+  held up: hips take the full rest-delta (facing + travel from the first
+  animated frame), every other bone is a SWING-ONLY aim onto the source
+  bone's world direction (no twist transfer — bone rolls differ). Rest-
+  delta alone folded arms across the chest; direction-alignment fixed it.
+- 10 motions x 2 leads rendered: review/day4_motion_<name>_<who>.mp4 and
+  day4_motion_library_sheet.png (walk, sadwalk, run, idle, turn, sit,
+  kneel, point, hug, wave). Oisin reads correctly on all ten.
+- GAIT A/B (review/day4_gait_ab_oisin_mv.mp4): procedural numpy gait is a
+  stiff slide; the retargeted walk has weight shift, hip rotation, arm
+  swing. ADOPTED: retargeted motion replaces apply_walk for Day 5.
+- NIAMH'S DRESS: skinned to the leg bones, every stride tents the skirt
+  into a blob. Day 5: rig the CharacterGen mesh (better dress) and weight
+  the skirt to hips/spine (or cull leg weights below the knee on skirt verts).
+- HY-Motion-Lite needs the whole 24 GB card — parked. Animated rigs for
+  integration: /workspace/loopwork/day4/r_<motion>_<who>/<motion>_<who>.glb.
+- Ops: MoMask needs the numpy-alias .pth shim + umath/plot patches (in the
+  installer); hstack needs fps-normalised inputs; clear render dirs per pass.
+
 ## Days 5-6 REVISED (written 16 Sep from the Day 1-4 findings)
 Principle: every item ends in an A/B or a frame-verified master, exported.
 GPU never idle: each day's script ends with a sweep bank.

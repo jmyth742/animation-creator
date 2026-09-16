@@ -40,6 +40,8 @@
       (head-height chains are hair, not arms), retarget Day-4 motion onto them.
 - [x] CharacterGen adopted as mesh source (16 Sep): both leads; Oisin face  <- judged
       needs the HD repaint. Meshes face +Y (TURN_YAW=180 in turn_grid).
+- [x] Motion library adopted (Day 4): MoMask -> BVH -> swing-aim retarget onto  <- judged 16 Sep
+      UniRig rigs; gait A/B decisive. Niamh's skirt needs hips/spine weighting.
 - [ ] TRELLIS.2 A/B blocked on the gated DINOv3 encoder (user: accept license
       + HF_TOKEN), then bash /workspace/loopwork/p6_redo.sh
 - [ ] CharacterGen A/B blocked on disk space (19 GB weights) — user decision
