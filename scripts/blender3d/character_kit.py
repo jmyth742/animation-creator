@@ -34,6 +34,11 @@ def load_character(mesh_path, name, height=1.75):
     for poly in char.data.polygons:
         poly.use_smooth = True
     import os
+    if os.environ.get("CHAR_YAW"):
+        # bake a yaw into the mesh data (CharacterGen meshes face +Y; the kit
+        # and probe_face expect the face toward -Y)
+        char.data.transform(mathutils.Matrix.Rotation(math.radians(float(os.environ["CHAR_YAW"])), 4, 'Z'))
+        char.data.update()
     if os.environ.get("CHAR_NORMALFIX", "0") not in ("", "0"):
         # anime-industry normal editing, automated: copy custom normals
         # from a blurred proxy so the shading terminator ignores lumps
