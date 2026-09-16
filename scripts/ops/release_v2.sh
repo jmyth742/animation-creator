@@ -57,7 +57,7 @@ for master, sj, name, a, z in picks:
     print(master, round((t0 + a * n) / FPS, 3), round((z - a) * n / FPS, 3))
 PY
 i=0; ARGS=""; FC=""
-while read M T0 DUR; do i=$((i+1)); ffmpeg -v error -y -ss $T0 -t $DUR -i $R/$M.mp4 -an -c:v libx264 -pix_fmt yuv420p -crf 18 $W/tr2_$i.mp4; ARGS="$ARGS -i $W/tr2_$i.mp4"; FC="$FC[$((i-1))]"; done < $W/trailer2_cut.txt
+while read M T0 DUR; do i=$((i+1)); ffmpeg -nostdin -v error -y -ss $T0 -t $DUR -i $R/$M.mp4 -an -c:v libx264 -pix_fmt yuv420p -crf 18 $W/tr2_$i.mp4; ARGS="$ARGS -i $W/tr2_$i.mp4"; FC="$FC[$((i-1))]"; done < $W/trailer2_cut.txt
 FONT=/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf
 ffmpeg -v error -y $ARGS -f lavfi -t 60 -i "anoisesrc=colour=brown:amplitude=0.03,lowpass=f=260" -filter_complex "${FC}concat=n=$i:v=1:a=0,colorbalance=rh=0.06:gh=0.02:bh=-0.08,vignette=PI/5.2,drawtext=fontfile=$FONT:text='TIR NA NOG':fontcolor=white:fontsize=58:x=(w-text_w)/2:y=h*0.42:enable='lt(t,3.5)':alpha='if(lt(t,1),t,if(lt(t,2.8),1,3.5-t))',drawtext=fontfile=$FONT:text='THREE EPISODES':fontcolor=white:fontsize=34:x=(w-text_w)/2:y=h*0.56:enable='between(t,1.2,3.5)'[v]" -map "[v]" -map $i:a -shortest -c:v libx264 -pix_fmt yuv420p -crf 19 -c:a aac $R/trailer_v2.mp4 && log "trailer_v2.mp4 ($(ffprobe -v error -show_entries format=duration -of csv=p=0 $R/trailer_v2.mp4)s)"
 rm -f $W/tr2_*.mp4
