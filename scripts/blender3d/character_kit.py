@@ -17,22 +17,7 @@ import mathutils
 HEIGHT = {"default": 1.75}
 
 
-def load_character(mesh_path, name, height=1.75):
-    before = set(bpy.context.scene.objects)
-    bpy.ops.import_scene.gltf(filepath=mesh_path)
-    parts = [o for o in bpy.context.scene.objects
-             if o.type == 'MESH' and o not in before]
-    for o in bpy.context.scene.objects:
-        o.select_set(False)
-    for o in parts:
-        o.select_set(True)
-    bpy.context.view_layer.objects.active = parts[0]
-    if len(parts) > 1:
-        bpy.ops.object.join()
-    char = bpy.context.view_layer.objects.active
-    char.name = name
-    for poly in char.data.polygons:
-        poly.use_smooth = True
+def _weld_shells(char, name):
     import os
     if os.environ.get("CHAR_SHELLCULL", "1") not in ("", "0"):   # default: weld seams (the "700 shells" were unshared marching-cubes seams), cull shells < N faces
         # AI meshes come with hundreds of loose shells (hair strands, crumbs):
@@ -60,6 +45,26 @@ def load_character(mesh_path, name, height=1.75):
                 bm.faces.ensure_lookup_table()
         bm.to_mesh(char.data); bm.free(); char.data.update()
         print("SHELLCULL", name, "shells", shells, "faces removed", removed, "faces left", len(char.data.polygons))
+
+
+def load_character(mesh_path, name, height=1.75):
+    before = set(bpy.context.scene.objects)
+    bpy.ops.import_scene.gltf(filepath=mesh_path)
+    parts = [o for o in bpy.context.scene.objects
+             if o.type == 'MESH' and o not in before]
+    for o in bpy.context.scene.objects:
+        o.select_set(False)
+    for o in parts:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = parts[0]
+    if len(parts) > 1:
+        bpy.ops.object.join()
+    char = bpy.context.view_layer.objects.active
+    char.name = name
+    for poly in char.data.polygons:
+        poly.use_smooth = True
+    import os
+    _weld_shells(char, name)
     if os.environ.get("CHAR_YAW"):
         # bake a yaw into the mesh data (CharacterGen meshes face +Y; the kit
         # and probe_face expect the face toward -Y)
@@ -778,6 +783,7 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False
         if o.type == 'MESH' and o is not char:
             bpy.data.objects.remove(o, do_unlink=True)
     rig.name, char.name = f"{name}_rig", name
+    _weld_shells(char, name)     # same seam weld as the numpy path (skin weights survive: they live on the kept verts)
     roles = map_unirig(rig); H = roles.pop("_height")
     ren = {"hips": "hips", "spine0": "spine", "L_upperleg": "thigh.L", "L_lowerleg": "shin.L", "L_foot": "foot.L",
            "R_upperleg": "thigh.R", "R_lowerleg": "shin.R", "R_foot": "foot.R",
