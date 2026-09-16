@@ -72,8 +72,9 @@ else:
     orig = kit.rig_character(oisin, "oisin_mv")
     niamh = kit.load_character(f"{MESHES}/props/niamh_mv_painted.glb", "niamh_mv", height=1.68)
     nrig = kit.rig_character(niamh, "niamh_mv")
-octrl = kit.enable_face_variants(oisin, oisin.name, f"{MESHES}/props")
-nctrl = kit.enable_face_variants(niamh, niamh.name, f"{MESHES}/props")
+FS = os.environ.get("FILM_FACE_SUFFIX", "")     # e.g. _flat -> <name>_flat_face_*.png (flattened palette A/B)
+octrl = kit.enable_face_variants(oisin, oisin.name + FS, f"{MESHES}/props")
+nctrl = kit.enable_face_variants(niamh, niamh.name + FS, f"{MESHES}/props")
 
 # ── performances ─────────────────────────────────────────────────────
 def his_xy(f):
