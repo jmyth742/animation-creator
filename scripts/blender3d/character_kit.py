@@ -729,7 +729,7 @@ def apply_talk_tex(rig, ctrl, envelope, f0, fps=16, blinks=True,
 
 
 # ── UniRig-rigged cast (Day 5): real skin weights, same animators ────────
-def load_rigged_character(glb_path, name, height=1.75, yaw_deg=0.0):
+def load_rigged_character(glb_path, name, height=1.75, yaw_deg=0.0, skirt=False):
     """Import a UniRig-rigged GLB and rename its (unnamed) bones to the kit
     convention via the geometric mapper, so apply_walk / apply_idle /
     apply_talk_tex drive it unchanged. Adds the kit's 'jaw' bone + weights.
@@ -803,6 +803,33 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=0.0):
     for i in jsel:
         f = 1.0 - abs(P[i, 2] - (jz0 + jz1) / 2) / (0.5 * (jz1 - jz0))
         if f > 0: jaw_g.add([int(i)], min(0.85, float(f)), 'ADD')
+    if skirt:
+        # DRESS FIX: vertices below the hips that sit OUTSIDE the legs' envelope
+        # are skirt cloth — UniRig weights them to the legs and every stride
+        # tents the skirt. Hand their leg weights to the hips (it then swings
+        # as a rigid bell; good enough for cel).
+        leg_names = [n for n in ("thigh.L", "thigh.R", "shin.L", "shin.R", "foot.L", "foot.R") if n in char.vertex_groups]
+        hips_g = char.vertex_groups["hips"]; leg_idx = {char.vertex_groups[n].index: n for n in leg_names}
+        hips_z = (rig.matrix_world @ rig.data.bones["hips"].head_local).z
+        legs = [rig.data.bones[n] for n in ("thigh.L", "thigh.R") if n in rig.data.bones]
+        lx = [(rig.matrix_world @ b.head_local).x for b in legs]; cx = sum(lx) / len(lx) if lx else 0.0
+        r_leg = 0.11 * height
+        moved = 0
+        for v in char.data.vertices:
+            w = char.matrix_world @ v.co
+            if w.z >= hips_z: continue
+            # lateral distance from the nearest leg axis (legs ~vertical in rest)
+            dl = min(abs(w.x - x) for x in lx) if lx else abs(w.x - cx)
+            dy = abs(w.y - (rig.matrix_world @ rig.data.bones["hips"].head_local).y)
+            if dl > r_leg or dy > r_leg:
+                tot = 0.0
+                for g in v.groups:
+                    if g.group in leg_idx: tot += g.weight
+                if tot > 0:
+                    for g in v.groups:
+                        if g.group in leg_idx: char.vertex_groups[leg_idx[g.group]].remove([v.index])
+                    hips_g.add([v.index], tot, 'ADD'); moved += 1
+        print("SKIRT", name, "verts moved to hips", moved)
     for poly in char.data.polygons: poly.use_smooth = True
     bpy.context.view_layer.update()
     zmin_w = min((char.matrix_world @ v.co).z for v in char.data.vertices)

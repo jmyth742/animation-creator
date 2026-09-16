@@ -64,7 +64,7 @@ set_assets.dress_valley(sc, floor_z if 'floor_z' in dir() else (lambda x, y: 0.0
 if os.environ.get("FILM_RIG", "numpy") == "unirig":
     # Day-5: UniRig-skinned cast (real skeletons + skin weights), same animators
     oisin, orig = kit.load_rigged_character(f"{MESHES}/props/oisin_mv_rigged.glb", "oisin_mv", height=1.75, yaw_deg=180)   # UniRig glbs face +Y
-    niamh, nrig = kit.load_rigged_character(f"{MESHES}/props/niamh_mv_rigged.glb", "niamh_mv", height=1.68, yaw_deg=180)
+    niamh, nrig = kit.load_rigged_character(f"{MESHES}/props/niamh_mv_rigged.glb", "niamh_mv", height=1.68, yaw_deg=180, skirt=True)
 else:
     oisin = kit.load_character(f"{MESHES}/props/oisin_mv_painted.glb", "oisin_mv")
     orig = kit.rig_character(oisin, "oisin_mv")
