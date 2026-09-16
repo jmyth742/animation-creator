@@ -777,8 +777,10 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=0.0):
         for v in char.data.vertices:
             v.co -= d
         bpy.context.view_layer.update()
-    # scale to height (rig + mesh share the armature parent)
-    s = height / H
+    # scale to height from the MESH extent (bone extents ignore hair/boots)
+    zs_m = [(M_mesh_to_rig @ v.co).z for v in char.data.vertices]
+    Hm = max(zs_m) - min(zs_m)
+    s = height / Hm
     rig.scale = (s, s, s)
     if yaw_deg:
         rig.rotation_mode = 'XYZ'; rig.rotation_euler.z += math.radians(yaw_deg)
