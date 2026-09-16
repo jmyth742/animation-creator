@@ -657,3 +657,48 @@ QuadriFlow → bake → linked asset .blend, with manifest + QA gates.
 Adopted for props/sets; characters deliberately stay on the
 `character_kit.py` chain with texture-space faces (see the doc's fit
 assessment).
+
+
+## The 3D studio (Blender path) — quick reference
+
+Everything on screen in the Tir na nOg episodes is Blender 4.2 (`/workspace/blender42`),
+built and rendered by `scripts/blender3d/` and driven by the ops layer in `scripts/ops/`.
+The six-day quality campaign (Sept 2026) and every verdict live in `scripts/ops/SIXDAY_PLAN.md`.
+
+**Cast.** Meshes: Hunyuan-mv (`props/<who>_mv_painted.glb`) or CharacterGen
+(`props/cg_<who>_painted.glb`, better bodies; faces need the HD repaint). Rigs: UniRig
+(`props/<who>_rigged.glb`), loaded by `character_kit.load_rigged_character` which renames the
+unnamed bones via `scripts/day4/rig_map.py`, bakes facing from the toe bones (kit facing =
+toes along -Y), puts the feet at the origin, adds a jaw bone and, for Niamh, hands skirt
+weights to the hips. The existing animators (`apply_walk`, `apply_idle`, `apply_talk_tex`)
+drive it unchanged. Faces are texture variants (`<name>_face_{base,m1..m5,blink}.png`,
+painted by `face_paint.py`; calibrate by a check render — `probe_face` misreads hair fringes).
+
+**Building a film.** `build_film.py` / `build_film2.py` / `build_film3.py` take
+`<audio_dir> <out.blend> <shots.json>`. Env: `FILM_RIG=unirig` (real skin; default numpy),
+`FILM_CAST=mv|cg`, `FILM_VIS_SUFFIX=_lam FILM_ENV_SUFFIX=_lam` (LAM visemes),
+`FILM_BLINK=lam` (real blink events). NEVER export `CHAR_NORMALFIX` into a build — the
+transfer re-evaluates on every keyframed frame and the build takes an hour.
+
+**Rendering.** `film.py` renders one shot; env `FILM_LINES` (px, 0=off), `FILM_LINE_MINLEN`,
+`FILM_LINE_CREASE` (default off: crease lines scribble on AI meshes), `FILM_LINE_MODE=ext`,
+`FILM_RES=WxH`, `CHAR_NORMALFIX=1` (render-time normal editing; "0" means off), `FILM_SAMPLES`,
+`FILM_DOF`. Adopted stack: `CHAR_NORMALFIX=1 FILM_LINES=2.0 FILM_LINE_MINLEN=20` at 832x480,
+`FILM_LINES=4.0 FILM_LINE_MINLEN=40 FILM_RES=1664x960` for masters. Freestyle is CPU-bound
+(~15 s/frame on the full set): `scripts/ops/render_episode.sh` renders shots in parallel,
+counts only NON-EMPTY frames (a full quota writes 0-byte PNGs), retries, assembles and
+loudnorms. Keep hi-res parallelism at 3 (six instances contend 8x).
+
+**Audio.** `film_lines.py <audio_dir> <script.json>` (edge-tts, envelopes),
+`rhubarb_visemes.py` per line, LAM Audio2Expression via `scripts/day3/lam_lines.py` +
+`arkit_bridge.py` (ARKit-52 -> the 6-column visemes + blink events).
+
+**Motion.** MoMask text-to-motion (`/workspace/momask-codes`, env `/workspace/envs/momask`) ->
+BVH -> `scripts/day4/retarget.py` (swing-only aim per bone, full delta for the hips).
+
+**Pod rules that cost days.** `/workspace` is quota-limited (~390 GB; `df` lies — test with `dd`);
+the 20 GB root overlay must stay clear (`/root/.cache/huggingface` is a symlink to
+`/workspace/hf_cache`; keep `PIP_CACHE_DIR` on the workspace and delete it). Never `pkill -f`,
+and never put a kill loop's pattern text anywhere else in the same command. Exports:
+`bash /workspace/export_outcomes.sh` — code to the working branch, media to the
+`production-outcomes` branch (flat, <95 MB files or split parts; pushes in <1.5 GB batches).
