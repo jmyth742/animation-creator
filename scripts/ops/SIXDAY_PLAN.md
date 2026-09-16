@@ -219,6 +219,10 @@ GPU never idle: each day's script ends with a sweep bank.
   rotation, so an object yaw never worked). At close range the CG face
   textures are rougher than the current cast's -> keep the mv cast for the v4
   masters; run face_repaint (FACE_BASE) on the CG textures before switching.
+- BLINKS (16 Sep 15:40, review/day5_blink_ab_ep2b.mp4): LAM emits real blink
+  events (ep2 line 1: 0.06 s, 2.69 s, 5.69 s vs the fixed 0.69/4.09/7.49 s
+  cadence); the lam half blinks at a phrase boundary (~2.7 s) where the
+  fixed one holds. Subtle, correct, free: ADOPT FILM_BLINK=lam for masters.
 3. MOUTHS: adopt the user's LAM/Rhubarb verdict (FILM_VIS_SUFFIX=_lam) and
    use LAM's real blink events (l<i>_blink_lam.npy) instead of the fixed
    3.4 s cadence -> apply_talk_tex(blinks=events).
