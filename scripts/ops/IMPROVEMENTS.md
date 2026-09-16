@@ -62,15 +62,23 @@
 - [ ] Loose shells: the cast meshes have ~700 disconnected pieces (hair
       strands); a merge-by-distance / shell cull at load would clean both the
       line pass and the normal transfer.
-- [ ] Episode 3 script + full production in the cliff backlot or 3D cliff set
-      (write 5 lines in-voice; reuse build_film machinery; new location)
-- [ ] Full 3D cliff stage: benttree + seastack + rocks + sea plane module,
-      beauty stills + a flythrough -> review/cliff_stage.png/.mp4
+- [x] Episode 3 script + full production (16 Sep: 'The Farewell Cliff' on the  <- done
+      3D cliff stage, scripts/ops/ep3_v2master.sh -> review/farewell_cliff_v1.mp4)
+- [x] Full 3D cliff stage (scripts/blender3d/cliff_set.py: headland, box-projected  <- done 16 Sep
+      rock slabs, sea, seastacks, bent tree, boat; textures tile via applied scale)
 - [ ] Winter wardrobe cast: winter outfit sheets (front/left/back) -> MV
       meshes -> paint -> QA turntables (do NOT swap into episodes unreviewed)
-- [ ] Gesture library v2: add point, shrug, bow, wave; A/B render one line
-      with richer acting -> review/acting_ab.mp4
+- [x] Gesture library (Day 4): MoMask motions point/hug/wave/kneel/sit/turn  <- done 16 Sep
+      retargeted onto the UniRig rigs — review/day4_motion_*.mp4
 - [ ] Ambience audio upgrade: layered wind + birdsong synth + water for the
       loops (ffmpeg filters only) — remaster both 30-min loops
-- [ ] 4K-class master of ep1 (3328x1920) if render time <2h -> review/
 - [x] Episode 1+2 combined "pilot" cut with recap card between -> review/  <- done by marathon
+- [ ] NEXT CAMPAIGN — the three items that raise the ceiling most:
+      (1) real mouths: VRoid leads -> VRM with ARKit blendshapes, driven by the
+      LAM curves already produced (scripts/day3/); (2) face-shadow gradient
+      maps for the cel ramp (the last un-done item of the research plan);
+      (3) a cheaper line pass (Line Art modifier or 480p line compositing) so
+      1664x960 masters stop costing 4 h each.
+- [ ] CharacterGen cast into production: face_repaint (FACE_BASE) on the cg
+      textures, then FILM_CAST=cg for all three episodes.
+- [ ] TRELLIS.2 hero props (hall, bent tree) once DINOv3 is unblocked.
