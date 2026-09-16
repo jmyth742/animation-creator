@@ -55,7 +55,7 @@
 - [x] HI-RES LINES: 4.0px @1664x960 == 2.0px @832x480 (review/day1_lines_480vs960.png).  <- judged 15 Sep
       A single Blender renders a 960p frame in ~19s; SIX in parallel took
       ~150s/frame (GPU-side contention grows with pixels). Master renders:
-      FILM_RES=1664x960 FILM_LINES=4.0 FILM_LINE_MINLEN=40, parallel 2-3, ~3-4h/episode.
+      FILM_RES=1664x960 FILM_LINES=8.0 FILM_LINE_MINLEN=40, parallel 2-3, ~3-4h/episode.
 - [ ] Freestyle cost: 15s/frame is the set, not the cast — try a lines-only
       view layer with the set as holdout/occluder, or Line Art modifier, to
       get the 0.35s/frame render back with occlusion intact.

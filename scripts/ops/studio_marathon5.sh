@@ -13,7 +13,7 @@ free_gpu(){ curl -s -X POST http://127.0.0.1:8188/free -H 'Content-Type: applica
 # THE ADOPTED DAY-1 STACK (judged from review/day1b_*, day1c_*, day1d_*):
 #   normal editing on (interpolated), NO Laplacian smooth (it shreds the mesh),
 #   silhouette-only lines at 2.0 px, crease off, chains < 20 px dropped.
-export CHAR_NORMALFIX=1 CHAR_NORMALFIX_INTERP=1 FILM_LINES=2.0 FILM_LINE_MINLEN=20 FILM_LINE_CREASE=0
+export CHAR_NORMALFIX=1 CHAR_NORMALFIX_INTERP=1 FILM_LINES=4.0 FILM_LINE_MINLEN=20 FILM_LINE_CREASE=0
 unset CHAR_SMOOTH
 
 log "P0: waiting for marathon4 (Day-1 sweep bank) to release the GPU"

@@ -9,7 +9,7 @@ log "4: build the cliff film (UniRig cast, restaged-close conventions)"
 CHAR_NORMALFIX=0 FILM_RIG=unirig $B -b --factory-startup --python scripts/blender3d/build_film3.py -- $A $R/film3_farewell_cliff.blend $W/film3_shots.json < /dev/null > $W/ep3_build.log 2>&1
 log "build: $(grep -c 'FILM SCENE SAVED' $W/ep3_build.log) $(grep -m1 -E 'CLIFF SET|FILM SCENE SAVED' $W/ep3_build.log)"
 grep -q "FILM SCENE SAVED" $W/ep3_build.log || { log "BUILD FAILED"; grep -A8 Traceback $W/ep3_build.log | head -12; exit 1; }
-export CHAR_NORMALFIX=1 CHAR_NORMALFIX_INTERP=1 FILM_LINES=2.0 FILM_LINE_MINLEN=20 FILM_LINE_CREASE=0
+export CHAR_NORMALFIX=1 CHAR_NORMALFIX_INTERP=1 FILM_LINES=4.0 FILM_LINE_MINLEN=20 FILM_LINE_CREASE=0
 log "5: probes (est, meet, his close, her close)"
 probe(){ SHOT=$1; S=$(python3 -c "import json; d=json.load(open('$W/film3_shots.json')); s=[x for x in d['shots'] if x['name']=='$SHOT'][0]; print(s['cam'],s['tgt'],s['lens'],s['f0'],s['f1'],s['move'])"); read C T L F0 F1 M <<< "$S"; FM=$(( (F0+F1)/2 )); D=$W/ep3p_$SHOT; rm -rf $D; mkdir -p $D
   $B -b --factory-startup $R/film3_farewell_cliff.blend --python scripts/blender3d/film.py -- $D "$C" "$T" $L $FM $FM static < /dev/null > $D.log 2>&1; }

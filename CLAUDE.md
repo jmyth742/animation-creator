@@ -683,8 +683,8 @@ transfer re-evaluates on every keyframed frame and the build takes an hour.
 **Rendering.** `film.py` renders one shot; env `FILM_LINES` (px, 0=off), `FILM_LINE_MINLEN`,
 `FILM_LINE_CREASE` (default off: crease lines scribble on AI meshes), `FILM_LINE_MODE=ext`,
 `FILM_RES=WxH`, `CHAR_NORMALFIX=1` (render-time normal editing; "0" means off), `FILM_SAMPLES`,
-`FILM_DOF`. Adopted stack: `CHAR_NORMALFIX=1 FILM_LINES=2.0 FILM_LINE_MINLEN=20` at 832x480,
-`FILM_LINES=4.0 FILM_LINE_MINLEN=40 FILM_RES=1664x960` for masters. Freestyle is CPU-bound
+`FILM_DOF`. Adopted stack: `CHAR_NORMALFIX=1 FILM_LINES=4.0 FILM_LINE_MINLEN=20` at 832x480,
+`FILM_LINES=8.0 FILM_LINE_MINLEN=40 FILM_RES=1664x960` for masters. Freestyle is CPU-bound
 (~15 s/frame on the full set): `scripts/ops/render_episode.sh` renders shots in parallel,
 counts only NON-EMPTY frames (a full quota writes 0-byte PNGs), retries, assembles and
 loudnorms. Keep hi-res parallelism at 3 (six instances contend 8x).

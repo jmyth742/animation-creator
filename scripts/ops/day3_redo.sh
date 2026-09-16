@@ -3,7 +3,7 @@
 set -u; cd /workspace/text-to-video
 W=/workspace/loopwork; V=/workspace/venv/bin/python; B=/workspace/blender42/blender; R=/workspace/review; D3=$W/day3
 log(){ echo "[d3redo $(date +%H:%M:%S)] $*"; }
-export CHAR_NORMALFIX=1 CHAR_NORMALFIX_INTERP=1 FILM_LINES=2.0 FILM_LINE_MINLEN=20 FILM_LINE_CREASE=0; unset CHAR_SMOOTH
+export CHAR_NORMALFIX=1 CHAR_NORMALFIX_INTERP=1 FILM_LINES=4.0 FILM_LINE_MINLEN=20 FILM_LINE_CREASE=0; unset CHAR_SMOOTH
 CHAR_NORMALFIX=0 FILM_VIS_SUFFIX=_lam FILM_ENV_SUFFIX=_lam $B -b --factory-startup --python scripts/blender3d/build_film.py -- $W/film_audio $R/film_nine_waterfalls_lam.blend $W/film_shots_lam.json < /dev/null > $W/d3r_build1.log 2>&1; log "ep1 lam blend: $(grep -c 'FILM SCENE SAVED' $W/d3r_build1.log)"
 CHAR_NORMALFIX=0 FILM_VIS_SUFFIX=_lam FILM_ENV_SUFFIX=_lam $B -b --factory-startup --python scripts/blender3d/build_film2.py -- $W/film2_audio $R/film2_first_snow_lam.blend $W/film2_shots_lam.json < /dev/null > $W/d3r_build2.log 2>&1; log "ep2 lam blend: $(grep -c 'FILM SCENE SAVED' $W/d3r_build2.log)"
 ab(){ TAG=$1; BL0=$2; BL1=$3; CAM=$4; TGT=$5; LENS=$6; F0=$7; F1=$8; MOVE=$9; AUD=${10}; LF0=${11}

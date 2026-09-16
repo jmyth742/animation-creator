@@ -28,7 +28,7 @@ if os.environ.get("TURN_YAW"):        # e.g. 180 for meshes that face +Y (Charac
 
 if os.environ.get("FILM_LINES", "0") not in ("", "0"):
     sc.render.use_freestyle = True
-    sc.render.line_thickness = float(os.environ["FILM_LINES"])
+    sc.render.line_thickness = 1.0   # FILM_LINES = effective px (see film.py)
     vl = sc.view_layers[0]
     vl.use_freestyle = True
     fs = vl.freestyle_settings

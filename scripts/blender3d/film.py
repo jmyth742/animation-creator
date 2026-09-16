@@ -39,7 +39,10 @@ if os.environ.get("FILM_LINES", "0") not in ("", "0"):
     # drawn outlines on the CAST only — the single loudest "drawn by an
     # adult" cue in cel animation
     sc.render.use_freestyle = True
-    sc.render.line_thickness = float(os.environ.get("FILM_LINES", "1.4"))
+    # FILM_LINES is the EFFECTIVE stroke width in pixels: the scene unit thickness
+    # multiplies the linestyle thickness, so the unit stays 1.0 (2.0x2.0 at 480p was
+    # 4 px; 4.0x4.0 at 960p was 16 px — twice too heavy relative to frame)
+    sc.render.line_thickness = 1.0
     vl = sc.view_layers[0]
     vl.use_freestyle = True
     fs = vl.freestyle_settings

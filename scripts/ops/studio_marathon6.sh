@@ -11,7 +11,7 @@ W=/workspace/loopwork; V=/workspace/venv/bin/python; B=/workspace/blender42/blen
 R=/workspace/review; D3=$W/day3; mkdir -p $D3; E=/workspace/envs/lam_a2e
 log(){ echo "[m6 $(date +%H:%M:%S)] $*"; }
 export_pass(){ bash /workspace/export_outcomes.sh 2>&1 | tail -1; }
-export CHAR_NORMALFIX=1 CHAR_NORMALFIX_INTERP=1 FILM_LINES=2.0 FILM_LINE_MINLEN=20 FILM_LINE_CREASE=0; unset CHAR_SMOOTH
+export CHAR_NORMALFIX=1 CHAR_NORMALFIX_INTERP=1 FILM_LINES=4.0 FILM_LINE_MINLEN=20 FILM_LINE_CREASE=0; unset CHAR_SMOOTH
 
 log "P1: install LAM Audio2Expression (own venv, python3.10)"
 bash scripts/day3/install_lam_a2e.sh > $W/m6_install_lam.log 2>&1

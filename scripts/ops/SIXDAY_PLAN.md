@@ -25,7 +25,7 @@ DELIVERABLES: char stacks judged, 2 episodes re-mastered, grids exported
   does not. ADOPTED.
 - LINES: crease edges = scribbles on AI meshes (off by default now);
   silhouette-only + chains <20px dropped is clean; 2.0px reads most "drawn".
-  ADOPTED: FILM_LINES=2.0 FILM_LINE_MINLEN=20. Ext-contour-only is too faint.
+  ADOPTED: FILM_LINES=4.0 FILM_LINE_MINLEN=20. Ext-contour-only is too faint.
 - LINE WEIGHT IN MOTION (day1_linewidth_ab.mp4, judged 07:25): 1.4 faint,
   2.0 right, 2.6 clumps in hair. Freestyle thickness is ABSOLUTE pixels and
   the film blends are 832x480, so the Day-5 1664x960 masters need ~4.0 to
@@ -98,7 +98,7 @@ DELIVERABLES: verdict on replacing mesh source and numpy skinning
 - MASTER RECIPE (judged 15 Sep 08:20, review/day1_lines_480vs960.png): 4.0px
   @1664x960 matches 2.0px @480p. Single instance 19s/frame at 960p; keep
   hi-res parallelism at 2-3 (six instances contend 8x). Day 5 masters:
-  FILM_RES=1664x960 FILM_LINES=4.0 FILM_LINE_MINLEN=40.
+  FILM_RES=1664x960 FILM_LINES=8.0 FILM_LINE_MINLEN=40.
 
 ## Day 3 — Facial acting chain (the exponential unlock)
 - NVIDIA Audio2Face-3D samples: install, run on its sample head ->
@@ -244,6 +244,14 @@ GPU never idle: each day's script ends with a sweep bank.
    verdict on the mesh source for Episode 3.
 
 ### Day 6 — Episode 3 + release
+- LINE THICKNESS CORRECTED (16 Sep 19:30, review/day6_line_thickness_check.png):
+  Freestyle's scene unit thickness MULTIPLIES the linestyle thickness; film.py
+  set both to FILM_LINES, so 2.0 at 480p was 4 px (fine) but 4.0 at 960p was
+  16 px — the ep1 v4 master rendered with lines twice too heavy. film.py now
+  keeps the unit at 1.0 and FILM_LINES is the effective width in pixels:
+  480p = 4.0, 1664x960 = 8.0 (verified against the 480p reference). All ops
+  scripts, docs and the plan were rewritten to the new numbers. ep1's v4 is
+  re-rendered at the end of the chain; ep2/ep3 restarted with 8.0.
 - 16 Sep 17:15: ep2 + ep3 blends rebuilt with the seam weld (now applied in
   the rigged loader too — it had only run on the numpy path) and LAM blinks
   before their v4 renders (loopwork/v4_rebuild.log: weld=2 each); ep1's v4 (already
