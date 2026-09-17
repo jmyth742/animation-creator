@@ -319,3 +319,13 @@ HF_TOKEN + DINOv3 licence (Day 5.6); VRoid leads -> real blendshape mouths.
   so the card is never idle while awaiting judgment
 - RECOMMENDED ONCE: install the hourly export cron on the pod:
   crontab: 17 * * * * bash /workspace/export_outcomes.sh >> /workspace/export.log 2>&1
+
+## CAMPAIGN COMPLETE (17 Sep 04:05)
+Three episodes on one stack, delivered at 480p (verdict masters) and
+1664x960 (v4, 8 px lines; browser copies *_v4_web.mp4): The Nine Waterfalls
+(79.8 s), The First Snow (80.1 s), The Farewell Cliff (79.6 s); pilot v2,
+trailer v2, subtitles + metadata; every verdict in this file; docs in
+CLAUDE.md; backlog groomed in IMPROVEMENTS.md; production assets committed.
+Open user gates: lip-sync verdict (LAM vs Rhubarb by ear), DINOv3 licence +
+HF_TOKEN for TRELLIS.2 (env deleted for quota, installer rebuilds it), VRoid
+leads for real blendshape mouths, repo visibility.
