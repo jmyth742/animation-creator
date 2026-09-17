@@ -244,6 +244,13 @@ GPU never idle: each day's script ends with a sweep bank.
    verdict on the mesh source for Episode 3.
 
 ### Day 6 — Episode 3 + release
+- 17 Sep 01:30: the hi-res masters exceed GitHub's 100 MB file limit and live
+  on the media branch as split .part files (reassemble: cat name.mp4.part* >
+  name.mp4). Browser-playable copies are exported alongside: *_v4_web.mp4
+  (1664x960, ~7.5 Mbps, < 95 MB). The quota filled again during ep1's
+  re-render: envs/trellis2 + the TRELLIS.2 checkout were deleted (blocked on
+  the DINOv3 gate; `bash scripts/day2/install_trellis2.sh` rebuilds them) and
+  superseded large videos already on the branch were removed from review/.
 - DONE 16 Sep 23:56: review/farewell_cliff_v4.mp4 — ep3 at 1664x960, 8 px lines,
   79.6 s, 12 shots frame-verified; full-res check clean (loopwork/v4e3_check.png).
   ep1's rebuild (weld + LAM blinks) + 8 px re-render is the last job in the chain.
