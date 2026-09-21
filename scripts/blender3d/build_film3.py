@@ -57,12 +57,13 @@ sc.view_settings.view_transform = 'Standard'
 
 cliff_set.build_set(sc)
 
+MS = os.environ.get("FILM_MESH_SUFFIX", "")   # _retopo = the clean, re-skinned cast
 CAST = os.environ.get("FILM_CAST", "mv")     # mv = Hunyuan-mv meshes, cg = CharacterGen meshes (Day-2 verdict)
 if os.environ.get("FILM_RIG", "numpy") == "unirig":
     # Day-5: UniRig-skinned cast (real skeletons + skin weights), same animators
     ON, NN = ("cg_oisin", "cg_niamh") if CAST == "cg" else ("oisin_mv", "niamh_mv")
-    oisin, orig = kit.load_rigged_character(f"{MESHES}/props/{ON}_rigged.glb", ON, height=1.75)
-    niamh, nrig = kit.load_rigged_character(f"{MESHES}/props/{NN}_rigged.glb", NN, height=1.68, skirt=True)
+    oisin, orig = kit.load_rigged_character(f"{MESHES}/props/{ON}{MS}_rigged.glb", ON, height=1.75)
+    niamh, nrig = kit.load_rigged_character(f"{MESHES}/props/{NN}{MS}_rigged.glb", NN, height=1.68, skirt=True)
 else:
     oisin = kit.load_character(f"{MESHES}/props/oisin_mv_painted.glb", "oisin_mv")
     orig = kit.rig_character(oisin, "oisin_mv")

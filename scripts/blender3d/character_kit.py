@@ -1023,12 +1023,33 @@ def add_outline_hull(char, px, cam, res_y, name="hull"):
 
     d = (char.matrix_world.translation - cam.matrix_world.translation).length
     fov = 2.0 * math.atan(cam.data.sensor_width / (2.0 * cam.data.lens))
-    thick = (px / max(res_y, 1)) * 2.0 * max(d, 0.1) * math.tan(fov / 2.0)
+
+    # A constant on-screen width is only right while the figure fills the frame. On a wide
+    # the same 4 px eats a 60 px-tall figure and the character renders as a dark blob
+    # (review/retopo_ab_s11_away.png). So cap the line at a fraction of the subject's own
+    # on-screen height: the line stays a line at every distance.
+    from bpy_extras.object_utils import world_to_camera_view
+    sc = bpy.context.scene
+    ys = []
+    for corner in char.bound_box:
+        co = world_to_camera_view(sc, cam, char.matrix_world @ mathutils.Vector(corner))
+        ys.append(co.y)
+    screen_h = max(1.0, (max(ys) - min(ys)) * res_y)        # figure height in pixels
+    _os = __import__("os")
+    # Below a certain size a hull cannot be a line: the figure is thinner than twice the
+    # offset, so the shell's far side shows through and fills it in as a dark mass
+    # (review/retopo_ab_s11_away.png). Freestyle draws almost nothing on a distant figure
+    # either, so skip the outline entirely there rather than fake it.
+    if screen_h < float(_os.environ.get("CHAR_HULL_MIN", "300")):
+        print("HULL skip", char.name, "screen_h %.0f" % screen_h, flush=True)
+        return None
+    eff = min(px, max(0.8, screen_h * float(_os.environ.get("CHAR_HULL_FRAC", "0.018"))))
+    thick = (eff / max(res_y, 1)) * 2.0 * max(d, 0.1) * math.tan(fov / 2.0)
 
     dsp = hull.modifiers.new(name, 'DISPLACE')
     dsp.direction = 'NORMAL'
     dsp.mid_level = 0.0
     dsp.strength = -thick          # normals are flipped, so push outward = negative
     hull.visible_shadow = False
-    print("HULL", char.name, "px", px, "dist %.2f" % d, "thickness %.4f" % thick, flush=True)
+    print("HULL", char.name, "px", px, "eff %.2f" % eff, "screen_h %.0f" % screen_h, "thickness %.4f" % thick, flush=True)
     return hull

@@ -501,3 +501,26 @@ STILL ACTIONABLE without new meshes, in priority order:
  c. stepped animation on twos/threes (interpolation off, every frame a key) -- pure
     animation-curve work on the existing MoMask/retarget output;
  d. EP3 cliff shelf (reads flat green against the painted plate).
+
+## RETOPOLOGY: ADOPTED (21 Sep 17:15)
+The stage the asset spec names and we had skipped for the cast. Scripts:
+retopo_character.py (voxel-remesh to a watertight manifold, QuadriFlow, Smart UV,
+Cycles EMIT bake of the painted atlas onto the new UVs) and reweight_retopo.py
+(Data Transfer of all vertex groups from the old skinned mesh, so the tuned UniRig
+skeleton and every retargeted action survive). Switch: FILM_MESH_SUFFIX=_retopo
+with FILM_FACE_SUFFIX=_retopo_hd.
+- QuadriFlow alone is a NO-OP on AI meshes: it refuses non-manifold input, warns, and
+  returns FINISHED having changed nothing. Voxel-remesh first; that also fuses the
+  coincident shells, which is itself a fix.
+- VERDICT (review/retopo_face_ab.png, retopo_3way_walk.png): the clean mesh is BETTER.
+  Hair and shoulder silhouettes are smooth where the old mesh was ragged, the cloak
+  keeps its folds, and the face holds. Wides are identical. ADOPTED.
+- INVERTED HULL: REJECTED again, now for a different reason. On clean topology it draws
+  a continuous, correct outline (retopo_hull_test.png — the fix the research predicted),
+  but it is too heavy at medium range and blobs the cloak, and on a distant figure the
+  shell's far side shows through and fills the character in as a dark mass. Two mitigations
+  were added and kept (CHAR_HULL_FRAC caps the line to a fraction of the subject's
+  on-screen height; CHAR_HULL_MIN skips it below 300 px), and it is still worse than
+  Freestyle everywhere except a tight close-up. Freestyle remains the shipping renderer;
+  the hull stays behind FILM_HULL=0.
+- V6 MASTERS launched with the clean cast: scripts/ops/masters_v6.sh -> review/*_v6.mp4.
