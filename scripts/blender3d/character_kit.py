@@ -47,6 +47,63 @@ def _weld_shells(char, name):
         print("SHELLCULL", name, "shells", shells, "faces removed", removed, "faces left", len(char.data.polygons))
 
 
+
+def cel_material(name, img, uv_name):
+    """The cast's cel shader. CEL_STYLE selects the look (EEVEE, Shader-to-RGB):
+      classic (default): two tones, shadow = 0.55 grey multiply (the v4 masters)
+      anime: three tones with the shadow hue-shifted toward violet on the albedo
+             itself (darkened shadows read as mud), a narrow mid-band at the
+             terminator, a stepped Fresnel rim on the lit side, a specular pip.
+    Anime knobs: CEL_SHADOW_HUE (0.08 = +29 deg), CEL_SHADOW_VAL (0.62),
+    CEL_MID_WIDTH (0.08), CEL_RIM (0 = off; 0.35 tested), CEL_SPEC (0 = off; 0.25 tested)."""
+    import os
+    style = os.environ.get("CEL_STYLE", "classic")
+    cmat = bpy.data.materials.new(f"{name}_mat"); cmat.use_nodes = True
+    ct = cmat.node_tree; ct.nodes.clear(); N = ct.nodes.new; L = ct.links.new
+    cuv = N("ShaderNodeUVMap"); cuv.uv_map = uv_name
+    ctx = N("ShaderNodeTexImage"); ctx.image = img; L(cuv.outputs["UV"], ctx.inputs["Vector"])
+    diff = N("ShaderNodeBsdfDiffuse"); torgb = N("ShaderNodeShaderToRGB"); L(diff.outputs["BSDF"], torgb.inputs["Shader"])
+    ramp = N("ShaderNodeValToRGB"); ramp.color_ramp.interpolation = 'CONSTANT'; L(torgb.outputs["Color"], ramp.inputs["Fac"])
+    cem = N("ShaderNodeEmission"); cou = N("ShaderNodeOutputMaterial"); L(cem.outputs["Emission"], cou.inputs["Surface"])
+    if style != "anime":
+        ramp.color_ramp.elements[0].color = (0.55, 0.55, 0.6, 1)
+        ramp.color_ramp.elements[1].position = 0.5; ramp.color_ramp.elements[1].color = (1, 1, 1, 1)
+        mix = N("ShaderNodeMixRGB"); mix.blend_type = 'MULTIPLY'; mix.inputs["Fac"].default_value = 1.0
+        L(ramp.outputs["Color"], mix.inputs["Color1"]); L(ctx.outputs["Color"], mix.inputs["Color2"]); L(mix.outputs["Color"], cem.inputs["Color"])
+        return cmat
+    hue = float(os.environ.get("CEL_SHADOW_HUE", "0.08")); val = float(os.environ.get("CEL_SHADOW_VAL", "0.62"))
+    midw = float(os.environ.get("CEL_MID_WIDTH", "0.08")); rimk = float(os.environ.get("CEL_RIM", "0")); speck = float(os.environ.get("CEL_SPEC", "0"))   # judged 21 Sep: rim/spec wash the faces; off by default
+    hsv = N("ShaderNodeHueSaturation"); hsv.inputs["Hue"].default_value = 0.5 + hue; hsv.inputs["Saturation"].default_value = 1.15; hsv.inputs["Value"].default_value = val
+    L(ctx.outputs["Color"], hsv.inputs["Color"])
+    mid = N("ShaderNodeMixRGB"); mid.blend_type = 'MIX'; mid.inputs["Fac"].default_value = 0.5
+    L(hsv.outputs["Color"], mid.inputs["Color1"]); L(ctx.outputs["Color"], mid.inputs["Color2"])
+    t0 = 0.42; t1 = t0 + midw
+    e = ramp.color_ramp.elements; e[0].position = 0.0; e[0].color = (0, 0, 0, 1); e[1].position = t0; e[1].color = (0.5, 0.5, 0.5, 1)
+    e2 = ramp.color_ramp.elements.new(t1); e2.color = (1, 1, 1, 1)
+    sep = N("ShaderNodeSeparateColor"); L(ramp.outputs["Color"], sep.inputs["Color"])
+    ge0 = N("ShaderNodeMath"); ge0.operation = 'GREATER_THAN'; ge0.inputs[1].default_value = 0.25; L(sep.outputs["Red"], ge0.inputs[0])
+    ge1 = N("ShaderNodeMath"); ge1.operation = 'GREATER_THAN'; ge1.inputs[1].default_value = 0.75; L(sep.outputs["Red"], ge1.inputs[0])
+    m1 = N("ShaderNodeMixRGB"); L(ge0.outputs["Value"], m1.inputs["Fac"]); L(hsv.outputs["Color"], m1.inputs["Color1"]); L(mid.outputs["Color"], m1.inputs["Color2"])
+    m2 = N("ShaderNodeMixRGB"); L(ge1.outputs["Value"], m2.inputs["Fac"]); L(m1.outputs["Color"], m2.inputs["Color1"]); L(ctx.outputs["Color"], m2.inputs["Color2"])
+    cur = m2.outputs["Color"]
+    if rimk > 0:
+        fr = N("ShaderNodeFresnel"); fr.inputs["IOR"].default_value = 1.45
+        step = N("ShaderNodeMath"); step.operation = 'GREATER_THAN'; step.inputs[1].default_value = 0.62; L(fr.outputs["Fac"], step.inputs[0])
+        gate = N("ShaderNodeMath"); gate.operation = 'MULTIPLY'; L(step.outputs["Value"], gate.inputs[0]); L(ge0.outputs["Value"], gate.inputs[1])
+        amt = N("ShaderNodeMath"); amt.operation = 'MULTIPLY'; amt.inputs[1].default_value = rimk; L(gate.outputs["Value"], amt.inputs[0])
+        rim = N("ShaderNodeMixRGB"); rim.blend_type = 'ADD'; L(amt.outputs["Value"], rim.inputs["Fac"]); L(cur, rim.inputs["Color1"]); rim.inputs["Color2"].default_value = (1.0, 0.86, 0.70, 1)
+        cur = rim.outputs["Color"]
+    if speck > 0:
+        gl = N("ShaderNodeBsdfGlossy"); gl.inputs["Roughness"].default_value = 0.25
+        g2 = N("ShaderNodeShaderToRGB"); L(gl.outputs["BSDF"], g2.inputs["Shader"])
+        gsep = N("ShaderNodeSeparateColor"); L(g2.outputs["Color"], gsep.inputs["Color"])
+        gs = N("ShaderNodeMath"); gs.operation = 'GREATER_THAN'; gs.inputs[1].default_value = 0.55; L(gsep.outputs["Red"], gs.inputs[0])
+        ga = N("ShaderNodeMath"); ga.operation = 'MULTIPLY'; ga.inputs[1].default_value = speck; L(gs.outputs["Value"], ga.inputs[0])
+        sp = N("ShaderNodeMixRGB"); sp.blend_type = 'ADD'; L(ga.outputs["Value"], sp.inputs["Fac"]); L(cur, sp.inputs["Color1"]); sp.inputs["Color2"].default_value = (1, 1, 1, 1)
+        cur = sp.outputs["Color"]
+    L(cur, cem.inputs["Color"])
+    return cmat
+
 def load_character(mesh_path, name, height=1.75):
     before = set(bpy.context.scene.objects)
     bpy.ops.import_scene.gltf(filepath=mesh_path)
@@ -127,35 +184,8 @@ def load_character(mesh_path, name, height=1.75):
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
     if img is not None:
-        cmat = bpy.data.materials.new(f"{name}_mat")
-        cmat.use_nodes = True
-        ct = cmat.node_tree
-        ct.nodes.clear()
-        cuv = ct.nodes.new("ShaderNodeUVMap")
-        cuv.uv_map = char.data.uv_layers[0].name
-        ctx = ct.nodes.new("ShaderNodeTexImage")
-        ctx.image = img
-        diff = ct.nodes.new("ShaderNodeBsdfDiffuse")
-        torgb = ct.nodes.new("ShaderNodeShaderToRGB")
-        ramp = ct.nodes.new("ShaderNodeValToRGB")
-        ramp.color_ramp.interpolation = 'CONSTANT'
-        ramp.color_ramp.elements[0].color = (0.55, 0.55, 0.6, 1)
-        ramp.color_ramp.elements[1].position = 0.5
-        ramp.color_ramp.elements[1].color = (1, 1, 1, 1)
-        mix = ct.nodes.new("ShaderNodeMixRGB")
-        mix.blend_type = 'MULTIPLY'
-        mix.inputs["Fac"].default_value = 1.0
-        cem = ct.nodes.new("ShaderNodeEmission")
-        cou = ct.nodes.new("ShaderNodeOutputMaterial")
-        ct.links.new(cuv.outputs["UV"], ctx.inputs["Vector"])
-        ct.links.new(diff.outputs["BSDF"], torgb.inputs["Shader"])
-        ct.links.new(torgb.outputs["Color"], ramp.inputs["Fac"])
-        ct.links.new(ramp.outputs["Color"], mix.inputs["Color1"])
-        ct.links.new(ctx.outputs["Color"], mix.inputs["Color2"])
-        ct.links.new(mix.outputs["Color"], cem.inputs["Color"])
-        ct.links.new(cem.outputs["Emission"], cou.inputs["Surface"])
         char.data.materials.clear()
-        char.data.materials.append(cmat)
+        char.data.materials.append(cel_material(name, img, char.data.uv_layers[0].name))
     return char
 
 
@@ -784,6 +814,13 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False
             bpy.data.objects.remove(o, do_unlink=True)
     rig.name, char.name = f"{name}_rig", name
     _weld_shells(char, name)     # same seam weld as the numpy path (skin weights survive: they live on the kept verts)
+    _img = None
+    for m in char.data.materials:
+        if m and m.use_nodes:
+            for nd in m.node_tree.nodes:
+                if nd.type == 'TEX_IMAGE' and nd.image: _img = nd.image
+    if _img is not None and char.data.uv_layers:
+        char.data.materials.clear(); char.data.materials.append(cel_material(name, _img, char.data.uv_layers[0].name))
     roles = map_unirig(rig); H = roles.pop("_height")
     ren = {"hips": "hips", "spine0": "spine", "L_upperleg": "thigh.L", "L_lowerleg": "shin.L", "L_foot": "foot.L",
            "R_upperleg": "thigh.R", "R_lowerleg": "shin.R", "R_foot": "foot.R",

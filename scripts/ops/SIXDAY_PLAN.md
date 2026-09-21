@@ -329,3 +329,17 @@ CLAUDE.md; backlog groomed in IMPROVEMENTS.md; production assets committed.
 Open user gates: lip-sync verdict (LAM vs Rhubarb by ear), DINOv3 licence +
 HF_TOKEN for TRELLIS.2 (env deleted for quota, installer rebuilds it), VRoid
 leads for real blendshape mouths, repo visibility.
+
+## Anime-style pass (21 Sep) — replicating the researched cel look
+- kit.cel_material now carries CEL_STYLE=anime next to the classic two-tone:
+  the albedo's SHADOW is hue-shifted toward violet (+29 deg, value 0.62,
+  saturation 1.15) instead of a grey multiply, a narrow mid-band sits at the
+  terminator, and optional stepped Fresnel rim + specular pip.
+- Grid verdict (review/anime_style_faces_*.png, anime_style_*.png; columns:
+  classic | anime no rim/spec | anime + rim/spec | anime hue +50 deg):
+  the hue-shifted three-tone is a clear gain on both leads (cleaner bands,
+  warmer skin, the dress and tunic keep their colour in shadow); rim + spec
+  wash the faces toward white and lay flat patches on cloth — OFF by default.
+  The stronger hue shift is not better than +29 deg.
+- Film A/B (dialogue closes, classic | anime): review/anime_style_ab_ep2b.mp4,
+  anime_style_ab_ep1b.mp4 — decides whether it becomes the master default.
