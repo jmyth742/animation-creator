@@ -425,5 +425,16 @@ leads for real blendshape mouths, repo visibility.
   seeds/graded inputs drift the layout. Episode 2's closing walk redirected
   up the path (the winter plate's lake lies where they walked).
   review/env_painted_ep2x_probes.png.
-- Next: v5 masters (scripts/ops/masters_v5.sh: painted sets, _hd faces,
-  1664x960) -> review/*_v5.mp4 + _web copies, export.
+- LAKE (q8-q10): a per-shot projected lake shows the hall's steps from a
+  sideways camera (idpass_s07b found it); a tiled water crop was too dark;
+  ADOPTED: the lake projects from a FIXED master camera (painter_master,
+  ob['painter_fixed']) when the shot is >50 deg off the master heading and
+  per-shot otherwise (review/env_painted_q10_probes.png).
+- V5 MASTERS launched 08:25 (scripts/ops/masters_v5.sh, log
+  loopwork/masters_v5.log): painted sets + _hd faces + anime shader, UniRig,
+  LAM blinks, 1664x960 / 8 px lines -> review/{nine_waterfalls,first_snow,
+  farewell_cliff}_v5.mp4 (+ _web.mp4), exported after each episode.
+  WATCH: those three against the *_v4.mp4 masters; the face A/B is
+  review/face_hd_film_ab_ep1.png, the environment before/after is
+  env_painted_ep1p_probes.png (one painter camera) vs env_painted_ep1v/
+  q10 (per shot).
