@@ -212,11 +212,10 @@ acc_col = None
 acc_w = None
 face_w = None
 for tag, deg, _dn in VIEWS:
-    r = math.radians(deg)
-    view_dir = (0.0, -math.cos(r), 0.0)
-    vx = math.sin(r) * -1.0
-    vlen = math.hypot(vx, math.cos(r))
-    view = (-vx / vlen, math.cos(r) / vlen, 0.0)       # surface normal should point AT the camera
+    # view direction from the camera matrix, not re-derived from the angle (see body_project)
+    _vd = cams[tag].matrix_world.to_3x3() @ mathutils.Vector((0.0, 0.0, -1.0))
+    _vd.normalize()
+    view = (-_vd.x, -_vd.y, -_vd.z)                    # surface normal should point AT the camera
     uvp = nt2.nodes.new("ShaderNodeUVMap"); uvp.uv_map = "Proj_" + tag
     txp = nt2.nodes.new("ShaderNodeTexImage")
     txp.image = flux_imgs[tag]

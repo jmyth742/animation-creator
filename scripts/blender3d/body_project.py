@@ -196,13 +196,17 @@ n2.links.new(uvA.outputs["UV"], txA.inputs["Vector"])
 
 acc_c = acc_w = None
 for tag, deg in VIEWS:
-    r = math.radians(deg)
-    view = (math.sin(r), -math.cos(r), 0.0)        # normal should point at this camera
+    # Take the view direction from the CAMERA MATRIX, never by re-deriving it from the
+    # angle: a sign slip there silently projects the BACK view onto the front of the
+    # model and the bake looks like a different character (review/body_hd_*.png, first
+    # attempt). A surface facing this camera has a normal opposite to its view vector.
+    vd = cams[tag].matrix_world.to_3x3() @ mathutils.Vector((0.0, 0.0, -1.0))
+    vd.normalize()
     uvp = n2.nodes.new("ShaderNodeUVMap"); uvp.uv_map = "BProj_" + tag
     txp = n2.nodes.new("ShaderNodeTexImage"); txp.image = imgs[tag]; txp.extension = 'EXTEND'
     n2.links.new(uvp.outputs["UV"], txp.inputs["Vector"])
     dot = n2.nodes.new("ShaderNodeVectorMath"); dot.operation = 'DOT_PRODUCT'
-    dot.inputs[1].default_value = (-view[0], -view[1], 0.0)
+    dot.inputs[1].default_value = (-vd.x, -vd.y, -vd.z)
     n2.links.new(geo.outputs["Normal"], dot.inputs[0])
     cl = n2.nodes.new("ShaderNodeMath"); cl.operation = 'MAXIMUM'; cl.inputs[1].default_value = 0.0
     n2.links.new(dot.outputs["Value"], cl.inputs[0])
