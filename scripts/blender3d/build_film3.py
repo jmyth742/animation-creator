@@ -149,7 +149,7 @@ CLOSE_N = _c((0.88, 17.90, 1.62), (0.40, 16.20, 1.57), 55)     # 3/4 front, clif
 CLOSE_O = _c((1.52, 15.82, 1.62), (2.00, 17.50, 1.57), 55)     # 3/4 front, the sea behind him
 TWO = _c((6.0, 14.0, 1.45), (1.0, 17.0, 1.35), 50)
 shots = [
-    {"name": "s01_est", "f0": 1, "f1": 110, **_c((-17, -12, 3.5), (7, 20, 0.3), 32), "move": "dolly:-14,-9,7.6"},   # the painter's view (master plate): headland, sea, the pair small by the tree; slow push
+    {"name": "s01_est", "f0": 1, "f1": 110, **_c((-16, -10, 3.5), (-5, 14, 0.2), 32), "move": "dolly:-13,-7,7.6"},   # the painter's view (master plate): headland, sea, the pair small by the tree; slow push
     {"name": "s02_walk", "f0": 111, "f1": 196, **_c((-5.5, 4.0, 1.3), (0, 8, 1.2), 42), "move": "pan"},
     {"name": "s03_meet", "f0": 197, "f1": starts[0] - 1, "move": "static", **TWO},
 ]

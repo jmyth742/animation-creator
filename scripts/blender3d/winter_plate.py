@@ -11,7 +11,9 @@ inp = COMFY / "input" / "winter_src.png"; shutil.copy(src, inp)
 prompt = ("The same valley in deep winter: snow-covered meadow and path, frozen lake, icicles on the waterfall, "
           "snow on the golden hall's roofs and battlements, bare frosted trees, pale winter sky, soft cold light, "
           "painted anime background, cel-shaded key visual, no people")
-wf = sr.build_t2i_workflow(prompt, seed=6100, prefix="plates4x/tir_na_nog_winter", width=1664, height=960)
+import os
+SEED = int(os.environ.get("WINTER_SEED", "6100"))
+wf = sr.build_t2i_workflow(prompt, seed=SEED, prefix="plates4x/tir_na_nog_winter", width=1664, height=960)
 wf["5"] = {"class_type": "LoadImage", "inputs": {"image": inp.name}}
 wf["5r"] = {"class_type": "ImageScale", "inputs": {"image": ["5", 0], "upscale_method": "lanczos", "width": 1664, "height": 960, "crop": "disabled"}}
 wf["5b"] = {"class_type": "VAEEncode", "inputs": {"pixels": ["5r", 0], "vae": ["3", 0]}}
@@ -26,4 +28,4 @@ while time.time() - t0 < 1200:
         break
     time.sleep(4)
 if out is None: sys.exit("winter plate timed out")
-dst = SETS / f"master_winter_dn{dn}.png"; shutil.copy(out, dst); print("WINTER PLATE", dst)
+dst = SETS / f"master_winter_dn{dn}_s{SEED}.png"; shutil.copy(out, dst); print("WINTER PLATE", dst)

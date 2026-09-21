@@ -181,8 +181,12 @@ if pc is not None and os.environ.get("FILM_PAINTER", "shot") == "shot":
         setup = "master" if ang < 50 else ("side" if ang < 130 else "reverse")
         if setup == "master" and cam.lens >= 60: setup = "closer"
         folder = os.path.dirname(os.path.abspath(bpy.path.abspath(cur.filepath)))
-        for cand in (f"{folder}/{setup}_4x.png", f"{folder}/{setup}.png", f"{folder}/master_4x.png"):
+        stem = os.path.basename(cur.filepath).replace("_4x.png", "").replace(".png", "")
+        season = stem[len("master"):] if stem.startswith("master") else ""      # '' or '_winter'
+        for cand in (f"{folder}/{setup}{season}_4x.png", f"{folder}/{setup}{season}.png"):
             if os.path.exists(cand): plate = cand; break
+        else:
+            setup = stem   # no such setup in this season: keep the set's own plate
         print("PAINTER shot heading %.0f deg off master -> %s" % (ang, setup))
     if plate and cur is not None and os.path.abspath(bpy.path.abspath(cur.filepath)) != os.path.abspath(plate):
         img = bpy.data.images.load(plate)

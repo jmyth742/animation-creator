@@ -37,7 +37,7 @@ class Painter:
         d.data.materials.append(self.painted("p_dome", None, shade=False))
         return d
 
-    def painted(self, name, fallback, sat=1.0, val=1.0, shade=True):
+    def painted(self, name, fallback, sat=1.0, val=1.0, shade=True, flat=None):
         """Material sampling the plate through the 'Painter' UV map (filled by
         project_all), through HSV and, if shade, the two-tone cel ramp."""
         m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; nt.nodes.clear()
@@ -59,6 +59,19 @@ class Painter:
             nt.links.new(mix.outputs["Color"], em.inputs["Color"])
         else:
             nt.links.new(hsv.outputs["Color"], em.inputs["Color"])
+        if flat is not None:
+            # GRAZING FADE: where the surface is edge-on to the camera the projection streaks
+            # (cliff foot, sea near the cliff); fade to a flat colour sampled from the plate
+            geo = nt.nodes.new("ShaderNodeNewGeometry")
+            dot = nt.nodes.new("ShaderNodeVectorMath"); dot.operation = 'DOT_PRODUCT'
+            nt.links.new(geo.outputs["Normal"], dot.inputs[0]); nt.links.new(geo.outputs["Incoming"], dot.inputs[1])
+            ab = nt.nodes.new("ShaderNodeMath"); ab.operation = 'ABSOLUTE'; nt.links.new(dot.outputs["Value"], ab.inputs[0])
+            mr = nt.nodes.new("ShaderNodeMapRange"); mr.inputs["From Min"].default_value = 0.12; mr.inputs["From Max"].default_value = 0.35
+            nt.links.new(ab.outputs["Value"], mr.inputs["Value"])
+            fm = nt.nodes.new("ShaderNodeMixRGB"); fm.inputs["Color1"].default_value = (*flat, 1)
+            src = em.inputs["Color"].links[0].from_socket
+            nt.links.new(src, fm.inputs["Color2"]); nt.links.new(mr.outputs["Result"], fm.inputs["Fac"])
+            nt.links.new(fm.outputs["Color"], em.inputs["Color"])
         nt.links.new(em.outputs["Emission"], out.inputs["Surface"])
         m["painter_projected"] = True
         return m
@@ -72,6 +85,15 @@ class Painter:
         for ob in list(sc.objects):
             if ob.type != 'MESH' or not any(m and m.get("painter_projected") for m in ob.data.materials): continue
             if "Painter" not in ob.data.uv_layers: ob.data.uv_layers.new(name="Painter")
+            # projected UVs are per-VERTEX and interpolated across each face, so a 40 m cone or a
+            # one-face lake shows the plate offset from the dome (env_painted_ep1t_probes.png):
+            # subdivide (simple) to ~1.5 m faces first, capped at level 6
+            import math as _m
+            mw = ob.matrix_world; vs = [mw @ v.co for v in ob.data.vertices]
+            emax = max(((vs[e.vertices[0]] - vs[e.vertices[1]]).length for e in ob.data.edges), default=0.0)
+            lv = int(min(2 if ob.name == "backdrop" else 6, max(0, _m.ceil(_m.log2(max(emax / 1.5, 1.0))))))
+            if lv > 0:
+                sd = ob.modifiers.new("painter_sub", 'SUBSURF'); sd.subdivision_type = 'SIMPLE'; sd.levels = lv; sd.render_levels = lv
             md = ob.modifiers.new("painter", 'UV_PROJECT'); md.uv_layer = "Painter"; md.projector_count = 1
             md.projectors[0].object = self.cam; md.aspect_x = asp; md.aspect_y = 1.0; md.scale_x = 1.0; md.scale_y = 1.0
             assert ob.modifiers[-1].name == md.name   # never compare RNA wrappers with `is`

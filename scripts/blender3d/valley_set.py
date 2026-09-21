@@ -135,6 +135,9 @@ def build_set(sc, winter=False):
         mount = P.painted("p_mount", mount, sat=0.9); water = P.painted("p_water", water, sat=1.05)
         path_m = P.painted("p_path", path_m); gold = P.painted("p_gold", gold); gold_dk = P.painted("p_golddk", gold_dk)
         leaf = P.painted("p_leaf", leaf); trunk = P.painted("p_trunk", trunk)
+        falls = P.painted("p_falls", falls, shade=False); mount = P.painted("p_mount", mount, shade=False)
+        gold = P.painted("p_gold", gold, shade=False); gold_dk = P.painted("p_golddk", gold_dk, shade=False)
+        water = P.painted("p_water", water, shade=False)
         P.dome(sc, (0, 30, 0))
 
     # valley floor with gentle relief
@@ -157,7 +160,7 @@ def build_set(sc, winter=False):
              vertices=24, radius1=1.0, radius2=0.12)
 
     # the lake, left of the path
-    if winter:
+    if winter and P is None:
         water = toon("ice", (0.78, 0.86, 0.92), shadow_mult=0.85)
     _obj("lake", bpy.ops.mesh.primitive_circle_add, water,
          loc=(-8, 19, 0.06), scale=(10, 8, 1), fill_type='NGON')
@@ -178,7 +181,7 @@ def build_set(sc, winter=False):
 
     # the golden hall on a rise, right side
     hx, hy = 7.5, 26
-    _obj("rise", bpy.ops.mesh.primitive_cylinder_add, grass_dk,
+    if P is None: _obj("rise", bpy.ops.mesh.primitive_cylinder_add, grass_dk,
          loc=(hx, hy, 0.5), scale=(9, 7, 0.5))
     _obj("hall", bpy.ops.mesh.primitive_cube_add, gold,
          loc=(hx, hy, 3.4), scale=(5.5, 3.4, 2.4))
@@ -187,7 +190,7 @@ def build_set(sc, winter=False):
     _obj("towerroof", bpy.ops.mesh.primitive_cone_add, gold_dk,
          loc=(hx + 4.2, hy - 0.6, 8.8), scale=(2.1, 2.1, 1.5), vertices=8)
     # arched door: dark inset + columns
-    _obj("door", bpy.ops.mesh.primitive_cube_add, toon("dark", (0.10, 0.07, 0.05)),
+    if P is None: _obj("door", bpy.ops.mesh.primitive_cube_add, toon("dark", (0.10, 0.07, 0.05)),
          loc=(hx - 1.5, hy - 3.5, 1.9), scale=(1.1, 0.2, 1.9))
     for dx in (-2.9, -0.1):
         _obj("col", bpy.ops.mesh.primitive_cylinder_add, gold_dk,
@@ -205,7 +208,7 @@ def build_set(sc, winter=False):
     OBSTACLES.append((-2.6, 19, 0.5))          # the cross
     OBSTACLES.append((7.5, 26, 8.0))           # hall + rise
     OBSTACLES.append((-8, 19, 8.5))            # the lake — nobody wades
-    for i, (tx, ty, ts) in enumerate(spots):
+    for i, (tx, ty, ts) in enumerate([] if P is not None else spots):
         _obj(f"trunk{i}", bpy.ops.mesh.primitive_cylinder_add, trunk,
              loc=(tx, ty, 0.9 * ts), scale=(0.22 * ts, 0.22 * ts, 0.9 * ts))
         _obj(f"can{i}", bpy.ops.mesh.primitive_cone_add, leaf,
@@ -216,15 +219,15 @@ def build_set(sc, winter=False):
              vertices=10)
 
     # standing cross by the lake (the plate's landmark)
-    _obj("crossv", bpy.ops.mesh.primitive_cylinder_add, trunk,
+    if P is None: _obj("crossv", bpy.ops.mesh.primitive_cylinder_add, trunk,
          loc=(-2.6, 19, 1.6), scale=(0.16, 0.16, 1.6))
-    _obj("crossh", bpy.ops.mesh.primitive_cylinder_add, trunk,
+    if P is None: _obj("crossh", bpy.ops.mesh.primitive_cylinder_add, trunk,
          loc=(-2.6, 19, 2.4), scale=(0.14, 0.14, 0.8),
          rot=(0, math.radians(90), 0))
 
     # flowers: tiny bright dots near the camera
     fl = toon("flower", (0.85, 0.80, 0.55), shadow_mult=0.8)
-    for i in range(70):
+    for i in range(0 if P is not None else 70):   # the plate paints the flowers
         fx = rnd.uniform(-9, 9); fy = rnd.uniform(-5, 14)
         if abs(fx - (0.9 - 2.6 * ((fy + 4) / 22))) < 1.2:
             continue
