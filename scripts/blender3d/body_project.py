@@ -59,6 +59,13 @@ for ob in list(sc.objects):
 char = kit.load_character(glb, name, height=1.75)
 base_img = next(nd.image for m in char.data.materials for nd in m.node_tree.nodes
                 if nd.type == 'TEX_IMAGE' and nd.image)
+# BODY_BASE: build on top of the face bake. Left to the mesh's embedded texture, this
+# pass overwrites the whole atlas including the head, and the carefully built face is
+# lost (review/body_fix_evidence.png: the enriched front had no mouth).
+_bb = os.environ.get("BODY_BASE", "")
+if _bb and os.path.exists(_bb):
+    base_img = bpy.data.images.load(_bb)
+    print("BODY base =", os.path.basename(_bb), flush=True)
 W, H = base_img.size
 uv0 = char.data.uv_layers[0].name
 print("BODY", name, "atlas", W, H, "faces", len(char.data.polygons), flush=True)
@@ -237,8 +244,25 @@ seen = n2.nodes.new("ShaderNodeMapRange")
 seen.inputs["From Min"].default_value = 0.04
 seen.inputs["From Max"].default_value = 0.25
 n2.links.new(acc_w, seen.inputs["Value"])
+# HEAD GUARD: fade the body contribution out above the chin so the face bake keeps the
+# head. The two passes otherwise fight for the same pixels and whichever ran last wins.
+_hz = float(os.environ.get("BODY_HEAD_Z", "0")) or (float(hi[2]) - 0.26)
+_pos = n2.nodes.new("ShaderNodeNewGeometry")
+_sep = n2.nodes.new("ShaderNodeSeparateXYZ")
+n2.links.new(_pos.outputs["Position"], _sep.inputs["Vector"])
+_hg = n2.nodes.new("ShaderNodeMapRange")
+_hg.inputs["From Min"].default_value = _hz            # at the chin: body still applies
+_hg.inputs["From Max"].default_value = _hz + 0.10     # above it: face bake only
+_hg.inputs["To Min"].default_value = 1.0
+_hg.inputs["To Max"].default_value = 0.0
+_hg.clamp = True
+n2.links.new(_sep.outputs["Z"], _hg.inputs["Value"])
+_gate = n2.nodes.new("ShaderNodeMath"); _gate.operation = 'MULTIPLY'
+n2.links.new(seen.outputs["Result"], _gate.inputs[0])
+n2.links.new(_hg.outputs["Result"], _gate.inputs[1])
+print("BODY head guard above z %.3f" % _hz, flush=True)
 mix = n2.nodes.new("ShaderNodeMixRGB")
-n2.links.new(seen.outputs["Result"], mix.inputs["Fac"])
+n2.links.new(_gate.outputs["Value"], mix.inputs["Fac"])
 n2.links.new(txA.outputs["Color"], mix.inputs["Color1"])
 n2.links.new(nrm.outputs["Vector"], mix.inputs["Color2"])
 em2 = n2.nodes.new("ShaderNodeEmission")
