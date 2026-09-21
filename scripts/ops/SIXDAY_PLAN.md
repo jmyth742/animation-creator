@@ -343,3 +343,26 @@ leads for real blendshape mouths, repo visibility.
   The stronger hue shift is not better than +29 deg.
 - Film A/B (dialogue closes, classic | anime): review/anime_style_ab_ep2b.mp4,
   anime_style_ab_ep1b.mp4 — decides whether it becomes the master default.
+
+## Quality pass 2 (21 Sep) — characters and environment
+- CEL SHADER: anime three-tone (violet-shifted shadow, mid-band) is now the
+  DEFAULT (CEL_STYLE=classic restores the v4 look). Film A/B: review/
+  anime_style_ab_ep1b.mp4 (summer key: cleaner, warmer terminator — the gain),
+  anime_style_ab_ep2b.mp4 (winter fill: near-identical). Rim + spec rejected.
+- FACE RESOLUTION, measured: the face spans ~312 texels on the mv leads (~100
+  on CharacterGen) but a 4K atlas (face_repaint FACE_HD_SCALE=2) and a higher
+  FLUX denoise changed nothing at a 900 px close-up (review/face_res_ab_niamh.png):
+  the blur is the marching-cubes FACETING of the head, not the texture. Lever:
+  a denser relaxed hero head (subsurf + normal transfer) — A/B in progress
+  (review/face_mesh_ab_niamh.png). VRoid heads remain the real fix (user).
+- ENVIRONMENT: the primitive sets never matched the painted concept plates
+  the cast was designed against. Tested: depth-projected plate as a set
+  (env_plate_stage_test.png: right look, but blocking floats off-plate);
+  plate as a backdrop behind primitives (worse by contrast). ADOPTED: the
+  HYBRID in cliff_set.py — a painter's camera frames the stage as the plate
+  does; near geometry (shelf, cliff, sea) samples the plate at its screen
+  position through the cel ramp, a far dome carries the plate's sky/sea band,
+  props stay real for parallax. review/env_backdrop_probes.png. Env:
+  SET_PLATE=<plate.png>, SET_BACKDROP=0 to disable.
+- Next: apply the hybrid to the valley (tir_na_nog plate) and winter sets;
+  hero-head subsurf for close-ups; re-master all three episodes.
