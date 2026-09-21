@@ -122,6 +122,13 @@ def load_character(mesh_path, name, height=1.75):
         poly.use_smooth = True
     import os
     _weld_shells(char, name)
+    # CHAR_HERO_SUBSURF=N: hero-head subdivision for close-ups (face_mesh_ab_*.png:
+    # level 1 softens hair/cheek silhouettes a little, level 2 adds nothing; the
+    # face texture is the real limit). Goes BEFORE the normal transfer so the
+    # transfer sees the smooth surface. Off by default (4x faces per level).
+    _hs = int(__import__("os").environ.get("CHAR_HERO_SUBSURF", "0") or 0)
+    if _hs > 0:
+        _sm = char.modifiers.new("hero", 'SUBSURF'); _sm.levels = _hs; _sm.render_levels = _hs
     if os.environ.get("CHAR_YAW"):
         # bake a yaw into the mesh data (CharacterGen meshes face +Y; the kit
         # and probe_face expect the face toward -Y)
@@ -814,6 +821,13 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False
             bpy.data.objects.remove(o, do_unlink=True)
     rig.name, char.name = f"{name}_rig", name
     _weld_shells(char, name)     # same seam weld as the numpy path (skin weights survive: they live on the kept verts)
+    # CHAR_HERO_SUBSURF=N: hero-head subdivision for close-ups (face_mesh_ab_*.png:
+    # level 1 softens hair/cheek silhouettes a little, level 2 adds nothing; the
+    # face texture is the real limit). Goes BEFORE the normal transfer so the
+    # transfer sees the smooth surface. Off by default (4x faces per level).
+    _hs = int(__import__("os").environ.get("CHAR_HERO_SUBSURF", "0") or 0)
+    if _hs > 0:
+        _sm = char.modifiers.new("hero", 'SUBSURF'); _sm.levels = _hs; _sm.render_levels = _hs
     _img = None
     for m in char.data.materials:
         if m and m.use_nodes:

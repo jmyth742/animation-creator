@@ -109,7 +109,7 @@ wf = sr.build_t2i_workflow(prompt, seed=6100, prefix="face_hd",
                            width=768, height=768)
 wf["5"] = {"class_type": "LoadImage", "inputs": {"image": "face_patch.png"}}
 wf["5b"] = {"class_type": "VAEEncode", "inputs": {"pixels": ["5", 0], "vae": ["3", 0]}}
-wf["10"]["inputs"]["steps"] = 8
+wf["10"]["inputs"]["steps"] = int(__import__("os").environ.get("FACE_HD_STEPS", "8"))   # distilled FLUX: denoise*steps = steps actually run
 wf["10"]["inputs"]["denoise"] = denoise
 wf["11"]["inputs"]["latent_image"] = ["5b", 0]
 pid = sr.queue_prompt(wf)
@@ -148,7 +148,7 @@ yy, xx = np.mgrid[0:Y1 - Y0, 0:X1 - X0]
 edge = np.minimum.reduce([yy, xx, (Y1 - Y0 - 1) - yy, (X1 - X0 - 1) - xx])
 alpha = np.clip(edge / (24.0 * SC), 0, 1)[..., None]
 out[Y0:Y1, X0:X1, :3] = (1 - alpha) * out[Y0:Y1, X0:X1, :3] + alpha * hd
-dst = PROPS / f"{name}_face_hdbase.png"
+dst = PROPS / f"{name}_face_hdbase{__import__('os').environ.get('FACE_HD_TAG', '')}.png"   # FACE_HD_TAG keeps sweep outputs apart
 im = bpy.data.images.new("hd", W * SC, H * SC, alpha=True)
 im.pixels = out.ravel().tolist()
 im.filepath_raw = str(dst)

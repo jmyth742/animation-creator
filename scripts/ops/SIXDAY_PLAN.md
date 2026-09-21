@@ -364,5 +364,28 @@ leads for real blendshape mouths, repo visibility.
   position through the cel ramp, a far dome carries the plate's sky/sea band,
   props stay real for parallax. review/env_backdrop_probes.png. Env:
   SET_PLATE=<plate.png>, SET_BACKDROP=0 to disable.
-- Next: apply the hybrid to the valley (tir_na_nog plate) and winter sets;
-  hero-head subsurf for close-ups; re-master all three episodes.
+- HERO HEAD (judged 07:00): subsurf level 1 softens hair/cheek silhouettes a
+  little, level 2 adds nothing, the eyes stay soft in all three
+  (review/face_mesh_ab_{niamh,oisin}.png). Hook: CHAR_HERO_SUBSURF=1 (both
+  loaders, before the normal transfer), off by default. Modest; close-ups only.
+- FACE REPAINT WAS NEVER A REPAINT (found 07:00): the "face patch" cut from the
+  atlas is NOT a face — the auto-UV atlas scatters the face over small islands
+  (review/face_flux_patch_oisin.png: FLUX draws stray eyes/profiles into the
+  fragments). At denoise 0.3 x 8 distilled steps it was a no-op (atlas differs
+  by 0.5/255 mean), which is why "4K changed nothing". REPLACED by camera
+  projection (face_project.py): front-on unlit ortho render -> FLUX img2img on
+  the coherent face -> UV Project back from the same camera -> Cycles EMIT bake
+  into a 2x atlas masked to front-facing surface near the face. Same technique
+  as the painted sets. Verdict: review/face_proj_<name>.png (front | FLUX |
+  close-up base | close-up HD).
+- PROJECTION IS EXACT NOW: cliff_set uses a UV Project modifier from the
+  painter camera (review/env_painter_proj_check.png). Shared module
+  painter.py; valley_set wears the tir_na_nog plate (pose vd, review/
+  env_painter_calib_valley2.png -> env_painter_proj_check_valley.png). Cliff
+  foot slab + painted shore stop the plate's cliff base streaking over the sea.
+- BUG that stalled three renders for an hour: `while ob.modifiers[-1] is not md`
+  never ends — every RNA access returns a fresh Python wrapper, so `is` is
+  always False-equal. Compare names, never identity, on bpy objects.
+- Next: judge review/env_painted_{ep1p,ep3p}_probes.png (film cameras on the
+  painted sets), adopt face_project HD bases via FACE_BASE into the viseme
+  chain, re-master all three episodes.

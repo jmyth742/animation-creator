@@ -11,6 +11,8 @@ import bpy
 
 
 TEX = "/workspace/text-to-video/series/tir-na-nog-legend/meshes/textures"
+PLATE_DEFAULT = "/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master.png"
+PAINTER_LOC, PAINTER_TGT = (-14.0, -6.0, 4.5), (3.0, 24.0, 2.5)      # pose vd
 
 
 def toon_tex(name, image_path, tile=8.0, shadow_mult=0.6, scroll=0.0):
@@ -123,6 +125,18 @@ def build_set(sc, winter=False):
     leaf = toon("leaf", (0.14, 0.30, 0.13))
     trunk = toon("trunk", (0.28, 0.20, 0.13))
 
+    # PAINTED WORLD: the tir_na_nog plate projected from the painter camera
+    # (pose vd, review/env_painter_calib_valley2.png). Winter has no plate of
+    # its own: primitives unless SET_PLATE names one.
+    import painter
+    P = painter.setup(sc, None if winter else PLATE_DEFAULT, PAINTER_LOC, PAINTER_TGT)
+    if P is not None:
+        grass = P.painted("p_grass", grass); grass_dk = P.painted("p_grassdk", grass_dk)
+        mount = P.painted("p_mount", mount, sat=0.9); water = P.painted("p_water", water, sat=1.05)
+        path_m = P.painted("p_path", path_m); gold = P.painted("p_gold", gold); gold_dk = P.painted("p_golddk", gold_dk)
+        leaf = P.painted("p_leaf", leaf); trunk = P.painted("p_trunk", trunk)
+        P.dome(sc, (0, 30, 0))
+
     # valley floor with gentle relief
     bpy.ops.mesh.primitive_grid_add(x_subdivisions=90, y_subdivisions=90,
                                     size=90, location=(0, 20, 0))
@@ -226,7 +240,7 @@ def build_set(sc, winter=False):
         else (0.55, 0.66, 0.82, 1)
     bg.inputs["Strength"].default_value = 1.0
     cloud = toon("cloud", (0.96, 0.97, 0.95), shadow_mult=0.95)
-    for i, (cx, cz, cs) in enumerate([(-20, 26, 4), (8, 30, 5), (28, 24, 3.5),
+    for i, (cx, cz, cs) in enumerate([] if P is not None else [(-20, 26, 4), (8, 30, 5), (28, 24, 3.5),
                                       (-4, 33, 3)]):
         _obj(f"cloud{i}", bpy.ops.mesh.primitive_ico_sphere_add, cloud,
              loc=(cx, 60, cz), scale=(cs, cs * 0.5, cs * 0.35), subdivisions=2)
@@ -255,4 +269,5 @@ def build_set(sc, winter=False):
     fo = bpy.data.objects.new("fill", fill)
     fo.rotation_euler = (math.radians(30), 0, math.radians(-40))
     sc.collection.objects.link(fo)
+    if P is not None: P.project_all(sc)
     return {"grass": grass}

@@ -40,27 +40,19 @@ def build_set(sc):
         # land where the plate paints them: from the left, slightly above the shelf
         # the plate paints the shelf from slightly above eye line, looking along
         # the edge; the horizon (44% up the image) must land at the film eye line
-        PCAM.location = (-14.0, 2.0, FLOOR_Z + 2.6)
-        tgt = mathutils.Vector((4.0, 24.0, FLOOR_Z + 1.9)); PCAM.rotation_euler = (tgt - PCAM.location).to_track_quat('-Z', 'Y').to_euler()
+        # pose h from the calibration overlays (review/env_painter_calib.png)
+        PCAM.location = (-17.0, -12.0, 8.0)
+        tgt = mathutils.Vector((7.0, 20.0, 4.8)); PCAM.rotation_euler = (tgt - PCAM.location).to_track_quat('-Z', 'Y').to_euler()
         # a far dome for sky and sea, also camera-projected (no seam with the geometry)
         bpy.ops.mesh.primitive_uv_sphere_add(radius=160.0, segments=64, ring_count=32, location=(0, 30, FLOOR_Z)); dome = bpy.context.object; dome.name = "backdrop"
         for poly in dome.data.polygons: poly.use_smooth = True
         print("BACKDROP plate", plate_path.split("/")[-2])
+    PROJECTED = []   # objects that get a UV Project modifier from the painter camera (Blender's own projection = exact)
     def painted(name, fallback, sat=1.0, val=1.0, shade=True):
         if PLATE is None: return fallback
         m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; nt.nodes.clear()
-        tc = nt.nodes.new("ShaderNodeTexCoord"); tc.object = PCAM
-        # 'Object' coords of the painter camera: x,y in its view plane at z=-1 -> screen uv
-        sep = nt.nodes.new("ShaderNodeSeparateXYZ"); nt.links.new(tc.outputs["Object"], sep.inputs["Vector"])
-        # perspective divide: u = 0.5 + (x / -z) * f, v = 0.5 + (y / -z) * f * aspect ; f = lens / sensor
-        f = 32.0 / 36.0
-        negz = nt.nodes.new("ShaderNodeMath"); negz.operation = 'MULTIPLY'; negz.inputs[1].default_value = -1.0; nt.links.new(sep.outputs["Z"], negz.inputs[0])
-        dx = nt.nodes.new("ShaderNodeMath"); dx.operation = 'DIVIDE'; nt.links.new(sep.outputs["X"], dx.inputs[0]); nt.links.new(negz.outputs["Value"], dx.inputs[1])
-        dy = nt.nodes.new("ShaderNodeMath"); dy.operation = 'DIVIDE'; nt.links.new(sep.outputs["Y"], dy.inputs[0]); nt.links.new(negz.outputs["Value"], dy.inputs[1])
-        u = nt.nodes.new("ShaderNodeMath"); u.operation = 'MULTIPLY_ADD'; u.inputs[1].default_value = f; u.inputs[2].default_value = 0.5; nt.links.new(dx.outputs["Value"], u.inputs[0])
-        v = nt.nodes.new("ShaderNodeMath"); v.operation = 'MULTIPLY_ADD'; v.inputs[1].default_value = f * (PLATE.size[0] / PLATE.size[1]); v.inputs[2].default_value = 0.5; nt.links.new(dy.outputs["Value"], v.inputs[0])
-        comb = nt.nodes.new("ShaderNodeCombineXYZ"); nt.links.new(u.outputs["Value"], comb.inputs["X"]); nt.links.new(v.outputs["Value"], comb.inputs["Y"])
-        tx = nt.nodes.new("ShaderNodeTexImage"); tx.image = PLATE; tx.extension = 'EXTEND'; nt.links.new(comb.outputs["Vector"], tx.inputs["Vector"])
+        uvn = nt.nodes.new("ShaderNodeUVMap"); uvn.uv_map = "Painter"
+        tx = nt.nodes.new("ShaderNodeTexImage"); tx.image = PLATE; tx.extension = 'EXTEND'; nt.links.new(uvn.outputs["UV"], tx.inputs["Vector"])
         hsv = nt.nodes.new("ShaderNodeHueSaturation"); hsv.inputs["Saturation"].default_value = sat; hsv.inputs["Value"].default_value = val
         nt.links.new(tx.outputs["Color"], hsv.inputs["Color"])
         em = nt.nodes.new("ShaderNodeEmission"); out = nt.nodes.new("ShaderNodeOutputMaterial")
@@ -73,16 +65,31 @@ def build_set(sc):
         else:
             nt.links.new(hsv.outputs["Color"], em.inputs["Color"])
         nt.links.new(em.outputs["Emission"], out.inputs["Surface"])
+        m["painter_projected"] = True
         return m
+    def project_all():
+        """After the geometry exists: give every object wearing a painted material
+        a 'Painter' UV layer and a UV Project modifier from the painter camera with
+        the plate's aspect — the same matrix the renderer uses, so the overlay
+        calibration is exact."""
+        if PLATE is None: return
+        asp = PLATE.size[0] / PLATE.size[1]
+        for ob in list(sc.objects):
+            if ob.type != 'MESH' or not any(m and m.get("painter_projected") for m in ob.data.materials): continue
+            if "Painter" not in ob.data.uv_layers: ob.data.uv_layers.new(name="Painter")
+            md = ob.modifiers.new("painter", 'UV_PROJECT'); md.uv_layer = "Painter"; md.projector_count = 1
+            md.projectors[0].object = PCAM; md.aspect_x = asp; md.aspect_y = 1.0; md.scale_x = 1.0; md.scale_y = 1.0
+            # the projection must see the FINAL surface: modifiers.new appends, so it
+            # is already last; assert by name (RNA wrappers are fresh objects each
+            # access, so an `is` comparison would spin forever)
+            assert ob.modifiers[-1].name == md.name
+            PROJECTED.append(ob.name)
+        print("PAINTER projected onto", PROJECTED)
     if PLATE is not None:
-        # the dome must not show the plate's own tree/shelf: above the horizon
-        # sample the sky, below it the open sea (from the plate's left half)
-        dm = painted("p_dome", None, shade=False); nt = dm.node_tree
-        comb = [n for n in nt.nodes if n.type == 'COMBXYZ'][0]
-        # clamp u into the plate's open-sea/sky region (left 45%) so the painted cliff never reaches the dome
-        uc = nt.nodes.new("ShaderNodeMath"); uc.operation = 'MULTIPLY_ADD'; uc.inputs[1].default_value = 0.45; uc.inputs[2].default_value = 0.0
-        src = comb.inputs["X"].links[0].from_socket; nt.links.remove(comb.inputs["X"].links[0]); nt.links.new(src, uc.inputs[0]); nt.links.new(uc.outputs["Value"], comb.inputs["X"])
-        dome.data.materials.append(dm)
+        # the dome: the plate straight, unshaded. Where the painter camera sees
+        # near geometry the dome is occluded anyway; the plate's own painted
+        # cliff shows through only where geometry is missing (the log tells).
+        dome.data.materials.append(painted("p_dome", None, shade=False))
     # headland shelf (top at FLOOR_Z), cliff face, sea
     rocktex = valley_set.toon_tex("crt", "rocktex.png", tile=6.0, shadow_mult=0.55) if __import__("os").path.exists(valley_set.TEX + "/rocktex.png") else rock
     for mat in (rocktex, grass, sea):
@@ -98,19 +105,29 @@ def build_set(sc):
         bpy.context.view_layer.objects.active = ob
         bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
     bpy.ops.mesh.primitive_cube_add(location=(0, 8, FLOOR_Z - 3)); ob = bpy.context.object
-    ob.name = "headland"; ob.scale = (18, 12, 3); ob.data.materials.append(painted("p_grass", grass)); _uv_scale(ob, 22)
+    ob.name = "headland"; ob.scale = (18, 8, 3); ob.location.y = 12.0; ob.data.materials.append(painted("p_grass", grass)); _uv_scale(ob, 22)
+    # round the far (sea-side) corners into the plate's promontory
+    bpy.ops.object.mode_set(mode='EDIT'); bpy.ops.mesh.select_all(action='DESELECT'); bpy.ops.object.mode_set(mode='OBJECT')
+    for v in ob.data.vertices: v.select = (v.co.y > 12.0 + 7.0)
+    bpy.ops.object.mode_set(mode='EDIT'); bpy.ops.mesh.bevel(offset=7.0, segments=6, affect='VERTICES'); bpy.ops.object.mode_set(mode='OBJECT')
     # the cliff face: three staggered rock slabs, not one flat wall
     for i, (x, y, sx, sy, sz, rz) in enumerate([(-7, 20.6, 8, 0.9, 5.6, 0.05), (4, 20.3, 9, 1.1, 5.8, -0.07), (13, 20.8, 7, 0.8, 5.4, 0.12)]):
         bpy.ops.mesh.primitive_cube_add(location=(x, y, -1)); ob = bpy.context.object
         ob.name = f"cliff{i}"; ob.scale = (sx, sy, sz); ob.rotation_euler = (0.06 * (i - 1), 0, rz)
         ob.data.materials.append(painted("p_rock", rocktex, sat=0.85, val=0.95)); _uv_scale(ob, 6)
+    # the cliff FOOT: the plate's rock bulges toward the viewer at the base; a
+    # lower, forward slab catches those pixels on a near-vertical face instead
+    # of letting them streak across the sea plane (env_painter_proj_check.png)
+    bpy.ops.mesh.primitive_cube_add(location=(0, 18.6, SEA_Z - 0.5)); ob = bpy.context.object
+    ob.name = "cliff_foot"; ob.scale = (14, 1.6, 2.6); ob.rotation_euler = (0.35, 0, 0.03)
+    ob.data.materials.append(painted("p_rock", rocktex, sat=0.85, val=0.95)); _uv_scale(ob, 6)
     bpy.ops.mesh.primitive_cube_add(location=(24, 6, FLOOR_Z - 3.5)); ob = bpy.context.object
-    ob.name = "shoulder"; ob.scale = (7, 14, 3); ob.rotation_euler.z = 0.2; ob.data.materials.append(painted("p_grass2", grass)); _uv_scale(ob, 12)
-    bpy.ops.mesh.primitive_plane_add(size=260, location=(0, 70, SEA_Z)); ob = bpy.context.object
+    ob.name = "shoulder"; ob.scale = (7, 9, 3); ob.location.y = 8.0; ob.rotation_euler.z = 0.2; ob.data.materials.append(painted("p_grass2", grass)); _uv_scale(ob, 12)
+    bpy.ops.mesh.primitive_plane_add(size=260, location=(0, 60, SEA_Z)); ob = bpy.context.object
     ob.name = "sea"; ob.data.materials.append(painted("p_sea", sea, sat=1.05)); _uv_scale(ob, 1)
     # a shingle shore at the cliff foot, where the boat waits
     bpy.ops.mesh.primitive_cube_add(location=(6, 24, SEA_Z + 0.15)); ob = bpy.context.object
-    ob.name = "shore"; ob.scale = (7, 3.5, 0.3); ob.data.materials.append(rocktex); _uv_scale(ob, 1)
+    ob.name = "shore"; ob.scale = (7, 3.5, 0.3); ob.data.materials.append(painted("p_shore", rocktex, sat=0.85, val=0.95)); _uv_scale(ob, 1)
     set_assets.place(f"{PROPS}/benttree_painted.glb", "bent", (5.5, 16), 4.2, rot_z=0.6, floor_fn=floor_fn)
     set_assets.place(f"{PROPS}/seastack_painted.glb", "stack", (-14, 38), 9.5, floor_fn=lambda x, y: SEA_Z)
     set_assets.place(f"{PROPS}/seastack_painted.glb", "stack2", (26, 40), 6.5, rot_z=1.9, floor_fn=lambda x, y: SEA_Z)
@@ -122,4 +139,5 @@ def build_set(sc):
     sun = bpy.data.lights.new("sun", "SUN"); sun.energy = 4.0; sun.color = (1.0, 0.84, 0.62)
     so = bpy.data.objects.new("sun", sun); so.rotation_euler = (math.radians(70), 0, math.radians(60))
     sc.collection.objects.link(so)
+    if PLATE is not None: project_all()
     print("CLIFF SET BUILT")
