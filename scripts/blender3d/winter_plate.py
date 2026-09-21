@@ -6,7 +6,8 @@ from pathlib import Path
 sys.path.insert(0, "/workspace/text-to-video/scripts"); import showrunner as sr
 COMFY = Path("/workspace/text-to-video/ComfyUI"); SETS = Path("/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog")
 dn = float(sys.argv[1]) if len(sys.argv) > 1 else 0.55
-src = SETS / "master_4x.png" if (SETS / "master_4x.png").exists() else SETS / "master.png"
+import os as _o
+src = Path(_o.environ["WINTER_SRC"]) if _o.environ.get("WINTER_SRC") else (SETS / "master_4x.png" if (SETS / "master_4x.png").exists() else SETS / "master.png")
 inp = COMFY / "input" / "winter_src.png"; shutil.copy(src, inp)
 prompt = ("The same valley in deep winter: snow-covered meadow and path, frozen lake, icicles on the waterfall, "
           "snow on the golden hall's roofs and battlements, bare frosted trees, pale winter sky, soft cold light, "
@@ -28,4 +29,4 @@ while time.time() - t0 < 1200:
         break
     time.sleep(4)
 if out is None: sys.exit("winter plate timed out")
-dst = SETS / f"master_winter_dn{dn}_s{SEED}.png"; shutil.copy(out, dst); print("WINTER PLATE", dst)
+dst = SETS / f"master_winter_dn{dn}_s{SEED}{_o.environ.get('WINTER_TAG', '')}.png"; shutil.copy(out, dst); print("WINTER PLATE", dst)

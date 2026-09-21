@@ -42,6 +42,7 @@ OP = (-0.7, 8.6)
 
 
 def floor_z(x, y):
+    if bpy.data.objects.get("painter_cam"): return 0.0     # painted world: the floor is flat (the plate paints the relief)
     r = math.hypot(x, y - 20)
     return 0.35 * math.sin(x * 0.35) * math.cos(y * 0.3) * min(1, r / 8)
 
@@ -122,9 +123,9 @@ kit.apply_idle(orig, WALK_END + 1, WALK2_START - 1,
                look_at_fn=lambda f: NP, gestures=o_g)
 kit.apply_idle(nrig, 1, WALK2_START - 1, (NP[0], NP[1], floor_z(*NP)),
                nhead, fps=FPS, look_at_fn=lambda f: his_xy(f), gestures=n_g)
-kit.apply_walk(orig, walk_pair(OP, (-4.2, 17.5)), WALK2_START, FRAMES,
+kit.apply_walk(orig, walk_pair(OP, (3.6, 17.5)), WALK2_START, FRAMES,    # away up the path toward the hall (the winter plate's lake lies west)
                fps=FPS, stride_hz=1.15)
-kit.apply_walk(nrig, walk_pair(NP, (-2.6, 18.4)), WALK2_START, FRAMES,
+kit.apply_walk(nrig, walk_pair(NP, (5.0, 18.4)), WALK2_START, FRAMES,
                fps=FPS, stride_hz=1.2)
 
 # faces: baseline closed+blinks over everything, then the lines

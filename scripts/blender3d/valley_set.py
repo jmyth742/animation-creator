@@ -139,6 +139,7 @@ def build_set(sc, winter=False):
         gold = P.painted("p_gold", gold, shade=False); gold_dk = P.painted("p_golddk", gold_dk, shade=False)
         water = P.painted("p_water", water, shade=False)
         P.dome(sc, (0, 30, 0))
+        P.billboard("hall_bb", (7.5, 23.5, 6.5), (30.0, 15.0))   # the painted hall stands here
 
     # valley floor with gentle relief
     bpy.ops.mesh.primitive_grid_add(x_subdivisions=90, y_subdivisions=90,
@@ -147,7 +148,8 @@ def build_set(sc, winter=False):
     floor.name = "floor"
     for v in floor.data.vertices:
         r = math.hypot(v.co.x, v.co.y)
-        v.co.z = 0.35 * math.sin(v.co.x * 0.35) * math.cos(v.co.y * 0.3) \
+        # painted world: the plate paints the relief; real bumps at grazing angles streak its steps
+        v.co.z = 0.0 if P is not None else 0.35 * math.sin(v.co.x * 0.35) * math.cos(v.co.y * 0.3) \
             * min(1, r / 8)
     floor.data.materials.append(grass)
 
@@ -183,20 +185,20 @@ def build_set(sc, winter=False):
     hx, hy = 7.5, 26
     if P is None: _obj("rise", bpy.ops.mesh.primitive_cylinder_add, grass_dk,
          loc=(hx, hy, 0.5), scale=(9, 7, 0.5))
-    _obj("hall", bpy.ops.mesh.primitive_cube_add, gold,
+    if P is None: _obj("hall", bpy.ops.mesh.primitive_cube_add, gold,
          loc=(hx, hy, 3.4), scale=(5.5, 3.4, 2.4))
-    _obj("tower", bpy.ops.mesh.primitive_cube_add, gold,
+    if P is None: _obj("tower", bpy.ops.mesh.primitive_cube_add, gold,
          loc=(hx + 4.2, hy - 0.6, 4.6), scale=(1.7, 1.7, 3.4))
-    _obj("towerroof", bpy.ops.mesh.primitive_cone_add, gold_dk,
+    if P is None: _obj("towerroof", bpy.ops.mesh.primitive_cone_add, gold_dk,
          loc=(hx + 4.2, hy - 0.6, 8.8), scale=(2.1, 2.1, 1.5), vertices=8)
     # arched door: dark inset + columns
     if P is None: _obj("door", bpy.ops.mesh.primitive_cube_add, toon("dark", (0.10, 0.07, 0.05)),
          loc=(hx - 1.5, hy - 3.5, 1.9), scale=(1.1, 0.2, 1.9))
-    for dx in (-2.9, -0.1):
+    for dx in ([] if P is not None else (-2.9, -0.1)):
         _obj("col", bpy.ops.mesh.primitive_cylinder_add, gold_dk,
              loc=(hx + dx, hy - 3.6, 1.8), scale=(0.28, 0.28, 1.8))
     # crenellations
-    for i in range(7):
+    for i in range(0 if P is not None else 7):
         _obj("cren", bpy.ops.mesh.primitive_cube_add, gold_dk,
              loc=(hx - 4.8 + i * 1.6, hy - 3.3, 6.1), scale=(0.4, 0.25, 0.3))
 

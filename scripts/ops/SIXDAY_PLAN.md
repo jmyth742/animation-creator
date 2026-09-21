@@ -408,5 +408,22 @@ leads for real blendshape mouths, repo visibility.
   a slow push (a plate exists there; over the sea none does), FILM_STEP for
   move probes, winter plate derived from the summer master by FLUX img2img
   (winter_plate.py) so Episode 2 shares the calibration.
-- Next: judge review/env_painted_{ep1r,ep3r}_probes.png + *_moves.png (camera
-  moves against a mid-frame projection), pick the winter plate, re-master.
+- PROBE ROUNDS 2-7 (07:30-08:15, review/env_painted_ep{1,2,3}{r,t,u,v}_probes.png,
+  *_moves.png, q6/q7): camera moves hold (plate glued to geometry, mild
+  parallax). Fixed in turn: big faces showed the plate offset (projected UVs
+  interpolate per vertex -> painter.py subdivides to ~1.5 m faces first);
+  GLB dressing and primitives the plate already paints (hall, trees, cross,
+  door, flowers, falls plane, relief) dropped in painted mode; the hall is a
+  camera-facing BILLBOARD (painter.billboard) so its steps never stretch
+  across the floor; the cliff shelf is the painted headland only, its top
+  tiles the plate's own grass (painter.tiled) so the cast stands on grass
+  from every camera; sea/shore/foot fade to a flat plate colour at grazing
+  angles; a closed sky dome shadowed the whole stage (visible_shadow off);
+  season-aware setup pick (master_winter -> never the summer master).
+- WINTER: FLUX img2img on the summer master at 0.65 (seed 6100, birds cloned
+  out) = master_winter.png; 0.5 gave no snow + hallucinated people, other
+  seeds/graded inputs drift the layout. Episode 2's closing walk redirected
+  up the path (the winter plate's lake lies where they walked).
+  review/env_painted_ep2x_probes.png.
+- Next: v5 masters (scripts/ops/masters_v5.sh: painted sets, _hd faces,
+  1664x960) -> review/*_v5.mp4 + _web copies, export.

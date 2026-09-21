@@ -33,6 +33,7 @@ class Painter:
         """Far sphere carrying the plate unshaded: sky and horizon with no seam."""
         bpy.ops.mesh.primitive_uv_sphere_add(radius=radius, segments=64, ring_count=32, location=center)
         d = bpy.context.object; d.name = "backdrop"
+        d.visible_shadow = False   # a sky never shadows the stage (a closed sphere around the sun did)
         for poly in d.data.polygons: poly.use_smooth = True
         d.data.materials.append(self.painted("p_dome", None, shade=False))
         return d
@@ -66,7 +67,8 @@ class Painter:
             dot = nt.nodes.new("ShaderNodeVectorMath"); dot.operation = 'DOT_PRODUCT'
             nt.links.new(geo.outputs["Normal"], dot.inputs[0]); nt.links.new(geo.outputs["Incoming"], dot.inputs[1])
             ab = nt.nodes.new("ShaderNodeMath"); ab.operation = 'ABSOLUTE'; nt.links.new(dot.outputs["Value"], ab.inputs[0])
-            mr = nt.nodes.new("ShaderNodeMapRange"); mr.inputs["From Min"].default_value = 0.12; mr.inputs["From Max"].default_value = 0.35
+            lo, hi = (flat[3], flat[4]) if len(flat) >= 5 else (0.12, 0.35); flat = flat[:3]
+            mr = nt.nodes.new("ShaderNodeMapRange"); mr.inputs["From Min"].default_value = lo; mr.inputs["From Max"].default_value = hi
             nt.links.new(ab.outputs["Value"], mr.inputs["Value"])
             fm = nt.nodes.new("ShaderNodeMixRGB"); fm.inputs["Color1"].default_value = (*flat, 1)
             src = em.inputs["Color"].links[0].from_socket
@@ -74,6 +76,49 @@ class Painter:
             nt.links.new(fm.outputs["Color"], em.inputs["Color"])
         nt.links.new(em.outputs["Emission"], out.inputs["Surface"])
         m["painter_projected"] = True
+        return m
+
+    def billboard(self, name, loc, size):
+        """A plane that always faces the painter camera (film.py parks it at the shot camera), wearing the
+        plate unshaded: for a painted feature the set has no geometry for (the valley's hall). Without it
+        the plate's high-contrast steps stretch across the far floor whenever a shot looks sideways."""
+        bpy.ops.mesh.primitive_plane_add(size=1.0, location=loc); ob = bpy.context.object; ob.name = name
+        ob.scale = (size[0], size[1], 1.0)
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+        c = ob.constraints.new('TRACK_TO'); c.target = self.cam; c.track_axis = 'TRACK_Z'; c.up_axis = 'UP_Y'
+        ob.visible_shadow = False
+        ob.data.materials.append(self.painted(name + "_m", None, shade=False))
+        return ob
+
+    def tiled(self, name, box, size_m=4.0, shade=True):
+        """A material that TILES a crop of the plate (box = u0,v0,u1,v1 in image fractions, v from the top)
+        in world space: for the ground the cast walks on, which must read as the painting's grass from
+        every camera — a projection puts sea under their feet when the shot swings off the master."""
+        import sys as _s; _s.path.append("/workspace/venv/lib/python3.11/site-packages")
+        from PIL import Image as _I
+        src = bpy.path.abspath(self.plate.filepath); im = _I.open(src).convert("RGB"); W, H = im.size
+        crop = im.crop((int(box[0] * W), int(box[1] * H), int(box[2] * W), int(box[3] * H)))
+        os.makedirs("/workspace/loopwork/plate_crops", exist_ok=True)
+        path = f"/workspace/loopwork/plate_crops/{os.path.basename(src)[:-4]}_{name}.png"; crop.save(path)
+        img = bpy.data.images.load(path)
+        m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; nt.nodes.clear()
+        tc = nt.nodes.new("ShaderNodeTexCoord"); mp = nt.nodes.new("ShaderNodeMapping")
+        asp = crop.size[0] / crop.size[1]; mp.inputs["Scale"].default_value = (1 / (size_m * asp), 1 / size_m, 1 / size_m)
+        tx = nt.nodes.new("ShaderNodeTexImage"); tx.image = img; tx.extension = 'MIRROR'
+        nt.links.new(tc.outputs["Object"], mp.inputs["Vector"]); nt.links.new(mp.outputs["Vector"], tx.inputs["Vector"])
+        em = nt.nodes.new("ShaderNodeEmission"); out = nt.nodes.new("ShaderNodeOutputMaterial")
+        if shade:
+            diff = nt.nodes.new("ShaderNodeBsdfDiffuse"); torgb = nt.nodes.new("ShaderNodeShaderToRGB")
+            ramp = nt.nodes.new("ShaderNodeValToRGB"); ramp.color_ramp.interpolation = 'CONSTANT'
+            k = float(os.environ.get("SET_SHADE", "0.82"))
+            ramp.color_ramp.elements[0].color = (k, k * 0.97, k * 1.06, 1); ramp.color_ramp.elements[1].position = 0.5
+            mix = nt.nodes.new("ShaderNodeMixRGB"); mix.blend_type = 'MULTIPLY'; mix.inputs["Fac"].default_value = 1.0
+            nt.links.new(diff.outputs["BSDF"], torgb.inputs["Shader"]); nt.links.new(torgb.outputs["Color"], ramp.inputs["Fac"])
+            nt.links.new(ramp.outputs["Color"], mix.inputs["Color1"]); nt.links.new(tx.outputs["Color"], mix.inputs["Color2"])
+            nt.links.new(mix.outputs["Color"], em.inputs["Color"])
+        else:
+            nt.links.new(tx.outputs["Color"], em.inputs["Color"])
+        nt.links.new(em.outputs["Emission"], out.inputs["Surface"])
         return m
 
     def project_all(self, sc):
