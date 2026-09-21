@@ -206,6 +206,31 @@ if pc is not None and os.environ.get("FILM_PAINTER", "shot") == "shot":
                 md.projectors[0].object = pc; md.aspect_x = ratio; md.aspect_y = 1.0
     print("PAINTER per-shot projection from frame", fm, "plate", os.path.basename(cur.filepath) if cur else None)
 
+# FILM_STEP_ANIM=<n>: animate the CAST on twos (or threes). Verified studio practice —
+# Arc System Works disable interpolation entirely so every frame is a held pose, and it
+# is what makes 3D read as drawn rather than as smoothly interpolated CG. Applied as a
+# non-destructive Stepped f-modifier at render time, and only to the cast: the CAMERA
+# must keep moving smoothly or the whole frame judders.
+_stepn = int(os.environ.get("FILM_STEP_ANIM", "0") or 0)
+if _stepn > 1:
+    _stepped = 0
+    for _ob in sc.objects:
+        if _ob.name in ("shotcam", "painter_cam", "painter_master"):
+            continue
+        if _ob.type not in ('ARMATURE', 'MESH'):
+            continue
+        for _holder in (_ob, _ob.data, getattr(_ob, "active_material", None)):
+            _ad = getattr(_holder, "animation_data", None)
+            if not _ad or not _ad.action:
+                continue
+            for _fcu in _ad.action.fcurves:
+                if any(m.type == 'STEPPED' for m in _fcu.modifiers):
+                    continue
+                _m = _fcu.modifiers.new('STEPPED')
+                _m.frame_step = float(_stepn)
+                _stepped += 1
+    print("STEP ANIM on", _stepn, "curves", _stepped, flush=True)
+
 # FILM_HULL=<px>: inverted-hull outlines instead of Freestyle (GPU, not ~15 s/frame CPU;
 # width compensated for distance+FOV so it is constant on screen). Set FILM_LINES=0 with it.
 _hull = float(os.environ.get("FILM_HULL", "0") or 0)
