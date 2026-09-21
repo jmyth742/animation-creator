@@ -475,3 +475,29 @@ a. Inverted-hull outlines replacing Freestyle (speed + quality + per-vertex widt
 b. Per-character light vector instead of scene lighting for the cast.
 c. Step the animation on twos/threes (interpolation off) for the 2D read.
 d. Fix EP3's cliff shelf.
+
+### Inverted-hull outlines: TESTED, REJECTED for now (21 Sep 15:00)
+Implemented per the research (character_kit.add_outline_hull + FILM_HULL=<px> in film.py):
+a separate shell object whose custom split normals are CLEARED and shading smoothed (the
+"second set of normals" the ASW talk describes), faces flipped, displaced along those
+normals, black backface-culled material, armature modifier kept so it deforms; width
+compensated for camera distance and FOV so `px` is on-screen pixels in any shot.
+RESULT (review/lines_freestyle_vs_hull.png, Freestyle | hull): the hull is BLOTCHY on our
+cast -- the shell pokes through the surface in patches across faces, hair and cloth.
+ROOT CAUSE: the technique assumes clean, hand-modelled topology with artist-painted
+vertex-color widths. Our cast are marching-cubes AI meshes (Hunyuan-mv/CharacterGen) with
+dense irregular triangles, coincident shells and sharp creases, so a uniform normal
+displacement crosses the surface wherever local curvature exceeds the offset.
+VERDICT: Freestyle STAYS as the shipping line renderer. The hull code is kept behind
+FILM_HULL=0 (off) and becomes viable the moment the cast have clean topology.
+CONSEQUENCE: this is the SECOND studio technique blocked by AI-mesh topology (the first
+was face sharpness). Clean-topology heads/bodies -- VRoid/VRM export, which also brings
+MToon cel materials and its own outline system, and proper shape-key face rigs -- is now
+the single highest-value unlock in the whole pipeline, not a nice-to-have. It needs the
+user to supply VRoid/VRM character exports.
+STILL ACTIONABLE without new meshes, in priority order:
+ b. per-character light vector instead of scene lighting for the cast (ASW: each character
+    carries its own light, animated per shot) -- pure shader/rig work, no mesh dependency;
+ c. stepped animation on twos/threes (interpolation off, every frame a key) -- pure
+    animation-curve work on the existing MoMask/retarget output;
+ d. EP3 cliff shelf (reads flat green against the painted plate).

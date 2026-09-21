@@ -974,3 +974,61 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False
     zmin_w = min((char.matrix_world @ v.co).z for v in char.data.vertices)
     print("RIGGED", name, "bones", len(rig.data.bones), "renamed", [k for k in ren.values() if k in rig.data.bones], "jaw verts", len(jsel), "feet z", round(zmin_w, 3))
     return char, rig
+
+
+def add_outline_hull(char, px, cam, res_y, name="hull"):
+    """INVERTED HULL outlines (what Arc System Works ship) instead of Freestyle.
+
+    A SEPARATE shell object, not a Solidify on the character: the cast carry edited
+    custom split normals for the cel terminator, and expanding along those pokes the
+    shell through the surface in patches. So the shell is a duplicate whose custom
+    normals are CLEARED and shading smoothed -- the research's "second set of smoothed
+    normals, separate from the lighting normals" -- displaced along those, with its
+    faces flipped and a black backface-culled material, so only the far side survives
+    and reads as a line ringing the silhouette.
+
+    Width is compensated for camera DISTANCE and FOV so `px` is on-screen pixels in any
+    shot: world = px/res_y * 2*dist*tan(fov/2). The shell keeps the character's armature
+    modifier, so it deforms with the animation.
+    """
+    import math
+    sc = bpy.context.scene
+    hull = char.copy(); hull.data = char.data.copy(); hull.name = char.name + "_hull"
+    sc.collection.objects.link(hull)
+    # the shell gets its OWN smoothed normals
+    for md in list(hull.modifiers):
+        if md.type in ('DATA_TRANSFER', 'SUBSURF', 'SOLIDIFY'):
+            hull.modifiers.remove(md)
+    bpy.ops.object.select_all(action='DESELECT')
+    hull.select_set(True); bpy.context.view_layer.objects.active = hull
+    try:
+        bpy.ops.mesh.customdata_custom_splitnormals_clear()
+    except RuntimeError:
+        pass
+    for poly in hull.data.polygons:
+        poly.use_smooth = True
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.mesh.flip_normals()
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+    m = bpy.data.materials.new(name + "_line")
+    m.use_nodes = True
+    nt = m.node_tree; nt.nodes.clear()
+    em = nt.nodes.new("ShaderNodeEmission")
+    em.inputs["Color"].default_value = (0.03, 0.02, 0.04, 1)
+    out = nt.nodes.new("ShaderNodeOutputMaterial"); nt.links.new(em.outputs[0], out.inputs[0])
+    m.use_backface_culling = True          # only the shell's far side = the ring
+    hull.data.materials.clear(); hull.data.materials.append(m)
+
+    d = (char.matrix_world.translation - cam.matrix_world.translation).length
+    fov = 2.0 * math.atan(cam.data.sensor_width / (2.0 * cam.data.lens))
+    thick = (px / max(res_y, 1)) * 2.0 * max(d, 0.1) * math.tan(fov / 2.0)
+
+    dsp = hull.modifiers.new(name, 'DISPLACE')
+    dsp.direction = 'NORMAL'
+    dsp.mid_level = 0.0
+    dsp.strength = -thick          # normals are flipped, so push outward = negative
+    hull.visible_shadow = False
+    print("HULL", char.name, "px", px, "dist %.2f" % d, "thickness %.4f" % thick, flush=True)
+    return hull

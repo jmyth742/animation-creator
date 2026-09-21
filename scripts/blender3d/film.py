@@ -206,6 +206,17 @@ if pc is not None and os.environ.get("FILM_PAINTER", "shot") == "shot":
                 md.projectors[0].object = pc; md.aspect_x = ratio; md.aspect_y = 1.0
     print("PAINTER per-shot projection from frame", fm, "plate", os.path.basename(cur.filepath) if cur else None)
 
+# FILM_HULL=<px>: inverted-hull outlines instead of Freestyle (GPU, not ~15 s/frame CPU;
+# width compensated for distance+FOV so it is constant on screen). Set FILM_LINES=0 with it.
+_hull = float(os.environ.get("FILM_HULL", "0") or 0)
+if _hull > 0:
+    sys.path.insert(0, "/workspace/text-to-video/scripts/blender3d")
+    import character_kit as _kit
+    sc.frame_set((f0 + f1) // 2)
+    for _ob in list(sc.objects):          # snapshot: the shells are added while iterating
+        if _ob.type == "MESH" and not _ob.hide_render and not _ob.name.endswith(("_nproxy", "_hull")) and any(n in _ob.name for n in ("oisin", "niamh", "cg_")):
+            _kit.add_outline_hull(_ob, _hull, co, sc.render.resolution_y)
+
 sc.frame_start, sc.frame_end = f0, f1
 sc.frame_step = int(os.environ.get("FILM_STEP", "1") or 1)   # probes: every Nth frame
 sc.render.filepath = outdir + "/frame_"
