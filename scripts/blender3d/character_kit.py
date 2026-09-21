@@ -62,8 +62,30 @@ def cel_material(name, img, uv_name):
     ct = cmat.node_tree; ct.nodes.clear(); N = ct.nodes.new; L = ct.links.new
     cuv = N("ShaderNodeUVMap"); cuv.uv_map = uv_name
     ctx = N("ShaderNodeTexImage"); ctx.image = img; L(cuv.outputs["UV"], ctx.inputs["Vector"])
-    diff = N("ShaderNodeBsdfDiffuse"); torgb = N("ShaderNodeShaderToRGB"); L(diff.outputs["BSDF"], torgb.inputs["Shader"])
-    ramp = N("ShaderNodeValToRGB"); ramp.color_ramp.interpolation = 'CONSTANT'; L(torgb.outputs["Color"], ramp.inputs["Fac"])
+    ramp = N("ShaderNodeValToRGB"); ramp.color_ramp.interpolation = 'CONSTANT'
+    # CEL_LIGHTVEC="x,y,z": the character carries its OWN light vector instead of being lit
+    # by the scene. This is what Arc System Works ship, and it is the fix for a character
+    # reading as a flat mass: with scene lighting a back-lit shot puts the whole
+    # camera-facing side in one shadow band, so the figure loses all form and sits on the
+    # plate like a sticker. A dedicated vector models the form in every shot, and the
+    # plate's own light direction is matched by choosing the vector, not by moving a lamp.
+    _lv = __import__("os").environ.get("CEL_LIGHTVEC", "")
+    if _lv:
+        _v = [float(x) for x in _lv.split(",")]
+        _n = max(1e-6, (_v[0] ** 2 + _v[1] ** 2 + _v[2] ** 2) ** 0.5)
+        geo = N("ShaderNodeNewGeometry")
+        dotn = N("ShaderNodeVectorMath"); dotn.operation = 'DOT_PRODUCT'
+        dotn.inputs[1].default_value = (_v[0] / _n, _v[1] / _n, _v[2] / _n)
+        L(geo.outputs["Normal"], dotn.inputs[0])
+        mrn = N("ShaderNodeMapRange")
+        mrn.inputs["From Min"].default_value = -0.35
+        mrn.inputs["From Max"].default_value = 0.65
+        mrn.clamp = True
+        L(dotn.outputs["Value"], mrn.inputs["Value"])
+        L(mrn.outputs["Result"], ramp.inputs["Fac"])
+    else:
+        diff = N("ShaderNodeBsdfDiffuse"); torgb = N("ShaderNodeShaderToRGB")
+        L(diff.outputs["BSDF"], torgb.inputs["Shader"]); L(torgb.outputs["Color"], ramp.inputs["Fac"])
     cem = N("ShaderNodeEmission"); cou = N("ShaderNodeOutputMaterial"); L(cem.outputs["Emission"], cou.inputs["Surface"])
     if style != "anime":
         ramp.color_ramp.elements[0].color = (0.55, 0.55, 0.6, 1)
