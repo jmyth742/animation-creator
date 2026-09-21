@@ -317,9 +317,16 @@ if _passes or _cline > 0:
         _zlo = float(os.environ.get("FILM_COMPLINE_ZLO", "0.004"))
         _zhi = float(os.environ.get("FILM_COMPLINE_ZHI", "0.030"))
         _en = _edge(_rl.outputs["Normal"], False, _nlo, _nhi)     # folds and creases
-        _ez = _edge(_rl.outputs["Depth"], True, _zlo, _zhi)       # occluding edges
         _mx = _nt.nodes.new("CompositorNodeMath"); _mx.operation = 'MAXIMUM'
-        _nt.links.new(_en, _mx.inputs[0]); _nt.links.new(_ez, _mx.inputs[1])
+        _nt.links.new(_en, _mx.inputs[0])
+        if os.environ.get("FILM_COMPLINE_Z", "1") not in ("", "0"):
+            # The depth edge is the SILHOUETTE. Freestyle draws a crisper one, so when
+            # Freestyle is on, leave the contour to it and let the compositor do only what
+            # Freestyle cannot: interior folds from the normal pass.
+            _ez = _edge(_rl.outputs["Depth"], True, _zlo, _zhi)
+            _nt.links.new(_ez, _mx.inputs[1])
+        else:
+            _mx.inputs[1].default_value = 0.0
         # CAST ONLY. Unmasked, the depth Sobel draws on the dome and across the plate's own
         # painted edges — lines in the sky. A cryptomatte of the cast objects confines the
         # line work to the characters, which is where drawn lines belong.

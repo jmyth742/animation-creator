@@ -553,3 +553,38 @@ proportions, and the face is a texture that is only correct near-frontal: face_p
 bakes from ONE front-on camera, so at three-quarter the projection stretches. Next:
 bake from front + both three-quarters and blend by surface normal. The ceiling remains
 clean modelled anime heads (VRoid/VRM), which is a user gate.
+
+## External work order — items 0 and 2 (21 Sep 19:00)
+A reviewer's work order arrived. Two items actioned immediately.
+
+ITEM 0, FRAMING CORRECTION — ACCEPTED, and it corrects an error of ours. We had
+diagnosed a "detail-density mismatch" and started posterising the PLATE (SET_FLATTEN).
+The direction was inverted: in hand-painted-BG anime the CHARACTER carries MORE
+information than the background — drawn fold lines, hair strand lines, designed shadow
+shapes, varied line weight — and background painters simplify near contact points so the
+character reads. Flattening the plate attacks the one part of this pipeline that is
+unambiguously working. SET_FLATTEN is demoted to an experiment hook, default off, with
+the reasoning recorded in painter.py so nobody re-enables it by accident.
+
+ITEM 2, MULTI-PASS + COMPOSITOR — BUILT.
+- FILM_PASSES=1 enables the normal, depth and cryptomatte-object passes and writes
+  multilayer EXR, so a later re-grade or re-line needs no re-render.
+- FILM_COMPLINE=<strength> derives line art in the compositor: a Sobel on the NORMAL
+  pass gives INTERIOR lines (cloth folds, garment breaks, boot seams) which Freestyle
+  structurally cannot draw, and a Sobel on the DEPTH pass gives occluding edges.
+- Lines are masked to the cast with a CryptomatteV2 node. Unmasked, the depth Sobel drew
+  lines across the sky and over the plate's own painted edges (first attempt did exactly
+  that). Two API traps: the compositor MixRGB names both colour sockets "Image" so they
+  must be addressed by index, and the cryptomatte layer_name enum is prefixed by the view
+  layer ("ViewLayer.CryptoObject").
+- FILM_COMPLINE_Z=0 drops the depth component. VERDICT from review/compline_both.png:
+  comp lines ALONE give a soft halo instead of a contour and read worse than Freestyle;
+  Freestyle for the silhouette PLUS normal-pass comp lines for interior folds is the best
+  combination found. Adopted shape: FILM_LINES=2.4 FILM_COMPLINE=0.75 FILM_COMPLINE_Z=0.
+- Speed: a single probe frame went 32 s (Freestyle) -> 23 s (comp only), but most of that
+  is blend load. The real saving is per-frame inside a long run and is not yet measured
+  over a full episode.
+Still to do from the work order, in its order: modelled VRM heads (1, USER GATE), shot
+language (7, free), designed shadow-shape masks + baked normal maps (3), palette lock and
+shared grain (4), structural-conditioned new valley plates (6), camera automation (8),
+asset manifest (9). Inverted hull stays parked (5).
