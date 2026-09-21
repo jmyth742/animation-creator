@@ -702,3 +702,29 @@ the 20 GB root overlay must stay clear (`/root/.cache/huggingface` is a symlink 
 and never put a kill loop's pattern text anywhere else in the same command. Exports:
 `bash /workspace/export_outcomes.sh` — code to the working branch, media to the
 `production-outcomes` branch (flat, <95 MB files or split parts; pushes in <1.5 GB batches).
+
+
+## The GPU must never idle (standing rule)
+
+The pod bills by the hour whether or not the card is working, so an idle GPU is money
+burned. Discussion time is render time. On 21 Sep it sat at 0% twice — once with a
+cancelled render's watcher still sleeping, once during conversation — and that is the
+failure mode to design against.
+
+`scripts/ops/gpu_keeper.sh` enforces it. It polls for an idle GPU (no Blender render,
+nothing in the ComfyUI queue) and immediately starts the next job from
+`/workspace/loopwork/queue/NN_name.sh`, lowest number first. When the queue empties it
+refills itself from a rotating backlog of quality experiments — occlusion, line weight
+and haze sweeps, body and face re-bakes at varied parameters, and a whole-episode probe
+contact sheet — so there is always something worth running. Start it once per session
+and leave it up; it logs to `loopwork/gpu_keeper.log`.
+
+- Queue work by dropping a numbered script in that directory. Lower numbers run first.
+- Never kill a running job to jump the queue; queue the new work ahead of the rest.
+- Trial and error is explicitly sanctioned. A sweep that yields nothing still beats an
+  idle card.
+- Helpers: `scripts/ops/probe_shot_env.sh <tag> <shot> [ENV=VAL ...]` renders one frame
+  of one shot with the current stack; `scripts/ops/contact_sheet.sh <name> <tags...>`
+  stitches probes into `review/<name>.png`.
+- Before ending a turn, check `nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader`
+  and the Blender process count. If both are zero and the keeper is not running, start it.

@@ -48,6 +48,38 @@ def _weld_shells(char, name):
 
 
 
+def _ao_bias(N, L, fac_socket, name, uv_name):
+    """Subtract a baked AO map from the ramp input (CHAR_AO=<strength>).
+
+    A cel ramp driven only by N.L collapses a back-lit figure into one flat band. AO is
+    dark exactly where an artist would paint shadow -- under the jaw, inside the hood,
+    between the legs, in cloak folds -- and it is view-independent, so it is stable for a
+    whole shot. Biasing the ramp input by it makes those regions cross into the shadow
+    band whatever the key light is doing, which is what gives the figure interior form.
+    """
+    import os as _os
+    k = float(_os.environ.get("CHAR_AO", "0") or 0)
+    if k <= 0:
+        return fac_socket
+    path = "/workspace/text-to-video/series/tir-na-nog-legend/meshes/props/%s_ao.png" % name
+    if not _os.path.exists(path):
+        return fac_socket
+    img = bpy.data.images.load(path, check_existing=True)
+    uvn = N("ShaderNodeUVMap"); uvn.uv_map = uv_name
+    tx = N("ShaderNodeTexImage"); tx.image = img
+    tx.image.colorspace_settings.name = 'Non-Color'
+    L(uvn.outputs["UV"], tx.inputs["Vector"])
+    inv = N("ShaderNodeMath"); inv.operation = 'SUBTRACT'
+    inv.inputs[0].default_value = 1.0
+    L(tx.outputs["Color"], inv.inputs[1])              # occlusion = 1 - AO
+    sc = N("ShaderNodeMath"); sc.operation = 'MULTIPLY'
+    sc.inputs[1].default_value = k
+    L(inv.outputs["Value"], sc.inputs[0])
+    sub = N("ShaderNodeMath"); sub.operation = 'SUBTRACT'
+    L(fac_socket, sub.inputs[0]); L(sc.outputs["Value"], sub.inputs[1])
+    return sub.outputs["Value"]
+
+
 def cel_material(name, img, uv_name):
     """The cast's cel shader. CEL_STYLE selects the look (EEVEE, Shader-to-RGB):
       classic (default): two tones, shadow = 0.55 grey multiply (the v4 masters)
@@ -82,10 +114,13 @@ def cel_material(name, img, uv_name):
         mrn.inputs["From Max"].default_value = 0.65
         mrn.clamp = True
         L(dotn.outputs["Value"], mrn.inputs["Value"])
-        L(mrn.outputs["Result"], ramp.inputs["Fac"])
+        _fac = mrn.outputs["Result"]
+        _fac = _ao_bias(N, L, _fac, name, uv_name)
+        L(_fac, ramp.inputs["Fac"])
     else:
         diff = N("ShaderNodeBsdfDiffuse"); torgb = N("ShaderNodeShaderToRGB")
-        L(diff.outputs["BSDF"], torgb.inputs["Shader"]); L(torgb.outputs["Color"], ramp.inputs["Fac"])
+        L(diff.outputs["BSDF"], torgb.inputs["Shader"])
+        L(_ao_bias(N, L, torgb.outputs["Color"], name, uv_name), ramp.inputs["Fac"])
     cem = N("ShaderNodeEmission"); cou = N("ShaderNodeOutputMaterial"); L(cem.outputs["Emission"], cou.inputs["Surface"])
     if style != "anime":
         ramp.color_ramp.elements[0].color = (0.55, 0.55, 0.6, 1)
