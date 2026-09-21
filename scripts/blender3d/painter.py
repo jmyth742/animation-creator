@@ -22,12 +22,13 @@ import mathutils
 class Painter:
     def __init__(self, sc, plate_path, loc, tgt, lens=32.0):
         self.plate = bpy.data.images.load(plate_path)
-        # SET_FLATTEN=<levels>: posterise the plate toward the cast's level of stylisation.
-        # The plate is a dense painting — fine texture, soft gradients, dozens of value
-        # steps — while a cel character has three tone bands and no texture. That
-        # detail-density gap is what actually reads as "pasted on", far more than light or
-        # colour. Quantising the plate closes it from the other side, and it is also what
-        # a real anime background painting looks like next to cel characters.
+        # SET_FLATTEN=<levels>: posterise the plate. DEFAULT OFF, and it should stay off.
+        # This was written on an inverted diagnosis. In hand-painted-BG anime the CHARACTER
+        # carries more information than the background, not less: drawn fold lines, hair
+        # strand lines, designed shadow shapes, varied line weight. Background painters
+        # simplify near contact points precisely so the character reads. So the plate/cast
+        # gap must be closed from the CAST side; flattening the plate attacks the one part
+        # of this pipeline that is unambiguously working. Kept only as an experiment hook.
         _lv = int(os.environ.get("SET_FLATTEN", "0") or 0)
         if _lv > 1:
             import numpy as _np

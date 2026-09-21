@@ -268,6 +268,97 @@ if _integ > 0:
     sc.render.use_compositing = True
     print("INTEGRATE grade on, haze", _integ, flush=True)
 
+# FILM_PASSES=1 / FILM_COMPLINE=<strength>: multi-pass output and comp-derived line art.
+# Freestyle costs ~15 s/frame on the CPU while the GPU idles, it can only draw silhouette
+# and contour, and every line change needs a full re-render. Normal- and depth-pass edge
+# detection runs on the GPU in the compositor, costs ~nothing, gives INTERIOR lines
+# (cloth folds, hair strands, garment breaks) that Freestyle never could, and lets line
+# weight vary with depth. Writing multilayer EXR alongside means a later re-grade or
+# re-line needs no re-render at all.
+_passes = os.environ.get("FILM_PASSES", "0") not in ("", "0")
+_cline = float(os.environ.get("FILM_COMPLINE", "0") or 0)
+if _passes or _cline > 0:
+    _vl = sc.view_layers[0]
+    _vl.use_pass_normal = True
+    _vl.use_pass_z = True
+    _vl.use_pass_cryptomatte_object = True
+    _vl.pass_cryptomatte_depth = 6
+    if _passes:
+        sc.render.image_settings.file_format = 'OPEN_EXR_MULTILAYER'
+        sc.render.image_settings.color_depth = '16'
+        sc.render.image_settings.exr_codec = 'ZIP'
+    if _cline > 0:
+        sc.use_nodes = True
+        _nt = sc.node_tree
+        _nt.nodes.clear()
+        _rl = _nt.nodes.new("CompositorNodeRLayers")
+
+        def _edge(sock, normalize, lo, hi):
+            """Sobel on a pass -> a 0..1 edge mask."""
+            _src = sock
+            if normalize:
+                _nz = _nt.nodes.new("CompositorNodeNormalize")
+                _nt.links.new(sock, _nz.inputs[0]); _src = _nz.outputs[0]
+            _f = _nt.nodes.new("CompositorNodeFilter")
+            _f.filter_type = 'SOBEL'
+            _f.inputs["Fac"].default_value = 1.0
+            _nt.links.new(_src, _f.inputs["Image"])
+            _bw = _nt.nodes.new("CompositorNodeRGBToBW")
+            _nt.links.new(_f.outputs["Image"], _bw.inputs["Image"])
+            _mr = _nt.nodes.new("CompositorNodeMapRange")
+            _mr.inputs["From Min"].default_value = lo
+            _mr.inputs["From Max"].default_value = hi
+            _mr.use_clamp = True
+            _nt.links.new(_bw.outputs["Val"], _mr.inputs["Value"])
+            return _mr.outputs["Value"]
+
+        _nlo = float(os.environ.get("FILM_COMPLINE_NLO", "0.18"))
+        _nhi = float(os.environ.get("FILM_COMPLINE_NHI", "0.55"))
+        _zlo = float(os.environ.get("FILM_COMPLINE_ZLO", "0.004"))
+        _zhi = float(os.environ.get("FILM_COMPLINE_ZHI", "0.030"))
+        _en = _edge(_rl.outputs["Normal"], False, _nlo, _nhi)     # folds and creases
+        _ez = _edge(_rl.outputs["Depth"], True, _zlo, _zhi)       # occluding edges
+        _mx = _nt.nodes.new("CompositorNodeMath"); _mx.operation = 'MAXIMUM'
+        _nt.links.new(_en, _mx.inputs[0]); _nt.links.new(_ez, _mx.inputs[1])
+        # CAST ONLY. Unmasked, the depth Sobel draws on the dome and across the plate's own
+        # painted edges — lines in the sky. A cryptomatte of the cast objects confines the
+        # line work to the characters, which is where drawn lines belong.
+        _names = [o.name for o in sc.objects if o.type == 'MESH'
+                  and not o.name.endswith(("_nproxy", "_hull", "_contact"))
+                  and any(n in o.name for n in ("oisin", "niamh", "cg_"))]
+        _masked = _mx.outputs["Value"]
+        if _names:
+            _cm = _nt.nodes.new("CompositorNodeCryptomatteV2")
+            _cm.source = 'RENDER'
+            _cm.scene = sc
+            _cm.layer_name = _vl.name + ".CryptoObject"   # the enum is prefixed by the view layer
+            _cm.matte_id = ",".join(_names)
+            _nt.links.new(_rl.outputs["Image"], _cm.inputs["Image"])
+            _cmul = _nt.nodes.new("CompositorNodeMath"); _cmul.operation = 'MULTIPLY'
+            _nt.links.new(_mx.outputs["Value"], _cmul.inputs[0])
+            _nt.links.new(_cm.outputs["Matte"], _cmul.inputs[1])
+            _masked = _cmul.outputs["Value"]
+            print("COMPLINE masked to cast:", _names, flush=True)
+        _st = _nt.nodes.new("CompositorNodeMath"); _st.operation = 'MULTIPLY'
+        _st.inputs[1].default_value = _cline
+        _nt.links.new(_masked, _st.inputs[0])
+        _tint = [float(v) for v in os.environ.get("FILM_LINE_TINT", "0.17,0.11,0.13").split(",")]
+        _mix = _nt.nodes.new("CompositorNodeMixRGB")
+        _mix.blend_type = 'MIX'
+        # the compositor MixRGB names both colour sockets "Image", so address them by index
+        _mix.inputs[2].default_value = (_tint[0], _tint[1], _tint[2], 1.0)
+        _nt.links.new(_rl.outputs["Image"], _mix.inputs[1])
+        _nt.links.new(_st.outputs["Value"], _mix.inputs[0])
+        _cur = _nt.nodes.new("CompositorNodeCurveRGB")
+        _cur.mapping.curves[3].points[0].location = (0.0, 0.022)
+        _cur.mapping.curves[3].points[1].location = (1.0, 0.985)
+        _cur.mapping.update()
+        _nt.links.new(_mix.outputs["Image"], _cur.inputs["Image"])
+        _cmp = _nt.nodes.new("CompositorNodeComposite")
+        _nt.links.new(_cur.outputs["Image"], _cmp.inputs["Image"])
+        sc.render.use_compositing = True
+        print("COMPLINE on strength", _cline, "normal", _nlo, _nhi, "depth", _zlo, _zhi, flush=True)
+
 # FILM_STEP_ANIM=<n>: animate the CAST on twos (or threes). Verified studio practice —
 # Arc System Works disable interpolation entirely so every frame is a held pose, and it
 # is what makes 3D read as drawn rather than as smoothly interpolated CG. Applied as a
