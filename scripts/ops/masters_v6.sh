@@ -27,6 +27,8 @@ for EP in $EPS; do
   export FILM_LINE_TINT="0.14,0.09,0.12" FILM_LINE_ALPHA=0.82
   export CHAR_AO=0.35                      # designed shadow shapes from the baked AO map
   export FILM_COMPLINE=0.75 FILM_COMPLINE_Z=0   # interior fold lines; Freestyle keeps the contour
+  export FILM_STEP_ANIM=2                      # cast on twos, camera stays smooth (verified:
+                                               # every second frame identical, moving frames snappier)
   unset CHAR_SMOOTH
   # shot language: cap the tightest lenses, pull back, guard the foreground. Data-only,
   # applied to the emitted shot list, so the scene itself is untouched.
