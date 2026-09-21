@@ -438,3 +438,40 @@ leads for real blendshape mouths, repo visibility.
   review/face_hd_film_ab_ep1.png, the environment before/after is
   env_painted_ep1p_probes.png (one painter camera) vs env_painted_ep1v/
   q10 (per shot).
+
+## V5 verdict + research findings (21 Sep, 14:20)
+V5 MASTERS DONE and exported: review/{nine_waterfalls,first_snow,farewell_cliff}_v5.mp4
+(+ _web copies). Judged from frames (review/v5_ep1_frames.png, v5_ep2_ep3_frames.png):
+- EP1 (summer valley) and EP2 (winter valley): the painted world WORKS. Shots read as
+  the concept painting with the cast standing in it; HD faces hold at close range.
+- EP3 (cliff): WEAKEST. The shelf top tiles the plate's grass and reads as flat green
+  plastic against the painted cliff; the sea band is plain. The cliff needs either a
+  painted top-down grass plate of its own or the shelf reduced so the plate's own
+  cliff-top does the work.
+
+DEEP RESEARCH (verified 3-0, sources: ASW Guilty Gear Xrd GDC/Docswell, psoft):
+1. LINES: studios do NOT use post-process/Freestyle-style lines. Guilty Gear uses an
+   INVERTED HULL (duplicated, flipped, expanded mesh), with:
+   - per-vertex line width from vertex-color ALPHA (0.5 = neutral, 1.0 = double, 0 = erased)
+   - width compensated for camera DISTANCE and FOV so on-screen width is constant
+   - a SECOND set of smoothed normals for the hull, separate from the shading normals
+   (we already keep edited shading normals — this is exactly the conflict the hull solves)
+   Inner/surface lines are drawn into the texture as axis-aligned beams with UVs aligned,
+   so thickness is set by UV overlap and never aliases at close-up.
+   => Freestyle is our biggest render cost (~15 s/frame CPU). An inverted hull is nearly
+   free on GPU AND gives per-vertex width control. HIGH VALUE, days-scale.
+2. SHADING: single step threshold on N.L, with a vertex-color channel as a per-region
+   OFFSET on that threshold (painted occlusion; 0 = always shaded). No normal maps.
+   No scene lighting on characters: each character carries its OWN light vector, fixed
+   per pose and animated per shot in cutscenes.
+3. MOTION: keyframe interpolation DISABLED entirely (every frame a posed key), no physics
+   sim for hair/cloth, ~500 bones, and deliberate per-key mesh deformation to break the
+   perfect-perspective read. This is the "limited animation" 2D feel.
+4. Pencil+ 4 for Blender: addon is free but REQUIRES a proprietary Windows/macOS render
+   app — INFEASIBLE on this Linux pod. Ruled out.
+
+NEXT (priority order, all days-scale):
+a. Inverted-hull outlines replacing Freestyle (speed + quality + per-vertex width).
+b. Per-character light vector instead of scene lighting for the cast.
+c. Step the animation on twos/threes (interpolation off) for the 2D read.
+d. Fix EP3's cliff shelf.
