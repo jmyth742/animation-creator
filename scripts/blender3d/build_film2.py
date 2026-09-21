@@ -59,7 +59,8 @@ sc.view_settings.view_transform = 'Standard'
 
 valley_set.build_set(sc, winter=True)
 import set_assets
-set_assets.dress_valley(sc, floor_z, winter=True)
+if os.environ.get("SET_DRESS", "0" if bpy.data.objects.get("painter_cam") else "1") != "0":
+    set_assets.dress_valley(sc, floor_z, winter=True)
 
 CAST = os.environ.get("FILM_CAST", "mv")     # mv = Hunyuan-mv meshes, cg = CharacterGen meshes (Day-2 verdict)
 if os.environ.get("FILM_RIG", "numpy") == "unirig":

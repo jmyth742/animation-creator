@@ -129,7 +129,7 @@ def build_set(sc, winter=False):
     # (pose vd, review/env_painter_calib_valley2.png). Winter has no plate of
     # its own: primitives unless SET_PLATE names one.
     import painter
-    P = painter.setup(sc, None if winter else PLATE_DEFAULT, PAINTER_LOC, PAINTER_TGT)
+    P = painter.setup(sc, PLATE_DEFAULT.replace("master.png", "master_winter.png") if winter else PLATE_DEFAULT, PAINTER_LOC, PAINTER_TGT)
     if P is not None:
         grass = P.painted("p_grass", grass); grass_dk = P.painted("p_grassdk", grass_dk)
         mount = P.painted("p_mount", mount, sat=0.9); water = P.painted("p_water", water, sat=1.05)

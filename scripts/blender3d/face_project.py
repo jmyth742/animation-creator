@@ -86,7 +86,7 @@ print("FACEPROJ front render", front_png, flush=True)
 DESC = {"oisin": "a young Celtic warrior's face, warm brown eyes, dark hair framing the face",
         "niamh": "a Celtic princess's face, large bright green eyes, golden hair framing the face"}
 key = "niamh" if "niamh" in name else "oisin"
-prompt = (f"Anime character portrait, front view, {DESC[key]}, clean crisp linework, large expressive eyes, "
+prompt = (f"Anime character portrait, front view, neutral expression, mouth closed, {DESC[key]}, clean crisp linework, large expressive eyes, "
           "soft flat cel colours, studio anime key visual, symmetrical face, plain grey background, no text")
 wf = sr.build_t2i_workflow(prompt, seed=SEED, prefix=f"face_proj_{name}", width=1024, height=1024)
 wf["5"] = {"class_type": "LoadImage", "inputs": {"image": front_png.name}}

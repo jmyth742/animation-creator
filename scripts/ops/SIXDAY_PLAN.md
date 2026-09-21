@@ -386,6 +386,27 @@ leads for real blendshape mouths, repo visibility.
 - BUG that stalled three renders for an hour: `while ob.modifiers[-1] is not md`
   never ends — every RNA access returns a fresh Python wrapper, so `is` is
   always False-equal. Compare names, never identity, on bpy objects.
-- Next: judge review/env_painted_{ep1p,ep3p}_probes.png (film cameras on the
-  painted sets), adopt face_project HD bases via FACE_BASE into the viseme
-  chain, re-master all three episodes.
+- FACE HD ADOPTED (07:20): review/face_proj_{oisin,niamh}_mv.png — crisp anime
+  eyes/brows/lips on the same meshes; Niamh's collar embroidery even survives.
+  Variants painted with face_paint.py --keep-eyes on the HD bases as
+  <who>_hd_face_*.png; in film via FILM_FACE_SUFFIX=_hd
+  (review/face_hd_film_ab_ep1.png: plain | HD).
+- ONE PAINTER CAMERA IS NOT ENOUGH (07:15): review/env_painted_{ep1p,ep3p}_
+  probes.png — shots near the painter pose are paintings, everything else
+  streaks; ep3 filmed from the sea is unusable. FIX = PER-SHOT projection in
+  film.py: the projector becomes the shot camera at the middle frame and the
+  plate is picked by heading vs the master (master/side/reverse, closer for
+  long lenses; FILM_PLATE overrides). review/env_painted_{ep1q,ep3q}_probes.png:
+  every shot is now the painting with the cast in it. Plates upscaled 4x
+  (upscale_plates.py, 4x-AnimeSharp) so they out-resolve 1664x960; painter.py
+  prefers <setup>_4x.png. The tir_na_nog setups are five copies of the master
+  (the WAN derivation converged) — the valley has one angle; the cliff has
+  real reverse/side/wider plates.
+- Follow-ups applied: GLB dressing off on painted sets (SET_DRESS=1 restores;
+  the plate paints the hall/trees/cross), the cliff's bent-tree prop dropped
+  (doubled the painted tree), ep3 s01_est restaged to the painter's side with
+  a slow push (a plate exists there; over the sea none does), FILM_STEP for
+  move probes, winter plate derived from the summer master by FLUX img2img
+  (winter_plate.py) so Episode 2 shares the calibration.
+- Next: judge review/env_painted_{ep1r,ep3r}_probes.png + *_moves.png (camera
+  moves against a mid-frame projection), pick the winter plate, re-master.

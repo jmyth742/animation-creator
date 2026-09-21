@@ -59,7 +59,8 @@ sc.view_settings.view_transform = 'Standard'
 
 valley_set.build_set(sc)
 import set_assets
-set_assets.dress_valley(sc, floor_z if 'floor_z' in dir() else (lambda x, y: 0.0))
+if os.environ.get("SET_DRESS", "0" if bpy.data.objects.get("painter_cam") else "1") != "0":   # painted world: the plate IS the dressing
+    set_assets.dress_valley(sc, floor_z if 'floor_z' in dir() else (lambda x, y: 0.0))
 
 CAST = os.environ.get("FILM_CAST", "mv")     # mv = Hunyuan-mv meshes, cg = CharacterGen meshes (Day-2 verdict)
 if os.environ.get("FILM_RIG", "numpy") == "unirig":

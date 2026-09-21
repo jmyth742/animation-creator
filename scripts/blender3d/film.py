@@ -155,7 +155,49 @@ for f in range(f0, f1 + 1):
         cam.dof.focus_distance = (target - mathutils.Vector(pos)).length
         cam.dof.keyframe_insert("focus_distance")
 
+# PER-SHOT PAINTED WORLD. A set built with painter.py carries a painter camera
+# and materials that sample the concept plate through a UV Project modifier.
+# One fixed painter camera only serves shots near it (review/env_painted_*_probes.png:
+# everything else streaks), so each shot re-projects from ITS OWN camera at the
+# middle frame: static shots are exactly the plate + occlusion + cast; moves get
+# real parallax near the mid frame. The plate is chosen by the shot's heading
+# against the set's master heading (master / side / reverse / closer), or FILM_PLATE.
+pc = bpy.data.objects.get("painter_cam")
+if pc is not None and os.environ.get("FILM_PAINTER", "shot") == "shot":
+    fm = (f0 + f1) // 2
+    sc.frame_set(fm)
+    master_dir = mathutils.Vector(pc.matrix_world.to_3x3() @ mathutils.Vector((0, 0, -1)))
+    pc.matrix_world = co.matrix_world.copy()
+    pc.data.type = 'PERSP'; pc.data.lens = cam.lens
+    pc.data.sensor_width = cam.sensor_width; pc.data.sensor_fit = cam.sensor_fit
+    ratio = sc.render.resolution_x / sc.render.resolution_y
+    plate = os.environ.get("FILM_PLATE")
+    mats = [m for m in bpy.data.materials if m.get("painter_projected")]
+    cur = next((nd.image for m in mats for nd in m.node_tree.nodes if nd.type == 'TEX_IMAGE' and nd.image), None)
+    if not plate and cur is not None:
+        shot_dir = mathutils.Vector(co.matrix_world.to_3x3() @ mathutils.Vector((0, 0, -1)))
+        a, b = master_dir.xy.normalized(), shot_dir.xy.normalized()
+        ang = math.degrees(math.acos(max(-1.0, min(1.0, a.dot(b)))))
+        setup = "master" if ang < 50 else ("side" if ang < 130 else "reverse")
+        if setup == "master" and cam.lens >= 60: setup = "closer"
+        folder = os.path.dirname(os.path.abspath(bpy.path.abspath(cur.filepath)))
+        for cand in (f"{folder}/{setup}_4x.png", f"{folder}/{setup}.png", f"{folder}/master_4x.png"):
+            if os.path.exists(cand): plate = cand; break
+        print("PAINTER shot heading %.0f deg off master -> %s" % (ang, setup))
+    if plate and cur is not None and os.path.abspath(bpy.path.abspath(cur.filepath)) != os.path.abspath(plate):
+        img = bpy.data.images.load(plate)
+        for m in mats:
+            for nd in m.node_tree.nodes:
+                if nd.type == 'TEX_IMAGE': nd.image = img
+        cur = img
+    for ob in sc.objects:
+        for md in ob.modifiers:
+            if md.type == 'UV_PROJECT' and md.projectors[0].object and md.projectors[0].object.name == pc.name:   # by name: RNA wrappers are never `is`
+                md.aspect_x = ratio; md.aspect_y = 1.0
+    print("PAINTER per-shot projection from frame", fm, "plate", os.path.basename(cur.filepath) if cur else None)
+
 sc.frame_start, sc.frame_end = f0, f1
+sc.frame_step = int(os.environ.get("FILM_STEP", "1") or 1)   # probes: every Nth frame
 sc.render.filepath = outdir + "/frame_"
 sc.render.image_settings.file_format = 'PNG'
 bpy.ops.render.render(animation=True)

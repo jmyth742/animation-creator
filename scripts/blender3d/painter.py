@@ -51,7 +51,8 @@ class Painter:
         if shade:
             diff = nt.nodes.new("ShaderNodeBsdfDiffuse"); torgb = nt.nodes.new("ShaderNodeShaderToRGB")
             ramp = nt.nodes.new("ShaderNodeValToRGB"); ramp.color_ramp.interpolation = 'CONSTANT'
-            ramp.color_ramp.elements[0].color = (0.70, 0.68, 0.78, 1); ramp.color_ramp.elements[1].position = 0.5
+            k = float(os.environ.get("SET_SHADE", "0.82"))    # shadow multiplier on the painting (1 = none)
+            ramp.color_ramp.elements[0].color = (k, k * 0.97, k * 1.06, 1); ramp.color_ramp.elements[1].position = 0.5
             mix = nt.nodes.new("ShaderNodeMixRGB"); mix.blend_type = 'MULTIPLY'; mix.inputs["Fac"].default_value = 1.0
             nt.links.new(diff.outputs["BSDF"], torgb.inputs["Shader"]); nt.links.new(torgb.outputs["Color"], ramp.inputs["Fac"])
             nt.links.new(ramp.outputs["Color"], mix.inputs["Color1"]); nt.links.new(hsv.outputs["Color"], mix.inputs["Color2"])
@@ -83,4 +84,6 @@ def setup(sc, default_plate, loc, tgt, lens=32.0):
     plate = os.environ.get("SET_PLATE", default_plate or "")
     if not plate or not os.path.exists(plate) or os.environ.get("SET_BACKDROP", "1") in ("", "0"):
         return None
+    up = plate[:-4] + "_4x.png"          # upscale_plates.py output: the projected plate must out-resolve the frame
+    if plate.endswith(".png") and os.path.exists(up): plate = up
     return Painter(sc, plate, loc, tgt, lens)
