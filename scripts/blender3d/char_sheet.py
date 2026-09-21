@@ -74,18 +74,31 @@ def gen(prompt, tag, init=None, denoise=1.0, seed=SEED):
         time.sleep(4)
     sys.exit("SHEET timed out on %s" % tag)
 
-front = gen("%s, front view facing the viewer, %s, %s" % (WHO[key], RULES, STYLE), "front")
+# IDENTITY: seed the front from the EXISTING approved design, so the pose and the rules
+# change but the character does not. Generating from text alone returns a different
+# person entirely (review/char_sheet_oisin.png, first attempt: new face, new costume).
+ident = PROPS / ("%s34_sheet.png" % key)
+out = {}
+if ident.exists():
+    seed_img = COMFY / "input" / ("sheet_ident_%s.png" % name)
+    shutil.copy(ident, seed_img)
+    front = gen("%s, front view facing the viewer, %s, %s" % (WHO[key], RULES, STYLE),
+                "front", init=seed_img, denoise=float(os.environ.get("SHEET_IDENT_DN", "0.5")))
+else:
+    front = gen("%s, front view facing the viewer, %s, %s" % (WHO[key], RULES, STYLE), "front")
 shutil.copy(front, PROPS / ("%s_v2_front.png" % name))
+out["front"] = PROPS / ("%s_v2_front.png" % name)
 print("SHEET front", front.name, flush=True)
 
-# the other views are DERIVED from the front so the three describe one character
-seed_in = COMFY / "input" / ("sheet_%s_front.png" % name)
-shutil.copy(front, seed_in)
-out = {"front": PROPS / ("%s_v2_front.png" % name)}
-for tag, desc in (("left", "exact side profile view facing to the left"),
-                  ("back", "view from directly behind, back of the head and body")):
-    g = gen("%s, %s, %s, %s" % (WHO[key], desc, RULES, STYLE), tag,
-            init=seed_in, denoise=dn_side, seed=SEED)
+# VIEWS: generated INDEPENDENTLY, not img2img from the front. Image-to-image cannot
+# rotate a character — at any strength that preserves the design it simply reproduces the
+# front, and three front views make multi-view reconstruction worthless. Consistency
+# instead comes from one fixed seed and an identical, very specific description.
+for tag, desc in (("left", "EXACT SIDE PROFILE, the character seen from their left side, "
+                           "body turned 90 degrees, only one eye visible, nose in profile"),
+                  ("back", "SEEN FROM DIRECTLY BEHIND, back of the head and shoulders, "
+                           "face not visible at all, back of the costume")):
+    g = gen("%s, %s, %s, %s" % (WHO[key], desc, RULES, STYLE), tag, seed=SEED)
     shutil.copy(g, PROPS / ("%s_v2_%s.png" % (name, tag)))
     out[tag] = PROPS / ("%s_v2_%s.png" % (name, tag))
     print("SHEET", tag, g.name, flush=True)
