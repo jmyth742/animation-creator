@@ -52,12 +52,16 @@ cam.data.lens = 50
 cam.location = (0, -3.2, mid)
 cam.rotation_euler = (mathutils.Vector((0, 0, mid)) - cam.location).to_track_quat('-Z', 'Y').to_euler()
 
+# GATE_ANGLE lets the same battery run at the range animation actually uses (~30 deg) as
+# well as at the extreme (90). A rig can be perfectly serviceable for a walk and still
+# shear at 90, so the extreme alone is not a verdict.
+A = float(os.environ.get("GATE_ANGLE", "90"))
 POSES = [
     ("neutral", []),
-    ("shoulder90", [("arm.L", 'Z', 90), ("arm.R", 'Z', -90)]),
-    ("elbow90", [("fore.L", 'X', -90), ("fore.R", 'X', -90)]),
-    ("knee90", [("shin.L", 'X', 90), ("shin.R", 'X', 90)]),
-    ("head45", [("head", 'Z', 45)]),
+    ("shoulder", [("arm.L", 'Z', A), ("arm.R", 'Z', -A)]),
+    ("elbow", [("fore.L", 'X', -A), ("fore.R", 'X', -A)]),
+    ("knee", [("shin.L", 'X', A), ("shin.R", 'X', A)]),
+    ("head", [("head", 'Z', A * 0.5)]),
 ]
 
 bpy.context.view_layer.objects.active = rig

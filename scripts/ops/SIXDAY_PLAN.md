@@ -588,3 +588,24 @@ Still to do from the work order, in its order: modelled VRM heads (1, USER GATE)
 language (7, free), designed shadow-shape masks + baked normal maps (3), palette lock and
 shared grain (4), structural-conditioned new valley plates (6), camera automation (8),
 asset manifest (9). Inverted hull stays parked (5).
+
+## DEFORMATION GATE: first run, and it clears retopology (21 Sep 19:40)
+The acceptance test the asset spec asked for, finally run (scripts/blender3d/deform_gate.py,
+GATE_ANGLE selects the range).
+- At 90 degrees the cast shear badly: arms tear into flat shards at the shoulder and
+  elbow, the shins collapse at the knee, the head smears sideways
+  (review/deform_gate_oisin_mv.png).
+- CRITICAL CONTROL: the ORIGINAL pre-retopology mesh fails IDENTICALLY
+  (review/deform_gate_oisin_ORIGINAL.png). Retopology and the Data Transfer re-skin are
+  therefore NOT the cause and are cleared. The limitation is in the UniRig skin itself
+  and has been present in every episode shipped so far.
+- At 30 degrees, the range animation actually uses, everything holds cleanly
+  (review/deform_gate_30deg.png): shoulder, elbow, knee and head all deform properly,
+  with only minor artifacts at the fingers.
+VERDICT: the rig is serviceable for restrained motion and unusable for large gesture.
+Practical consequence, and it agrees with the shot-language work: keep limb rotation
+under roughly 45 degrees. No raised arms, no broad gestures, no kneeling, until the cast
+are re-rigged or replaced with VRM. Any motion clip pulled from the library should be
+checked against this ceiling before it is retargeted.
+LESSON: always run the control. The 90-degree sheet alone would have condemned a day of
+retopology work that turns out to be innocent.
