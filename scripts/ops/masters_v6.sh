@@ -14,7 +14,17 @@ for EP in $EPS; do
   CHAR_NORMALFIX=0 FILM_RIG=unirig FILM_BLINK=lam FILM_MESH_SUFFIX=_retopo FILM_FACE_SUFFIX=_retopo_hd $B -b --factory-startup --python scripts/blender3d/$SCRIPT -- $W/$AUD $R/$BL $W/$JS < /dev/null > $W/v6_build$EP.log 2>&1
   log "ep$EP blend: saved=$(grep -c 'FILM SCENE SAVED' $W/v6_build$EP.log) painter=$(grep -c 'PAINTER projected' $W/v6_build$EP.log) $(grep -m1 -A3 Traceback $W/v6_build$EP.log | tail -1)"
   [ -f $R/$BL ] || { log "ep$EP build FAILED — skipping"; continue; }
-  export CHAR_NORMALFIX=1 CHAR_NORMALFIX_INTERP=1 FILM_LINES=8.0 FILM_LINE_MINLEN=40 FILM_LINE_CREASE=0 FILM_RES=1664x960; unset CHAR_SMOOTH
+  # integration recipe (21 Sep): the cast breathe the plate's air, are grounded by a contact
+  # patch, are keyed from the plate's own light direction, and wear a tinted rather than
+  # near-black line. Line width follows the 480p->960p doubling, so 2.4 becomes 4.8.
+  case $EP in
+    1) SUN="52,118";;      # summer valley: sun high and behind-left, as the plate paints it
+    2) SUN="45,120";;      # winter valley: same geometry, flatter light
+    3) SUN="26,96";;       # farewell cliff: low sun over the sea
+  esac
+  export CHAR_NORMALFIX=1 CHAR_NORMALFIX_INTERP=1 FILM_LINES=4.8 FILM_LINE_MINLEN=40 FILM_LINE_CREASE=0 FILM_RES=1664x960
+  export FILM_INTEGRATE=0.30 FILM_CONTACT=1 SET_SUN="$SUN" FILM_LINE_TINT="0.17,0.11,0.13" FILM_LINE_ALPHA=0.82
+  unset CHAR_SMOOTH
   bash scripts/ops/render_episode.sh $JS $BL $TAG "$TITLE" $AUD $R/$OUT 3; rm -rf $W/$TAG $W/$TAG.*.log
   [ -f $R/$OUT ] && ffmpeg -v error -y -i $R/$OUT -c:v libx264 -crf 23 -preset medium -pix_fmt yuv420p -c:a aac -movflags +faststart ${OUT%.mp4}_web.mp4 2>/dev/null && mv ${OUT%.mp4}_web.mp4 $R/ 
   log "ep$EP master: $(ls -la $R/$OUT 2>/dev/null | awk '{print $5}') bytes"
