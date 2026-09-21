@@ -57,7 +57,7 @@ def cel_material(name, img, uv_name):
     Anime knobs: CEL_SHADOW_HUE (0.08 = +29 deg), CEL_SHADOW_VAL (0.62),
     CEL_MID_WIDTH (0.08), CEL_RIM (0 = off; 0.35 tested), CEL_SPEC (0 = off; 0.25 tested)."""
     import os
-    style = os.environ.get("CEL_STYLE", "classic")
+    style = os.environ.get("CEL_STYLE", "anime")   # judged 21 Sep: hue-shifted three-tone is the default; "classic" = the v4 look
     cmat = bpy.data.materials.new(f"{name}_mat"); cmat.use_nodes = True
     ct = cmat.node_tree; ct.nodes.clear(); N = ct.nodes.new; L = ct.links.new
     cuv = N("ShaderNodeUVMap"); cuv.uv_map = uv_name
