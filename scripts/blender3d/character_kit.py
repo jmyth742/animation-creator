@@ -1078,6 +1078,7 @@ def add_outline_hull(char, px, cam, res_y, name="hull"):
 
 
 def integrate_cast(chars, cam, plate_img=None, haze=0.16, near=1.0, far=40.0):
+    import os as _os
     """Sit the cast IN the painted plate instead of on top of it.
 
     A character rendered against a matte painting reads as a sticker for three measurable
@@ -1093,6 +1094,13 @@ def integrate_cast(chars, cam, plate_img=None, haze=0.16, near=1.0, far=40.0):
         px = _np.asarray(plate_img.pixels[:], dtype=_np.float32).reshape(-1, 4)
         step = max(1, len(px) // 20000)
         hz = px[::step, :3].mean(axis=0)
+        # Desaturate the haze toward its own luminance. Atmosphere shifts VALUE and
+        # contrast far more than hue; mixing skin toward a raw green plate mean tints the
+        # face green (review/shotlang_ab.png). CHAR_HAZE_SAT keeps a trace of the scene's
+        # hue without colouring the cast.
+        _sat = float(_os.environ.get("CHAR_HAZE_SAT", "0.35"))
+        _lum = float(hz[0] * 0.2126 + hz[1] * 0.7152 + hz[2] * 0.0722)
+        hz = _lum + (hz - _lum) * _sat
     else:
         hz = _np.array([0.62, 0.66, 0.70], dtype=_np.float32)
     touched = 0

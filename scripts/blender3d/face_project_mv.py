@@ -126,6 +126,7 @@ key = "niamh" if "niamh" in name else "oisin"
 VIEWDESC = {"l": "three-quarter view from the left", "c": "front view", "r": "three-quarter view from the right"}
 
 flux_imgs = {}
+flux_paths = {}
 for tag, deg, dn in VIEWS:
     sc.camera = cams[tag]
     src_png = COMFY / "input" / ("face_mv_%s_%s.png" % (name, tag))
@@ -156,7 +157,30 @@ for tag, deg, dn in VIEWS:
     if got is None:
         sys.exit("FACEMV: FLUX timed out on view %s" % tag)
     flux_imgs[tag] = bpy.data.images.load(str(got))
+    flux_paths[tag] = got
     print("FACEMV flux", tag, got.name, flush=True)
+
+# COLOUR-MATCH the side views to the centre. FLUX redraws each view independently, so the
+# three outputs do not share a colour balance; blending them then leaves a visible patch
+# of another skin tone down one side of the face (review/haze_fix_ab.png showed a green
+# left cheek). Match each side view's central-region mean to the centre view's.
+def _mean(path):
+    a = np.asarray(Image.open(path).convert("RGB"), dtype=np.float32) / 255.0
+    h, w, _ = a.shape
+    c = a[int(h * 0.30):int(h * 0.75), int(w * 0.30):int(w * 0.70)]
+    return c.reshape(-1, 3).mean(axis=0)
+
+
+_ref = _mean(flux_paths["c"])
+for tag in ("l", "r"):
+    m = _mean(flux_paths[tag])
+    gain = np.clip(_ref / np.maximum(m, 1e-3), 0.75, 1.35)
+    a = np.asarray(Image.open(flux_paths[tag]).convert("RGB"), dtype=np.float32) / 255.0
+    a = np.clip(a * gain, 0.0, 1.0)
+    fixed = Path("/workspace/loopwork") / ("facemv_%s_%s_cm.png" % (name, tag))
+    Image.fromarray((a * 255).astype(np.uint8)).save(fixed)
+    flux_imgs[tag] = bpy.data.images.load(str(fixed))
+    print("FACEMV colour-match", tag, "gain", tuple(round(float(g), 3) for g in gain), flush=True)
 
 # --- a projected UV layer per camera
 bpy.ops.object.select_all(action='DESELECT')
