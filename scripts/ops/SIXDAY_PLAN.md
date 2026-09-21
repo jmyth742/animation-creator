@@ -524,3 +524,32 @@ with FILM_FACE_SUFFIX=_retopo_hd.
   Freestyle everywhere except a tight close-up. Freestyle remains the shipping renderer;
   the hull stays behind FILM_HULL=0.
 - V6 MASTERS launched with the clean cast: scripts/ops/masters_v6.sh -> review/*_v6.mp4.
+
+## INTEGRATION: the cast no longer sits ON the plate (21 Sep 18:10)
+User verdict on the v5 masters: "the background looks good, but the characters look
+imposed on top" and "the faces still look deformed". Diagnosed from frames, not theory
+(review/diag_integration.png):
+- there was NO compositor and NO grade in the pipeline at all — character and painting
+  never shared a single film;
+- the cast were lit by the set's original primitive-era sun, which does not match the
+  direction the plate is painted from;
+- nothing grounded them: a high sun hides its own shadow behind the figure;
+- the outline was near-black, and nothing in a painted plate is outlined that way;
+- the cast were more saturated and higher-contrast than the painting.
+FIXES, all at render time (review/integrate_ab{,2,3}.png shows the progression):
+- FILM_INTEGRATE=<haze>: character_kit.integrate_cast mixes every cast material toward
+  the PLATE'S OWN MEAN COLOUR by camera depth, so the figure breathes the same air as
+  the painted mountains; plus one compositor grade (black lift + soft fog glow) over the
+  whole frame so both layers share a film.
+- FILM_CONTACT=1 (default): character_kit.contact_shadow puts a soft dark ellipse under
+  each figure, constrained to the hips, which is what actually reads as weight.
+- SET_SUN="elev,azim": aims the key light at the plate's own light direction.
+- FILM_LINE_TINT / FILM_LINE_ALPHA: a dark TINT of the scene's shadow colour at 0.82
+  alpha instead of near-black, and a thinner line (2.4 px at 480p).
+Adopted recipe: FILM_INTEGRATE=0.30 SET_SUN=52,118 FILM_LINES=2.4
+FILM_LINE_TINT=0.17,0.11,0.13 FILM_LINE_ALPHA=0.82 (valley; other sets need their own SET_SUN).
+STILL OPEN — THE FACE. Retopology cleaned the silhouette but cannot change the head's
+proportions, and the face is a texture that is only correct near-frontal: face_project.py
+bakes from ONE front-on camera, so at three-quarter the projection stretches. Next:
+bake from front + both three-quarters and blend by surface normal. The ceiling remains
+clean modelled anime heads (VRoid/VRM), which is a user gate.

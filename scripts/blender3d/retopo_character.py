@@ -83,37 +83,38 @@ bpy.ops.object.select_all(action='DESELECT')
 tgt.select_set(True)
 bpy.context.view_layer.objects.active = tgt
 
-bpy.ops.object.mode_set(mode='EDIT')
-bpy.ops.mesh.select_all(action='SELECT')
-bpy.ops.mesh.remove_doubles(threshold=0.0002)
-bpy.ops.mesh.dissolve_degenerate()
-bpy.ops.mesh.normals_make_consistent(inside=False)
-bpy.ops.object.mode_set(mode='OBJECT')
-
+bpy.context.view_layer.update()      # dimensions are stale on a freshly linked copy, and a
+                                     # stale value picks too coarse a voxel (128k instead of 467k)
 raw = len(tgt.data.polygons)
 # QuadriFlow REFUSES a non-manifold mesh ("needs to be manifold and have face normals
-# that point in a consistent direction") and silently returns FINISHED having done
-# nothing. AI meshes are never manifold: they carry coincident shells and open edges.
-# So voxel-remesh first — that is guaranteed watertight and manifold, and fusing the
-# shells is itself a fix, since coincident surfaces are what made the outline hull
-# poke through. Then QuadriFlow turns the even voxel surface into quads.
+# that point in a consistent direction") and silently returns FINISHED having changed
+# nothing. AI meshes are never manifold: coincident shells, open edges. Voxel-remesh
+# first — guaranteed watertight and manifold, and fusing the shells is itself a fix,
+# since coincident surfaces are what made the outline hull poke through. A FINE voxel
+# keeps the detail; QuadriFlow then reduces it to an even quad budget, so the result is
+# both cleaner AND lighter than the original (Freestyle cost scales with face count).
 vox = tgt.modifiers.new("vox", 'REMESH')
 vox.mode = 'VOXEL'
-vox.voxel_size = max(tgt.dimensions) / 280.0
+vox.voxel_size = max(src.dimensions) / 280.0
 vox.adaptivity = 0.0
 vox.use_smooth_shade = True
 bpy.ops.object.modifier_apply(modifier="vox")
-print("RETOPO voxel", round(vox.voxel_size, 5), "faces", raw, "->", len(tgt.data.polygons), flush=True)
-try:
-    bpy.ops.object.quadriflow_remesh(mode='FACES', target_faces=budget,
-                                     use_preserve_sharp=True,
-                                     use_preserve_boundary=True, seed=0)
-    kind = "quadriflow"
-except Exception as e:                                     # noqa: BLE001
+import bmesh
+_bm = bmesh.new(); _bm.from_mesh(tgt.data)
+_nm = len([e for e in _bm.edges if not e.is_manifold]); _bm.free()
+print("RETOPO voxel", round(vox.voxel_size, 5), "faces", raw, "->", len(tgt.data.polygons),
+      "nonmanifold", _nm, flush=True)
+bpy.ops.object.select_all(action='DESELECT')
+tgt.select_set(True); bpy.context.view_layer.objects.active = tgt
+before_qf = len(tgt.data.polygons)
+bpy.ops.object.quadriflow_remesh(mode='FACES', target_faces=budget,
+                                 use_preserve_sharp=False, use_preserve_boundary=False, seed=0)
+kind = "quadriflow" if len(tgt.data.polygons) != before_qf else "QUADRIFLOW-NOOP"
+if kind == "QUADRIFLOW-NOOP":
     dec = tgt.modifiers.new("dec2", 'DECIMATE')
     dec.ratio = min(1.0, budget * 2 / max(1, len(tgt.data.polygons)))
     bpy.ops.object.modifier_apply(modifier="dec2")
-    kind = "decimate-fallback(%s)" % e
+    kind = "decimate-fallback"
 print("RETOPO remesh", kind, "faces", raw, "->", len(tgt.data.polygons), flush=True)
 
 # --- fresh UVs on the new topology

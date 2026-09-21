@@ -1053,3 +1053,106 @@ def add_outline_hull(char, px, cam, res_y, name="hull"):
     hull.visible_shadow = False
     print("HULL", char.name, "px", px, "eff %.2f" % eff, "screen_h %.0f" % screen_h, "thickness %.4f" % thick, flush=True)
     return hull
+
+
+def integrate_cast(chars, cam, plate_img=None, haze=0.16, near=1.0, far=40.0):
+    """Sit the cast IN the painted plate instead of on top of it.
+
+    A character rendered against a matte painting reads as a sticker for three measurable
+    reasons: it is more saturated and higher-contrast than the painting, it shares none of
+    the painting's atmosphere, and nothing grounds it. The first two are fixed here by
+    mixing every cast material toward the plate's own mean colour, by camera depth, so the
+    figure picks up the scene's air exactly as the painted mountains do.
+
+    haze = strength at `far`; a sixth of it is applied at `near` as a flat integration tint.
+    """
+    import numpy as _np
+    if plate_img is not None:
+        px = _np.asarray(plate_img.pixels[:], dtype=_np.float32).reshape(-1, 4)
+        step = max(1, len(px) // 20000)
+        hz = px[::step, :3].mean(axis=0)
+    else:
+        hz = _np.array([0.62, 0.66, 0.70], dtype=_np.float32)
+    touched = 0
+    for ch in chars:
+        for m in ch.data.materials:
+            if not m or not m.use_nodes or m.get("integrated"):
+                continue
+            nt = m.node_tree
+            em = next((n for n in nt.nodes if n.type == 'EMISSION'), None)
+            if em is None or not em.inputs["Color"].links:
+                continue
+            src = em.inputs["Color"].links[0].from_socket
+            cd = nt.nodes.new("ShaderNodeCameraData")
+            mr = nt.nodes.new("ShaderNodeMapRange")
+            mr.inputs["From Min"].default_value = near
+            mr.inputs["From Max"].default_value = far
+            mr.inputs["To Min"].default_value = haze / 6.0
+            mr.inputs["To Max"].default_value = haze
+            mr.clamp = True
+            nt.links.new(cd.outputs["View Z Depth"], mr.inputs["Value"])
+            mix = nt.nodes.new("ShaderNodeMixRGB")
+            mix.inputs["Color2"].default_value = (float(hz[0]), float(hz[1]), float(hz[2]), 1.0)
+            nt.links.new(src, mix.inputs["Color1"])
+            nt.links.new(mr.outputs["Result"], mix.inputs["Fac"])
+            nt.links.new(mix.outputs["Color"], em.inputs["Color"])
+            m["integrated"] = True
+            touched += 1
+    print("INTEGRATE cast materials", touched, "haze", tuple(round(float(v), 3) for v in hz), flush=True)
+
+
+def contact_shadow(char, rig, cam, radius=0.42, strength=0.55):
+    """A soft dark ellipse on the ground under a character.
+
+    EEVEE casts a real sun shadow, but a high sun puts it behind the figure where the
+    camera never sees it, so the character still floats. A contact patch is what actually
+    reads as weight, and it is what a background painter would have brushed in.
+    """
+    import os as _os
+    zs = [(char.matrix_world @ v.co).z for v in char.data.vertices]
+    foot_z = min(zs) + 0.015
+    cx = sum((char.matrix_world @ v.co).x for v in char.data.vertices) / max(1, len(char.data.vertices))
+    cy = sum((char.matrix_world @ v.co).y for v in char.data.vertices) / max(1, len(char.data.vertices))
+    bpy.ops.mesh.primitive_circle_add(vertices=32, radius=radius, fill_type='NGON',
+                                      location=(cx, cy, foot_z))
+    ob = bpy.context.object
+    ob.name = char.name + "_contact"
+    ob.scale = (1.0, 0.75, 1.0)
+    m = bpy.data.materials.new(char.name + "_contactmat")
+    m.use_nodes = True
+    nt = m.node_tree
+    nt.nodes.clear()
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    grad = nt.nodes.new("ShaderNodeTexGradient")
+    grad.gradient_type = 'SPHERICAL'
+    mapn = nt.nodes.new("ShaderNodeMapping")
+    mapn.inputs["Scale"].default_value = (1.0, 1.0, 1.0)
+    nt.links.new(tc.outputs["Object"], mapn.inputs["Vector"])
+    nt.links.new(mapn.outputs["Vector"], grad.inputs["Vector"])
+    ramp = nt.nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.elements[0].position = 0.25
+    ramp.color_ramp.elements[0].color = (0, 0, 0, strength)
+    ramp.color_ramp.elements[1].position = 1.0
+    ramp.color_ramp.elements[1].color = (0, 0, 0, 0)
+    nt.links.new(grad.outputs["Fac"], ramp.inputs["Fac"])
+    tr = nt.nodes.new("ShaderNodeBsdfTransparent")
+    em = nt.nodes.new("ShaderNodeEmission")
+    em.inputs["Color"].default_value = (0.05, 0.05, 0.08, 1)
+    shmix = nt.nodes.new("ShaderNodeMixShader")
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    nt.links.new(ramp.outputs["Alpha"], shmix.inputs["Fac"])
+    nt.links.new(tr.outputs["BSDF"], shmix.inputs[1])
+    nt.links.new(em.outputs["Emission"], shmix.inputs[2])
+    nt.links.new(shmix.outputs["Shader"], out.inputs["Surface"])
+    m.blend_method = 'BLEND'
+    ob.data.materials.append(m)
+    ob.visible_shadow = False
+    if rig is not None:
+        c = ob.constraints.new('COPY_LOCATION')
+        c.target = rig
+        hips = "hips" if rig.type == 'ARMATURE' and "hips" in rig.pose.bones else ""
+        if hips:
+            c.subtarget = hips
+        c.use_z = False
+    print("CONTACT", ob.name, "z %.3f" % foot_z, flush=True)
+    return ob

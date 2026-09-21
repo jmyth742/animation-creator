@@ -71,7 +71,11 @@ if os.environ.get("FILM_LINES", "0") not in ("", "0"):
                 grp.objects.link(ob)
     ls.collection = grp
     ls.linestyle.thickness = float(os.environ.get("FILM_LINES", "1.4"))
-    ls.linestyle.color = (0.06, 0.04, 0.05)
+    # a near-black line is a cut-out cue: nothing in a painted plate is outlined that way.
+    # FILM_LINE_TINT gives the line a dark tint of the scene's own shadow colour instead.
+    _lt = os.environ.get("FILM_LINE_TINT", "0.06,0.04,0.05")
+    ls.linestyle.color = tuple(float(v) for v in _lt.split(","))
+    ls.linestyle.alpha = float(os.environ.get("FILM_LINE_ALPHA", "1.0"))
     # drop stroke chains shorter than N px: kills the residual hatching
     minlen = float(os.environ.get("FILM_LINE_MINLEN", "6"))
     if minlen > 0:
@@ -205,6 +209,64 @@ if pc is not None and os.environ.get("FILM_PAINTER", "shot") == "shot":
                 # exact there, and the fixed one would sit offset beside it (q9 est probe)
                 md.projectors[0].object = pc; md.aspect_x = ratio; md.aspect_y = 1.0
     print("PAINTER per-shot projection from frame", fm, "plate", os.path.basename(cur.filepath) if cur else None)
+
+_sun = os.environ.get("SET_SUN", "")
+if _sun:
+    _el, _az = [float(v) for v in _sun.split(",")]
+    _n = 0
+    for _ob in sc.objects:
+        if _ob.type == 'LIGHT' and _ob.data.type == 'SUN' and _ob.name.startswith("sun"):
+            _ob.rotation_euler = (math.radians(_el), 0.0, math.radians(_az))
+            _n += 1
+    print("SET_SUN", _el, _az, "lights", _n, flush=True)
+
+# FILM_INTEGRATE=<haze>: sit the cast IN the plate rather than on it, plus a grade over
+# the whole frame. A character against a matte painting reads as a sticker because it is
+# more saturated than the painting, shares none of its atmosphere and nothing grounds it.
+# Three fixes, all at render time: depth-based haze toward the plate's own mean colour, a
+# contact patch under each figure, and one grade + grain over character and painting
+# together so they share a single "film".
+_integ = float(os.environ.get("FILM_INTEGRATE", "0") or 0)
+if _integ > 0:
+    sys.path.insert(0, "/workspace/text-to-video/scripts/blender3d")
+    import character_kit as _kit2
+    sc.frame_set((f0 + f1) // 2)
+    _cast = [o for o in sc.objects if o.type == 'MESH' and not o.name.endswith(("_nproxy", "_hull", "_contact"))
+             and any(n in o.name for n in ("oisin", "niamh", "cg_"))]
+    _plate = None
+    for _m in bpy.data.materials:
+        if _m.get("painter_projected") and _m.use_nodes:
+            for _nd in _m.node_tree.nodes:
+                if _nd.type == 'TEX_IMAGE' and _nd.image:
+                    _plate = _nd.image
+                    break
+        if _plate:
+            break
+    _kit2.integrate_cast(_cast, co, _plate, haze=_integ)
+    if os.environ.get("FILM_CONTACT", "1") not in ("", "0"):
+        for _ch in _cast:
+            _rig = _ch.parent if _ch.parent and _ch.parent.type == 'ARMATURE' else None
+            _kit2.contact_shadow(_ch, _rig, co)
+    # one grade over the whole frame: gentle lift + grain, so both layers share a film
+    sc.use_nodes = True
+    _nt = sc.node_tree
+    _nt.nodes.clear()
+    _rl = _nt.nodes.new("CompositorNodeRLayers")
+    _cur = _nt.nodes.new("CompositorNodeCurveRGB")
+    _cur.mapping.curves[3].points[0].location = (0.0, 0.022)      # lift the blacks
+    _cur.mapping.curves[3].points[1].location = (1.0, 0.985)
+    _cur.mapping.update()
+    _nt.links.new(_rl.outputs["Image"], _cur.inputs["Image"])
+    _gl = _nt.nodes.new("CompositorNodeGlare")
+    _gl.glare_type = 'FOG_GLOW'
+    _gl.quality = 'MEDIUM'
+    _gl.mix = -0.72
+    _gl.threshold = 0.86
+    _nt.links.new(_cur.outputs["Image"], _gl.inputs["Image"])
+    _comp = _nt.nodes.new("CompositorNodeComposite")
+    _nt.links.new(_gl.outputs["Image"], _comp.inputs["Image"])
+    sc.render.use_compositing = True
+    print("INTEGRATE grade on, haze", _integ, flush=True)
 
 # FILM_STEP_ANIM=<n>: animate the CAST on twos (or threes). Verified studio practice —
 # Arc System Works disable interpolation entirely so every frame is a held pose, and it
