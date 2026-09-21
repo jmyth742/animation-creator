@@ -26,6 +26,7 @@ import bpy
 import numpy as np
 
 sys.path.insert(0, "/workspace/text-to-video/scripts/blender3d")
+sys.path.append("/workspace/venv/lib/python3.11/site-packages")   # PIL for Blender's python
 sys.path.insert(0, "/workspace/text-to-video/scripts")
 import character_kit as kit                                    # noqa: E402
 import showrunner as sr                                        # noqa: E402
@@ -129,17 +130,26 @@ while time.time() - t0 < 1800:
 if out_png is None:
     sys.exit("FLUX repaint timed out")
 
+# FACE_HD_SCALE (default 1): write the atlas at N x the original resolution so
+# the 768 px repaint keeps its detail instead of being resized back into a
+# ~300 px UV patch (the face's texel budget was the close-up limit)
+import os
+SC = int(os.environ.get("FACE_HD_SCALE", "1"))
+tex_up = tex if SC == 1 else np.array(Image.fromarray((tex[:, :, :3] * 255).astype(np.uint8)).resize((W * SC, H * SC), Image.LANCZOS), dtype=np.float32) / 255
+if SC != 1:
+    tex_up = np.concatenate([tex_up, np.ones(tex_up.shape[:2] + (1,), np.float32)], axis=2)
+X0, X1, Y0, Y1 = x0 * SC, x1 * SC, y0 * SC, y1 * SC
 hd = np.array(Image.open(out_png).convert("RGB")
-              .resize((x1 - x0, y1 - y0), Image.LANCZOS),
+              .resize((X1 - X0, Y1 - Y0), Image.LANCZOS),
               dtype=np.float32)[::-1] / 255
-out = np.array(tex)
+out = np.array(tex_up)
 # soft-edged paste so the patch border never shows
-yy, xx = np.mgrid[0:y1 - y0, 0:x1 - x0]
-edge = np.minimum.reduce([yy, xx, (y1 - y0 - 1) - yy, (x1 - x0 - 1) - xx])
-alpha = np.clip(edge / 24.0, 0, 1)[..., None]
-out[y0:y1, x0:x1, :3] = (1 - alpha) * out[y0:y1, x0:x1, :3] + alpha * hd
+yy, xx = np.mgrid[0:Y1 - Y0, 0:X1 - X0]
+edge = np.minimum.reduce([yy, xx, (Y1 - Y0 - 1) - yy, (X1 - X0 - 1) - xx])
+alpha = np.clip(edge / (24.0 * SC), 0, 1)[..., None]
+out[Y0:Y1, X0:X1, :3] = (1 - alpha) * out[Y0:Y1, X0:X1, :3] + alpha * hd
 dst = PROPS / f"{name}_face_hdbase.png"
-im = bpy.data.images.new("hd", W, H, alpha=True)
+im = bpy.data.images.new("hd", W * SC, H * SC, alpha=True)
 im.pixels = out.ravel().tolist()
 im.filepath_raw = str(dst)
 im.file_format = 'PNG'

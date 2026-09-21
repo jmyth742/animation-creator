@@ -23,6 +23,37 @@ def build_set(sc):
     sea = valley_set.toon_tex("cs", "watertex.png", tile=14.0, shadow_mult=0.85) if __import__("os").path.exists(valley_set.TEX + "/watertex.png") else valley_set.toon("cs", (0.15, 0.30, 0.40), shadow_mult=0.8)
     sky = bpy.data.worlds.new("w"); sc.world = sky; sky.use_nodes = True
     sky.node_tree.nodes["Background"].inputs["Color"].default_value = (0.62, 0.70, 0.82, 1)
+    # PAINTED BACKDROP: the location's concept plate on a far cyclorama behind
+    # the geometry the cast stands on — sky, sea and horizon come from the
+    # painting, the shelf/cliff/props stay real for contact and parallax.
+    import os as _os
+    plate_path = _os.environ.get("SET_PLATE", "/workspace/text-to-video/series/tir-na-nog-legend/sets/farewell_cliff/master.png")
+    if _os.path.exists(plate_path) and _os.environ.get("SET_BACKDROP", "1") not in ("", "0"):
+        img = bpy.data.images.load(plate_path)
+        # a wide, tall curved wall 90 m out, facing the stage; UVs stretched so
+        # the plate's horizon (~45% up the image) lands at the camera's eye line
+        bpy.ops.mesh.primitive_cylinder_add(vertices=64, radius=95.0, depth=120.0, location=(0, 40, FLOOR_Z + 30), end_fill_type='NOTHING')
+        cyc = bpy.context.object; cyc.name = "backdrop"; cyc.scale = (1, 0.75, 1)
+        # keep the far half only (y > 40): delete near faces
+        import bmesh
+        bm = bmesh.new(); bm.from_mesh(cyc.data)
+        bmesh.ops.delete(bm, geom=[f for f in bm.faces if (cyc.matrix_world @ f.calc_center_median()).y < 55], context='FACES')
+        bm.to_mesh(cyc.data); bm.free(); cyc.data.update()
+        # cylindrical UVs: u from angle, v from height
+        uvl = cyc.data.uv_layers.new(name="UVMap"); import math as _m
+        for poly in cyc.data.polygons:
+            for li in poly.loop_indices:
+                co = cyc.data.vertices[cyc.data.loops[li].vertex_index].co
+                ang = _m.atan2(co.x, co.y)           # 0 straight ahead
+                uvl.data[li].uv = (0.5 + ang / 1.9, (co.z + 60.0) / 120.0 * 0.9 + 0.05)
+        bm_mat = bpy.data.materials.new("backdrop"); bm_mat.use_nodes = True; nt = bm_mat.node_tree; nt.nodes.clear()
+        tx = nt.nodes.new("ShaderNodeTexImage"); tx.image = img; tx.extension = 'EXTEND'
+        em = nt.nodes.new("ShaderNodeEmission"); em.inputs["Strength"].default_value = 1.0; out = nt.nodes.new("ShaderNodeOutputMaterial")
+        nt.links.new(tx.outputs["Color"], em.inputs["Color"]); nt.links.new(em.outputs["Emission"], out.inputs["Surface"])
+        cyc.data.materials.append(bm_mat)
+        for poly in cyc.data.polygons: poly.use_smooth = True
+        # the sea plane takes the plate's sea colour so the two meet
+        print("BACKDROP plate", plate_path.split("/")[-2])
     # headland shelf (top at FLOOR_Z), cliff face, sea
     rocktex = valley_set.toon_tex("crt", "rocktex.png", tile=6.0, shadow_mult=0.55) if __import__("os").path.exists(valley_set.TEX + "/rocktex.png") else rock
     for mat in (rocktex, grass, sea):
