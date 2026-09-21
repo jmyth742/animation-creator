@@ -174,10 +174,10 @@ if pc is not None and os.environ.get("FILM_PAINTER", "shot") == "shot":
     plate = os.environ.get("FILM_PLATE")
     mats = [m for m in bpy.data.materials if m.get("painter_projected")]
     cur = next((nd.image for m in mats for nd in m.node_tree.nodes if nd.type == 'TEX_IMAGE' and nd.image), None)
+    shot_dir = mathutils.Vector(co.matrix_world.to_3x3() @ mathutils.Vector((0, 0, -1)))
+    a, b = master_dir.xy.normalized(), shot_dir.xy.normalized()
+    ang = math.degrees(math.acos(max(-1.0, min(1.0, a.dot(b)))))
     if not plate and cur is not None:
-        shot_dir = mathutils.Vector(co.matrix_world.to_3x3() @ mathutils.Vector((0, 0, -1)))
-        a, b = master_dir.xy.normalized(), shot_dir.xy.normalized()
-        ang = math.degrees(math.acos(max(-1.0, min(1.0, a.dot(b)))))
         setup = "master" if ang < 50 else ("side" if ang < 130 else "reverse")
         if setup == "master" and cam.lens >= 60: setup = "closer"
         folder = os.path.dirname(os.path.abspath(bpy.path.abspath(cur.filepath)))
@@ -196,8 +196,14 @@ if pc is not None and os.environ.get("FILM_PAINTER", "shot") == "shot":
         cur = img
     for ob in sc.objects:
         for md in ob.modifiers:
-            if md.type == 'UV_PROJECT' and md.projectors[0].object and md.projectors[0].object.name == pc.name:   # by name: RNA wrappers are never `is`
+            if md.type != 'UV_PROJECT' or not md.projectors[0].object: continue
+            pname = md.projectors[0].object.name          # by name: RNA wrappers are never `is`
+            if pname == pc.name:
                 md.aspect_x = ratio; md.aspect_y = 1.0
+            elif pname == "painter_master" and ang < 50:
+                # a 'fixed' surface (the lake) near the master heading: the per-shot projection is
+                # exact there, and the fixed one would sit offset beside it (q9 est probe)
+                md.projectors[0].object = pc; md.aspect_x = ratio; md.aspect_y = 1.0
     print("PAINTER per-shot projection from frame", fm, "plate", os.path.basename(cur.filepath) if cur else None)
 
 sc.frame_start, sc.frame_end = f0, f1

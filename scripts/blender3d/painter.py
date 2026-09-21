@@ -26,6 +26,12 @@ class Painter:
         self.cam = bpy.data.objects.new("painter_cam", pc); sc.collection.objects.link(self.cam)
         self.cam.location = loc
         self.cam.rotation_euler = (mathutils.Vector(tgt) - self.cam.location).to_track_quat('-Z', 'Y').to_euler()
+        # a second camera that film.py never moves: surfaces tagged ob['painter_fixed'] project from the
+        # calibrated pose, so the plate's LAKE stays on the lake from every shot (per-shot projection put
+        # the hall's steps on it from a sideways camera); it stretches a little off-angle, but as water
+        mc = bpy.data.cameras.new("painter_master"); mc.lens = lens; mc.sensor_width = 36
+        self.master_cam = bpy.data.objects.new("painter_master", mc); sc.collection.objects.link(self.master_cam)
+        self.master_cam.location = loc; self.master_cam.rotation_euler = self.cam.rotation_euler
         self.projected = []
         print("BACKDROP plate", plate_path.split("/")[-2], "painter", tuple(loc), "->", tuple(tgt))
 
@@ -140,7 +146,8 @@ class Painter:
             if lv > 0:
                 sd = ob.modifiers.new("painter_sub", 'SUBSURF'); sd.subdivision_type = 'SIMPLE'; sd.levels = lv; sd.render_levels = lv
             md = ob.modifiers.new("painter", 'UV_PROJECT'); md.uv_layer = "Painter"; md.projector_count = 1
-            md.projectors[0].object = self.cam; md.aspect_x = asp; md.aspect_y = 1.0; md.scale_x = 1.0; md.scale_y = 1.0
+            md.projectors[0].object = self.master_cam if ob.get("painter_fixed") else self.cam
+            md.aspect_x = asp; md.aspect_y = 1.0; md.scale_x = 1.0; md.scale_y = 1.0
             assert ob.modifiers[-1].name == md.name   # never compare RNA wrappers with `is`
             self.projected.append(ob.name)
         print("PAINTER projected onto", self.projected)

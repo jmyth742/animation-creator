@@ -132,12 +132,14 @@ def build_set(sc, winter=False):
     P = painter.setup(sc, PLATE_DEFAULT.replace("master.png", "master_winter.png") if winter else PLATE_DEFAULT, PAINTER_LOC, PAINTER_TGT)
     if P is not None:
         grass = P.painted("p_grass", grass); grass_dk = P.painted("p_grassdk", grass_dk)
-        mount = P.painted("p_mount", mount, sat=0.9); water = P.painted("p_water", water, sat=1.05)
+        mount = P.painted("p_mount", mount, sat=0.9)
+        # the lake TILES the plate's own water: a horizontal surface projected per shot shows whatever
+        # the plate paints at that screen spot (the hall's steps, from a sideways camera: idpass_s07b)
+        water = P.painted("p_water", water, sat=1.05, shade=False)
         path_m = P.painted("p_path", path_m); gold = P.painted("p_gold", gold); gold_dk = P.painted("p_golddk", gold_dk)
         leaf = P.painted("p_leaf", leaf); trunk = P.painted("p_trunk", trunk)
         falls = P.painted("p_falls", falls, shade=False); mount = P.painted("p_mount", mount, shade=False)
         gold = P.painted("p_gold", gold, shade=False); gold_dk = P.painted("p_golddk", gold_dk, shade=False)
-        water = P.painted("p_water", water, shade=False)
         P.dome(sc, (0, 30, 0))
         P.billboard("hall_bb", (7.5, 23.5, 6.5), (30.0, 15.0))   # the painted hall stands here
 
@@ -166,6 +168,7 @@ def build_set(sc, winter=False):
         water = toon("ice", (0.78, 0.86, 0.92), shadow_mult=0.85)
     _obj("lake", bpy.ops.mesh.primitive_circle_add, water,
          loc=(-8, 19, 0.06), scale=(10, 8, 1), fill_type='NGON')
+    if P is not None: bpy.data.objects["lake"]["painter_fixed"] = True   # the plate's lake stays on the lake
 
     # waterfall: a stylised ribbon from the mountains into the lake
     _obj("falls", bpy.ops.mesh.primitive_plane_add, falls,
