@@ -23,8 +23,14 @@ for EP in $EPS; do
     3) SUN="26,96";;       # farewell cliff: low sun over the sea
   esac
   export CHAR_NORMALFIX=1 CHAR_NORMALFIX_INTERP=1 FILM_LINES=4.8 FILM_LINE_MINLEN=40 FILM_LINE_CREASE=0 FILM_RES=1664x960
-  export FILM_INTEGRATE=0.30 FILM_CONTACT=1 SET_SUN="$SUN" FILM_LINE_TINT="0.17,0.11,0.13" FILM_LINE_ALPHA=0.82
+  export FILM_INTEGRATE=0.22 CHAR_HAZE_SAT=0.3 FILM_CONTACT=1 SET_SUN="$SUN"
+  export FILM_LINE_TINT="0.14,0.09,0.12" FILM_LINE_ALPHA=0.82
+  export CHAR_AO=0.35                      # designed shadow shapes from the baked AO map
+  export FILM_COMPLINE=0.75 FILM_COMPLINE_Z=0   # interior fold lines; Freestyle keeps the contour
   unset CHAR_SMOOTH
+  # shot language: cap the tightest lenses, pull back, guard the foreground. Data-only,
+  # applied to the emitted shot list, so the scene itself is untouched.
+  /workspace/venv/bin/python scripts/blender3d/shot_language.py $W/$JS $W/sl_$JS >> $W/v6_build$EP.log 2>&1 && JS=sl_$JS
   bash scripts/ops/render_episode.sh $JS $BL $TAG "$TITLE" $AUD $R/$OUT 3; rm -rf $W/$TAG $W/$TAG.*.log
   [ -f $R/$OUT ] && ffmpeg -v error -y -i $R/$OUT -c:v libx264 -crf 23 -preset medium -pix_fmt yuv420p -c:a aac -movflags +faststart ${OUT%.mp4}_web.mp4 2>/dev/null && mv ${OUT%.mp4}_web.mp4 $R/ 
   log "ep$EP master: $(ls -la $R/$OUT 2>/dev/null | awk '{print $5}') bytes"
