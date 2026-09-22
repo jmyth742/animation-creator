@@ -860,6 +860,184 @@ def apply_talk_tex(rig, ctrl, envelope, f0, fps=16, blinks=True,
 
 
 # ── UniRig-rigged cast (Day 5): real skin weights, same animators ────────
+def _chain_dist(P, pts):
+    """Minimum distance from every row of P to a polyline given as a list of (a, b) segments."""
+    import numpy as _np
+    best = None
+    for a, b in pts:
+        ab = b - a
+        L2 = float(ab @ ab)
+        if L2 < 1e-12:
+            d = _np.linalg.norm(P - a, axis=1)
+        else:
+            t = _np.clip(((P - a) @ ab) / L2, 0.0, 1.0)
+            d = _np.linalg.norm(P - (a + _np.outer(t, ab)), axis=1)
+        best = d if best is None else _np.minimum(best, d)
+    return best
+
+
+def repair_shoulders(char, rig, roles, name):
+    """Stop the arm bones from owning the flank of the torso.
+
+    Measured on this rig, the left upper-arm group covers vertices from z=0.68 to z=1.08
+    -- belt to shoulder -- on a character whose arm is a horizontal bar at z=0.97. UniRig
+    has given the arm the whole side wall of the body. Rotate the arm and the ribcage
+    goes with it, which is what reads as the figure twisting or facing the wrong way.
+
+    The rule is nearest-chain: a vertex that is closer to the spine than to the arm
+    belongs to the spine. That keeps the deltoid cap on the arm (it really is nearer the
+    arm bone) while handing the flank back, and it needs no threshold to tune.
+
+    CHAR_SHOULDER_FIX=0 disables it.
+    """
+    import numpy as _np
+    out = {}
+    n = len(char.data.vertices)
+    co = _np.empty(n * 3)
+    char.data.vertices.foreach_get("co", co)
+    P = co.reshape(-1, 3) @ _np.array(char.matrix_world.to_3x3()).T + _np.array(char.matrix_world.translation)
+    W = lambda v: _np.array(rig.matrix_world @ v)
+
+    torso_roles = [r for r in ("hips", "spine0", "spine1", "spine2", "neck") if r in roles]
+    torso_names = [roles[r] for r in torso_roles if roles[r] in char.vertex_groups]
+    if len(torso_names) < 2:
+        return {"skipped": "no torso groups"}
+    torso_seg = []
+    for r in torso_roles:
+        b = rig.data.bones[roles[r]]
+        torso_seg.append((W(b.head_local), W(b.tail_local)))
+    d_torso = _chain_dist(P, torso_seg)
+    tz = [W(rig.data.bones[tn].head_local)[2] for tn in torso_names]
+    tg = [char.vertex_groups[tn] for tn in torso_names]
+
+    for side in ("L", "R"):
+        up = roles.get("%s_upperarm" % side)
+        if up is None or up not in rig.data.bones:
+            continue
+        chain_names, stack = [], [rig.data.bones[up]]
+        while stack:
+            b = stack.pop()
+            if b.name in char.vertex_groups:
+                chain_names.append(b.name)
+            stack.extend(b.children)
+        arm_seg = [(W(rig.data.bones[cn].head_local), W(rig.data.bones[cn].tail_local))
+                   for cn in chain_names if cn in rig.data.bones]
+        if not arm_seg:
+            continue
+        d_arm = _chain_dist(P, arm_seg)
+        chain_idx = {char.vertex_groups[cn].index: cn for cn in chain_names}
+        moved = 0
+        for v in char.data.vertices:
+            i = v.index
+            if d_arm[i] <= d_torso[i]:
+                continue                       # genuinely nearer the arm: leave it alone
+            tot = 0.0
+            for g in v.groups:
+                if g.group in chain_idx:
+                    tot += g.weight
+            if tot <= 1e-4:
+                continue
+            for g in list(v.groups):
+                if g.group in chain_idx:
+                    char.vertex_groups[chain_idx[g.group]].remove([i])
+            z = P[i, 2]
+            tg[int(_np.argmin([abs(z - zz) for zz in tz]))].add([int(i)], tot, 'ADD')
+            moved += 1
+        out["%s_returned_to_torso" % side] = moved
+    print("SHOULDERFIX", name, out)
+    return out
+
+
+def reseat_arms(char, rig, roles, name):
+    """Move the arm bones OUT OF THE TORSO and into the arms.
+
+    UniRig puts the shoulder joint well inside the body on these chibi meshes -- measured
+    at x=0.073 on a torso half a metre wide -- so the upper arm starts inside the stomach
+    and the first third of the arm chain is buried in the chest. Nothing downstream can
+    recover from that: rotating a bone whose pivot is inside the ribcage swings the
+    ribcage.
+
+    This fits the arm's own axis from the geometry that chain owns, then applies one
+    similarity transform (rotate, scale, translate) to the whole arm subtree so the chain
+    runs from the real shoulder to the real fingertips, keeping its internal proportions
+    and its weights.
+
+    CHAR_RESEAT_ARMS=0 disables it.
+    """
+    import numpy as _np
+    out = {}
+    edits = []
+    for side in ("L", "R"):
+        up = roles.get("%s_upperarm" % side)
+        if up is None or up not in rig.data.bones:
+            continue
+        names, stack = [], [rig.data.bones[up]]
+        while stack:
+            b = stack.pop()
+            names.append(b.name)
+            stack.extend(b.children)
+        idx = {char.vertex_groups[nm].index for nm in names if nm in char.vertex_groups}
+        if not idx:
+            continue
+        pts = []
+        for v in char.data.vertices:
+            for g in v.groups:
+                if g.group in idx and g.weight > 0.5:
+                    w = char.matrix_world @ v.co
+                    pts.append((w.x, w.y, w.z))
+                    break
+        if len(pts) < 60:
+            out["%s" % side] = "too few arm vertices (%d)" % len(pts)
+            continue
+        A = _np.array(pts)
+        c = A.mean(axis=0)
+        u = _np.linalg.svd(A - c, full_matrices=False)[2][0]
+        if (u[0] > 0) != (c[0] > 0):
+            u = -u
+        t = (A - c) @ u
+        p_med = c + u * float(_np.percentile(t, 2))
+        p_lat = c + u * float(_np.percentile(t, 99))
+        a = _np.array(rig.matrix_world @ rig.data.bones[up].head_local)
+        far = max(names, key=lambda nm: _np.linalg.norm(
+            _np.array(rig.matrix_world @ rig.data.bones[nm].tail_local) - a))
+        b = _np.array(rig.matrix_world @ rig.data.bones[far].tail_local)
+        old = b - a
+        new = p_lat - p_med
+        lo, ln = float(_np.linalg.norm(old)), float(_np.linalg.norm(new))
+        if lo < 1e-6 or ln < 1e-6:
+            continue
+        R = mathutils.Vector(old / lo).rotation_difference(mathutils.Vector(new / ln)).to_matrix()
+        sc_ = ln / lo
+        shift = _np.linalg.norm(p_med - a)
+        out["%s_shoulder_moved_mm" % side] = int(round(shift * 1000))
+        out["%s_arm_len_scale" % side] = round(sc_, 3)
+        edits.append((names, mathutils.Vector(a), mathutils.Vector(p_med), R, sc_))
+    if not edits:
+        print("RESEAT", name, out)
+        return out
+    Minv = rig.matrix_world.inverted()
+    bpy.context.view_layer.objects.active = rig
+    bpy.ops.object.mode_set(mode='EDIT')
+    for names, a, p_med, R, sc_ in edits:
+        for nm in names:
+            eb = rig.data.edit_bones.get(nm)
+            if eb is None:
+                continue
+            hw = rig.matrix_world @ mathutils.Vector(eb.head)
+            tw = rig.matrix_world @ mathutils.Vector(eb.tail)
+            eb.head = Minv @ (p_med + R @ ((hw - a) * sc_))
+            eb.tail = Minv @ (p_med + R @ ((tw - a) * sc_))
+        # the clavicle, if the mapper found one, now has to reach the new shoulder
+        for side_key in ("L_clav", "R_clav"):
+            cn = roles.get(side_key)
+            if cn and cn in rig.data.edit_bones and roles.get(side_key[0] + "_upperarm") in names:
+                rig.data.edit_bones[cn].tail = rig.data.edit_bones[roles[side_key[0] + "_upperarm"]].head.copy()
+    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.context.view_layer.update()
+    print("RESEAT", name, out)
+    return out
+
+
 def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False):
     """Import a UniRig-rigged GLB and rename its (unnamed) bones to the kit
     convention via the geometric mapper, so apply_walk / apply_idle /
@@ -906,6 +1084,16 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False
             if vg: vg.name = kit_name
     for pb in rig.pose.bones:
         pb.rotation_mode = 'XYZ'
+    if os.environ.get("CHAR_SHOULDER_FIX", "1") not in ("", "0"):
+        try:
+            # roles above still holds the PRE-rename bone names: the rename loop changes
+            # rig.data.bones[...].name without updating the dict it read them from.
+            _r = map_unirig(rig); _r.pop("_height", None)
+            repair_shoulders(char, rig, _r, name)
+            if os.environ.get("CHAR_RESEAT_ARMS", "1") not in ("", "0"):
+                reseat_arms(char, rig, _r, name)
+        except Exception as _e:                                     # noqa: BLE001
+            print("SHOULDERFIX failed", _e)
     # CHAR_REBIND=auto: throw away UniRig's weights and re-bind with Blender's bone-heat
     # solver on the same skeleton. UniRig predicts weights from a learned prior; heat
     # diffusion solves them on THIS surface, which is usually cleaner across a shoulder.
@@ -957,7 +1145,44 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False
     def _dir(bn):
         b = rig.data.bones[bn]; return (rig.matrix_world.to_3x3() @ (b.tail_local - b.head_local)).normalized()
     _apose = os.environ.get("CHAR_APOSE", "1") not in ("", "0")
-    if _apose and "arm.L" in rig.data.bones and "arm.R" in rig.data.bones and abs(_dir("arm.L").z) < 0.45 and abs(_dir("arm.R").z) < 0.45:
+    def _mesh_arm_dir(bn):
+        """Where the ARM GEOMETRY actually goes, from the bone head to the centroid of the
+        vertices that bone chain owns. The bone axis is not a safe proxy: on the A-pose
+        build UniRig predicted horizontal arm bones for a mesh whose arms hang down, the
+        bake read that as a T-pose and rotated the arms another ninety degrees, which
+        smeared the hands into flat fans across the hips."""
+        import numpy as _np
+        if bn not in rig.data.bones:
+            return None
+        names, stack = [], [rig.data.bones[bn]]
+        while stack:
+            b0 = stack.pop()
+            if b0.name in char.vertex_groups:
+                names.append(b0.name)
+            stack.extend(b0.children)
+        idx = {char.vertex_groups[nm].index for nm in names}
+        pts = []
+        for v in char.data.vertices:
+            for g in v.groups:
+                if g.group in idx and g.weight > 0.5:
+                    pts.append(char.matrix_world @ v.co)
+                    break
+        if len(pts) < 30:
+            return None
+        c = sum(pts, mathutils.Vector((0, 0, 0))) / len(pts)
+        d = c - (rig.matrix_world @ rig.data.bones[bn].head_local)
+        return d.normalized() if d.length > 1e-6 else None
+
+    _ml, _mr = _mesh_arm_dir("arm.L"), _mesh_arm_dir("arm.R")
+    _mesh_says_tpose = (_ml is not None and _mr is not None
+                        and abs(_ml.z) < 0.45 and abs(_mr.z) < 0.45)
+    if _ml is not None:
+        print("ARMGEO", name, "L (%.2f,%.2f,%.2f)" % (_ml.x, _ml.y, _ml.z),
+              "R (%.2f,%.2f,%.2f)" % (_mr.x, _mr.y, _mr.z), "-> tpose" if _mesh_says_tpose else "-> already down")
+    if _apose and _ml is None:                    # no geometry to judge by: fall back to the bones
+        _mesh_says_tpose = ("arm.L" in rig.data.bones and "arm.R" in rig.data.bones
+                            and abs(_dir("arm.L").z) < 0.45 and abs(_dir("arm.R").z) < 0.45)
+    if _apose and _mesh_says_tpose and "arm.L" in rig.data.bones and "arm.R" in rig.data.bones:
         # CHAR_APOSE_STEPS: bake the swing in N increments instead of one.
         # Linear blend skinning loses volume in proportion to the angle it is asked
         # for in one go; this mesh is modelled arms-up and the target is arms-down,

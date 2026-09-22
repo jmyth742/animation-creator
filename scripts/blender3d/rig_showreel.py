@@ -97,15 +97,122 @@ def retarget(bvh_path):
     for sname, role in SRC.items():
         if sname in S.data.bones and role in roles:
             pairs[roles[role]] = sname
-    ALIGN = {}
-    for tn, sn in pairs.items():
-        ALIGN[tn] = (T_rest[tn] @ Y).normalized().rotation_difference((S_rest[sn] @ Y).normalized()).to_matrix()
+    # ROOT CORRECTION. The old code aligned the hips by rotating the target's hips BONE
+    # AXIS onto the source's. That is meaningless for a root: this source's hips bone
+    # points down (0, 0.46, -0.89) and the target's points up, so the "alignment" was a
+    # 152.6 degree rotation applied to the whole body on every frame, while the limbs
+    # were still aimed at correct world directions. The body came out back to front.
+    # The only legitimate root correction is the YAW between the two rest facings, and
+    # facing is measured from the hip joints, not from a bone axis.
+    def facing(arm, lname, rname):
+        L = arm.matrix_world @ arm.data.bones[lname].head_local
+        R = arm.matrix_world @ arm.data.bones[rname].head_local
+        lat = L - R; lat.z = 0
+        if lat.length < 1e-6:
+            return None
+        return lat.normalized().cross(mathutils.Vector((0, 0, 1)))
+    M3 = mathutils.Matrix.Identity(3)
+    ft = facing(T, roles["L_upperleg"], roles["R_upperleg"]) if "L_upperleg" in roles and "R_upperleg" in roles else None
+    fs = facing(S, "LeftUpLeg", "RightUpLeg") if "LeftUpLeg" in S.data.bones else None
+    if ft is not None and fs is not None:
+        th = math.atan2(ft.y, ft.x) - math.atan2(fs.y, fs.x)
+        M3 = mathutils.Matrix.Rotation(th, 3, 'Z')
+        print("RETARGET root yaw correction %.1f deg" % math.degrees(th), flush=True)
+    M3i = M3.inverted()
     act = S.animation_data.action
     a0, a1 = int(act.frame_range[0]), int(act.frame_range[1])
+
+    # TRIM THE DEAD AIR. MoMask clips open with roughly a second of the figure standing
+    # still before the action starts; kept in, a six-shot reel is a third standing about
+    # and the walk reads as a character that cannot get going.
+    def _bone_sig(f):
+        sc.frame_set(f)
+        v = []
+        for bn in ("LeftUpLeg", "RightUpLeg", "LeftArm", "RightArm", "Hips"):
+            if bn in S.data.bones:
+                m = S.matrix_world @ S.pose.bones[bn].matrix
+                v.append(m.translation.copy())
+                v.append((m.to_3x3() @ Y).normalized())
+        return v
+
+    if os.environ.get("RS_TRIM", "1") not in ("", "0"):
+        base = _bone_sig(a0)
+        # a fixed threshold either trims nothing or trims the whole clip depending on how
+        # big the action is; scale it to this clip's own largest excursion instead
+        span = 0.0
+        for f in range(a0, a1 + 1, max(1, (a1 - a0) // 24)):
+            sig = _bone_sig(f)
+            span = max(span, max((a - b).length for a, b in zip(sig, base)))
+        thresh = max(0.01, 0.10 * span)
+        lead = a0
+        for f in range(a0, min(a1, a0 + 120)):
+            sig = _bone_sig(f)
+            if max((a - b).length for a, b in zip(sig, base)) > thresh:
+                lead = max(a0, f - 2)
+                break
+        tail = a1
+        endsig = _bone_sig(a1)
+        for f in range(a1, max(lead, a1 - 120), -1):
+            sig = _bone_sig(f)
+            if max((a - b).length for a, b in zip(sig, endsig)) > thresh:
+                tail = min(a1, f + 2)
+                break
+        if tail - lead > 12:
+            print("RETARGET trimmed %d..%d -> %d..%d" % (a0, a1, lead, tail), flush=True)
+            a0, a1 = lead, tail
     a1 = min(a1, a0 + MAXF - 1)
     T.animation_data_clear()
     sc.frame_set(a0)
     ref = (S.matrix_world @ S.pose.bones["Hips"].matrix).translation.copy()
+
+    # ARM SWING. These clips carry almost no arm motion of their own -- measured over the
+    # walk, the upper arm moves about four degrees -- so a retarget that is faithful to
+    # the source produces a figure gliding with its arms pinned. Where the source has no
+    # swing, add one, counter-phased against the opposite thigh the way a human walks.
+    def _facing_at(f):
+        """The body's facing on THIS frame. Measuring a limb's forward angle against the
+        rest facing conflates the swing with the body's own yaw: this walk turns as it
+        goes, which is how a 2.5 degree arm swing measured as 27."""
+        sc.frame_set(f)
+        L = (S.matrix_world @ S.pose.bones["LeftUpLeg"].matrix).translation
+        R = (S.matrix_world @ S.pose.bones["RightUpLeg"].matrix).translation
+        lat = L - R; lat.z = 0
+        if lat.length < 1e-6:
+            return mathutils.Vector((0, -1, 0))
+        return lat.normalized().cross(mathutils.Vector((0, 0, 1)))
+
+    def _fwd_angle(bn, f_hat):
+        m = (S.matrix_world @ S.pose.bones[bn].matrix).to_3x3()
+        d = (m @ Y).normalized()
+        return math.asin(max(-1.0, min(1.0, d.dot(f_hat))))
+    swing = {}
+    SW_GAIN = float(os.environ.get("RS_ARM_SWING", "0.62"))
+    if SW_GAIN > 0 and all(b in S.data.bones for b in ("LeftUpLeg", "RightUpLeg", "LeftArm", "RightArm")):
+        arm_range = []
+        leg = {}
+        face_at = {}
+        for f in range(a0, a1 + 1):
+            fh = _facing_at(f)
+            face_at[f] = fh
+            arm_range.append(_fwd_angle("LeftArm", fh))
+            leg[f] = (_fwd_angle("LeftUpLeg", fh), _fwd_angle("RightUpLeg", fh))
+        src_swing = (max(arm_range) - min(arm_range)) / 2.0
+        # only on a clip that actually travels: adding leg-phased arm swing to a wave or
+        # a point would fight the performance instead of supporting it
+        # gait is better detected from the LEGS than from ground covered: these clips
+        # travel slowly (half a metre over three seconds) but their legs still swing
+        leg_amp = 0.0
+        for f in range(a0, a1 + 1):
+            lL, lR = leg[f]
+            leg_amp = max(leg_amp, abs(lL - lR))
+        leg_amp *= 0.5
+        if leg_amp > math.radians(10) and src_swing < math.radians(18):
+            swing = leg
+            print("RETARGET source arm swing %.1f deg, leg swing %.1f deg -- adding counter-phased arm swing" %
+                  (math.degrees(src_swing), math.degrees(leg_amp)), flush=True)
+        else:
+            print("RETARGET source arm swing %.1f deg, leg swing %.1f deg -- kept as authored" %
+                  (math.degrees(src_swing), math.degrees(leg_amp)), flush=True)
     for f in range(a0, a1 + 1):
         sc.frame_set(f)
         deltas = {}
@@ -115,10 +222,19 @@ def retarget(bvh_path):
                 sn = pairs[b.name]
                 pose_rot = (S.matrix_world @ S.pose.bones[sn].matrix).to_3x3()
                 if b.name == hips_t:
-                    D = pose_rot @ S_rest[sn].inverted() @ ALIGN[b.name]
+                    # the source's own world rotation delta, expressed in the target's frame
+                    D = M3 @ (pose_rot @ S_rest[sn].inverted()) @ M3i
                 else:
                     cur = (Dp @ T_rest[b.name] @ Y).normalized()
-                    want = (pose_rot @ Y).normalized()
+                    want = (M3 @ (pose_rot @ Y)).normalized()
+                    if swing and sn in ("LeftArm", "RightArm"):
+                        # left leg forward pairs with right arm forward
+                        lL, lR = swing.get(f, (0.0, 0.0))
+                        phi = SW_GAIN * (lL if sn == "RightArm" else lR)
+                        f_t = (M3 @ face_at.get(f, mathutils.Vector((0, -1, 0)))).normalized()
+                        axis = f_t.cross(mathutils.Vector((0, 0, 1)))
+                        if axis.length > 1e-6:
+                            want = (mathutils.Matrix.Rotation(phi, 3, axis.normalized()) @ want).normalized()
                     D = cur.rotation_difference(want).to_matrix() @ Dp
             else:
                 D = Dp
@@ -127,7 +243,7 @@ def retarget(bvh_path):
             pb.rotation_quaternion = (T_rest[b.name].inverted() @ Dp.inverted() @ D @ T_rest[b.name]).to_quaternion()
             pb.keyframe_insert("rotation_quaternion", frame=f)
         hp = (S.matrix_world @ S.pose.bones["Hips"].matrix).translation
-        dw = (hp - ref) * scale
+        dw = M3 @ ((hp - ref) * scale)
         pb = T.pose.bones[hips_t]
         pb.location = T_rest[hips_t].inverted() @ dw
         pb.keyframe_insert("location", frame=f)
@@ -236,6 +352,29 @@ for clip in CLIPS:
     span = max((max(p.x for p in pts) - min(p.x for p in pts)),
                (max(p.y for p in pts) - min(p.y for p in pts)))
     dist = 1.62 * H_t + 0.28 * span
+    # RS_STATIC_CAM=1: lock the camera off to the side of the travel line instead of
+    # orbiting and following. A following camera hides foot slide and hides whether the
+    # character actually goes anywhere; a locked camera is the honest test of a gait.
+    STATIC = os.environ.get("RS_STATIC_CAM", "0") not in ("", "0")
+    if STATIC:
+        p0, p1 = pts[0], pts[-1]
+        trav = mathutils.Vector((p1.x - p0.x, p1.y - p0.y, 0))
+        if trav.length < 0.05 * H_t:
+            trav = mathutils.Vector((0, -1, 0))
+        trav.normalize()
+        side = mathutils.Vector((-trav.y, trav.x, 0))
+        mid = mathutils.Vector(((p0.x + p1.x) / 2, (p0.y + p1.y) / 2, FLOOR + H_t * 0.52))
+        dd = 1.35 * H_t + 0.62 * (p1 - p0).length
+        cam.location = mid + side * dd + mathutils.Vector((0, 0, H_t * 0.06))
+        cam.rotation_euler = (mid - mathutils.Vector(cam.location)).to_track_quat('-Z', 'Y').to_euler()
+        d0 = os.path.join(OUT, clip)
+        os.makedirs(d0, exist_ok=True)
+        sc.render.filepath = os.path.join(d0, "f_")
+        sc.frame_start, sc.frame_end = f0, f1
+        bpy.ops.render.render(animation=True)
+        print("SHOWREEL clip done", clip, n, "frames (static cam)", flush=True)
+        rendered.append((clip, d0, n))
+        continue
     base = math.radians(START.get(clip, 20.0))
     rate = math.radians(ORBIT.get(clip, 45.0))
     sc.frame_start, sc.frame_end = f0, f1
