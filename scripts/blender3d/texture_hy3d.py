@@ -34,8 +34,34 @@ print("TEXHY pipeline loaded in %.0fs" % (time.time() - t0), flush=True)
 
 import trimesh
 mesh = trimesh.load(mesh_p, force="mesh")
-print("TEXHY mesh faces", len(mesh.faces), flush=True)
+print("TEXHY mesh faces in:", len(mesh.faces), flush=True)
 
+# DECIMATE FIRST. The pipeline's first act is mesh_uv_wrap, a single-threaded unwrap whose
+# cost explodes with face count: at 544k faces it pinned one core with the GPU idle and no
+# output for ten minutes. These meshes are 10-20x denser than the pipeline expects, and
+# they have to come down for rigging anyway, so reduce before texturing rather than after.
+BUDGET = int(os.environ.get("TEXHY_FACES", "40000"))
+if len(mesh.faces) > BUDGET:
+    # trimesh versions disagree here: some take a face count, some a 0-1 reduction ratio
+    _n = len(mesh.faces)
+    try:
+        mesh = mesh.simplify_quadric_decimation(face_count=BUDGET)
+    except TypeError:
+        mesh = mesh.simplify_quadric_decimation(max(0.01, min(0.99, 1.0 - BUDGET / float(_n))))
+    print("TEXHY decimated to:", len(mesh.faces), "in %.0fs" % (time.time() - t0), flush=True)
+
+# the pipeline prints nothing between its stages, so wrap the slow ones to stop us
+# flying blind again
+import hy3dgen.texgen.pipelines as _pl
+_orig_wrap = getattr(_pl, "mesh_uv_wrap", None)
+if _orig_wrap:
+    def _wrapped(m):
+        t = time.time(); print("TEXHY stage: uv_wrap ...", flush=True)
+        r = _orig_wrap(m); print("TEXHY stage: uv_wrap done in %.0fs" % (time.time() - t), flush=True)
+        return r
+    _pl.mesh_uv_wrap = _wrapped
+
+print("TEXHY painting ...", flush=True)
 painted = pipe(mesh, image=img)
 painted.export(out_p)
 print("TEXHY_DONE", out_p, "in %.0fs" % (time.time() - t0), flush=True)
