@@ -609,3 +609,27 @@ are re-rigged or replaced with VRM. Any motion clip pulled from the library shou
 checked against this ceiling before it is retargeted.
 LESSON: always run the control. The 90-degree sheet alone would have condemned a day of
 retopology work that turns out to be innocent.
+
+## Shading sweep and plate angles, judged (22 Sep 09:15)
+SHADING SWEEP (review/night_sweep2.png, zoom in night_sweep2_zoom.png) — six panels:
+AO off / 0.25 / 0.45, AO 0.25 + CEL_LIGHTVEC, a walking shot, and one with atmosphere
+disabled.
+VERDICT: the differences are marginal. AO 0.25-0.35 adds a little depth to hair and the
+cloak, and the light-vector panel reads slightly better on the face, but nothing here
+transforms the character. Tellingly, the panel with atmosphere OFF looks about as good as
+the others, so FILM_INTEGRATE is contributing little at this strength.
+CONCLUSION: SHADING PARAMETERS ARE EXHAUSTED. Adopt AO 0.30 with the light vector and
+stop sweeping them — further tuning is noise. The remaining gap is structural: head
+geometry and the amount of information the character carries, not the ramp.
+Consequence for the keeper: its AO / line / haze sweep backlog is now low value and
+should be replaced with work that changes assets rather than parameters.
+
+PLATE ANGLES (review/plate_angle_tir_na_nog_*.png): the TECHNIQUE WORKS — the painted
+output follows the structure render faithfully and adds detail, which is exactly what
+structural conditioning is for. But the CAMERAS WERE WRONG: I placed the reverse at
+(14,34,6.5) aimed at (-2,6,2.5), which sits on top of the hall, so the plate is a
+close-up of a wall rather than a valley vista. Unusable as a backdrop. Re-queued with
+cameras placed from real vantage points: reverse from beyond the hall looking back down
+the valley, side from across it.
+LESSON: validate a generated plate's FRAMING before spending generation on it — one
+cheap structure render would have caught this.
