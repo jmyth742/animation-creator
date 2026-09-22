@@ -949,89 +949,132 @@ def repair_shoulders(char, rig, roles, name):
 
 
 def reseat_arms(char, rig, roles, name):
-    """Move the arm bones OUT OF THE TORSO and into the arms.
+    """Put the arm bones down the MIDDLE of the arms.
 
-    UniRig puts the shoulder joint well inside the body on these chibi meshes -- measured
-    at x=0.073 on a torso half a metre wide -- so the upper arm starts inside the stomach
-    and the first third of the arm chain is buried in the chest. Nothing downstream can
-    recover from that: rotating a bone whose pivot is inside the ribcage swings the
-    ribcage.
+    Measured with scripts/blender3d/rig_diagnostic.py and the arm probe, UniRig's arm
+    bones sit 54-118 mm away from the centre line of the arm they drive, on a character
+    whose arm is about 60 mm thick. The chain is therefore beside the arm or inside the
+    torso, and every rotation of it drags the body.
 
-    This fits the arm's own axis from the geometry that chain owns, then applies one
-    similarity transform (rotate, scale, translate) to the whole arm subtree so the chain
-    runs from the real shoulder to the real fingertips, keeping its internal proportions
-    and its weights.
+    The arm's own centre line is recovered from the geometry that chain owns: fit the
+    principal axis, bin along it, take the centroid of each bin. That polyline IS the
+    arm. The chain's joints are then placed along it, keeping each bone's share of the
+    total length, and the fingers ride on the rigid transform of the hand bone.
 
     CHAR_RESEAT_ARMS=0 disables it.
     """
     import numpy as _np
     out = {}
-    edits = []
+    plans = []
     for side in ("L", "R"):
         up = roles.get("%s_upperarm" % side)
         if up is None or up not in rig.data.bones:
             continue
-        names, stack = [], [rig.data.bones[up]]
+        subtree, stack = [], [rig.data.bones[up]]
         while stack:
             b = stack.pop()
-            names.append(b.name)
+            subtree.append(b.name)
             stack.extend(b.children)
-        idx = {char.vertex_groups[nm].index for nm in names if nm in char.vertex_groups}
+        idx = {char.vertex_groups[nm].index for nm in subtree if nm in char.vertex_groups}
         if not idx:
             continue
-        pts = []
+        sel = []
         for v in char.data.vertices:
             for g in v.groups:
                 if g.group in idx and g.weight > 0.5:
-                    w = char.matrix_world @ v.co
-                    pts.append((w.x, w.y, w.z))
+                    sel.append(v.index)
                     break
-        if len(pts) < 60:
-            out["%s" % side] = "too few arm vertices (%d)" % len(pts)
+        if len(sel) < 60:
+            out[side] = "too few arm vertices (%d)" % len(sel)
             continue
-        A = _np.array(pts)
+        co = _np.empty(len(char.data.vertices) * 3)
+        char.data.vertices.foreach_get("co", co)
+        P = co.reshape(-1, 3) @ _np.array(char.matrix_world.to_3x3()).T + _np.array(char.matrix_world.translation)
+        A = P[sel]
         c = A.mean(axis=0)
         u = _np.linalg.svd(A - c, full_matrices=False)[2][0]
         if (u[0] > 0) != (c[0] > 0):
             u = -u
         t = (A - c) @ u
-        p_med = c + u * float(_np.percentile(t, 2))
-        p_lat = c + u * float(_np.percentile(t, 99))
-        a = _np.array(rig.matrix_world @ rig.data.bones[up].head_local)
-        far = max(names, key=lambda nm: _np.linalg.norm(
-            _np.array(rig.matrix_world @ rig.data.bones[nm].tail_local) - a))
-        b = _np.array(rig.matrix_world @ rig.data.bones[far].tail_local)
-        old = b - a
-        new = p_lat - p_med
-        lo, ln = float(_np.linalg.norm(old)), float(_np.linalg.norm(new))
-        if lo < 1e-6 or ln < 1e-6:
+        lo, hi = float(_np.percentile(t, 3)), float(_np.percentile(t, 98))
+        span = hi - lo
+        if span < 1e-6:
             continue
-        R = mathutils.Vector(old / lo).rotation_difference(mathutils.Vector(new / ln)).to_matrix()
-        sc_ = ln / lo
-        shift = _np.linalg.norm(p_med - a)
-        out["%s_shoulder_moved_mm" % side] = int(round(shift * 1000))
-        out["%s_arm_len_scale" % side] = round(sc_, 3)
-        edits.append((names, mathutils.Vector(a), mathutils.Vector(p_med), R, sc_))
-    if not edits:
+        half = max(span / 18.0, 1e-4)
+
+        def centre_at(tt):
+            """Centroid of the arm cross-section at this position along the arm axis.
+            Sampled as a slab rather than a fixed bin, so the joint lands on the arm's
+            actual middle even where the arm curves."""
+            m = _np.abs(t - tt) < half
+            if m.sum() < 5:
+                m = _np.abs(t - tt) < half * 2.5
+            if m.sum() < 3:
+                return c + u * tt
+            return A[m].mean(axis=0)
+
+        # the primary chain: from the upper arm, always the longest child
+        chain = [rig.data.bones[up]]
+        while chain[-1].children:
+            chain.append(max(chain[-1].children,
+                             key=lambda cb: (cb.tail_local - cb.head_local).length))
+            if len(chain) >= 4:
+                break
+        lens = [float((rig.matrix_world @ b.tail_local - rig.matrix_world @ b.head_local).length)
+                for b in chain]
+        Lc = sum(lens)
+        if Lc < 1e-6:
+            continue
+        ts, acc = [lo], 0.0
+        for Lb in lens:
+            acc += Lb / Lc
+            ts.append(lo + span * acc)
+        placement = {}
+        for i, b in enumerate(chain):
+            placement[b.name] = (centre_at(ts[i]), centre_at(ts[i + 1]))
+        riders = [nm for nm in subtree if nm not in placement]
+        plans.append((chain[-1].name, placement, riders))
+        out["%s_chain" % side] = "/".join(b.name for b in chain)
+        out["%s_axis_len_mm" % side] = int(round(span * 1000))
+    if not plans:
         print("RESEAT", name, out)
         return out
+
     Minv = rig.matrix_world.inverted()
+    M3 = rig.matrix_world.to_3x3()
     bpy.context.view_layer.objects.active = rig
     bpy.ops.object.mode_set(mode='EDIT')
-    for names, a, p_med, R, sc_ in edits:
-        for nm in names:
-            eb = rig.data.edit_bones.get(nm)
+    for last_name, placement, riders in plans:
+        eb_last = rig.data.edit_bones.get(last_name)
+        old_h = rig.matrix_world @ mathutils.Vector(eb_last.head) if eb_last else None
+        old_t = rig.matrix_world @ mathutils.Vector(eb_last.tail) if eb_last else None
+        for bn, (h, t_) in placement.items():
+            eb = rig.data.edit_bones.get(bn)
             if eb is None:
                 continue
-            hw = rig.matrix_world @ mathutils.Vector(eb.head)
-            tw = rig.matrix_world @ mathutils.Vector(eb.tail)
-            eb.head = Minv @ (p_med + R @ ((hw - a) * sc_))
-            eb.tail = Minv @ (p_med + R @ ((tw - a) * sc_))
-        # the clavicle, if the mapper found one, now has to reach the new shoulder
-        for side_key in ("L_clav", "R_clav"):
-            cn = roles.get(side_key)
-            if cn and cn in rig.data.edit_bones and roles.get(side_key[0] + "_upperarm") in names:
-                rig.data.edit_bones[cn].tail = rig.data.edit_bones[roles[side_key[0] + "_upperarm"]].head.copy()
+            eb.head = Minv @ mathutils.Vector((float(h[0]), float(h[1]), float(h[2])))
+            eb.tail = Minv @ mathutils.Vector((float(t_[0]), float(t_[1]), float(t_[2])))
+        # fingers and anything else hanging off the chain ride the hand's move
+        if eb_last is not None and old_h is not None and riders:
+            new_h = rig.matrix_world @ mathutils.Vector(eb_last.head)
+            new_t = rig.matrix_world @ mathutils.Vector(eb_last.tail)
+            ov, nv = old_t - old_h, new_t - new_h
+            if ov.length > 1e-6 and nv.length > 1e-6:
+                R = ov.normalized().rotation_difference(nv.normalized()).to_matrix()
+                sc_ = nv.length / ov.length
+                for nm in riders:
+                    rb = rig.data.edit_bones.get(nm)
+                    if rb is None:
+                        continue
+                    hw = rig.matrix_world @ mathutils.Vector(rb.head)
+                    tw = rig.matrix_world @ mathutils.Vector(rb.tail)
+                    rb.head = Minv @ (new_h + R @ ((hw - old_h) * sc_))
+                    rb.tail = Minv @ (new_h + R @ ((tw - old_h) * sc_))
+    for side_key in ("L_clav", "R_clav"):
+        cn = roles.get(side_key)
+        arm = roles.get(side_key[0] + "_upperarm")
+        if cn and arm and cn in rig.data.edit_bones and arm in rig.data.edit_bones:
+            rig.data.edit_bones[cn].tail = rig.data.edit_bones[arm].head.copy()
     bpy.ops.object.mode_set(mode='OBJECT')
     bpy.context.view_layer.update()
     print("RESEAT", name, out)
@@ -1119,6 +1162,23 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False
                     vg.add([vi], w, 'REPLACE')
             if not any(m.type == 'ARMATURE' for m in char.modifiers):
                 _am = char.modifiers.new("rig", 'ARMATURE'); _am.object = rig
+    # STRAY INFLUENCES. A handful of vertices carrying a small weight from a distant bone
+    # is what produces the spikes that shoot out of a hand mid-stride: the vertex is
+    # dragged a long way by an influence too small to see in a weight paint. Cap the
+    # number of bones per vertex and drop the negligible ones.
+    if os.environ.get("CHAR_WCLEAN", "1") not in ("", "0") and char.vertex_groups:
+        try:
+            bpy.ops.object.select_all(action='DESELECT')
+            char.select_set(True)
+            bpy.context.view_layer.objects.active = char
+            bpy.ops.object.mode_set(mode='WEIGHT_PAINT')
+            bpy.ops.object.vertex_group_limit_total(group_select_mode='ALL', limit=4)
+            bpy.ops.object.vertex_group_clean(group_select_mode='ALL', limit=0.02, keep_single=True)
+            bpy.ops.object.vertex_group_normalize_all(group_select_mode='ALL', lock_active=False)
+            bpy.ops.object.mode_set(mode='OBJECT')
+            print("WCLEAN", name, "limit 4, drop < 0.02, normalised")
+        except Exception as _e:                                     # noqa: BLE001
+            print("WCLEAN failed", _e)
     # SMOOTH THE TRANSFERRED WEIGHTS BEFORE ANYTHING POSES THE RIG.
     # UniRig hands most vertices to a single bone with a hard boundary, and that
     # boundary is the crease a shoulder or a knee collapses along. It matters most
