@@ -91,16 +91,59 @@ J
   log "refilled backlog (cycle $c)"
 }
 
+# DISK GUARD. When /workspace hits its quota every write silently produces a ZERO-BYTE
+# file — including the job scripts this keeper generates. On 21 Sep that turned the loop
+# into a 600-iteration spin on empty scripts with the GPU idle all night. `df` lies about
+# this quota, so the only reliable test is to actually write.
+space_ok() {
+  dd if=/dev/zero of=/workspace/.keeper_probe bs=1M count=300 >/dev/null 2>&1
+  local rc=$?
+  rm -f /workspace/.keeper_probe
+  return $rc
+}
+
+reclaim() {
+  log "DISK FULL — reclaiming"
+  find /workspace/loopwork -maxdepth 1 -name "*.log" -size +20M -delete 2>/dev/null
+  # frame dumps whose video was already assembled, and probe frames older than a day
+  find /workspace/loopwork -maxdepth 1 -type d \( -name "show_ep*" -o -name "sw_*" -o -name "sw2_*" \
+       -o -name "probe_*" -o -name "allshots_*" \) -mmin +120 -exec rm -rf {} + 2>/dev/null
+  find /workspace/loopwork -maxdepth 1 -type d -name "film*V*" -mmin +120 -exec rm -rf {} + 2>/dev/null
+  log "reclaimed; free-space test $(space_ok && echo OK || echo STILL-FULL)"
+}
+
 log "keeper started"
+FAILS=0
 while true; do
   if ! busy; then
+    if ! space_ok; then
+      reclaim
+      if ! space_ok; then log "DISK STILL FULL — holding, not generating work"; sleep 300; continue; fi
+    fi
     job=$(ls $Q/*.sh 2>/dev/null | sort | head -1)
     if [ -z "${job:-}" ]; then refill; job=$(ls $Q/*.sh 2>/dev/null | sort | head -1); fi
+    # never run an empty script: that is the signature of a disk-full write
+    if [ -n "${job:-}" ] && [ ! -s "$job" ]; then
+      log "SKIP $(basename $job) — empty (disk was full when written)"
+      rm -f "$job"; FAILS=$((FAILS+1))
+      if [ $FAILS -ge 3 ]; then log "3 empty jobs in a row — backing off 10 min"; sleep 600; FAILS=0; fi
+      sleep 30; continue
+    fi
     if [ -n "${job:-}" ]; then
       log "RUN $(basename $job)"
+      T0=$(date +%s)
       mv "$job" "$job.running" 2>/dev/null && bash "$job.running" >> $LOG 2>&1
+      EL=$(( $(date +%s) - T0 ))
       mv "$job.running" "$Q/done/$(basename $job).$(date +%H%M%S)" 2>/dev/null
-      log "DONE $(basename $job)"
+      log "DONE $(basename $job) in ${EL}s"
+      # a real job takes minutes; instant completion means it failed
+      if [ $EL -lt 5 ]; then
+        FAILS=$((FAILS+1))
+        log "WARNING $(basename $job) returned in ${EL}s — treating as failed ($FAILS in a row)"
+        if [ $FAILS -ge 3 ]; then log "3 instant failures — backing off 10 min"; sleep 600; FAILS=0; fi
+      else
+        FAILS=0
+      fi
     fi
   fi
   sleep 45
