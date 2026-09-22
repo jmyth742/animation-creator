@@ -34,57 +34,55 @@ refill() {
   echo $(( (c + 1) % 6 )) > $STATE
   local P=series/tir-na-nog-legend/meshes/props
   case $c in
-    0) cat > $Q/50_sweep_ao.sh <<'J'
-cd /workspace/text-to-video
-for A in 0.15 0.30 0.50; do
-  bash scripts/ops/probe_shot_env.sh sw_ao$A s05 CHAR_AO=$A FILM_INTEGRATE=0.22 CHAR_HAZE_SAT=0.3
-done
-bash scripts/ops/contact_sheet.sh keeper_ao sw_ao0.15 sw_ao0.30 sw_ao0.50
-J
-       ;;
-    1) cat > $Q/50_sweep_line.sh <<'J'
-cd /workspace/text-to-video
-for L in 1.8 2.4 3.2; do
-  bash scripts/ops/probe_shot_env.sh sw_ln$L s05 FILM_LINES=$L CHAR_AO=0.35 FILM_INTEGRATE=0.22
-done
-bash scripts/ops/contact_sheet.sh keeper_line sw_ln1.8 sw_ln2.4 sw_ln3.2
-J
-       ;;
-    2) cat > $Q/50_sweep_haze.sh <<'J'
-cd /workspace/text-to-video
-for H in 0.12 0.22 0.34; do
-  bash scripts/ops/probe_shot_env.sh sw_hz$H s02_walk FILM_INTEGRATE=$H CHAR_HAZE_SAT=0.3 CHAR_AO=0.35
-done
-bash scripts/ops/contact_sheet.sh keeper_haze sw_hz0.12 sw_hz0.22 sw_hz0.34
-J
-       ;;
-    3) cat > $Q/50_body_denoise.sh <<'J'
+    0) cat > $Q/70_texture_cel.sh <<'J'
 cd /workspace/text-to-video
 P=series/tir-na-nog-legend/meshes/props
-for D in 0.24 0.40; do
-  BODY_TAG=_d$D BODY_SEED=$RANDOM /workspace/blender42/blender -b --factory-startup \
-    --python scripts/blender3d/body_project.py -- $P/oisin_mv_retopo.glb oisin_mv_retopo $D \
-    >> /workspace/loopwork/gpu_keeper.log 2>&1
+/workspace/venv/bin/python -u scripts/blender3d/texture_hy3d.py $P/st_cel_oisin.glb $P/st_cel_oisin_front.png $P/st_cel_oisin_hy.glb
+J
+       ;;
+    1) cat > $Q/71_retopo_candidates.sh <<'J'
+cd /workspace/text-to-video
+P=series/tir-na-nog-legend/meshes/props
+for S in chibi cel; do
+  SRC=$P/st_${S}_oisin_hy.glb; [ -f "$SRC" ] || SRC=$P/st_${S}_oisin_tex.glb
+  [ -f "$SRC" ] || continue
+  /workspace/blender42/blender -b --factory-startup --python scripts/blender3d/retopo_character.py --     $SRC cand_$S 15000 2048
 done
 J
        ;;
-    4) cat > $Q/50_face_seed.sh <<'J'
+    2) cat > $Q/72_turntables.sh <<'J'
 cd /workspace/text-to-video
 P=series/tir-na-nog-legend/meshes/props
-FACE_HD_SEED=$RANDOM FACE_HD_TAG=_alt CHAR_NORMALFIX=0 /workspace/blender42/blender -b \
-  --factory-startup --python scripts/blender3d/face_project_mv.py -- \
-  $P/niamh_mv_retopo.glb $P/niamh_mv_face.json 1.68 niamh_mv_retopo 0.55 \
-  >> /workspace/loopwork/gpu_keeper.log 2>&1
+for S in chibi cel; do
+  for V in _hy _retopo; do
+    M=$P/st_${S}_oisin${V}.glb; [ -f "$M" ] || M=$P/cand_${S}_retopo.glb
+    [ -f "$M" ] || continue
+    /workspace/blender42/blender -b --factory-startup --python /workspace/loopwork/tex_check.py --       "$M" /workspace/review/cand_${S}${V}.png "${S}${V}"
+  done
+done
+bash /workspace/export_outcomes.sh 2>&1 | tail -1
 J
        ;;
-    5) cat > $Q/60_probe_all_shots.sh <<'J'
+    3) cat > $Q/73_style_niamh.sh <<'J'
 cd /workspace/text-to-video
-# a full contact sheet of every shot at current settings: the cheapest way to catch a
-# staging or projection regression across a whole episode
+# the same candidate styles for Niamh, so a pair can be judged together
+for S in chibi cel; do
+  /workspace/venv/bin/python scripts/blender3d/style_test.py $S niamh
+done
+bash /workspace/export_outcomes.sh 2>&1 | tail -1
+J
+       ;;
+    4) cat > $Q/74_probe_all_shots.sh <<'J'
+cd /workspace/text-to-video
 W=/workspace/loopwork
 for S in $(/workspace/venv/bin/python -c "import json;print(' '.join(x['name'] for x in json.load(open('$W/shots_night_sl.json'))['shots']))" 2>/dev/null); do
-  bash scripts/ops/probe_shot_env.sh allshots_$S $S CHAR_AO=0.35 FILM_INTEGRATE=0.22 CHAR_HAZE_SAT=0.3
+  bash scripts/ops/probe_shot_env.sh allshots_$S $S CHAR_AO=0.30 FILM_INTEGRATE=0.22 CHAR_HAZE_SAT=0.3
 done
+J
+       ;;
+    5) cat > $Q/75_export.sh <<'J'
+cd /workspace/text-to-video
+bash /workspace/export_outcomes.sh 2>&1 | tail -2
 J
        ;;
   esac
