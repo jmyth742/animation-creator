@@ -77,8 +77,8 @@ r = subprocess.run(["/workspace/venv/bin/python", "scripts/blender3d/character_m
 print("STYLETEST mesh", tag, (r.stdout or r.stderr).strip().splitlines()[-1][:120] if (r.stdout or r.stderr) else "?", flush=True)
 if out.exists():
     subprocess.run(["/workspace/blender42/blender", "-b", "--factory-startup", "--python",
-                    "scripts/blender3d/turn_grid.py", "--", str(out),
-                    str(REVIEW / ("styletest_%s_%s.png" % (tag, name)))],
+                    "scripts/blender3d/mesh_turntable.py", "--", str(out),
+                    str(REVIEW / ("styletest_%s_%s.png" % (tag, name))), tag],
                    capture_output=True, text=True, cwd="/workspace/text-to-video")
     print("STYLETEST_DONE", tag, REVIEW / ("styletest_%s_%s.png" % (tag, name)), flush=True)
 else:
