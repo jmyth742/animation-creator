@@ -37,6 +37,13 @@ BASE = ("standing in a T-pose with both arms stretched straight out horizontally
         "at shoulder height, elbows straight, palms facing forward, fingers spread wide apart, "
         "feet shoulder width apart, whole body visible head to feet, centred, "
         "flat even studio lighting, pure white empty background, clean artwork")
+# OPEN_MOUTH=1: draw the character mid-speech. A closed mouth reconstructs as a closed
+# surface, so any mouth we want later has to be cut into it by hand. Drawn open, the
+# reconstruction builds real mouth topology — lips, an opening, the inside — which is
+# what blendshapes and visemes actually need to deform.
+if os.environ.get("OPEN_MOUTH", "0") not in ("", "0"):
+    BASE += (", MOUTH OPEN wide as if speaking, upper and lower lips clearly separated, "
+             "dark open mouth interior visible, upper teeth visible")
 VIEW = {"front": "seen from directly in front, facing the viewer",
         "left":  "exact side profile seen from the character's left, body turned ninety degrees",
         "back":  "seen from directly behind, the back of the head and the back of the body"}
