@@ -10,6 +10,7 @@ apply_talk(rig, envelope, f0)        -> jaw + head driven by an audio
                                         amplitude envelope (one value/frame)
 """
 import math
+import os
 import bpy
 import numpy as np
 import mathutils
@@ -905,6 +906,50 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False
             if vg: vg.name = kit_name
     for pb in rig.pose.bones:
         pb.rotation_mode = 'XYZ'
+    # CHAR_REBIND=auto: throw away UniRig's weights and re-bind with Blender's bone-heat
+    # solver on the same skeleton. UniRig predicts weights from a learned prior; heat
+    # diffusion solves them on THIS surface, which is usually cleaner across a shoulder.
+    # Falls back to the predicted weights if the solver cannot find a solution.
+    if os.environ.get("CHAR_REBIND", "") == "auto":
+        _saved = {vg.name: {v.index: g.weight for v in char.data.vertices for g in v.groups
+                            if g.group == vg.index} for vg in char.vertex_groups}
+        try:
+            for m in [m for m in char.modifiers if m.type == 'ARMATURE']:
+                char.modifiers.remove(m)
+            for vg in list(char.vertex_groups):
+                char.vertex_groups.remove(vg)
+            bpy.ops.object.select_all(action='DESELECT')
+            char.select_set(True); rig.select_set(True)
+            bpy.context.view_layer.objects.active = rig
+            bpy.ops.object.parent_set(type='ARMATURE_AUTO')
+            print("REBIND auto", name, "groups", len(char.vertex_groups))
+        except Exception as e:                                  # noqa: BLE001
+            print("REBIND failed, restoring predicted weights:", e)
+            for gname, wmap in _saved.items():
+                vg = char.vertex_groups.get(gname) or char.vertex_groups.new(name=gname)
+                for vi, w in wmap.items():
+                    vg.add([vi], w, 'REPLACE')
+            if not any(m.type == 'ARMATURE' for m in char.modifiers):
+                _am = char.modifiers.new("rig", 'ARMATURE'); _am.object = rig
+    # SMOOTH THE TRANSFERRED WEIGHTS BEFORE ANYTHING POSES THE RIG.
+    # UniRig hands most vertices to a single bone with a hard boundary, and that
+    # boundary is the crease a shoulder or a knee collapses along. It matters most
+    # here because the A-pose bake below is itself a large rotation applied through
+    # these weights: bake first and the rest pose is already torn, so no amount of
+    # care in the animation can recover it. CHAR_WSMOOTH=0 restores the raw weights.
+    _ws = float(os.environ.get("CHAR_WSMOOTH", "0.5") or 0)
+    _wr = int(os.environ.get("CHAR_WSMOOTH_REPEAT", "4") or 0)
+    if _ws > 0 and _wr > 0 and char.vertex_groups:
+        try:
+            bpy.ops.object.select_all(action='DESELECT')
+            char.select_set(True)
+            bpy.context.view_layer.objects.active = char
+            bpy.ops.object.mode_set(mode='WEIGHT_PAINT')       # the operator polls for weight-paint context
+            bpy.ops.object.vertex_group_smooth(group_select_mode='ALL', factor=_ws, repeat=_wr, expand=0.0)
+            bpy.ops.object.mode_set(mode='OBJECT')
+            print("WSMOOTH", name, _ws, "x", _wr)
+        except Exception as e:                                  # noqa: BLE001
+            print("WSMOOTH failed", e)
     # T-POSE rigs (CharacterGen): the animators set arm rotations absolutely
     # for an A-pose rest, so bake an A-pose in: pose the upper arms down,
     # apply the armature deform to the mesh, re-add it, apply pose as rest.
@@ -1026,6 +1071,16 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False
                         if g.group in leg_idx: char.vertex_groups[leg_idx[g.group]].remove([v.index])
                     hips_g.add([v.index], tot, 'ADD'); moved += 1
         print("SKIRT", name, "verts moved to hips", moved)
+    # CORRECTIVE SMOOTH: relaxes the deformed surface back towards the rest shape's
+    # edge lengths, which is what removes the pinched candy-wrapper at a rotated
+    # shoulder or elbow. It costs nothing at render time and needs no extra data.
+    _cs = float(os.environ.get("CHAR_CSMOOTH", "0.45") or 0)
+    if _cs > 0:
+        _cm = char.modifiers.new("corrective", 'CORRECTIVE_SMOOTH')
+        _cm.factor = _cs
+        _cm.iterations = int(os.environ.get("CHAR_CSMOOTH_ITER", "12") or 12)
+        _cm.smooth_type = 'LENGTH_WEIGHTED'
+        _cm.use_only_smooth = False
     for poly in char.data.polygons: poly.use_smooth = True
     bpy.context.view_layer.update()
     zmin_w = min((char.matrix_world @ v.co).z for v in char.data.vertices)
