@@ -25,6 +25,17 @@ REVIEW = Path("/workspace/review")
 
 SUBJ = {"oisin": "a young Celtic warrior man, dark hair, short beard, green tunic, brown trousers",
         "niamh": "a young fae princess, long golden hair, green and white dress"}
+
+
+def subject_for(n):
+    """Resolve the subject from a possibly suffixed name (niamh_ap, niamh_open2).
+    This used to be SUBJ.get(name, SUBJ["oisin"]), which meant every suffixed name
+    silently drew Oisin -- the 'Niamh' character sheet, mesh, texture and rig were all
+    Oisin, and nothing in the logs said so."""
+    for key in SUBJ:
+        if n == key or n.startswith(key + "_") or n.startswith(key):
+            return SUBJ[key]
+    sys.exit("STYLETEST: no subject matches %r (known: %s)" % (n, ", ".join(SUBJ)))
 STYLE = {
  "chibi": "chibi anime style, head about one third of body height, very simple rounded body, big eyes",
  "cel":   "clean modern anime cel style, simple flat colours, bold clean outline, rounded simplified forms",
@@ -65,7 +76,7 @@ VIEW = {"front": "seen from directly in front, facing the viewer",
 
 
 def gen(view):
-    prompt = "%s, %s, %s, %s" % (SUBJ.get(name, SUBJ["oisin"]), STYLE[tag], VIEW[view], BASE)
+    prompt = "%s, %s, %s, %s" % (subject_for(name), STYLE[tag], VIEW[view], BASE)
     wf = sr.build_t2i_workflow(prompt, seed=SEED, prefix="styletest/%s_%s_%s" % (name, tag, view),
                                width=768, height=1024)
     wf["10"]["inputs"]["steps"] = STEPS
