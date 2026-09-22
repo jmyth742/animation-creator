@@ -361,6 +361,19 @@ if _passes or _cline > 0:
         _cur.mapping.curves[3].points[1].location = (1.0, 0.985)
         _cur.mapping.update()
         _nt.links.new(_mix.outputs["Image"], _cur.inputs["Image"])
+        # FILM_MATTE=1 also writes the cast matte beside each frame, so a post pass can
+        # style the CHARACTERS separately from the painted plate. A global stylisation
+        # cannot fix the measured problem (the cast carry about half the detail of the
+        # background); it has to be applied where the detail is missing.
+        if os.environ.get("FILM_MATTE", "0") not in ("", "0") and _names:
+            _mout = _nt.nodes.new("CompositorNodeOutputFile")
+            _mout.base_path = outdir
+            _mout.file_slots.clear()
+            _mout.file_slots.new("matte_")
+            _mout.format.file_format = 'PNG'
+            _mout.format.color_mode = 'BW'
+            _nt.links.new(_cm.outputs["Matte"], _mout.inputs["matte_"])
+            print("MATTE output on", flush=True)
         _cmp = _nt.nodes.new("CompositorNodeComposite")
         _nt.links.new(_cur.outputs["Image"], _cmp.inputs["Image"])
         sc.render.use_compositing = True
