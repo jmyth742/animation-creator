@@ -956,24 +956,37 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False
     bpy.context.view_layer.update()
     def _dir(bn):
         b = rig.data.bones[bn]; return (rig.matrix_world.to_3x3() @ (b.tail_local - b.head_local)).normalized()
-    if "arm.L" in rig.data.bones and "arm.R" in rig.data.bones and abs(_dir("arm.L").z) < 0.45 and abs(_dir("arm.R").z) < 0.45:
-        for bn in ("arm.L", "arm.R"):
-            d = _dir(bn); side = 1 if d.x > 0 else -1
-            want = mathutils.Vector((0.30 * side, 0.0, -1.0)).normalized()      # ~17 deg off vertical
-            q = d.rotation_difference(want)                                       # world swing
-            pb = rig.pose.bones[bn]
-            R_rest = (rig.matrix_world @ rig.data.bones[bn].matrix_local).to_3x3()
-            pb.rotation_mode = 'QUATERNION'
-            pb.rotation_quaternion = (R_rest.inverted() @ q.to_matrix() @ R_rest).to_quaternion()
-        bpy.context.view_layer.update()
-        bpy.context.view_layer.objects.active = char
-        mod = [m for m in char.modifiers if m.type == 'ARMATURE'][0]
-        bpy.ops.object.modifier_apply(modifier=mod.name)
-        newmod = char.modifiers.new("rig", 'ARMATURE'); newmod.object = rig
-        bpy.context.view_layer.objects.active = rig
-        bpy.ops.object.mode_set(mode='POSE'); bpy.ops.pose.armature_apply(selected=False); bpy.ops.object.mode_set(mode='OBJECT')
-        for pb in rig.pose.bones: pb.rotation_mode = 'XYZ'
-        print("TPOSE->APOSE baked for", name)
+    _apose = os.environ.get("CHAR_APOSE", "1") not in ("", "0")
+    if _apose and "arm.L" in rig.data.bones and "arm.R" in rig.data.bones and abs(_dir("arm.L").z) < 0.45 and abs(_dir("arm.R").z) < 0.45:
+        # CHAR_APOSE_STEPS: bake the swing in N increments instead of one.
+        # Linear blend skinning loses volume in proportion to the angle it is asked
+        # for in one go; this mesh is modelled arms-up and the target is arms-down,
+        # which is ~125 deg -- enough to collapse the sleeve into the shoulder. Ten
+        # increments of 12 deg, each applied and re-bound, keep the shell.
+        _steps = max(1, int(os.environ.get("CHAR_APOSE_STEPS", "10") or 1))
+        for _i in range(_steps):
+            _left = _steps - _i
+            for bn in ("arm.L", "arm.R"):
+                d = _dir(bn); side = 1 if d.x > 0 else -1
+                want = mathutils.Vector((0.30 * side, 0.0, -1.0)).normalized()      # ~17 deg off vertical
+                q = d.rotation_difference(want)                                       # world swing, remaining
+                if _left > 1:                                                         # take one increment of what is left
+                    q = mathutils.Quaternion().slerp(q, 1.0 / _left)
+                pb = rig.pose.bones[bn]
+                R_rest = (rig.matrix_world @ rig.data.bones[bn].matrix_local).to_3x3()
+                pb.rotation_mode = 'QUATERNION'
+                pb.rotation_quaternion = (R_rest.inverted() @ q.to_matrix() @ R_rest).to_quaternion()
+            bpy.context.view_layer.update()
+            bpy.ops.object.select_all(action='DESELECT')
+            char.select_set(True)
+            bpy.context.view_layer.objects.active = char
+            mod = [m for m in char.modifiers if m.type == 'ARMATURE'][0]
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+            newmod = char.modifiers.new("rig", 'ARMATURE'); newmod.object = rig
+            bpy.context.view_layer.objects.active = rig
+            bpy.ops.object.mode_set(mode='POSE'); bpy.ops.pose.armature_apply(selected=False); bpy.ops.object.mode_set(mode='OBJECT')
+            for pb in rig.pose.bones: pb.rotation_mode = 'XYZ'
+        print("TPOSE->APOSE baked for", name, "in", _steps, "steps")
     # the animators put the ARMATURE ORIGIN on the floor (kit convention);
     # UniRig's origin is mid-body — shift bones and mesh so the feet sit at z=0
     bpy.context.view_layer.update()

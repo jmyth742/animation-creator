@@ -33,10 +33,25 @@ STYLE = {
  "thickline":"thick bold outline cartoon style, flat colour blocks, very simple chunky shapes",
 }
 # positive phrasing only — naming a thing to avoid summons it
-BASE = ("standing in a T-pose with both arms stretched straight out horizontally to the sides "
-        "at shoulder height, elbows straight, palms facing forward, fingers spread wide apart, "
-        "feet shoulder width apart, whole body visible head to feet, centred, "
-        "flat even studio lighting, pure white empty background, clean artwork")
+# POSE_MODE=apose draws the character the way it will be ANIMATED rather than the way
+# it is easiest to reconstruct. A T-pose mesh binds arms-out, every clip in the motion
+# library has the arms down, and closing that ~125 degree gap through linear blend
+# skinning is what collapses the sleeve into the shoulder. Drawn arms-down the bind
+# pose already matches the library and nothing has to be baked. The arms stay ~25
+# degrees off the body so the reconstruction does not fuse them to the torso.
+_POSE = os.environ.get("POSE_MODE", "tpose")
+if _POSE == "apose":
+    BASE = ("standing straight with both arms hanging down at the sides, upper arms about "
+            "twenty five degrees away from the body with a clear gap of empty background "
+            "between each arm and the torso, elbows straight, palms facing the thighs, "
+            "fingers relaxed and slightly apart, feet shoulder width apart, "
+            "whole body visible head to feet, centred, "
+            "flat even studio lighting, pure white empty background, clean artwork")
+else:
+    BASE = ("standing in a T-pose with both arms stretched straight out horizontally to the sides "
+            "at shoulder height, elbows straight, palms facing forward, fingers spread wide apart, "
+            "feet shoulder width apart, whole body visible head to feet, centred, "
+            "flat even studio lighting, pure white empty background, clean artwork")
 # OPEN_MOUTH=1: draw the character mid-speech. A closed mouth reconstructs as a closed
 # surface, so any mouth we want later has to be cut into it by hand. Drawn open, the
 # reconstruction builds real mouth topology — lips, an opening, the inside — which is

@@ -132,6 +132,21 @@ def retarget(bvh_path):
         pb.location = T_rest[hips_t].inverted() @ dw
         pb.keyframe_insert("location", frame=f)
     bpy.data.objects.remove(S, do_unlink=True)
+    # SMOOTH THE RESULT CURVES. The swing-aim solve is computed independently per frame,
+    # so any jitter in the source lands in the target unfiltered and the motion reads
+    # mechanical. A 3-tap pass takes the buzz out without visibly softening the action.
+    sm = int(os.environ.get("RS_CURVE_SMOOTH", "2"))
+    if sm > 0 and T.animation_data and T.animation_data.action:
+        for fc in T.animation_data.action.fcurves:
+            kps = fc.keyframe_points
+            for _ in range(sm):
+                vals = [kp.co[1] for kp in kps]
+                n = len(vals)
+                for i in range(1, n - 1):
+                    kps[i].co[1] = 0.25 * vals[i - 1] + 0.5 * vals[i] + 0.25 * vals[i + 1]
+            for kp in kps:
+                kp.interpolation = 'BEZIER'
+        print("SHOWREEL curve smoothing passes", sm, flush=True)
     return a0, a1
 
 

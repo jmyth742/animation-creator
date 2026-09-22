@@ -110,6 +110,23 @@ reclaim() {
   log "reclaimed; free-space test $(space_ok && echo OK || echo STILL-FULL)"
 }
 
+# VRAM GUARD. ComfyUI keeps FLUX resident (~11.7 GB of a 24 GB card) between jobs, and
+# a resident model is not a leak -- but Hunyuan texture paint and UniRig both want ~10 GB,
+# so a queued job can OOM while the card looks half free. Ask ComfyUI to drop its models
+# before handing the card to anything else; it reloads them on its next prompt.
+free_comfy() {
+  curl -s -m 10 -X POST http://127.0.0.1:8188/free \
+       -H 'Content-Type: application/json' \
+       -d '{"unload_models": true, "free_memory": true}' >/dev/null 2>&1 || true
+  sleep 4
+}
+
+vram_free_mb() {
+  local t u
+  read t u < <(nvidia-smi --query-gpu=memory.total,memory.used --format=csv,noheader,nounits | tr ',' ' ')
+  echo $(( ${t:-0} - ${u:-0} ))
+}
+
 log "keeper started"
 FAILS=0
 while true; do
@@ -128,7 +145,11 @@ while true; do
       sleep 30; continue
     fi
     if [ -n "${job:-}" ]; then
-      log "RUN $(basename $job)"
+      # jobs whose name says they need the card to themselves get ComfyUI's memory back
+      case "$(basename $job)" in
+        *apose*|*rig*|*texture*|*tex*|*hy3d*|*upsample*|*momask*|*motion*) free_comfy ;;
+      esac
+      log "RUN $(basename $job) (vram free $(vram_free_mb) MB)"
       T0=$(date +%s)
       mv "$job" "$job.running" 2>/dev/null && bash "$job.running" >> $LOG 2>&1
       EL=$(( $(date +%s) - T0 ))
