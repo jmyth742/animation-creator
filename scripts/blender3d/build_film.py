@@ -65,7 +65,25 @@ if os.environ.get("SET_DRESS", "0" if bpy.data.objects.get("painter_cam") else "
 
 MS = os.environ.get("FILM_MESH_SUFFIX", "")   # _retopo = the clean, re-skinned cast
 CAST = os.environ.get("FILM_CAST", "mv")     # mv = Hunyuan-mv meshes, cg = CharacterGen meshes (Day-2 verdict)
-if os.environ.get("FILM_RIG", "numpy") == "unirig":
+RIGIFY_ACTOR = None
+if os.environ.get("FILM_RIG", "numpy") == "rigify":
+    # BENCHMARK (23 Sep): Oisin as the Rigify-fitted chibi, dropped into the SAME staging,
+    # shots and set as the 3 Sep film. Niamh stays on the kit rig. The rig and mesh are
+    # appended from the .blend rigify_fit wrote, drivers intact.
+    import rigify_anim
+    RB = os.environ.get("FILM_RIGIFY_BLEND", "/workspace/loopwork/rigify/chibi_face.blend")
+    with bpy.data.libraries.load(RB, link=False) as (src, dst):
+        dst.objects = [n for n in src.objects if n in ("rig", "hero")]
+    for ob in dst.objects:
+        if ob is not None:
+            sc.collection.objects.link(ob)
+    orig = bpy.data.objects["rig"]; oisin = bpy.data.objects["hero"]
+    orig.name = "oisin_rigify"; oisin.name = "oisin_mv"          # the film's shot data expects oisin_mv
+    RIGIFY_ACTOR = rigify_anim.RigifyActor(orig, oisin, fps=FPS)
+    print("RIGIFY cast appended from", RB, "height %.2f" % RIGIFY_ACTOR.H, flush=True)
+    niamh = kit.load_character(f"{MESHES}/props/niamh_mv_painted.glb", "niamh_mv", height=1.68)
+    nrig = kit.rig_character(niamh, "niamh_mv")
+elif os.environ.get("FILM_RIG", "numpy") == "unirig":
     # Day-5: UniRig-skinned cast (real skeletons + skin weights), same animators
     ON, NN = ("cg_oisin", "cg_niamh") if CAST == "cg" else ("oisin_mv", "niamh_mv")
     oisin, orig = kit.load_rigged_character(f"{MESHES}/props/{ON}{MS}_rigged.glb", ON, height=1.75)
@@ -76,7 +94,7 @@ else:
     niamh = kit.load_character(f"{MESHES}/props/niamh_mv_painted.glb", "niamh_mv", height=1.68)
     nrig = kit.rig_character(niamh, "niamh_mv")
 FS = os.environ.get("FILM_FACE_SUFFIX", "")     # e.g. _flat -> <name>_flat_face_*.png (flattened palette A/B)
-octrl = kit.enable_face_variants(oisin, oisin.name + FS, f"{MESHES}/props")
+octrl = kit.enable_face_variants(oisin, os.environ.get("FILM_RIGIFY_FACE", "cand_chibi_kit") if RIGIFY_ACTOR else oisin.name + FS, f"{MESHES}/props")
 nctrl = kit.enable_face_variants(niamh, niamh.name + FS, f"{MESHES}/props")
 
 # ── performances ─────────────────────────────────────────────────────
@@ -105,7 +123,10 @@ def walk_pair(p0, p1):
 nhead = math.pi + math.atan2(-(OP[0] - NP[0]), OP[1] - NP[1])
 ohead = math.pi + math.atan2(-(NP[0] - OP[0]), NP[1] - OP[1])
 
-kit.apply_walk(orig, walk_in, 1, WALK_END, fps=FPS)
+if RIGIFY_ACTOR:
+    RIGIFY_ACTOR.walk(1, WALK_END, walk_in)
+else:
+    kit.apply_walk(orig, walk_in, 1, WALK_END, fps=FPS)
 # the acting: speakers gesture on their lines, listeners react
 o_g, n_g = [], []
 for i, (L, f0) in enumerate(zip(lines, starts)):
@@ -119,20 +140,58 @@ for i, (L, f0) in enumerate(zip(lines, starts)):
         o_g.append((f0 + 6, fmid + 8, "lean_in" if i == 3 else "nod"))
         n_g.append((fend - 10, fend + 12, "nod" if i == 1 else "look_away"))
     o_g.append((fend + 2, fend + 18, "weight_shift"))
-kit.apply_idle(orig, WALK_END + 1, WALK2_START - 1,
-               (OP[0], OP[1], floor_z(*OP)), ohead, fps=FPS,
-               look_at_fn=lambda f: NP, gestures=o_g)
+if RIGIFY_ACTOR:
+    RIGIFY_ACTOR.idle(WALK_END + 1, WALK2_START - 1, (OP[0], OP[1], floor_z(*OP)), ohead,
+                      gestures=o_g, look_at_fn=lambda f: NP)
+else:
+    kit.apply_idle(orig, WALK_END + 1, WALK2_START - 1,
+                   (OP[0], OP[1], floor_z(*OP)), ohead, fps=FPS,
+                   look_at_fn=lambda f: NP, gestures=o_g)
 kit.apply_idle(nrig, 1, WALK2_START - 1, (NP[0], NP[1], floor_z(*NP)),
                nhead, fps=FPS, look_at_fn=lambda f: his_xy(f), gestures=n_g)
-kit.apply_walk(orig, walk_pair(OP, (6.6, 16.5)), WALK2_START, FRAMES,   # up the path toward the hall, clear of the painted lake
-               fps=FPS, stride_hz=1.15)
+if RIGIFY_ACTOR:
+    RIGIFY_ACTOR.walk(WALK2_START, FRAMES, walk_pair(OP, (6.6, 16.5)))
+else:
+    kit.apply_walk(orig, walk_pair(OP, (6.6, 16.5)), WALK2_START, FRAMES,   # up the path toward the hall, clear of the painted lake
+                   fps=FPS, stride_hz=1.15)
 kit.apply_walk(nrig, walk_pair(NP, (5.0, 17.3)), WALK2_START, FRAMES,
                fps=FPS, stride_hz=1.2)
 
 # faces: baseline closed+blinks over everything, then the lines
 rigs = {"oisin": (orig, octrl), "niamh": (nrig, nctrl)}
+
+
+def talk_tex(r, fc, env, f0, blinks=True, visemes=None):
+    """apply_talk_tex for either rig: the kit's version keys pb['jaw'], the Rigify rig
+    has jaw_master instead."""
+    if r is orig and RIGIFY_ACTOR:
+        keys = ("m1", "m2", "m3", "m4", "m5")
+        for i, a in enumerate(env):
+            f = f0 + i
+            col = int(visemes[i]) if visemes is not None and i < len(visemes) else 0
+            sel = None if col == 0 else "m%d" % col
+            if visemes is None:
+                a = float(a); sel = None if a < 0.04 else "m1" if a < 0.25 else "m2" if a < 0.48 else "m3" if a < 0.72 else "m4"
+            for k in keys:
+                fc[k].default_value = 1.0 if k == sel else 0.0; fc[k].keyframe_insert("default_value", frame=f)
+        RIGIFY_ACTOR.talk(f0, [min(1.0, float(a)) for a in env])
+        if blinks:
+            fc["blink"].default_value = 0.0; fc["blink"].keyframe_insert("default_value", frame=f0)
+            for t0 in np.arange(f0 + 11, f0 + len(env), 3.4 * FPS):
+                b = int(t0)
+                for f, on in ((b - 1, 0.0), (b, 1.0), (b + 1, 1.0), (b + 2, 0.0)):
+                    fc["blink"].default_value = on; fc["blink"].keyframe_insert("default_value", frame=f)
+        nt = fc["_tree"]
+        if nt.animation_data and nt.animation_data.action:
+            for fcu in nt.animation_data.action.fcurves:
+                for kp in fcu.keyframe_points:
+                    kp.interpolation = 'CONSTANT'
+    else:
+        kit.apply_talk_tex(r, fc, env, f0, fps=FPS, blinks=blinks, visemes=visemes)
+
+
 for who, (r, fc) in rigs.items():
-    kit.apply_talk_tex(r, fc, [0.0] * FRAMES, 1, fps=FPS)
+    talk_tex(r, fc, [0.0] * FRAMES, 1)
 for L, f0 in zip(lines, starts):
     # FILM_VIS_SUFFIX / FILM_ENV_SUFFIX (e.g. "_lam") select alternative
     # per-line viseme/envelope arrays for A/Bs; fall back to the plain ones
@@ -144,7 +203,7 @@ for L, f0 in zip(lines, starts):
         vis_p = pathlib.Path(f"{audio_dir}/l{L['i']}_vis.npy")
     vis = np.load(vis_p) if vis_p.exists() else None
     r, fc = rigs[L["who"]]
-    kit.apply_talk_tex(r, fc, env, f0, fps=FPS, blinks=False, visemes=vis)
+    talk_tex(r, fc, env, f0, blinks=False, visemes=vis)
     # FILM_BLINK=lam: real blink EVENTS from the LAM curves replace the fixed
     # cadence during the line (l<i>_blink_lam.npy, 1 = lids closed)
     bl_p = pathlib.Path(f"{audio_dir}/l{L['i']}_blink_lam.npy")
@@ -157,6 +216,9 @@ for L, f0 in zip(lines, starts):
 # ── the edit, as data ────────────────────────────────────────────────
 CLOSE_N = {"cam": "1.2,6.85,1.8", "tgt": "-1.55,8.05,1.45", "lens": 45}
 CLOSE_O = {"cam": "-2.0,7.4,1.62", "tgt": "0.0,6.95,1.57", "lens": 55}   # 3/4 front on his real head position (was a profile aimed at a stale point)
+if RIGIFY_ACTOR:
+    _k = RIGIFY_ACTOR.H / 1.75                                      # the chibi's head sits lower
+    CLOSE_O = {"cam": "-2.0,7.4,%.2f" % (1.62 * _k), "tgt": "0.0,6.95,%.2f" % (1.57 * _k), "lens": 55}
 TWO = {"cam": "5.5,7.6,1.45", "tgt": "-0.8,7.5,1.35", "lens": 50}
 shots = [
     {"name": "s01_est", "f0": 1, "f1": 110, "cam": "-14,-6,5",
