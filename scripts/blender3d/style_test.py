@@ -38,6 +38,14 @@ def subject_for(n):
     sys.exit("STYLETEST: no subject matches %r (known: %s)" % (n, ", ".join(SUBJ)))
 STYLE = {
  "chibi": "chibi anime style, head about one third of body height, very simple rounded body, big eyes",
+ # chibi2 exists because the reconstruction cannot build a hand. Drawn with separate
+ # fingers it comes back as a flattened lump of fused, splayed stubs, and in motion that
+ # lump reads as a spike thrown across the silhouette. Drawn as a mitten there is nothing
+ # to splay. The arms are also longer and held clear of the body, because short arms
+ # pressed against the torso give the auto-rigger nothing to find.
+ "chibi2": ("chibi anime style, head about one third of body height, simple rounded body, big eyes, "
+            "hands drawn as simple rounded mittens with no separate fingers, smooth closed oval hands, "
+            "arms a little longer than usual and held clearly away from the body"),
  "cel":   "clean modern anime cel style, simple flat colours, bold clean outline, rounded simplified forms",
  "hooded":"clean anime style, wearing a simple fitted hood over the head, simple closed forms",
  "toy":   "chunky vinyl toy figure style, thick simple limbs, large rounded head, smooth closed volumes",
