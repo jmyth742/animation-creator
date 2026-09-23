@@ -1243,7 +1243,17 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False
                 if nd.type == 'TEX_IMAGE' and nd.image: _img = nd.image
     if _img is not None and char.data.uv_layers:
         char.data.materials.clear(); char.data.materials.append(cel_material(name, _img, char.data.uv_layers[0].name))
-    roles = map_unirig(rig); H = roles.pop("_height")
+    # A rig built by kit_rig_fit already uses the kit's bone names. Running the geometric
+    # mapper over it renames bones it fails to identify (it looks for long finger chains
+    # that a 14-bone skeleton does not have) and the animators then cannot find arm.L.
+    _kitnames = {"hips", "spine", "head", "arm.L", "arm.R", "thigh.L", "thigh.R"}
+    if _kitnames.issubset({b.name for b in rig.data.bones}):
+        print("KITRIG", name, "already uses kit bone names: skipping the geometric mapper")
+        _zs = [(char.matrix_world @ v.co).z for v in char.data.vertices]
+        H = max(_zs) - min(_zs)
+        roles = {}
+    else:
+        roles = map_unirig(rig); H = roles.pop("_height")
     ren = {"hips": "hips", "spine0": "spine", "L_upperleg": "thigh.L", "L_lowerleg": "shin.L", "L_foot": "foot.L",
            "R_upperleg": "thigh.R", "R_lowerleg": "shin.R", "R_foot": "foot.R",
            "L_upperarm": "arm.L", "L_forearm": "fore.L", "R_upperarm": "arm.R", "R_forearm": "fore.R"}

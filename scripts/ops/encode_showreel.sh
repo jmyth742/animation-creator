@@ -25,7 +25,8 @@ CAP = {"walk": "WALK  -  hips travel, weight transfer",
        "nod":  "NOD  -  head and neck, held eyeline",
        "gesture": "GESTURE  -  both hands while speaking",
        "close": "CLOSE  -  look away, lean in",
-       "turn": "WALK A CURVE  -  the turn carried by the body"}
+       "turn": "WALK A CURVE  -  the turn carried by the body",
+       "emote": "EMOTE  -  brows, eyes and mouth carrying feeling"}
 n = 0
 for c in clips:
     fs = sorted(glob.glob(os.path.join(src, c, "f_*.png")))
