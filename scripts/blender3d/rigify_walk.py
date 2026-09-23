@@ -36,7 +36,8 @@ H = max(zs) - min(zs)
 FWD = mathutils.Vector((0, -1, 0))                 # the rig faces -Y
 STRIDE = float(os.environ.get("RW_STRIDE", "0.56")) * H       # one full cycle (two steps)
 LIFT = float(os.environ.get("RW_LIFT", "0.045")) * H
-DROP = float(os.environ.get("RW_DROP", "0.062")) * H      # hips ride lower than the rest pose so the knee is never locked
+DROP = float(os.environ.get("RW_DROP", "0.062")) * H
+PALM = float(os.environ.get("RW_PALM", "-70"))            # wrist twist, degrees, palm toward the body      # hips ride lower than the rest pose so the knee is never locked
 # cel look
 img = None
 for m in char.data.materials:
@@ -121,6 +122,26 @@ def key_rot(name, eul, f):
     pb[name].keyframe_insert("rotation_euler", frame=f)
 
 
+def arm_pose(side, fwd, f, out_deg=None):
+    """Upper arm FK: first the rotation that takes the bone's REST direction to hanging
+    at the side, then the swing about the character's lateral axis, converted once into
+    the control's local frame. The rest direction is whatever the mesh was modelled
+    with -- arms out on a T-pose sheet -- so a plain local rotation never brought the
+    arms down and they read as held out to the camera."""
+    name = "upper_arm_fk." + side
+    R = rig.data.bones[name].matrix_local.to_3x3()
+    d = (R @ mathutils.Vector((0, 1, 0))).normalized()
+    sgn = 1 if d.x >= 0 else -1
+    out = math.radians(float(os.environ.get("RW_ARM_OUT", "10")) if out_deg is None else out_deg)
+    want = mathutils.Vector((sgn * math.sin(out), 0.0, -math.cos(out)))
+    q_down = mathutils.Quaternion() if d.z < -0.85 else d.rotation_difference(want)
+    q = mathutils.Quaternion((1, 0, 0), fwd) @ q_down
+    b = pb[name]
+    b.rotation_mode = 'QUATERNION'
+    b.rotation_quaternion = (R.inverted() @ q.to_matrix() @ R).to_quaternion()
+    b.keyframe_insert("rotation_quaternion", frame=f)
+
+
 def walk(f0, f1, heading_fn, speed_mps):
     """heading_fn(t)->(x, y, yaw) of the root path at time t seconds."""
     clear_anim()
@@ -131,8 +152,8 @@ def walk(f0, f1, heading_fn, speed_mps):
         t = (f - f0) / FPS
         x, y, yaw = heading_fn(t)
         ph = (t / cycle) % 1.0
-        fwd = mathutils.Vector((-math.sin(yaw), -math.cos(yaw), 0))     # -Y at yaw 0
-        side = mathutils.Vector((math.cos(yaw), -math.sin(yaw), 0))
+        fwd = mathutils.Vector((math.sin(yaw), -math.cos(yaw), 0))      # -Y at yaw 0, rotated by yaw
+        side = mathutils.Vector((math.cos(yaw), math.sin(yaw), 0))
         # torso: continuous, with a bob and a slight lean
         # vertical: the body vaults over the planted leg, so it is HIGHEST at mid-stance
         # and LOWEST at the contact (double support). The first version had this inverted.
@@ -140,7 +161,12 @@ def walk(f0, f1, heading_fn, speed_mps):
         rig.location = (x, y, bob); rig.rotation_euler = (0, 0, yaw)
         rig.keyframe_insert("location", frame=f); rig.keyframe_insert("rotation_euler", frame=f)
         key_rot("torso", (math.radians(4), 0, 0), f)
-        key_rot("hips", (0, 0, math.radians(-6) * math.sin(2 * math.pi * ph)), f)
+        # weight onto the stance leg: the pelvis slides over it and the free-leg side
+        # drops a little. Without this the hips read as bolted to a rail.
+        sway = math.sin(2 * math.pi * ph)
+        pb["torso"].location = (0.022 * H * sway, 0, 0)
+        pb["torso"].keyframe_insert("location", frame=f)
+        key_rot("hips", (0, math.radians(5) * sway, math.radians(-8) * sway), f)
         key_rot("chest", (0, 0, math.radians(5) * math.sin(2 * math.pi * ph)), f)
         key_rot("head", (0, 0, math.radians(-2) * math.sin(2 * math.pi * ph)), f)
         # feet: contact positions along the path, planted for the stance half of the cycle
@@ -151,8 +177,8 @@ def walk(f0, f1, heading_fn, speed_mps):
             def contact(idx):
                 tt = (idx - off) * cycle                         # time the contact was planted
                 cx, cy, cyaw = heading_fn(max(0.0, tt))
-                fw = mathutils.Vector((-math.sin(cyaw), -math.cos(cyaw), 0))
-                sd = mathutils.Vector((math.cos(cyaw), -math.sin(cyaw), 0))
+                fw = mathutils.Vector((math.sin(cyaw), -math.cos(cyaw), 0))
+                sd = mathutils.Vector((math.cos(cyaw), math.sin(cyaw), 0))
                 lat = foot_rest[s].x
                 return mathutils.Vector((cx, cy, 0)) + fw * (STRIDE * 0.25) + sd * lat
             if pl < 0.5:                                        # stance: planted
@@ -179,8 +205,11 @@ def walk(f0, f1, heading_fn, speed_mps):
         # arms FK, counter-phased to the legs
         for s, sg in (("L", 1), ("R", -1)):
             sw = math.sin(2 * math.pi * ph) * sg
-            key_rot("upper_arm_fk." + s, (math.radians(24) * sw, 0, math.radians(-6) * sg), f)
+            arm_pose(s, math.radians(24) * sw, f)
             key_rot("forearm_fk." + s, (math.radians(28 + 16 * max(0.0, sw)), 0, 0), f)
+            # the hands were modelled palm-forward (T-pose sheet); turn the wrist so the
+            # palm faces the thigh, or the hands read as paddles held out to the camera
+            key_rot("hand_fk." + s, (0, math.radians(PALM) * sg, 0), f)
 
 
 def render_tracked(tag, f0, f1, angle_deg, dist_mul=1.9, height_mul=0.52, lens=55):
@@ -234,8 +263,9 @@ def idle(f0, f1, gestures=True):
         key_rot("head", (0.02 * math.sin(tb) + nod, 0.03 * math.sin(ts * 1.3), look), f)
         key_rot("neck", (0.3 * nod, 0, 0.3 * look), f)
         for s, sg in (("L", 1), ("R", -1)):
-            key_rot("upper_arm_fk." + s, (0.02 * math.sin(tb + sg), 0, math.radians(-4) * sg), f)
-            key_rot("forearm_fk." + s, (math.radians(10 + 3 * math.sin(tb)), 0, 0), f)
+            arm_pose(s, 0.02 * math.sin(tb + sg), f)
+            key_rot("forearm_fk." + s, (math.radians(24 + 3 * math.sin(tb)), 0, 0), f)
+            key_rot("hand_fk." + s, (0, math.radians(PALM) * sg, 0), f)
     if gestures:
         # hand raise: switch the right arm to IK for a window and lift the hand to chest
         # height, palm turning in, then settle back
@@ -248,7 +278,7 @@ def idle(f0, f1, gestures=True):
             if f_a <= f <= f_b:
                 w = (f - f_a) / max(1, f_b - f_a)
                 u = math.sin(math.pi * w) ** 0.7
-            target = hand_rest["R"].lerp(mathutils.Vector((chest.x - 0.10 * H, chest.y - 0.22 * H, chest.z - 0.02 * H)), u)
+            target = hand_rest["R"].lerp(mathutils.Vector((chest.x - 0.06 * H, chest.y - 0.13 * H, chest.z + 0.02 * H)), u)
             key_loc_world("hand_ik.R", target, f)
             key_rot("hand_ik.R", (math.radians(-40) * u, 0, math.radians(30) * u), f)
 
@@ -265,7 +295,7 @@ if "turn" in WANT:
     R = 1.6 * H
     def curve(t):
         s_ = speed * t; ang = s_ / R
-        return (R * (1 - math.cos(ang)), -R * math.sin(ang), -ang)
+        return (R * (1 - math.cos(ang)), -R * math.sin(ang), ang)
     walk(1, NF, curve, speed)
     render_tracked("turn", 1, NF, 30)
 print("RW_DONE", flush=True)
