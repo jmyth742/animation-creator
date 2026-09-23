@@ -68,13 +68,12 @@ P=series/tir-na-nog-legend/meshes/props
 for M in $P/cand_*_rigged.glb; do
   [ -s "$M" ] || continue
   BASE=$(basename "$M" _rigged.glb)
-  OUT=/workspace/review/RIG_MOTION_${BASE}.mp4
+  OUT=/workspace/review/MOTION_${BASE}.mp4
   [ -s "$OUT" ] && continue
-  rm -rf /workspace/loopwork/reel_$BASE
-  RS_CLIPS=walk,turn,wave,idle RS_MAXF=100 RS_RES=768 \
-    /workspace/blender42/blender -b --factory-startup --python scripts/blender3d/rig_showreel.py -- \
-    "$M" /workspace/loopwork/reel_$BASE 1.6 || true
-  bash scripts/ops/encode_showreel.sh /workspace/loopwork/reel_$BASE "$OUT" 20 "walk turn wave idle" || true
+  rm -rf /workspace/loopwork/proc_$BASE
+  PS_RES=768 /workspace/blender42/blender -b --factory-startup --python scripts/blender3d/proc_showcase.py -- \
+    "$M" /workspace/loopwork/proc_$BASE 1.6 || true
+  bash scripts/ops/encode_showreel.sh /workspace/loopwork/proc_$BASE "$OUT" 20 "walk turn idle close" || true
   break
 done
 bash /workspace/export_outcomes.sh 2>&1 | tail -1
