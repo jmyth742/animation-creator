@@ -109,6 +109,20 @@ def render_tracked(tag, f0, f1, angle_deg, dist_mul=1.9, height_mul=0.52, lens=5
     print("PS shot", tag, f1 - f0 + 1, "frames", flush=True)
 
 
+# Which way does the FACE point at rest? The auto-rigged characters came out facing +Y
+# and the kit-rigged ones -Y, and an idle at the wrong heading shows the camera the back
+# of the head. Measure it: at eye height, the face is the side of the head that sticks
+# out along Y.
+_zs = [(char.matrix_world @ v.co).z for v in char.data.vertices]
+_top, _bot = max(_zs), min(_zs)
+_ey = _bot + 0.84 * (_top - _bot)
+_head = [(char.matrix_world @ v.co) for v in char.data.vertices if abs((char.matrix_world @ v.co).z - _ey) < 0.03 * (_top - _bot)]
+_cy = sum(p.y for p in _head) / max(1, len(_head))
+_front = [p.y for p in _head if abs(p.x) < 0.04 * (_top - _bot)]
+FACE_Y = 1 if (sum(_front) / max(1, len(_front))) > _cy else -1
+IDLE_HEADING = 0.0 if FACE_Y < 0 else math.pi     # the idle cameras sit on the -Y side
+print("PS facing", "+Y" if FACE_Y > 0 else "-Y", "idle heading", round(IDLE_HEADING, 2), flush=True)
+
 floor = lambda x, y: 0.0
 shots = []
 WANT = set(x for x in os.environ.get("PS_SHOTS", "walk,turn,idle,close,emote").split(",") if x)
@@ -132,7 +146,7 @@ shots.append(("turn", N2))
 # 3. idle with gestures
 N3 = 110
 rig.animation_data_clear()
-kit.apply_idle(rig, 1, N3, (0.0, 0.0, 0.0), math.pi, fps=FPS,
+kit.apply_idle(rig, 1, N3, (0.0, 0.0, 0.0), IDLE_HEADING, fps=FPS,
                gestures=[(14, 40, "nod"), (52, 84, "hand_raise"), (90, 108, "weight_shift")])
 if "idle" in WANT: render_tracked("idle", 1, N3, 24, dist_mul=1.75)
 shots.append(("idle", N3))
@@ -140,7 +154,7 @@ shots.append(("idle", N3))
 # 4. close idle, head and shoulders
 N4 = 80
 rig.animation_data_clear()
-kit.apply_idle(rig, 1, N4, (0.0, 0.0, 0.0), math.pi, fps=FPS,
+kit.apply_idle(rig, 1, N4, (0.0, 0.0, 0.0), IDLE_HEADING, fps=FPS,
                gestures=[(10, 36, "look_away"), (46, 74, "lean_in")])
 if "close" in WANT: render_tracked("close", 1, N4, 34, dist_mul=0.95, height_mul=0.80, lens=75)
 shots.append(("close", N4))
@@ -152,7 +166,7 @@ if FACES and "emote" in WANT:
     ctrl = kit.enable_face_variants(char, FACES, FDIR)
     N5 = 150
     rig.animation_data_clear()
-    kit.apply_idle(rig, 1, N5, (0.0, 0.0, 0.0), math.pi, fps=FPS,
+    kit.apply_idle(rig, 1, N5, (0.0, 0.0, 0.0), IDLE_HEADING, fps=FPS,
                    gestures=[(10, 34, "nod"), (58, 84, "look_away"),
                              (96, 120, "lean_in"), (126, 148, "weight_shift")])
     ex = ctrl.get("_expressions", [])
