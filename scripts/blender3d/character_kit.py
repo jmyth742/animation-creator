@@ -810,8 +810,13 @@ def enable_face_variants(char, name, faces_dir):
     uv_from = tex.inputs["Vector"].links[0].from_socket if tex.inputs["Vector"].links else None
     color_to = [ln.to_socket for ln in tex.outputs["Color"].links]
     nt.nodes.remove(tex)
+    # expressions are optional extra images beside the visemes, cross-faded rather than
+    # switched, so a face can move between feelings instead of popping between them
+    import glob as _glob
+    _expr = sorted(os.path.basename(f).split("_face_")[1][:-4]
+                   for f in _glob.glob(f"{faces_dir}/{name}_face_e_*.png"))
     imgs = {}
-    for key in ("base", "m1", "m2", "m3", "m4", "m5", "blink"):
+    for key in ["base", "m1", "m2", "m3", "m4", "m5", "blink"] + _expr:
         node = nt.nodes.new("ShaderNodeTexImage")
         node.image = bpy.data.images.load(f"{faces_dir}/{name}_face_{key}.png")
         node.image.pack()
@@ -820,7 +825,9 @@ def enable_face_variants(char, name, faces_dir):
         imgs[key] = node
     ctrl = {}
     cur = imgs["base"].outputs["Color"]
-    for key in ("m1", "m2", "m3", "m4", "m5", "blink"):
+    # expressions sit UNDER the visemes in the stack: a viseme must still read on top of
+    # a smile, not be covered by it
+    for key in list(_expr) + ["m1", "m2", "m3", "m4", "m5", "blink"]:
         mix = nt.nodes.new("ShaderNodeMixRGB")
         mix.inputs["Fac"].default_value = 0.0
         nt.links.new(cur, mix.inputs["Color1"])
@@ -830,6 +837,9 @@ def enable_face_variants(char, name, faces_dir):
     for sock in color_to:
         nt.links.new(cur, sock)
     ctrl["_tree"] = nt
+    ctrl["_expressions"] = list(_expr)
+    if _expr:
+        print("FACEVARIANTS", name, "expressions", ", ".join(_expr))
     return ctrl
 
 
@@ -1157,6 +1167,47 @@ def reseat_arms(char, rig, roles, name):
     bpy.context.view_layer.update()
     print("RESEAT", name, out)
     return out
+
+
+def apply_expression(ctrl, spans, fps=16, ease=0.35):
+    """spans: [(f0, f1, "e_happy", peak)] -- cross-fade an expression in and out.
+
+    Visemes switch with CONSTANT interpolation because a mouth shape either is or is not;
+    a feeling is not like that, so these ramp. The ease is the fraction of the span spent
+    coming in and going out.
+    """
+    names = [k for k in ctrl if isinstance(k, str) and k.startswith("e_")]
+    if not names:
+        return
+    keyed = set()
+    for (fa, fb, which, peak) in spans:
+        if which not in ctrl:
+            print("apply_expression: no such expression", which)
+            continue
+        n = max(1, fb - fa)
+        ramp = max(1, int(n * ease))
+        for f in range(fa - 1, fb + 2):
+            if f < fa or f > fb:
+                v = 0.0
+            elif f - fa < ramp:
+                v = peak * (f - fa) / ramp
+            elif fb - f < ramp:
+                v = peak * (fb - f) / ramp
+            else:
+                v = peak
+            ctrl[which].default_value = v
+            ctrl[which].keyframe_insert("default_value", frame=f)
+            keyed.add((which, f))
+    # apply_talk_tex sets every curve in this tree to CONSTANT, which is right for a
+    # viseme and wrong for a feeling. Put these curves back to a smooth interpolation,
+    # identified by their own data paths rather than by guessing at node names.
+    nt = ctrl["_tree"]
+    paths = {ctrl[w].path_from_id("default_value") for (_, _, w, _) in spans if w in ctrl}
+    if nt.animation_data and nt.animation_data.action:
+        for fc in nt.animation_data.action.fcurves:
+            if fc.data_path in paths:
+                for kp in fc.keyframe_points:
+                    kp.interpolation = 'BEZIER'
 
 
 def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False):

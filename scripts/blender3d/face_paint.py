@@ -278,4 +278,134 @@ for anchor in (EYE_L, EYE_R):
     paint(b, anchor, 0.06, lid_draw)
     paint(b, anchor, 0.06, lash_line)
 save(b, "blink")
+
+
+# ── expressions ──────────────────────────────────────────────────────
+# The same texture-swap machinery that carries the visemes can carry emotion. Brows are
+# the strongest signal on an anime face and this character has none drawn, so they are
+# added as strokes; the eyes narrow, widen or close into arcs; the mouth curves up or
+# down. Each expression is one more image the shader can cross-fade to.
+def brow_draw(kind, inner_sign):
+    """A stroke above the eye. inner_sign is +1 when the nose side is +h."""
+    L = 1.15 * EX
+    TH = 0.075 * EX
+    base_v = 0.62 * EX
+    tilt = {"angry": -0.30, "sad": 0.34, "up": 0.10, "flat": 0.0}[kind]
+    rise = {"angry": 0.02, "sad": 0.10, "up": 0.16, "flat": 0.0}[kind]
+
+    def fn(h, v):
+        if abs(h) > L * 0.5:
+            return None
+        u = (h * inner_sign) / (L * 0.5)          # -1 outer .. +1 inner
+        line_v = base_v + rise * EX + tilt * EX * u
+        d = abs(v - line_v)
+        th = TH * (1.0 - 0.25 * abs(u))
+        if d < th:
+            return (0.16, 0.10, 0.09, min(1.0, 1.4 - d / th))
+        return None
+    return fn
+
+
+def eye_expr(kind):
+    """Redraw the aperture: narrowed for anger, wide for surprise, an upward arc for a
+    smiling eye (which is how anime draws a happy eye)."""
+    sw, sh = 0.58 * EX, 0.335 * EX
+    if kind == "wide":
+        sh *= 1.30
+    if kind == "narrow":
+        sh *= 0.62
+
+    def arc(h, v):
+        if abs(h) > sw:
+            return None
+        u = h / sw
+        line_v = -0.06 * EX + 0.26 * EX * (1.0 - u * u)
+        d = abs(v - line_v)
+        th = 0.075 * EX
+        if d < th:
+            return (0.14, 0.09, 0.09, min(1.0, 1.5 - d / th))
+        return None
+
+    def fn(h, v):
+        d = math.hypot(h / sw, v / sh)
+        lid_v = (0.30 if kind == "narrow" else 0.42) * sh
+        lash_t = 0.16 * EX
+        if d <= 1.0 and v <= lid_v:
+            ir = math.hypot(h, (v + 0.04 * EX) * 1.05)
+            hl = math.hypot(h - 0.10 * EX, v - 0.06 * EX)
+            if hl < 0.045 * EX:
+                return (0.98, 0.98, 0.97, 1)
+            if ir < 0.135 * EX:
+                return (0.05, 0.04, 0.04, 1)
+            if ir < 0.285 * EX:
+                f = ir / (0.285 * EX)
+                return (IRIS[0] * (1.1 - 0.55 * f), IRIS[1] * (1.1 - 0.55 * f),
+                        IRIS[2] * (1.1 - 0.55 * f), 1)
+            return (0.955, 0.955, 0.945, 1)
+        if abs(h) < sw * 1.02 and lid_v < v < lid_v + lash_t * 0.8:
+            a = soft(abs(v - lid_v - lash_t * 0.25), lash_t * 0.45)
+            return (0.12, 0.08, 0.08, 0.9 * a)
+        return None
+    return arc if kind == "arc" else fn
+
+
+def mouth_curve(kind):
+    """A curved lip line: up for a smile, down for a frown, with an open variant."""
+    w = 0.44 * EX
+    amp = {"smile": 0.16, "frown": -0.16, "grin": 0.20}[kind] * EX
+    LIP = (SK[0] * 0.58, SK[1] * 0.40, SK[2] * 0.40)
+    DARK = (0.10, 0.05, 0.05)
+    TEETH = (0.94, 0.92, 0.88)
+
+    def fn(h, v):
+        pd = math.hypot(h / (0.62 * EX), v / (0.42 * EX))
+        out = None
+        if pd <= 1.0:
+            c = MOUTH_RING(h, v)
+            out = (c[0], c[1], c[2], min(1.0, 1.3 - pd))
+        if abs(h) > w:
+            return out
+        u = h / w
+        line_v = amp * (1.0 - u * u) - amp * 0.5
+        if kind == "grin":
+            top = line_v + 0.02 * EX
+            bot = line_v - 0.20 * EX * (1.0 - u * u) - 0.02 * EX
+            if bot < v < top:
+                return (*TEETH, 1) if v > line_v - 0.09 * EX else (*DARK, 1)
+            if abs(v - line_v) < 0.05 * EX or abs(v - bot) < 0.04 * EX:
+                return (*LIP, 1)
+            return out
+        d = abs(v - line_v)
+        th = 0.055 * EX
+        if d < th:
+            return (*LIP, min(1.0, 1.4 - d / th))
+        return out
+    return fn
+
+
+EXPR = {
+    "happy":    {"brow": "up",    "eye": "arc",    "mouth": "grin"},
+    "angry":    {"brow": "angry", "eye": "narrow", "mouth": "frown"},
+    "sad":      {"brow": "sad",   "eye": None,     "mouth": "frown"},
+    "surprise": {"brow": "up",    "eye": "wide",   "mouth": None},
+    "smile":    {"brow": "flat",  "eye": None,     "mouth": "smile"},
+}
+
+if os.environ.get("FP_EXPR", "1") not in ("", "0"):
+    for ename, spec in EXPR.items():
+        e = np.array(basefixed)
+        for anchor in (EYE_L, EYE_R):
+            EYE_RING = ring_sampler(anchor, 1.35 * EX, 0.85 * EX)
+            inner = -1 if anchor[0] > FX else 1
+            if spec["eye"]:
+                paint(e, anchor, 0.07, eye_plate)
+                paint(e, anchor, 0.06, eye_expr(spec["eye"]))
+            if spec["brow"]:
+                paint(e, anchor, 0.08, brow_draw(spec["brow"], inner))
+        if spec["mouth"]:
+            paint(e, MOUTH, 0.05, mouth_curve(spec["mouth"]))
+        elif ename == "surprise":
+            paint(e, MOUTH, 0.05, mouth_draw("oo"))
+        save(e, "e_" + ename)
+
 print("FACE PAINT DONE")

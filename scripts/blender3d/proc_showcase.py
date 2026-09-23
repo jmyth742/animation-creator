@@ -111,7 +111,7 @@ def render_tracked(tag, f0, f1, angle_deg, dist_mul=1.9, height_mul=0.52, lens=5
 
 floor = lambda x, y: 0.0
 shots = []
-WANT = set(x for x in os.environ.get("PS_SHOTS", "walk,turn,idle,close").split(",") if x)
+WANT = set(x for x in os.environ.get("PS_SHOTS", "walk,turn,idle,close,emote").split(",") if x)
 
 # 1. walk across, seen from the side-front
 N = 96
@@ -144,5 +144,41 @@ kit.apply_idle(rig, 1, N4, (0.0, 0.0, 0.0), math.pi, fps=FPS,
                gestures=[(10, 36, "look_away"), (46, 74, "lean_in")])
 if "close" in WANT: render_tracked("close", 1, N4, 34, dist_mul=0.95, height_mul=0.80, lens=75)
 shots.append(("close", N4))
+
+# 5. emote: the face carrying feeling, with blinks and head gestures under it
+FACES = os.environ.get("PS_FACES", "")
+FDIR = os.environ.get("PS_FACEDIR", os.path.dirname(GLB))
+if FACES and "emote" in WANT:
+    ctrl = kit.enable_face_variants(char, FACES, FDIR)
+    N5 = 150
+    rig.animation_data_clear()
+    kit.apply_idle(rig, 1, N5, (0.0, 0.0, 0.0), math.pi, fps=FPS,
+                   gestures=[(10, 34, "nod"), (58, 84, "look_away"),
+                             (96, 120, "lean_in"), (126, 148, "weight_shift")])
+    ex = ctrl.get("_expressions", [])
+    order = [e for e in ("e_smile", "e_surprise", "e_angry", "e_sad", "e_happy") if e in ex]
+    spans = []
+    step = N5 // max(1, len(order))
+    for i, e in enumerate(order):
+        fa = 6 + i * step
+        spans.append((fa, fa + step - 10, e, 1.0))
+    kit.apply_expression(ctrl, spans, fps=FPS)
+    # blinks: a person blinks about every three seconds and it is the cheapest sign of life
+    if "blink" in ctrl:
+        ctrl["blink"].default_value = 0.0
+        ctrl["blink"].keyframe_insert("default_value", frame=1)
+        for b in range(22, N5, int(3.1 * FPS)):
+            for f, on in ((b - 1, 0.0), (b, 1.0), (b + 1, 1.0), (b + 2, 0.0)):
+                ctrl["blink"].default_value = on
+                ctrl["blink"].keyframe_insert("default_value", frame=f)
+        nt = ctrl["_tree"]
+        bp = ctrl["blink"].path_from_id("default_value")
+        if nt.animation_data and nt.animation_data.action:
+            for fc in nt.animation_data.action.fcurves:
+                if fc.data_path == bp:
+                    for kp in fc.keyframe_points:
+                        kp.interpolation = 'CONSTANT'
+    render_tracked("emote", 1, N5, 34, dist_mul=0.95, height_mul=0.80, lens=75)
+    shots.append(("emote", N5))
 
 print("PS_DONE", ",".join("%s:%d" % s for s in shots), flush=True)
