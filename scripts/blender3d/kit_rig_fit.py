@@ -15,8 +15,11 @@ measures the feet, the crotch, the neck and the crown from the mesh and maps the
 through those landmarks piecewise, then fits the widths from the silhouette.
 
   blender -b --factory-startup --python kit_rig_fit.py -- <mesh.glb> <out.glb> [height=1.6]
-Env: KRF_CRISP (0.10) weight crispness, KRF_FALLOFF (0.05), KRF_HEAD (0.0) extra head
-     rigidity above the neck.
+Env: KRF_CRISP (0.20) weight crispness, KRF_FALLOFF (0.09), KRF_HEAD (0.0) extra head
+     rigidity above the neck. The kit's original 0.10 / 0.05 were tuned on a character
+     with a cloak over the shoulder; on bare shoulders that hard boundary lets the sleeve
+     ring separate from the shoulder skin when the arm lifts 45 degrees (gate image
+     deform_chibi3_kitrig_45.png). 0.20 / 0.09 keeps it attached with no cost elsewhere.
 """
 import sys, os, math
 import bpy, mathutils
@@ -190,8 +193,8 @@ for bi, nm in enumerate(names):
 order = np.argsort(D, axis=1)
 near2 = order[:, :2]
 d2 = np.take_along_axis(D, near2, axis=1)
-FALL = float(os.environ.get("KRF_FALLOFF", "0.05")) * (body / 1.05)
-CRISP = float(os.environ.get("KRF_CRISP", "0.10")) * (body / 1.05)
+FALL = float(os.environ.get("KRF_FALLOFF", "0.09")) * (body / 1.05)
+CRISP = float(os.environ.get("KRF_CRISP", "0.20")) * (body / 1.05)
 w = np.exp(-d2 / FALL)
 w /= w.sum(axis=1, keepdims=True)
 crisp = d2[:, 1] - d2[:, 0] > CRISP
