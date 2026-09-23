@@ -418,13 +418,16 @@ _ARM_DOWN = {}
 
 
 def _arm_rest(rig, bn):
-    b = rig.data.bones[bn]
-    return (rig.matrix_world @ b.matrix_local).to_3x3()
+    """Rest frame of the bone in ARMATURE space. Not world space: the animators yaw the
+    armature object every frame, and a rotation worked out in world space and cached
+    was wrong the moment the character turned -- it raised the arms beside the head.
+    In armature space the character always faces +Y and down is always -Z."""
+    return rig.data.bones[bn].matrix_local.to_3x3()
 
 
 def arm_down_world(rig, bn, out_deg=None):
-    """World rotation taking arm bone bn from its rest direction to hanging at the side,
-    out_deg off vertical. Identity if it already hangs (an A-pose bind)."""
+    """Rotation (armature space) taking arm bone bn from its rest direction to hanging at
+    the side, out_deg off vertical. Identity if it already hangs (an A-pose bind)."""
     key = (rig.name, bn)
     if key in _ARM_DOWN:
         return _ARM_DOWN[key]
@@ -439,8 +442,8 @@ def arm_down_world(rig, bn, out_deg=None):
 
 
 def pose_arm(rig, bn, fwd, out, frame):
-    """Pose upper arm bn: fwd radians of swing about the world lateral axis (positive
-    = forward, toward +Y), out radians away from the body. Keys the quaternion."""
+    """Pose upper arm bn: fwd radians of swing about the character's lateral axis
+    (positive = forward), out radians away from the body. Keys the quaternion."""
     pb = rig.pose.bones[bn]
     R = _arm_rest(rig, bn)
     d = (R @ mathutils.Vector((0, 1, 0))).normalized()
@@ -452,6 +455,7 @@ def pose_arm(rig, bn, fwd, out, frame):
     pb.rotation_mode = 'QUATERNION'
     pb.rotation_quaternion = (R.inverted() @ qw.to_matrix() @ R).to_quaternion()
     pb.keyframe_insert("rotation_quaternion", frame=frame)
+
 
 def apply_walk(rig, path_fn, f0, f1, fps=16, stride_hz=1.45):
     """path_fn(t in 0..1) -> (x, y, z, heading_rad).
@@ -562,7 +566,6 @@ def apply_idle(rig, f0, f1, pos, heading, fps=16, look_at_fn=None,
             fx = -0.15 + (g[5] if side == "R" else 0)
             pose_arm(rig, f"arm.{side}", -ax, 0.05, f)
             pb[f"fore.{side}"].rotation_euler = (fx, 0, 0)
-            pb[f"arm.{side}"].keyframe_insert("rotation_euler", frame=f)
             pb[f"fore.{side}"].keyframe_insert("rotation_euler", frame=f)
         for nm in ("spine", "head"):
             pb[nm].keyframe_insert("rotation_euler", frame=f)

@@ -108,8 +108,13 @@ print("KRF head from %.3f (body %.3f) | shoulder z %.3f half %.3f | hip half %.3
 # then runs through empty space beside the arm and the limb does not follow it. Take the
 # geometry lateral to the torso around shoulder height and fit its axis.
 def arm_axis(sign):
-    m = ((P[:, 2] > z_sh - 0.34 * body) & (P[:, 2] < z_sh + 0.10 * body) &
-         (P[:, 0] * sign > w_sh * 0.92))
+    """Direction of the arm from the geometry WELL CLEAR of the body. Selecting from just
+    outside the torso width pulled in the edge of the cape, and the fitted axis pointed
+    backward: the bone then lay beside the arm, and rotating it to hang brought the hands
+    up in front of the face. The far half of the arm is unambiguous, so fit that and
+    anchor the line at the shoulder joint."""
+    m = ((P[:, 2] > z_sh - 0.10 * body) & (P[:, 2] < z_sh + 0.55 * body) &
+         (P[:, 0] * sign > w_sh * 1.35))
     if m.sum() < 60:
         return None
     A = P[m]
@@ -118,8 +123,9 @@ def arm_axis(sign):
     if (u[0] > 0) != (sign > 0):
         u = -u
     t = (A - c) @ u
-    root = c + u * float(np.percentile(t, 3))
     tip = c + u * float(np.percentile(t, 98))
+    root = np.array((sh_x * sign, c[1] + u[1] * float(np.percentile(t, 2) - 0.0), z_sh))
+    # the line from the shoulder joint to the fingertip IS the arm
     return root, tip
 
 
