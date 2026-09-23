@@ -103,13 +103,14 @@ def render_tracked(tag, f0, f1, angle_deg, dist_mul=1.9, height_mul=0.52, lens=5
 
 floor = lambda x, y: 0.0
 shots = []
+WANT = set(x for x in os.environ.get("PS_SHOTS", "walk,turn,idle,close").split(",") if x)
 
 # 1. walk across, seen from the side-front
 N = 96
 dist = SPEED * H * (N / float(FPS))
 rig.animation_data_clear()
 kit.apply_walk(rig, kit.path_fn_from_points([(0.0, 0.0), (0.0, -dist)], floor), 1, N, fps=FPS)
-render_tracked("walk", 1, N, 62)
+if "walk" in WANT: render_tracked("walk", 1, N, 62)
 shots.append(("walk", N))
 
 # 2. walk a curve, so the turn is carried by the body
@@ -117,23 +118,23 @@ N2 = 104
 rig.animation_data_clear()
 kit.apply_walk(rig, kit.path_fn_from_points(
     [(0.0, 0.0), (0.0, -2.2), (1.6, -4.0), (3.4, -4.6)], floor), 1, N2, fps=FPS)
-render_tracked("turn", 1, N2, 30)
+if "turn" in WANT: render_tracked("turn", 1, N2, 30)
 shots.append(("turn", N2))
 
 # 3. idle with gestures
 N3 = 110
 rig.animation_data_clear()
-kit.apply_idle(rig, 1, N3, (0.0, 0.0, 0.0), 0.0, fps=FPS,
+kit.apply_idle(rig, 1, N3, (0.0, 0.0, 0.0), math.pi, fps=FPS,
                gestures=[(14, 40, "nod"), (52, 84, "hand_raise"), (90, 108, "weight_shift")])
-render_tracked("idle", 1, N3, 24, dist_mul=1.75)
+if "idle" in WANT: render_tracked("idle", 1, N3, 24, dist_mul=1.75)
 shots.append(("idle", N3))
 
 # 4. close idle, head and shoulders
 N4 = 80
 rig.animation_data_clear()
-kit.apply_idle(rig, 1, N4, (0.0, 0.0, 0.0), 0.0, fps=FPS,
+kit.apply_idle(rig, 1, N4, (0.0, 0.0, 0.0), math.pi, fps=FPS,
                gestures=[(10, 36, "look_away"), (46, 74, "lean_in")])
-render_tracked("close", 1, N4, 34, dist_mul=0.95, height_mul=0.80, lens=75)
+if "close" in WANT: render_tracked("close", 1, N4, 34, dist_mul=0.95, height_mul=0.80, lens=75)
 shots.append(("close", N4))
 
 print("PS_DONE", ",".join("%s:%d" % s for s in shots), flush=True)

@@ -23,7 +23,9 @@ CAP = {"walk": "WALK  -  hips travel, weight transfer",
        "run":  "RUN  -  full stride, both feet airborne",
        "idle": "IDLE  -  breathing and weight shift",
        "nod":  "NOD  -  head and neck, held eyeline",
-       "gesture": "GESTURE  -  both hands while speaking"}
+       "gesture": "GESTURE  -  both hands while speaking",
+       "close": "CLOSE  -  look away, lean in",
+       "turn": "WALK A CURVE  -  the turn carried by the body"}
 n = 0
 for c in clips:
     fs = sorted(glob.glob(os.path.join(src, c, "f_*.png")))
