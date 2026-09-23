@@ -18,7 +18,7 @@ import bpy, bmesh, mathutils
 a = sys.argv[sys.argv.index("--") + 1:]
 OUT = a[0]
 NF = int(a[1]) if len(a) > 1 else 96
-SPEED = float(a[2]) if len(a) > 2 else 0.85
+SPEED = float(a[2]) if len(a) > 2 else 0.62
 RES = int(os.environ.get("RW_RES", "1080"))
 FPS = int(os.environ.get("RW_FPS", "20"))
 WANT = set(x for x in os.environ.get("RW_SHOTS", "walk,turn,idle").split(",") if x)
@@ -34,8 +34,9 @@ pb = rig.pose.bones
 zs = [(char.matrix_world @ v.co).z for v in char.data.vertices]
 H = max(zs) - min(zs)
 FWD = mathutils.Vector((0, -1, 0))                 # the rig faces -Y
-STRIDE = float(os.environ.get("RW_STRIDE", "0.62")) * H       # one full cycle (two steps)
-LIFT = float(os.environ.get("RW_LIFT", "0.06")) * H
+STRIDE = float(os.environ.get("RW_STRIDE", "0.56")) * H       # one full cycle (two steps)
+LIFT = float(os.environ.get("RW_LIFT", "0.045")) * H
+DROP = float(os.environ.get("RW_DROP", "0.062")) * H      # hips ride lower than the rest pose so the knee is never locked
 # cel look
 img = None
 for m in char.data.materials:
@@ -97,6 +98,8 @@ def clear_anim():
     for side in ("L", "R"):
         pb["thigh_parent." + side]["IK_FK"] = 0.0
         pb["upper_arm_parent." + side]["IK_FK"] = 1.0
+        if "IK_Stretch" in pb["thigh_parent." + side].keys():
+            pb["thigh_parent." + side]["IK_Stretch"] = 0.0     # a leg is not a rubber band
     rig.location = (0, 0, 0); rig.rotation_euler = (0, 0, 0)
 
 
@@ -131,7 +134,9 @@ def walk(f0, f1, heading_fn, speed_mps):
         fwd = mathutils.Vector((-math.sin(yaw), -math.cos(yaw), 0))     # -Y at yaw 0
         side = mathutils.Vector((math.cos(yaw), -math.sin(yaw), 0))
         # torso: continuous, with a bob and a slight lean
-        bob = -0.018 * H * abs(math.sin(2 * math.pi * ph))
+        # vertical: the body vaults over the planted leg, so it is HIGHEST at mid-stance
+        # and LOWEST at the contact (double support). The first version had this inverted.
+        bob = -DROP + 0.022 * H * abs(math.sin(2 * math.pi * ph))
         rig.location = (x, y, bob); rig.rotation_euler = (0, 0, yaw)
         rig.keyframe_insert("location", frame=f); rig.keyframe_insert("rotation_euler", frame=f)
         key_rot("torso", (math.radians(4), 0, 0), f)
@@ -174,8 +179,8 @@ def walk(f0, f1, heading_fn, speed_mps):
         # arms FK, counter-phased to the legs
         for s, sg in (("L", 1), ("R", -1)):
             sw = math.sin(2 * math.pi * ph) * sg
-            key_rot("upper_arm_fk." + s, (math.radians(22) * sw, 0, math.radians(-8) * sg), f)
-            key_rot("forearm_fk." + s, (math.radians(18 + 14 * max(0.0, -sw)), 0, 0), f)
+            key_rot("upper_arm_fk." + s, (math.radians(24) * sw, 0, math.radians(-6) * sg), f)
+            key_rot("forearm_fk." + s, (math.radians(28 + 16 * max(0.0, sw)), 0, 0), f)
 
 
 def render_tracked(tag, f0, f1, angle_deg, dist_mul=1.9, height_mul=0.52, lens=55):
