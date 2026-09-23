@@ -220,7 +220,7 @@ def mouth_draw(shape):
 
     def fn(h, v):
         # plate: erase the painted lips with LOCAL skin
-        pd = math.hypot(h / (0.62 * EX), v / (0.42 * EX))
+        pd = math.hypot(h / (0.62 * EX * MP), v / (0.42 * EX * MP))
         out = None
         if pd <= 1.0:
             c = MOUTH_RING(h, v)
@@ -247,14 +247,15 @@ SK = kit._closest_uv_color(char, (0.0, MOUTH[1] + 0.004, MZ - 0.030))[:3]
 if sum(SK) / 3 < 0.3:
     SK = kit._closest_uv_color(char, (0.5 * EX, front_y((MZ + EZ) / 2, hw=0.08) + 0.008, (MZ + EZ) / 2))[:3]
 
-MOUTH_RING = ring_sampler(MOUTH, 0.62 * EX, 0.42 * EX)
+MP = float(os.environ.get("FP_MOUTH_PLATE", "1.0"))
+MOUTH_RING = ring_sampler(MOUTH, 0.62 * EX * MP, 0.42 * EX * MP)
 out = np.array(base)
 if not KEEP_EYES:
     for anchor in (EYE_L, EYE_R):
         EYE_RING = ring_sampler(anchor, 1.35 * EX, 0.85 * EX)
         paint(out, anchor, 0.07, eye_plate)
         paint(out, anchor, 0.06, eye_draw)
-paint(out, MOUTH, 0.05, mouth_draw("closed"))
+paint(out, MOUTH, 0.05 * max(1.0, MP), mouth_draw("closed"))
 basefixed = np.array(out)
 
 def save(arr, suffix):
@@ -268,7 +269,7 @@ def save(arr, suffix):
 save(basefixed, "base")
 for i, shape in enumerate(("small", "mid", "open", "ee", "oo"), start=1):
     v = np.array(basefixed)
-    paint(v, MOUTH, 0.05, mouth_draw(shape))
+    paint(v, MOUTH, 0.05 * max(1.0, MP), mouth_draw(shape))
     save(v, f"m{i}")
 b = np.array(basefixed)
 for anchor in (EYE_L, EYE_R):
@@ -358,7 +359,7 @@ def mouth_curve(kind):
     TEETH = (0.94, 0.92, 0.88)
 
     def fn(h, v):
-        pd = math.hypot(h / (0.62 * EX), v / (0.42 * EX))
+        pd = math.hypot(h / (0.62 * EX * MP), v / (0.42 * EX * MP))
         out = None
         if pd <= 1.0:
             c = MOUTH_RING(h, v)
@@ -403,9 +404,9 @@ if os.environ.get("FP_EXPR", "1") not in ("", "0"):
             if spec["brow"]:
                 paint(e, anchor, 0.08, brow_draw(spec["brow"], inner))
         if spec["mouth"]:
-            paint(e, MOUTH, 0.05, mouth_curve(spec["mouth"]))
+            paint(e, MOUTH, 0.05 * max(1.0, MP), mouth_curve(spec["mouth"]))
         elif ename == "surprise":
-            paint(e, MOUTH, 0.05, mouth_draw("oo"))
+            paint(e, MOUTH, 0.05 * max(1.0, MP), mouth_draw("oo"))
         save(e, "e_" + ename)
 
 print("FACE PAINT DONE")
