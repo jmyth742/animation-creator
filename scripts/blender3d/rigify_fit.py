@@ -37,7 +37,11 @@ print("RF landmarks", {k: (round(v, 3) if isinstance(v, float) else v) for k, v 
 for k in ("arm_L", "arm_R"):
     print("RF", k, None if L[k] is None else [tuple(round(float(x), 3) for x in q) for q in L[k]], flush=True)
 
-bpy.ops.object.armature_basic_human_metarig_add()
+FACE = os.environ.get("RF_FACE", "0") not in ("", "0")
+if FACE:
+    bpy.ops.object.armature_human_metarig_add()      # body + the face rig (jaw, lips, lids, brows, eyes)
+else:
+    bpy.ops.object.armature_basic_human_metarig_add()
 meta = bpy.context.active_object
 meta.name = "metarig"
 bpy.ops.object.mode_set(mode='EDIT')
@@ -111,6 +115,51 @@ for side in ("L", "R"):
     if v1.length and v2.length and v1.cross(v2).length < 1e-3:
         sh.head = sh.head + mathutils.Vector((0, -0.012 * body, 0)); th.tail = sh.head.copy()
         print("RF nudged knee", side, "off collinear", flush=True)
+# ---- face (full metarig only): map the template face onto this head by a per-axis
+# affine fit through the landmarks that can be measured: eye centres, mouth centre, face
+# front, head centre and crown. The template is a 1.98 m adult; the chibi's face is a
+# third of its body, so scale differs per axis and this is a fit, not a scaling.
+if FACE:
+    hd = L["head_h"]; zn = L["z_neck"]
+    e_z = zn + 0.44 * hd; m_z = zn + 0.195 * hd
+    m_head = P[:, 2] > zn
+    hx = float(np.percentile(np.abs(P[m_head, 0]), 97))
+    e_x = 0.40 * hx
+    y_c = float(np.median(P[m_head, 1]))
+    def front_y(z, hw=0.06):
+        mm = (np.abs(P[:, 2] - z) < 0.03 * hd) & (np.abs(P[:, 0]) < hw * hx)
+        return float(P[mm, 1].min()) if mm.sum() > 4 else y_c - 0.5 * hx
+    fy_eye, fy_mouth = front_y(e_z, 0.9), front_y(m_z, 0.5)
+    # template landmarks (from the metarig as shipped)
+    T = dict(eye=(0.052, -0.121, 1.894), lipT=(0.0, -0.171, 1.814), lipB=(0.0, -0.167, 1.798),
+             facey=-0.025, crown=1.98, chin=1.739, earx=0.121)
+    # per-axis linear maps: x by eye spacing; z through eye and mouth; y through head centre and face front
+    sx = e_x / T["eye"][0]
+    az = (e_z - m_z) / (T["eye"][2] - 0.5 * (T["lipT"][2] + T["lipB"][2])); bz = e_z - az * T["eye"][2]
+    ay = (fy_eye - y_c) / (T["eye"][1] - T["facey"]); by = y_c - ay * T["facey"]
+    def fmap(v):
+        return mathutils.Vector((v.x * sx, ay * v.y + by, az * v.z + bz))
+    body_names = {"spine", "spine.001", "spine.002", "spine.003", "spine.004", "spine.005", "spine.006",
+                  "shoulder.L", "upper_arm.L", "forearm.L", "hand.L", "shoulder.R", "upper_arm.R", "forearm.R", "hand.R",
+                  "breast.L", "breast.R", "pelvis.L", "pelvis.R", "thigh.L", "shin.L", "foot.L", "toe.L", "heel.02.L",
+                  "thigh.R", "shin.R", "foot.R", "toe.R", "heel.02.R"}
+    moved = 0
+    for b in eb:
+        if b.name in body_names or any(k in b.name for k in ("thumb", "f_index", "f_middle", "f_ring", "f_pinky", "palm")):
+            continue
+        b.head = fmap(b.head); b.tail = fmap(b.tail); moved += 1
+    # fingers ride on the hands: translate each hand's finger set by the hand's move
+    for side in ("L", "R"):
+        hb = eb["hand." + side]
+        for b in eb:
+            if any(k in b.name for k in ("thumb", "f_index", "f_middle", "f_ring", "f_pinky", "palm")) and b.name.endswith("." + side):
+                pass                                                 # fingers left as shipped; they hang off the hand bone
+    print("RF face mapped", moved, "bones; eyes at z %.3f x %.3f, mouth z %.3f, front y %.3f/%.3f" % (e_z, e_x, m_z, fy_eye, fy_mouth), flush=True)
+    # fingers: this character has mittens, no finger geometry to bind -- disable them so
+    # heat does not spread finger bones over the hand
+    for b in list(eb):
+        if any(k in b.name for k in ("thumb", "f_index", "f_middle", "f_ring", "f_pinky", "palm")):
+            eb.remove(b)
 bpy.ops.object.mode_set(mode='OBJECT')
 print("RF metarig fitted", flush=True)
 
