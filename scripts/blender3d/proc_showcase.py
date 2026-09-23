@@ -21,7 +21,7 @@ import character_kit as kit                                        # noqa: E402
 a = sys.argv[sys.argv.index("--") + 1:]
 GLB, OUT = a[0], a[1]
 H = float(a[2]) if len(a) > 2 else 1.6
-RES = int(os.environ.get("PS_RES", "768"))
+RES = int(os.environ.get("PS_RES", "1080"))
 FPS = int(os.environ.get("PS_FPS", "20"))
 SPEED = float(os.environ.get("PS_SPEED", "0.85"))
 os.makedirs(OUT, exist_ok=True)
@@ -55,6 +55,14 @@ wd.node_tree.nodes["Background"].inputs["Color"].default_value = (0.58, 0.64, 0.
 cam = bpy.data.objects.new("c", bpy.data.cameras.new("c")); cam.data.lens = 55
 sc.collection.objects.link(cam); sc.camera = cam
 sc.render.engine = 'BLENDER_EEVEE_NEXT'
+try:
+    sc.eevee.taa_render_samples = int(os.environ.get("PS_SAMPLES", "96"))
+    sc.eevee.use_shadows = True
+    sc.eevee.use_raytracing = True
+    sc.eevee.shadow_ray_count = 2
+    sc.eevee.shadow_step_count = 8
+except Exception:                                                   # noqa: BLE001
+    pass
 sc.view_settings.view_transform = 'Standard'
 sc.render.resolution_x = sc.render.resolution_y = RES
 sc.render.fps = FPS
@@ -67,14 +75,14 @@ while fs.linesets:
     fs.linesets.remove(fs.linesets[0])
 ls = fs.linesets.new("c")
 ls.select_by_collection = False
-ls.linestyle.thickness = 1.6
+ls.linestyle.thickness = 1.6 * (RES / 768.0)
 ls.select_silhouette = True
 ls.select_external_contour = False
 ls.select_border = False
 ls.select_crease = False
 ls.linestyle.color = (0.07, 0.05, 0.06)
 ls.linestyle.use_length_min = True
-ls.linestyle.length_min = 6
+ls.linestyle.length_min = 6 * (RES / 768.0)
 
 
 def render_tracked(tag, f0, f1, angle_deg, dist_mul=1.9, height_mul=0.52, lens=55):

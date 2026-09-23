@@ -407,7 +407,17 @@ def path_fn_from_points(pts, floor_fn, ease_end=True):
 
 
 def apply_walk(rig, path_fn, f0, f1, fps=16, stride_hz=1.45):
-    """path_fn(t in 0..1) -> (x, y, z, heading_rad)."""
+    """path_fn(t in 0..1) -> (x, y, z, heading_rad).
+
+    WALK_TORSO / WALK_SWAY / WALK_ARM scale the body roll, the side-to-side drift of the
+    root and the arm swing. The stock amounts were tuned on realistically proportioned
+    characters; on a chibi the head is a third of the body, so the same hip and spine roll
+    reads as the torso wobbling. Defaults are now gentler and the knobs are there when a
+    character wants more.
+    """
+    _torso = float(os.environ.get("WALK_TORSO", "0.45"))
+    _sway = float(os.environ.get("WALK_SWAY", "0.55"))
+    _armg = float(os.environ.get("WALK_ARM", "0.85"))
     pb = rig.pose.bones
     for b in pb:
         b.rotation_mode = 'XYZ'
@@ -416,7 +426,7 @@ def apply_walk(rig, path_fn, f0, f1, fps=16, stride_hz=1.45):
         bpy.context.scene.frame_set(f)
         ph = 2 * math.pi * stride_hz * (f - f0) / fps
         x, y, z, heading = path_fn(t)
-        sway = 0.028 * math.sin(ph)
+        sway = 0.028 * _sway * math.sin(ph)
         bob = 0.030 - 0.030 * abs(math.cos(ph))
         rig.location = (x + sway, y, z + bob)
         rig.rotation_euler = (0, 0, heading)
@@ -429,13 +439,15 @@ def apply_walk(rig, path_fn, f0, f1, fps=16, stride_hz=1.45):
             pb[f"shin.{side}"].rotation_euler = (0.95 * swing ** 1.3 + dip, 0, 0)
             pb[f"foot.{side}"].rotation_euler = (
                 -0.35 * max(0.0, math.sin(ph - 2.4) * sgn) + 0.25 * swing, 0, 0)
-            pb[f"arm.{side}"].rotation_euler = (-0.38 * sl, 0, sgn * 0.06)
-            pb[f"fore.{side}"].rotation_euler = (-0.20 - 0.22 * max(0.0, -sl), 0, 0)
+            pb[f"arm.{side}"].rotation_euler = (-0.38 * _armg * sl, 0, sgn * 0.06)
+            pb[f"fore.{side}"].rotation_euler = (-0.20 - 0.22 * _armg * max(0.0, -sl), 0, 0)
             for nm in ("thigh", "shin", "foot", "arm", "fore"):
                 pb[f"{nm}.{side}"].keyframe_insert("rotation_euler", frame=f)
-        pb["hips"].rotation_euler = (0, 0.10 * math.sin(ph), 0.09 * math.sin(ph))
-        pb["spine"].rotation_euler = (0.06, -0.07 * math.sin(ph), -0.12 * math.sin(ph))
-        pb["head"].rotation_euler = (-0.04, -0.03 * math.sin(ph), 0.04 * math.sin(ph))
+        pb["hips"].rotation_euler = (0, 0.10 * _torso * math.sin(ph), 0.09 * _torso * math.sin(ph))
+        pb["spine"].rotation_euler = (0.06, -0.07 * _torso * math.sin(ph), -0.12 * _torso * math.sin(ph))
+        # the head counter-rotates a little against the torso, which is what stops a big
+        # chibi head from swinging with the shoulders
+        pb["head"].rotation_euler = (-0.04, 0.03 * _torso * math.sin(ph), -0.05 * _torso * math.sin(ph))
         for nm in ("hips", "spine", "head"):
             pb[nm].keyframe_insert("rotation_euler", frame=f)
 

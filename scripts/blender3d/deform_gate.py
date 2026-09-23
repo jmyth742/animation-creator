@@ -49,7 +49,7 @@ zs = [(char.matrix_world @ v.co).z for v in char.data.vertices]
 mx, mn = max(zs), min(zs)
 mid = (mx + mn) / 2
 cam.data.lens = 50
-cam.location = (0, -3.2, mid)
+cam.location = (0, 3.2, mid)   # kit characters face +Y; from -Y this framed the back
 cam.rotation_euler = (mathutils.Vector((0, 0, mid)) - cam.location).to_track_quat('-Z', 'Y').to_euler()
 
 # GATE_ANGLE lets the same battery run at the range animation actually uses (~30 deg) as
