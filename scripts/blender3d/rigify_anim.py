@@ -8,7 +8,10 @@ class that owns one rig.
     actor.walk(f0, f1, path_fn)            # path_fn(t in 0..1) -> (x, y, z, heading), kit convention
     actor.idle(f0, f1, (x, y, z), heading, gestures=[(fa, fb, kind)], look_at_fn=None)
 
-Kit heading convention: heading 0 faces +Y. This rig faces -Y at yaw 0, so yaw = heading + pi.
+Kit heading convention: the kit's meshes face -Y at rest and heading is the object yaw,
+so heading 0 faces -Y. The Rigify rig also faces -Y at yaw 0, so yaw = heading. (The
+first version added pi and the character walked the whole path backwards, leaning back
+with his feet out in front.)
 """
 import math, os
 import bpy, mathutils
@@ -120,7 +123,7 @@ class RigifyActor:
 
         def at(t):
             x, y, z, h = path_fn(min(1.0, max(0.0, t)))
-            return x, y, z, h + math.pi
+            return x, y, z, h
 
         for f in range(f0, f1 + 1):
             t = (f - f0) / n
@@ -183,7 +186,7 @@ class RigifyActor:
     def idle(self, f0, f1, pos, heading, gestures=None, look_at_fn=None):
         rig, pb, sc, H, FPS = self.rig, self.pb, self.sc, self.H, self.fps
         self.reset_pose(); self.switches(f0)
-        yaw = heading + math.pi
+        yaw = heading
         gestures = gestures or []
         hang = None
         chest = self.rest("chest")
