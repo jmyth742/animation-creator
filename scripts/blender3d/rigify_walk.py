@@ -93,7 +93,10 @@ if meta:
 
 
 def clear_anim():
-    rig.animation_data_clear()
+    # clear the ACTION only. animation_data_clear() also deletes Rigify's drivers, and
+    # with them every IK/FK and stretch switch on the rig.
+    if rig.animation_data and rig.animation_data.action:
+        rig.animation_data.action = None
     for b in pb:
         b.rotation_mode = 'XYZ'; b.rotation_euler = (0, 0, 0); b.location = (0, 0, 0)
     # Rigify's IK/FK and stretch switches are custom properties read by DRIVERS. Set
@@ -278,21 +281,33 @@ def idle(f0, f1, gestures=True):
             key_rot("forearm_fk." + s, (math.radians(24 + 3 * math.sin(tb)), 0, 0), f)
             key_rot("hand_fk." + s, (0, math.radians(PALM) * sg, 0), f)
     if gestures:
-        # hand raise: switch the right arm to IK for a window and lift the hand to chest
-        # height, palm turning in, then settle back
+        # hand raise on the right arm: stay FK (hanging) outside the window, blend to IK
+        # over four frames, lift the hand to chest height, blend back. The IK target
+        # rests where the hanging FK hand already is, so the blend does not snap.
         f_a, f_b = f0 + int(0.30 * (f1 - f0)), f0 + int(0.62 * (f1 - f0))
-        pb["upper_arm_parent.R"]["IK_FK"] = 0.0
-        pb["upper_arm_parent.R"].keyframe_insert('["IK_FK"]', frame=f0)
+        sc.frame_set(f0)
+        hang = (rig.matrix_world @ pb["DEF-hand.R"].head).copy()
         chest = rest_world("chest")
+        up = mathutils.Vector((chest.x - 0.06 * H, chest.y - 0.13 * H, chest.z + 0.02 * H))
+        par = pb["upper_arm_parent.R"]
         for f in range(f0, f1 + 1):
+            ramp = 4
+            if f < f_a - ramp or f > f_b + ramp:
+                ikfk = 1.0
+            elif f < f_a:
+                ikfk = 1.0 - (f - (f_a - ramp)) / ramp
+            elif f <= f_b:
+                ikfk = 0.0
+            else:
+                ikfk = (f - f_b) / ramp
+            par["IK_FK"] = ikfk; par.keyframe_insert('["IK_FK"]', frame=f)
             u = 0.0
             if f_a <= f <= f_b:
                 w = (f - f_a) / max(1, f_b - f_a)
                 u = math.sin(math.pi * w) ** 0.7
-            target = hand_rest["R"].lerp(mathutils.Vector((chest.x - 0.06 * H, chest.y - 0.13 * H, chest.z + 0.02 * H)), u)
-            key_loc_world("hand_ik.R", target, f)
+            key_loc_world("hand_ik.R", hang.lerp(up, u), f)
             key_rot("hand_ik.R", (math.radians(-40) * u, 0, math.radians(30) * u), f)
-
+        rig.update_tag(); sc.frame_set(f0 + 1); sc.frame_set(f0)
 
 speed = SPEED * H
 if "idle" in WANT:

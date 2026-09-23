@@ -78,7 +78,9 @@ head_z = min(zs) + float(os.environ.get("RT_HEAD", "0.79")) * H     # centre bet
 ctr = mathutils.Vector((0, 0, head_z))
 
 # animate
-rig.animation_data_clear()
+# clear the ACTION only: animation_data_clear() would delete Rigify's drivers too
+if rig.animation_data and rig.animation_data.action:
+    rig.animation_data.action = None
 for b in pb:
     b.rotation_mode = 'XYZ'; b.rotation_euler = (0, 0, 0); b.location = (0, 0, 0)
 for side in ("L", "R"):
