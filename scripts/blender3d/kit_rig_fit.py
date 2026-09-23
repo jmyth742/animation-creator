@@ -103,6 +103,26 @@ print("KRF head from %.3f (body %.3f) | shoulder z %.3f half %.3f | hip half %.3
       % (z_neck, body, z_sh, w_sh, w_hip, reach), flush=True)
 
 # ---- fitted bone template ---------------------------------------------------
+# ARM AXIS from the mesh. The kit template angles the arm down and out, which is right
+# for a character modelled in an A-pose and wrong for one modelled in a T-pose: the bone
+# then runs through empty space beside the arm and the limb does not follow it. Take the
+# geometry lateral to the torso around shoulder height and fit its axis.
+def arm_axis(sign):
+    m = ((P[:, 2] > z_sh - 0.34 * body) & (P[:, 2] < z_sh + 0.10 * body) &
+         (P[:, 0] * sign > w_sh * 0.92))
+    if m.sum() < 60:
+        return None
+    A = P[m]
+    c = A.mean(axis=0)
+    u = np.linalg.svd(A - c, full_matrices=False)[2][0]
+    if (u[0] > 0) != (sign > 0):
+        u = -u
+    t = (A - c) @ u
+    root = c + u * float(np.percentile(t, 3))
+    tip = c + u * float(np.percentile(t, 98))
+    return root, tip
+
+
 sh_x = 0.78 * w_sh
 hip_x = 0.52 * w_hip
 elbow_x = sh_x + (reach - sh_x) * 0.45
@@ -126,8 +146,19 @@ for sgn, side in ((1, "L"), (-1, "R")):
     BONES["shin.%s" % side] = ((hip_x * sgn, 0, z_knee), (hip_x * sgn, 0, z_foot), "thigh.%s" % side)
     BONES["foot.%s" % side] = ((hip_x * sgn, 0, z_foot),
                                (hip_x * sgn, -0.10 * body, zmin + 0.01 * Ht), "shin.%s" % side)
-    BONES["arm.%s" % side] = ((sh_x * sgn, 0, z_sh), (elbow_x * sgn, 0, z_elbow), "spine")
-    BONES["fore.%s" % side] = ((elbow_x * sgn, 0, z_elbow), (hand_x * sgn, 0, z_hand_b), "arm.%s" % side)
+    ax = arm_axis(sgn)
+    if ax is not None:
+        root, tip = ax
+        root = np.array((sh_x * sgn, root[1], root[2]))      # start at the shoulder joint
+        mid = root + (tip - root) * 0.48
+        BONES["arm.%s" % side] = (tuple(root), tuple(mid), "spine")
+        BONES["fore.%s" % side] = (tuple(mid), tuple(root + (tip - root) * 0.97), "arm.%s" % side)
+        if sgn > 0:
+            print("KRF arm axis L root %.3f,%.3f,%.3f tip %.3f,%.3f,%.3f"
+                  % (root[0], root[1], root[2], tip[0], tip[1], tip[2]), flush=True)
+    else:
+        BONES["arm.%s" % side] = ((sh_x * sgn, 0, z_sh), (elbow_x * sgn, 0, z_elbow), "spine")
+        BONES["fore.%s" % side] = ((elbow_x * sgn, 0, z_elbow), (hand_x * sgn, 0, z_hand_b), "arm.%s" % side)
 
 arm = bpy.data.armatures.new("fit_rig")
 rig = bpy.data.objects.new("fit_rig", arm)
@@ -182,6 +213,83 @@ for i in jsel:
     f = 1.0 - abs(P[i, 2] - jz) / (0.06 * head_h)
     if f > 0:
         jaw_g.add([int(i)], min(0.85, float(f)), 'ADD')
+
+# ---- bind in an A-pose --------------------------------------------------------
+# The mesh is modelled arms-out. Every clip has the arms down, so something has to close
+# that gap. Doing it by posing the finished rig runs a 90 degree rotation through the
+# skin and tears the shoulder. Doing it HERE is free: the weights are already known, so
+# the arm vertices and the arm bones are rotated together about the shoulder joint, with
+# the rotation faded in by the vertex's own arm weight. Nothing is deformed -- the arm is
+# simply modelled in a different place.
+APOSE = float(os.environ.get("KRF_APOSE", "58"))
+if APOSE > 0:
+    armw = np.zeros(n)
+    for k in (0, 1):
+        for bi, nm in enumerate(names):
+            if nm.startswith(("arm.", "fore.")):
+                armw += np.where(near2[:, k] == bi, w[:, k], 0.0)
+    armw_full = np.clip(armw, 0.0, 1.0)
+    edits = {}
+    for sgn, side in ((1, "L"), (-1, "R")):
+        armw = armw_full.copy()
+        an = "arm.%s" % side
+        head = np.array(BONES[an][0], dtype=float)
+        tail = np.array(BONES["fore.%s" % side][1], dtype=float)
+        u0 = tail - head
+        L0 = np.linalg.norm(u0)
+        if L0 < 1e-6:
+            continue
+        u0 = u0 / L0
+        want = np.array((0.34 * sgn, 0.0, -1.0))
+        want = want / np.linalg.norm(want)
+        q = mathutils.Vector(u0).rotation_difference(mathutils.Vector(want))
+        ang = q.angle
+        axis = q.axis
+        # only geometry actually NEAR the arm travels with it. A cloak hangs beside the
+        # arm and carries arm weight, and rotating it a hundred degrees with the limb
+        # drags the cape into a flat wing across the back.
+        segs = [(np.array(BONES[an][0], dtype=float), np.array(BONES[an][1], dtype=float)),
+                (np.array(BONES["fore.%s" % side][0], dtype=float),
+                 np.array(BONES["fore.%s" % side][1], dtype=float))]
+        dmin = None
+        for aa, bb in segs:
+            ab = bb - aa
+            tt = np.clip(((P - aa) @ ab) / max(1e-9, (ab @ ab)), 0, 1)
+            dd = np.linalg.norm(P - (aa + tt[:, None] * ab), axis=1)
+            dmin = dd if dmin is None else np.minimum(dmin, dd)
+        ARM_R = float(os.environ.get("KRF_ARM_R", "0.11")) * body
+        near_arm = np.clip(1.0 - (dmin - ARM_R) / (0.5 * ARM_R), 0.0, 1.0)
+        armw = armw * near_arm
+        side_mask = (P[:, 0] * sgn > 0) & (armw > 0.001)
+        for i in np.where(side_mask)[0]:
+            wi = float(armw[i])
+            qi = mathutils.Quaternion(axis, ang * wi)
+            v = mathutils.Vector(P[i] - head)
+            v.rotate(qi)
+            P[i] = head + np.array(v)
+        M = mathutils.Quaternion(axis, ang).to_matrix()
+        for bn in (an, "fore.%s" % side):
+            h0 = np.array(BONES[bn][0], dtype=float)
+            t0 = np.array(BONES[bn][1], dtype=float)
+            edits[bn] = (head + np.array(M @ mathutils.Vector(h0 - head)),
+                         head + np.array(M @ mathutils.Vector(t0 - head)))
+        print("KRF A-pose %s by %.0f deg" % (side, math.degrees(ang)), flush=True)
+    char.data.vertices.foreach_set("co", P.reshape(-1))
+    char.data.update()
+    try:
+        bpy.context.view_layer.objects.active = char
+        bpy.ops.mesh.customdata_custom_splitnormals_clear()
+    except Exception:                                               # noqa: BLE001
+        pass
+    for poly in char.data.polygons:
+        poly.use_smooth = True
+    bpy.context.view_layer.objects.active = rig
+    bpy.ops.object.mode_set(mode='EDIT')
+    for bn, (h2, t2) in edits.items():
+        eb = rig.data.edit_bones[bn]
+        eb.head = mathutils.Vector(h2)
+        eb.tail = mathutils.Vector(t2)
+    bpy.ops.object.mode_set(mode='OBJECT')
 
 char.parent = rig
 mod = char.modifiers.new("rig", 'ARMATURE')

@@ -43,6 +43,12 @@ STYLE = {
  # lump reads as a spike thrown across the silhouette. Drawn as a mitten there is nothing
  # to splay. The arms are also longer and held clear of the body, because short arms
  # pressed against the torso give the auto-rigger nothing to find.
+ # chibi3: arms down AND no cloak over the shoulders. A cape carries arm weight, so any
+ # pose conversion drags it across the back, and it hides the shoulder the rig needs.
+ "chibi3": ("chibi anime style, head about one third of body height, simple rounded body, big eyes, "
+            "wearing a simple fitted tunic with short sleeves and bare shoulders, no cape and no hood, "
+            "hands drawn as simple rounded mittens with no separate fingers, "
+            "arms a little longer than usual and held clearly away from the body"),
  "chibi2": ("chibi anime style, head about one third of body height, simple rounded body, big eyes, "
             "hands drawn as simple rounded mittens with no separate fingers, smooth closed oval hands, "
             "arms a little longer than usual and held clearly away from the body"),

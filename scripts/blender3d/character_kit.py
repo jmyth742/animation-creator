@@ -418,6 +418,11 @@ def apply_walk(rig, path_fn, f0, f1, fps=16, stride_hz=1.45):
     _torso = float(os.environ.get("WALK_TORSO", "0.45"))
     _sway = float(os.environ.get("WALK_SWAY", "0.55"))
     _armg = float(os.environ.get("WALK_ARM", "0.85"))
+    # WALK_ARM_DOWN: a constant swing applied to the upper arms, in degrees. A character
+    # modelled in a T-pose has its arm BONES horizontal too (kit_rig_fit fits them to the
+    # mesh), so the animator has to bring the arms to the sides itself; on an A-pose mesh
+    # this stays at zero.
+    _armdown = math.radians(float(os.environ.get("WALK_ARM_DOWN", "0")))
     pb = rig.pose.bones
     for b in pb:
         b.rotation_mode = 'XYZ'
@@ -439,7 +444,7 @@ def apply_walk(rig, path_fn, f0, f1, fps=16, stride_hz=1.45):
             pb[f"shin.{side}"].rotation_euler = (0.95 * swing ** 1.3 + dip, 0, 0)
             pb[f"foot.{side}"].rotation_euler = (
                 -0.35 * max(0.0, math.sin(ph - 2.4) * sgn) + 0.25 * swing, 0, 0)
-            pb[f"arm.{side}"].rotation_euler = (-0.38 * _armg * sl, 0, sgn * 0.06)
+            pb[f"arm.{side}"].rotation_euler = (-0.38 * _armg * sl, 0, sgn * (0.06 + _armdown))
             pb[f"fore.{side}"].rotation_euler = (-0.20 - 0.22 * _armg * max(0.0, -sl), 0, 0)
             for nm in ("thigh", "shin", "foot", "arm", "fore"):
                 pb[f"{nm}.{side}"].keyframe_insert("rotation_euler", frame=f)
