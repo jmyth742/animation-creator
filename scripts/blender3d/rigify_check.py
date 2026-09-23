@@ -34,10 +34,13 @@ sc.render.image_settings.color_mode = 'RGBA'
 zs = [(char.matrix_world @ v.co).z for v in char.data.vertices]
 H = max(zs) - min(zs)
 ctr = mathutils.Vector((0, 0, (max(zs) + min(zs)) / 2))
+FACE = os.environ.get("RC_FACE", "0") not in ("", "0")
+if FACE:                                            # close on the head, thin sticks
+    ctr = mathutils.Vector((0, 0, min(zs) + 0.86 * H))
 
 
 def place(yaw):
-    r = math.radians(yaw); d = 1.95 * H
+    r = math.radians(yaw); d = (0.62 if FACE else 1.95) * H
     cam.location = (ctr.x + d * math.sin(r), ctr.y - d * math.cos(r), ctr.z + 0.04 * H)
     cam.rotation_euler = (ctr - mathutils.Vector(cam.location)).to_track_quat('-Z', 'Y').to_euler()
 
@@ -57,12 +60,14 @@ if MODE == "xray":
     for pb in rig.pose.bones:
         if not rig.data.bones[pb.name].use_deform:
             continue
+        if FACE and not any(k in pb.name for k in ("jaw", "lip", "lid", "brow", "eye", "nose", "chin", "cheek", "teeth", "tongue", "forehead", "temple", "ear", "spine.006")):
+            continue
         h = rig.matrix_world @ pb.head; t = rig.matrix_world @ pb.tail
         v = t - h
         if v.length < 1e-4:
             continue
         me = bpy.data.meshes.new("b"); bm = bmesh.new()
-        r = max(0.004, min(0.014, 0.10 * v.length))
+        r = max(0.0015 if FACE else 0.004, min(0.014, (0.06 if FACE else 0.10) * v.length))
         bmesh.ops.create_cone(bm, cap_ends=True, segments=8, radius1=r, radius2=r * 0.35, depth=v.length)
         bm.to_mesh(me); bm.free()
         ob = bpy.data.objects.new("b", me); sc.collection.objects.link(ob)
