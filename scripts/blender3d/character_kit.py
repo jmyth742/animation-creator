@@ -944,6 +944,37 @@ def repair_shoulders(char, rig, roles, name):
             tg[int(_np.argmin([abs(z - zz) for zz in tz]))].add([int(i)], tot, 'ADD')
             moved += 1
         out["%s_returned_to_torso" % side] = moved
+
+        # CLOTH ON THE ARM. A cloak hangs beside the arm, so the nearest-chain rule keeps
+        # it on the arm and every gesture flings it out as a flat wing. An arm is a tube:
+        # anything much farther from the chain than the arm is thick is not arm.
+        if os.environ.get("CHAR_ARM_CLOTH", "1") not in ("", "0"):
+            own = [v.index for v in char.data.vertices
+                   if any(g.group in chain_idx and g.weight > 0.5 for g in v.groups)]
+            if len(own) > 60:
+                d_own = d_arm[own]
+                r = float(_np.percentile(d_own, 40))
+                lim = max(2.2 * r, 0.02)
+                cloth = 0
+                for i in own:
+                    if d_arm[i] <= lim:
+                        continue
+                    v = char.data.vertices[i]
+                    tot = 0.0
+                    for g in v.groups:
+                        if g.group in chain_idx:
+                            tot += g.weight
+                    if tot <= 1e-4:
+                        continue
+                    for g in list(v.groups):
+                        if g.group in chain_idx:
+                            char.vertex_groups[chain_idx[g.group]].remove([i])
+                    z = P[i, 2]
+                    tg[int(_np.argmin([abs(z - zz) for zz in tz]))].add([int(i)], tot, 'ADD')
+                    cloth += 1
+                if cloth:
+                    out["%s_cloth_to_torso" % side] = cloth
+                    out["%s_arm_radius_mm" % side] = int(round(r * 1000))
     print("SHOULDERFIX", name, out)
     return out
 
@@ -987,6 +1018,24 @@ def reseat_arms(char, rig, roles, name):
         if len(sel) < 60:
             out[side] = "too few arm vertices (%d)" % len(sel)
             continue
+        # Cloth contamination guard. On the cloaked cast the arm groups also hold a chunk
+        # of cloak, and fitting an axis through cloak aims the arm into the cape. Keep only
+        # the vertices that are near the chain as PREDICTED; a wrong prediction is still
+        # within an arm's length of the arm, a cloak hem is not.
+        segs = [(_np.array(rig.matrix_world @ rig.data.bones[nm].head_local),
+                 _np.array(rig.matrix_world @ rig.data.bones[nm].tail_local))
+                for nm in subtree if nm in rig.data.bones]
+        chain_len = sum(float(_np.linalg.norm(b - a)) for a, b in segs) or 1.0
+        co0 = _np.empty(len(char.data.vertices) * 3)
+        char.data.vertices.foreach_get("co", co0)
+        Pall = co0.reshape(-1, 3) @ _np.array(char.matrix_world.to_3x3()).T + _np.array(char.matrix_world.translation)
+        dch = _chain_dist(Pall[sel], segs)
+        keep = dch < 0.45 * chain_len
+        if keep.sum() >= 60:
+            dropped = int(len(sel) - keep.sum())
+            sel = [i for i, k in zip(sel, keep) if k]
+            if dropped:
+                out["%s_dropped_far" % side] = dropped
         co = _np.empty(len(char.data.vertices) * 3)
         char.data.vertices.foreach_get("co", co)
         P = co.reshape(-1, 3) @ _np.array(char.matrix_world.to_3x3()).T + _np.array(char.matrix_world.translation)
@@ -1033,9 +1082,18 @@ def reseat_arms(char, rig, roles, name):
         for i, b in enumerate(chain):
             placement[b.name] = (centre_at(ts[i]), centre_at(ts[i + 1]))
         riders = [nm for nm in subtree if nm not in placement]
-        plans.append((chain[-1].name, placement, riders))
+        plans.append((chain[-1].name, placement, riders, span, u))
         out["%s_chain" % side] = "/".join(b.name for b in chain)
         out["%s_axis_len_mm" % side] = int(round(span * 1000))
+    # Refuse a fit we cannot trust rather than move bones on a bad measurement. The two
+    # sides of a character are symmetric; an axis that points upward, or a span wildly
+    # different from the other side, means the cloud was not the arm.
+    if len(plans) == 2:
+        sa, sb = plans[0][3], plans[1][3]
+        if max(sa, sb) > 0 and abs(sa - sb) / max(sa, sb) > 0.30:
+            out["rejected"] = "asymmetric spans %d/%d mm" % (int(sa * 1000), int(sb * 1000))
+            plans = []
+    plans = [pl for pl in plans if pl[4][2] < 0.45]        # axis must not point upward
     if not plans:
         print("RESEAT", name, out)
         return out
@@ -1044,7 +1102,7 @@ def reseat_arms(char, rig, roles, name):
     M3 = rig.matrix_world.to_3x3()
     bpy.context.view_layer.objects.active = rig
     bpy.ops.object.mode_set(mode='EDIT')
-    for last_name, placement, riders in plans:
+    for last_name, placement, riders, _span, _u in plans:
         eb_last = rig.data.edit_bones.get(last_name)
         old_h = rig.matrix_world @ mathutils.Vector(eb_last.head) if eb_last else None
         old_t = rig.matrix_world @ mathutils.Vector(eb_last.tail) if eb_last else None

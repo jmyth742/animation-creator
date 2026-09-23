@@ -370,7 +370,7 @@ for clip in CLIPS:
         trav.normalize()
         side = mathutils.Vector((-trav.y, trav.x, 0))
         mid = mathutils.Vector(((p0.x + p1.x) / 2, (p0.y + p1.y) / 2, FLOOR + H_t * 0.52))
-        dd = 1.35 * H_t + 0.62 * (p1 - p0).length
+        dd = 2.05 * H_t + 0.55 * (p1 - p0).length
         cam.location = mid + side * dd + mathutils.Vector((0, 0, H_t * 0.06))
         cam.rotation_euler = (mid - mathutils.Vector(cam.location)).to_track_quat('-Z', 'Y').to_euler()
         d0 = os.path.join(OUT, clip)
