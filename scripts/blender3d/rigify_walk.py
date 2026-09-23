@@ -96,11 +96,22 @@ def clear_anim():
     rig.animation_data_clear()
     for b in pb:
         b.rotation_mode = 'XYZ'; b.rotation_euler = (0, 0, 0); b.location = (0, 0, 0)
+    # Rigify's IK/FK and stretch switches are custom properties read by DRIVERS. Set
+    # without a keyframe they never re-evaluate in a background render, so the arms kept
+    # following an IK target parked at the T-pose hand while the FK control pointed down.
     for side in ("L", "R"):
-        pb["thigh_parent." + side]["IK_FK"] = 0.0
-        pb["upper_arm_parent." + side]["IK_FK"] = 1.0
-        if "IK_Stretch" in pb["thigh_parent." + side].keys():
-            pb["thigh_parent." + side]["IK_Stretch"] = 0.0     # a leg is not a rubber band
+        for bone, props in (("thigh_parent." + side, {"IK_FK": 0.0, "IK_Stretch": 0.0}),
+                            ("upper_arm_parent." + side, {"IK_FK": 1.0, "IK_Stretch": 0.0})):
+            for k, v in props.items():
+                if k in pb[bone].keys():
+                    pb[bone][k] = v
+                    pb[bone].keyframe_insert('["%s"]' % k, frame=1)
+    # the drivers that read those properties only pick up the change after the
+    # depsgraph is re-tagged and a frame is evaluated; without this the deform arm kept
+    # following the IK target while the FK control pointed down
+    rig.update_tag()
+    sc.frame_set(2); sc.frame_set(1)
+    bpy.context.view_layer.update()
     rig.location = (0, 0, 0); rig.rotation_euler = (0, 0, 0)
 
 
