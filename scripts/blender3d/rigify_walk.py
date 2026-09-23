@@ -136,23 +136,60 @@ def key_rot(name, eul, f):
     pb[name].keyframe_insert("rotation_euler", frame=f)
 
 
+_ARM_ROLL = {}
+
+
 def arm_pose(side, fwd, f, out_deg=None):
-    """Upper arm FK: first the rotation that takes the bone's REST direction to hanging
-    at the side, then the swing about the character's lateral axis, converted once into
-    the control's local frame. The rest direction is whatever the mesh was modelled
-    with -- arms out on a T-pose sheet -- so a plain local rotation never brought the
-    arms down and they read as held out to the camera."""
+    """Upper arm FK as a full ORIENTATION, not just a direction.
+
+    Bringing the arm down by the shortest arc between two directions leaves an
+    arbitrary roll on the bone, and the elbow's hinge ends up pointing sideways: measured,
+    the forearm then folded toward (-0.77, -0.63, -0.13), across the body instead of
+    forward, which read as elbows out on one character and as a second arm on the other.
+    So the target frame is built explicitly: local Y along the hanging direction, local X
+    (Rigify's hinge axis) lateral, orthogonalised, and the sign of X chosen per rig so the
+    forearm folds toward -Y (forward). That sign is measured once with a test bend.
+    """
     name = "upper_arm_fk." + side
     R = rig.data.bones[name].matrix_local.to_3x3()
     d = (R @ mathutils.Vector((0, 1, 0))).normalized()
     sgn = 1 if d.x >= 0 else -1
     out = math.radians(float(os.environ.get("RW_ARM_OUT", "10")) if out_deg is None else out_deg)
-    want = mathutils.Vector((sgn * math.sin(out), 0.0, -math.cos(out)))
-    q_down = mathutils.Quaternion() if d.z < -0.85 else d.rotation_difference(want)
-    q = mathutils.Quaternion((1, 0, 0), fwd) @ q_down
+    y_axis = mathutils.Vector((sgn * math.sin(out), 0.0, -math.cos(out))).normalized()
+
+    def frame_for(xsign):
+        x_axis = mathutils.Vector((xsign, 0.0, 0.0))
+        x_axis = (x_axis - y_axis * x_axis.dot(y_axis)).normalized()
+        z_axis = x_axis.cross(y_axis).normalized()
+        T = mathutils.Matrix((x_axis, y_axis, z_axis)).transposed()     # columns = axes
+        return T @ R.inverted()                                          # world rotation taking rest to target
+
+    if (rig.name, side) not in _ARM_ROLL:
+        # test bend: which X sign folds the forearm forward (-Y)?
+        best, best_score = 1.0, None
+        fk = pb["forearm_fk." + side]
+        saved = (pb[name].rotation_mode, pb[name].rotation_quaternion.copy(), fk.rotation_mode, fk.rotation_euler.copy())
+        for xsign in (1.0, -1.0):
+            Rw = frame_for(xsign)
+            pb[name].rotation_mode = 'QUATERNION'
+            pb[name].rotation_quaternion = (R.inverted() @ Rw @ R).to_quaternion()
+            fk.rotation_mode = 'XYZ'; fk.rotation_euler = (math.radians(40), 0, 0)
+            bpy.context.view_layer.update()
+            ua = (rig.matrix_world @ pb["DEF-upper_arm." + side].matrix).to_3x3() @ mathutils.Vector((0, 1, 0))
+            fa = (rig.matrix_world @ pb["DEF-forearm." + side].matrix).to_3x3() @ mathutils.Vector((0, 1, 0))
+            fold = fa - ua * fa.dot(ua)
+            score = -fold.normalized().y if fold.length > 1e-6 else -1     # forward = -Y
+            if best_score is None or score > best_score:
+                best, best_score = xsign, score
+        pb[name].rotation_mode, pb[name].rotation_quaternion = saved[0], saved[1]
+        fk.rotation_mode, fk.rotation_euler = saved[2], saved[3]
+        _ARM_ROLL[(rig.name, side)] = best
+        print("RW arm %s hinge sign %+.0f (forward-fold score %.2f)" % (side, best, best_score), flush=True)
+    Rw = frame_for(_ARM_ROLL[(rig.name, side)])
+    q = mathutils.Quaternion((1, 0, 0), fwd).to_matrix() @ Rw
     b = pb[name]
     b.rotation_mode = 'QUATERNION'
-    b.rotation_quaternion = (R.inverted() @ q.to_matrix() @ R).to_quaternion()
+    b.rotation_quaternion = (R.inverted() @ q @ R).to_quaternion()
     b.keyframe_insert("rotation_quaternion", frame=f)
 
 
@@ -162,6 +199,12 @@ def walk(f0, f1, heading_fn, speed_mps):
     dur = (f1 - f0) / FPS
     cycle = STRIDE / speed_mps                                  # seconds per full cycle
     foot_rest = {s: rest_world("foot_ik." + s) for s in ("L", "R")}
+    # The mesh was modelled off-centre: the hip joints sit behind the rig origin (0.15 m
+    # on the chibi, 9 per cent of its height). Contacts placed around the origin then land
+    # 15 cm too far forward relative to the pelvis and the body trails its own feet. Centre
+    # the stride under the hip joints instead.
+    hip_mid = (rest_world("DEF-thigh.L") + rest_world("DEF-thigh.R")) / 2
+    hip_off = mathutils.Vector((hip_mid.x, hip_mid.y, 0))
     for f in range(f0, f1 + 1):
         t = (f - f0) / FPS
         x, y, yaw = heading_fn(t)
@@ -193,8 +236,9 @@ def walk(f0, f1, heading_fn, speed_mps):
                 cx, cy, cyaw = heading_fn(max(0.0, tt))
                 fw = mathutils.Vector((math.sin(cyaw), -math.cos(cyaw), 0))
                 sd = mathutils.Vector((math.cos(cyaw), math.sin(cyaw), 0))
-                lat = foot_rest[s].x
-                return mathutils.Vector((cx, cy, 0)) + fw * (STRIDE * 0.25) + sd * lat
+                lat = foot_rest[s].x - hip_mid.x
+                off = mathutils.Matrix.Rotation(cyaw, 3, 'Z') @ hip_off
+                return mathutils.Vector((cx, cy, 0)) + off + fw * (STRIDE * 0.25) + sd * lat
             if pl < 0.5:                                        # stance: planted
                 pos = contact(k)
                 pos.z = foot_rest[s].z
