@@ -208,7 +208,50 @@ def foot_slide(f0, f1):
     return 1000.0 * tot / max(1, cnt)
 
 
+def idle(f0, f1, gestures=True):
+    """Standing: breath on the chest, a slow weight shift on the hips, the head looking
+    around, arms hanging FK with a little sway, and two gestures -- a hand raise to
+    chest height on the IK hand and a small nod -- so the body reads as alive rather
+    than as a loop."""
+    clear_anim()
+    hand_rest = {s: rest_world("hand_ik." + s) for s in ("L", "R")}
+    for f in range(f0, f1 + 1):
+        t = (f - f0) / FPS
+        tb = 2 * math.pi * 0.22 * t; ts = 2 * math.pi * 0.07 * t
+        rig.location = (0, 0, 0); rig.rotation_euler = (0, 0, 0)
+        rig.keyframe_insert("location", frame=f); rig.keyframe_insert("rotation_euler", frame=f)
+        key_rot("chest", (0.03 * math.sin(tb), 0, 0.02 * math.sin(ts)), f)
+        pb["hips"].location = (0.012 * H * math.sin(ts), 0, -0.004 * H * abs(math.sin(ts)))
+        pb["hips"].keyframe_insert("location", frame=f)
+        key_rot("hips", (0, 0, -0.04 * math.sin(ts)), f)
+        look = 0.25 * math.sin(2 * math.pi * 0.05 * t + 1.0)
+        nod = 0.10 * math.sin(2 * math.pi * 0.45 * t) * max(0.0, math.sin(2 * math.pi * 0.06 * t + 2.2)) if gestures else 0.0
+        key_rot("head", (0.02 * math.sin(tb) + nod, 0.03 * math.sin(ts * 1.3), look), f)
+        key_rot("neck", (0.3 * nod, 0, 0.3 * look), f)
+        for s, sg in (("L", 1), ("R", -1)):
+            key_rot("upper_arm_fk." + s, (0.02 * math.sin(tb + sg), 0, math.radians(-4) * sg), f)
+            key_rot("forearm_fk." + s, (math.radians(10 + 3 * math.sin(tb)), 0, 0), f)
+    if gestures:
+        # hand raise: switch the right arm to IK for a window and lift the hand to chest
+        # height, palm turning in, then settle back
+        f_a, f_b = f0 + int(0.30 * (f1 - f0)), f0 + int(0.62 * (f1 - f0))
+        pb["upper_arm_parent.R"]["IK_FK"] = 0.0
+        pb["upper_arm_parent.R"].keyframe_insert('["IK_FK"]', frame=f0)
+        chest = rest_world("chest")
+        for f in range(f0, f1 + 1):
+            u = 0.0
+            if f_a <= f <= f_b:
+                w = (f - f_a) / max(1, f_b - f_a)
+                u = math.sin(math.pi * w) ** 0.7
+            target = hand_rest["R"].lerp(mathutils.Vector((chest.x - 0.10 * H, chest.y - 0.22 * H, chest.z - 0.02 * H)), u)
+            key_loc_world("hand_ik.R", target, f)
+            key_rot("hand_ik.R", (math.radians(-40) * u, 0, math.radians(30) * u), f)
+
+
 speed = SPEED * H
+if "idle" in WANT:
+    idle(1, NF)
+    render_tracked("idle", 1, NF, 24, dist_mul=1.75)
 if "walk" in WANT:
     walk(1, NF, lambda t: (0.0, -speed * t, 0.0), speed)
     print("RW foot slide walk %.1f mm/frame" % foot_slide(1, NF), flush=True)
