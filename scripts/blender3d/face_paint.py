@@ -327,6 +327,28 @@ def eye_expr(kind):
             return (0.14, 0.09, 0.09, min(1.0, 1.5 - d / th))
         return None
 
+    def narrow_over(h, v):
+        """Anger without erasing: the character's own eye stays, and a heavy lowered lid
+        line is drawn across its upper third. No skin fill -- the generic eye ellipse is
+        larger than this character's eye, and a fill shows as a pale bar above it."""
+        if abs(h) > sw * 0.95:
+            return None
+        lid_v = 0.10 * sh - 0.04 * sh * (h / sw) ** 2     # slight downward bow
+        th = 0.11 * EX * (1.0 - 0.35 * abs(h) / sw)
+        d = abs(v - lid_v)
+        if d < th:
+            return (0.12, 0.08, 0.08, min(1.0, 1.5 - d / th))
+        return None
+
+    def arc_fill(h, v):
+        """A smiling closed eye: a SMALL skin fill just over the eye opening, then the
+        arc. The fill is sized to the eye, not to the generic ellipse."""
+        fw, fh = 0.46 * EX, 0.24 * EX
+        if math.hypot(h / fw, (v + 0.02 * EX) / fh) <= 1.0:
+            c = EYE_RING(h, v)
+            return (c[0] * 0.93, c[1] * 0.90, c[2] * 0.89, 1.0)
+        return None
+
     def fn(h, v):
         d = math.hypot(h / sw, v / sh)
         lid_v = (0.30 if kind == "narrow" else 0.42) * sh
@@ -347,7 +369,13 @@ def eye_expr(kind):
             a = soft(abs(v - lid_v - lash_t * 0.25), lash_t * 0.45)
             return (0.12, 0.08, 0.08, 0.9 * a)
         return None
-    return arc if kind == "arc" else fn
+    if kind == "arc":
+        return arc
+    if kind == "arc_fill":
+        return arc_fill
+    if kind == "narrow":
+        return narrow_over
+    return fn
 
 
 def mouth_curve(kind):
@@ -398,7 +426,12 @@ if os.environ.get("FP_EXPR", "1") not in ("", "0"):
         for anchor in (EYE_L, EYE_R):
             EYE_RING = ring_sampler(anchor, 1.35 * EX, 0.85 * EX)
             inner = -1 if anchor[0] > FX else 1
-            if spec["eye"]:
+            if spec["eye"] == "arc":
+                paint(e, anchor, 0.06, eye_expr("arc_fill"))   # small fill over the opening...
+                paint(e, anchor, 0.06, eye_expr("arc"))        # ...then the smiling arc
+            elif spec["eye"] == "narrow":
+                paint(e, anchor, 0.06, eye_expr("narrow"))
+            elif spec["eye"] and not KEEP_EYES:
                 paint(e, anchor, 0.07, eye_plate)
                 paint(e, anchor, 0.06, eye_expr(spec["eye"]))
             if spec["brow"]:
