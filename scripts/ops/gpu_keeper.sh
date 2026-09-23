@@ -72,10 +72,18 @@ for M in $P/cand_*_rigged.glb; do
   BASE=$(basename "$M" _rigged.glb)
   OUT=/workspace/review/MOTION_${BASE}.mp4
   [ -s "$OUT" ] && continue
+  # face painted on the mesh that is ANIMATED, keeping the character's own eyes for the
+  # neutral face and redrawing them only where an expression needs it
+  if [ ! -f "$P/${BASE}_kit_face_e_happy.png" ]; then
+    FCG_EYE=0.44 FCG_MOUTH=0.195 FCG_EYEX=0.40 /workspace/blender42/blender -b --factory-startup --python \
+      scripts/blender3d/face_calib_geom.py -- "$M" 1.6 "$P/${BASE}_kit_face.json" || true
+    CHAR_NORMALFIX=0 FP_MOUTH_PLATE=1.5 /workspace/blender42/blender -b --factory-startup --python \
+      scripts/blender3d/face_paint.py -- --keep-eyes "$M" "$P/${BASE}_kit_face.json" 1.6 "$P" "${BASE}_kit" "0.45,0.30,0.16" || true
+  fi
   rm -rf /workspace/loopwork/proc_$BASE
-  PS_RES=768 /workspace/blender42/blender -b --factory-startup --python scripts/blender3d/proc_showcase.py -- \
+  PS_RES=1080 PS_FACES="${BASE}_kit" /workspace/blender42/blender -b --factory-startup --python scripts/blender3d/proc_showcase.py -- \
     "$M" /workspace/loopwork/proc_$BASE 1.6 || true
-  bash scripts/ops/encode_showreel.sh /workspace/loopwork/proc_$BASE "$OUT" 20 "walk turn idle close" || true
+  bash scripts/ops/encode_showreel.sh /workspace/loopwork/proc_$BASE "$OUT" 20 "walk turn idle close emote" || true
   break
 done
 bash /workspace/export_outcomes.sh 2>&1 | tail -1
