@@ -192,7 +192,7 @@ def retarget(bvh_path):
         d = (m @ Y).normalized()
         return math.asin(max(-1.0, min(1.0, d.dot(f_hat))))
     swing = {}
-    SW_GAIN = float(os.environ.get("RS_ARM_SWING", "0.62"))
+    SW_GAIN = float(os.environ.get("RS_ARM_SWING", "0"))   # opt-in: it fought the authored motion
     if SW_GAIN > 0 and all(b in S.data.bones for b in ("LeftUpLeg", "RightUpLeg", "LeftArm", "RightArm")):
         arm_range = []
         leg = {}

@@ -15,6 +15,14 @@ import bpy
 import numpy as np
 import mathutils
 
+# NOTE (2026-09-23): every rig-repair step added in the 22 Sep session -- weight
+# smoothing, corrective smooth, weight cleaning, the shoulder/flank reassignment, the arm
+# re-seating and the A-pose bake -- is now OFF by default. Rendered side by side on the
+# retopologised chibi they made the walk WORSE: puffed shoulders and shortened arms,
+# where the untouched rig walked cleanly. They stay available by environment variable for
+# a mesh that needs them, but the thing that actually determines whether a character rigs
+# is RETOPOLOGY before UniRig, not repair afterwards.
+
 HEIGHT = {"default": 1.75}
 
 
@@ -1185,13 +1193,13 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False
             if vg: vg.name = kit_name
     for pb in rig.pose.bones:
         pb.rotation_mode = 'XYZ'
-    if os.environ.get("CHAR_SHOULDER_FIX", "1") not in ("", "0"):
+    if os.environ.get("CHAR_SHOULDER_FIX", "0") not in ("", "0"):
         try:
             # roles above still holds the PRE-rename bone names: the rename loop changes
             # rig.data.bones[...].name without updating the dict it read them from.
             _r = map_unirig(rig); _r.pop("_height", None)
             repair_shoulders(char, rig, _r, name)
-            if os.environ.get("CHAR_RESEAT_ARMS", "1") not in ("", "0"):
+            if os.environ.get("CHAR_RESEAT_ARMS", "0") not in ("", "0"):
                 reseat_arms(char, rig, _r, name)
         except Exception as _e:                                     # noqa: BLE001
             print("SHOULDERFIX failed", _e)
@@ -1224,7 +1232,7 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False
     # is what produces the spikes that shoot out of a hand mid-stride: the vertex is
     # dragged a long way by an influence too small to see in a weight paint. Cap the
     # number of bones per vertex and drop the negligible ones.
-    if os.environ.get("CHAR_WCLEAN", "1") not in ("", "0") and char.vertex_groups:
+    if os.environ.get("CHAR_WCLEAN", "0") not in ("", "0") and char.vertex_groups:
         try:
             bpy.ops.object.select_all(action='DESELECT')
             char.select_set(True)
@@ -1243,7 +1251,7 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False
     # here because the A-pose bake below is itself a large rotation applied through
     # these weights: bake first and the rest pose is already torn, so no amount of
     # care in the animation can recover it. CHAR_WSMOOTH=0 restores the raw weights.
-    _ws = float(os.environ.get("CHAR_WSMOOTH", "0.5") or 0)
+    _ws = float(os.environ.get("CHAR_WSMOOTH", "0") or 0)
     _wr = int(os.environ.get("CHAR_WSMOOTH_REPEAT", "4") or 0)
     if _ws > 0 and _wr > 0 and char.vertex_groups:
         try:
@@ -1262,7 +1270,7 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False
     bpy.context.view_layer.update()
     def _dir(bn):
         b = rig.data.bones[bn]; return (rig.matrix_world.to_3x3() @ (b.tail_local - b.head_local)).normalized()
-    _apose = os.environ.get("CHAR_APOSE", "1") not in ("", "0")
+    _apose = os.environ.get("CHAR_APOSE", "0") not in ("", "0")
     def _mesh_arm_dir(bn):
         """Where the ARM GEOMETRY actually goes, from the bone head to the centroid of the
         vertices that bone chain owns. The bone axis is not a safe proxy: on the A-pose
@@ -1430,7 +1438,7 @@ def load_rigged_character(glb_path, name, height=1.75, yaw_deg=None, skirt=False
     # CORRECTIVE SMOOTH: relaxes the deformed surface back towards the rest shape's
     # edge lengths, which is what removes the pinched candy-wrapper at a rotated
     # shoulder or elbow. It costs nothing at render time and needs no extra data.
-    _cs = float(os.environ.get("CHAR_CSMOOTH", "0.45") or 0)
+    _cs = float(os.environ.get("CHAR_CSMOOTH", "0") or 0)
     if _cs > 0:
         _cm = char.modifiers.new("corrective", 'CORRECTIVE_SMOOTH')
         _cm.factor = _cs
