@@ -119,15 +119,21 @@ def clear_anim():
 
 
 def rest_world(name):
-    return rig.matrix_world @ rig.data.bones[name].head_local
+    """Rest head in the ARMATURE frame (the rig object sits at identity in rest). Reading
+    through rig.matrix_world picked up whatever transform the last evaluated frame left
+    behind, so the second clip in a session started from a displaced rest."""
+    return rig.data.bones[name].head_local.copy()
 
 
-def key_loc_world(name, world, f):
-    """Key a control's location so that its head lands at `world` (rig space == world here)."""
+def key_loc_world(name, rig_space, f):
+    """Key a control's location so that its head lands at `rig_space`, a point given in
+    the ARMATURE's own frame. Callers remove the object transform themselves with the
+    per-frame Mw they know. This must not read rig.matrix_world: the depsgraph leaves it
+    stale at frame 1 during a keying loop, and dividing by it applied the hip drop twice
+    on a fresh session (feet 10 cm in the air, correct on the second call by accident)."""
     b = pb[name]
     rest = rig.data.bones[name]
-    local = rest.matrix_local.inverted() @ (rig.matrix_world.inverted() @ world)
-    b.location = local
+    b.location = rest.matrix_local.inverted() @ rig_space
     b.keyframe_insert("location", frame=f)
 
 
@@ -237,8 +243,8 @@ def walk(f0, f1, heading_fn, speed_mps):
                 fw = mathutils.Vector((math.sin(cyaw), -math.cos(cyaw), 0))
                 sd = mathutils.Vector((math.cos(cyaw), math.sin(cyaw), 0))
                 lat = foot_rest[s].x - hip_mid.x
-                off = mathutils.Matrix.Rotation(cyaw, 3, 'Z') @ hip_off
-                return mathutils.Vector((cx, cy, 0)) + off + fw * (STRIDE * 0.25) + sd * lat
+                hoff = mathutils.Matrix.Rotation(cyaw, 3, 'Z') @ hip_off
+                return mathutils.Vector((cx, cy, 0)) + hoff + fw * (STRIDE * 0.25) + sd * lat
             if pl < 0.5:                                        # stance: planted
                 pos = contact(k)
                 pos.z = foot_rest[s].z
