@@ -57,7 +57,9 @@ for M in $P/*_retopo.glb; do
   [ -s "$M" ] || continue
   BASE=$(basename "$M" _retopo.glb)
   [ -s "$P/${BASE}_rigged.glb" ] && continue
-  bash scripts/blender3d/rig_unirig.sh "$M" "$P/${BASE}_rigged.glb" || true
+  # the kit's own fitted skeleton, not the auto-rigger: see memory kit-rig-fit
+  KRF_APOSE=0 /workspace/blender42/blender -b --factory-startup --python scripts/blender3d/kit_rig_fit.py -- \
+    "$M" "$P/${BASE}_rigged.glb" 1.6 || true
   break
 done
 J
