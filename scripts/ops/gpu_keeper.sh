@@ -28,55 +28,85 @@ busy() {
 }
 
 refill() {
-  # A rotating set of experiments that always leaves something worth running. Each writes
-  # its own review artifact, so a morning judgement is always possible.
+  # A rotating set of experiments that always leaves something worth running. Rewritten
+  # 2026-09-23 around the finding that RETOPOLOGY BEFORE UniRig is what decides whether a
+  # character rigs at all: the rotation now pushes candidates through retopo -> rig ->
+  # reel and judges them, instead of repairing weights after the fact.
   local c=$(( $(cat $STATE 2>/dev/null || echo 0) ))
   echo $(( (c + 1) % 6 )) > $STATE
   local P=series/tir-na-nog-legend/meshes/props
   case $c in
-    0) cat > $Q/70_texture_cel.sh <<'J'
+    0) cat > $Q/70_retopo_sweep.sh <<'J'
 cd /workspace/text-to-video
 P=series/tir-na-nog-legend/meshes/props
-/workspace/venv/bin/python -u scripts/blender3d/texture_hy3d.py $P/st_cel_oisin.glb $P/st_cel_oisin_front.png $P/st_cel_oisin_hy.glb
-J
-       ;;
-    1) cat > $Q/71_retopo_candidates.sh <<'J'
-cd /workspace/text-to-video
-P=series/tir-na-nog-legend/meshes/props
-for S in chibi cel; do
-  SRC=$P/st_${S}_oisin_hy.glb; [ -f "$SRC" ] || SRC=$P/st_${S}_oisin_tex.glb
-  [ -f "$SRC" ] || continue
-  /workspace/blender42/blender -b --factory-startup --python scripts/blender3d/retopo_character.py --     $SRC cand_$S 15000 2048
+# any textured candidate without a retopologised counterpart gets one
+for SRC in $P/st_*_tex.glb $P/*_hy.glb; do
+  [ -s "$SRC" ] || continue
+  BASE=$(basename "$SRC" .glb); TAG="rt_${BASE}"
+  [ -s "$P/${TAG}_retopo.glb" ] && continue
+  /workspace/blender42/blender -b --factory-startup --python scripts/blender3d/retopo_character.py -- \
+    "$SRC" "$TAG" 15000 2048 || true
+  break        # one per pass: retopology is slow and the queue should stay responsive
 done
 J
        ;;
-    2) cat > $Q/72_turntables.sh <<'J'
+    1) cat > $Q/71_rig_sweep.sh <<'J'
 cd /workspace/text-to-video
 P=series/tir-na-nog-legend/meshes/props
-for S in chibi cel; do
-  for V in _hy _retopo; do
-    M=$P/st_${S}_oisin${V}.glb; [ -f "$M" ] || M=$P/cand_${S}_retopo.glb
-    [ -f "$M" ] || continue
-    /workspace/blender42/blender -b --factory-startup --python /workspace/loopwork/tex_check.py --       "$M" /workspace/review/cand_${S}${V}.png "${S}${V}"
+for M in $P/*_retopo.glb; do
+  [ -s "$M" ] || continue
+  BASE=$(basename "$M" _retopo.glb)
+  [ -s "$P/${BASE}_rigged.glb" ] && continue
+  bash scripts/blender3d/rig_unirig.sh "$M" "$P/${BASE}_rigged.glb" || true
+  break
+done
+J
+       ;;
+    2) cat > $Q/72_reel_sweep.sh <<'J'
+cd /workspace/text-to-video
+P=series/tir-na-nog-legend/meshes/props
+for M in $P/cand_*_rigged.glb; do
+  [ -s "$M" ] || continue
+  BASE=$(basename "$M" _rigged.glb)
+  OUT=/workspace/review/RIG_MOTION_${BASE}.mp4
+  [ -s "$OUT" ] && continue
+  rm -rf /workspace/loopwork/reel_$BASE
+  RS_CLIPS=walk,turn,wave,idle RS_MAXF=100 RS_RES=768 \
+    /workspace/blender42/blender -b --factory-startup --python scripts/blender3d/rig_showreel.py -- \
+    "$M" /workspace/loopwork/reel_$BASE 1.6 || true
+  bash scripts/ops/encode_showreel.sh /workspace/loopwork/reel_$BASE "$OUT" 20 "walk turn wave idle" || true
+  break
+done
+bash /workspace/export_outcomes.sh 2>&1 | tail -1
+J
+       ;;
+    3) cat > $Q/73_gate_sweep.sh <<'J'
+cd /workspace/text-to-video
+P=series/tir-na-nog-legend/meshes/props
+for M in $P/cand_*_rigged.glb; do
+  [ -s "$M" ] || continue
+  BASE=$(basename "$M" _rigged.glb)
+  [ -s "/workspace/review/deform_${BASE}_60.png" ] && continue
+  for A in 35 60 90; do
+    GATE_ANGLE=$A /workspace/blender42/blender -b --factory-startup --python scripts/blender3d/deform_gate.py -- \
+      "$M" "$BASE" 1.6 /workspace/review/deform_${BASE}_${A}.png || true
   done
+  break
 done
-bash /workspace/export_outcomes.sh 2>&1 | tail -1
 J
        ;;
-    3) cat > $Q/73_style_niamh.sh <<'J'
+    4) cat > $Q/74_texture_upsample.sh <<'J'
 cd /workspace/text-to-video
-# the same candidate styles for Niamh, so a pair can be judged together
-for S in chibi cel; do
-  /workspace/venv/bin/python scripts/blender3d/style_test.py $S niamh
-done
-bash /workspace/export_outcomes.sh 2>&1 | tail -1
-J
-       ;;
-    4) cat > $Q/74_probe_all_shots.sh <<'J'
-cd /workspace/text-to-video
-W=/workspace/loopwork
-for S in $(/workspace/venv/bin/python -c "import json;print(' '.join(x['name'] for x in json.load(open('$W/shots_night_sl.json'))['shots']))" 2>/dev/null); do
-  bash scripts/ops/probe_shot_env.sh allshots_$S $S CHAR_AO=0.30 FILM_INTEGRATE=0.22 CHAR_HAZE_SAT=0.3
+P=series/tir-na-nog-legend/meshes/props
+for M in $P/cand_*_retopo.glb; do
+  [ -s "$M" ] || continue
+  BASE=$(basename "$M" _retopo.glb)
+  [ -s "$P/${BASE}_hi.glb" ] && continue
+  FRONT=$P/${BASE}_retopo_base.png
+  [ -s "$FRONT" ] || continue
+  TEXHY_FACES=90000 /workspace/venv/bin/python -u scripts/blender3d/texture_hy3d.py \
+    "$M" "$FRONT" "$P/${BASE}_hi.glb" || true
+  break
 done
 J
        ;;
