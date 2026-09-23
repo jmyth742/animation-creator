@@ -406,6 +406,53 @@ def path_fn_from_points(pts, floor_fn, ease_end=True):
     return fn
 
 
+
+# ── arm posing in WORLD space ───────────────────────────────────────────
+# The kit's animators set the upper-arm rotation as a local XYZ euler, which is right for
+# the kit's own template (arms modelled hanging) and wrong for a character whose arm
+# bones lie along an outstretched arm: a local "swing forward" then sweeps the arm up in
+# front of the face. Posing in world space sidesteps the bone's roll entirely: first the
+# rotation that takes the bone's REST direction to hanging at the side, then the walk
+# swing about the world lateral axis, then convert once into the bone's local frame.
+_ARM_DOWN = {}
+
+
+def _arm_rest(rig, bn):
+    b = rig.data.bones[bn]
+    return (rig.matrix_world @ b.matrix_local).to_3x3()
+
+
+def arm_down_world(rig, bn, out_deg=None):
+    """World rotation taking arm bone bn from its rest direction to hanging at the side,
+    out_deg off vertical. Identity if it already hangs (an A-pose bind)."""
+    key = (rig.name, bn)
+    if key in _ARM_DOWN:
+        return _ARM_DOWN[key]
+    out = math.radians(float(os.environ.get("WALK_ARM_OUT", "18")) if out_deg is None else out_deg)
+    R = _arm_rest(rig, bn)
+    d = (R @ mathutils.Vector((0, 1, 0))).normalized()
+    sgn = 1 if d.x >= 0 else -1
+    want = mathutils.Vector((sgn * math.sin(out), 0.0, -math.cos(out))).normalized()
+    q = mathutils.Quaternion() if d.z < -0.75 else d.rotation_difference(want)
+    _ARM_DOWN[key] = q
+    return q
+
+
+def pose_arm(rig, bn, fwd, out, frame):
+    """Pose upper arm bn: fwd radians of swing about the world lateral axis (positive
+    = forward, toward +Y), out radians away from the body. Keys the quaternion."""
+    pb = rig.pose.bones[bn]
+    R = _arm_rest(rig, bn)
+    d = (R @ mathutils.Vector((0, 1, 0))).normalized()
+    sgn = 1 if d.x >= 0 else -1
+    qd = arm_down_world(rig, bn)
+    q_fwd = mathutils.Quaternion((1, 0, 0), fwd)
+    q_out = mathutils.Quaternion((0, 1, 0), -sgn * out)
+    qw = q_fwd @ q_out @ qd
+    pb.rotation_mode = 'QUATERNION'
+    pb.rotation_quaternion = (R.inverted() @ qw.to_matrix() @ R).to_quaternion()
+    pb.keyframe_insert("rotation_quaternion", frame=frame)
+
 def apply_walk(rig, path_fn, f0, f1, fps=16, stride_hz=1.45):
     """path_fn(t in 0..1) -> (x, y, z, heading_rad).
 
@@ -422,7 +469,7 @@ def apply_walk(rig, path_fn, f0, f1, fps=16, stride_hz=1.45):
     # modelled in a T-pose has its arm BONES horizontal too (kit_rig_fit fits them to the
     # mesh), so the animator has to bring the arms to the sides itself; on an A-pose mesh
     # this stays at zero.
-    _armdown = math.radians(float(os.environ.get("WALK_ARM_DOWN", "0")))
+
     pb = rig.pose.bones
     for b in pb:
         b.rotation_mode = 'XYZ'
@@ -444,9 +491,9 @@ def apply_walk(rig, path_fn, f0, f1, fps=16, stride_hz=1.45):
             pb[f"shin.{side}"].rotation_euler = (0.95 * swing ** 1.3 + dip, 0, 0)
             pb[f"foot.{side}"].rotation_euler = (
                 -0.35 * max(0.0, math.sin(ph - 2.4) * sgn) + 0.25 * swing, 0, 0)
-            pb[f"arm.{side}"].rotation_euler = (-0.38 * _armg * sl, 0, sgn * (0.06 + _armdown))
+            pose_arm(rig, f"arm.{side}", 0.38 * _armg * sl, 0.06, f)
             pb[f"fore.{side}"].rotation_euler = (-0.20 - 0.22 * _armg * max(0.0, -sl), 0, 0)
-            for nm in ("thigh", "shin", "foot", "arm", "fore"):
+            for nm in ("thigh", "shin", "foot", "fore"):
                 pb[f"{nm}.{side}"].keyframe_insert("rotation_euler", frame=f)
         pb["hips"].rotation_euler = (0, 0.10 * _torso * math.sin(ph), 0.09 * _torso * math.sin(ph))
         pb["spine"].rotation_euler = (0.06, -0.07 * _torso * math.sin(ph), -0.12 * _torso * math.sin(ph))
@@ -513,7 +560,7 @@ def apply_idle(rig, f0, f1, pos, heading, fps=16, look_at_fn=None,
         for side, sgn in (("L", 1), ("R", -1)):
             ax = 0.02 * math.sin(tb + sgn) + (g[4] if side == "R" else 0)
             fx = -0.15 + (g[5] if side == "R" else 0)
-            pb[f"arm.{side}"].rotation_euler = (ax, 0, sgn * 0.05)
+            pose_arm(rig, f"arm.{side}", -ax, 0.05, f)
             pb[f"fore.{side}"].rotation_euler = (fx, 0, 0)
             pb[f"arm.{side}"].keyframe_insert("rotation_euler", frame=f)
             pb[f"fore.{side}"].keyframe_insert("rotation_euler", frame=f)
