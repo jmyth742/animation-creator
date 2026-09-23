@@ -93,8 +93,14 @@ def retarget(bvh_path):
          [(S.matrix_world @ b.tail_local).z for b in S.data.bones]
     H_s = max(zs) - min(zs)
     scale = H_bone / H_s if H_s > 0 else 1.0
+    # RS_SKIP: roles to leave in their rest pose. The chibi's hands reconstruct as flat
+    # fans of splayed fingers; driving them from a human hand's world direction turns
+    # them into spikes, and leaving them alone is better than aiming them wrongly.
+    _skip = set(x for x in os.environ.get("RS_SKIP", "").split(",") if x)
     pairs = {}
     for sname, role in SRC.items():
+        if role in _skip:
+            continue
         if sname in S.data.bones and role in roles:
             pairs[roles[role]] = sname
     # ROOT CORRECTION. The old code aligned the hips by rotating the target's hips BONE
