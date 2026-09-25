@@ -63,21 +63,11 @@ import set_assets
 if os.environ.get("SET_DRESS", "0" if bpy.data.objects.get("painter_cam") else "1") != "0":
     set_assets.dress_valley(sc, floor_z, winter=True)
 
-MS = os.environ.get("FILM_MESH_SUFFIX", "")   # _retopo = the clean, re-skinned cast
-CAST = os.environ.get("FILM_CAST", "mv")     # mv = Hunyuan-mv meshes, cg = CharacterGen meshes (Day-2 verdict)
-if os.environ.get("FILM_RIG", "numpy") == "unirig":
-    # Day-5: UniRig-skinned cast (real skeletons + skin weights), same animators
-    ON, NN = ("cg_oisin", "cg_niamh") if CAST == "cg" else ("oisin_mv", "niamh_mv")
-    oisin, orig = kit.load_rigged_character(f"{MESHES}/props/{ON}{MS}_rigged.glb", ON, height=1.75)
-    niamh, nrig = kit.load_rigged_character(f"{MESHES}/props/{NN}{MS}_rigged.glb", NN, height=1.68, skirt=True)
-else:
-    oisin = kit.load_character(f"{MESHES}/props/oisin_mv_painted.glb", "oisin_mv")
-    orig = kit.rig_character(oisin, "oisin_mv")
-    niamh = kit.load_character(f"{MESHES}/props/niamh_mv_painted.glb", "niamh_mv", height=1.68)
-    nrig = kit.rig_character(niamh, "niamh_mv")
-FS = os.environ.get("FILM_FACE_SUFFIX", "")     # e.g. _flat -> <name>_flat_face_*.png (flattened palette A/B)
-octrl = kit.enable_face_variants(oisin, oisin.name + FS, f"{MESHES}/props")
-nctrl = kit.enable_face_variants(niamh, niamh.name + FS, f"{MESHES}/props")
+import film_cast
+oisin, orig, niamh, nrig = film_cast.load_cast(sc, MESHES, FPS)
+FS = os.environ.get("FILM_FACE_SUFFIX", "")
+octrl = film_cast.face_variants(oisin, oisin.name + FS, f"{MESHES}/props")
+nctrl = film_cast.face_variants(niamh, niamh.name + FS, f"{MESHES}/props")
 
 # ── performances ─────────────────────────────────────────────────────
 def his_xy(f):
@@ -105,7 +95,7 @@ def walk_pair(p0, p1):
 nhead = math.pi + math.atan2(-(OP[0] - NP[0]), OP[1] - NP[1])
 ohead = math.pi + math.atan2(-(NP[0] - OP[0]), NP[1] - OP[1])
 
-kit.apply_walk(orig, walk_in, 1, WALK_END, fps=FPS)
+film_cast.apply_walk(orig, walk_in, 1, WALK_END, fps=FPS)
 # the acting: speakers gesture on their lines, listeners react
 o_g, n_g = [], []
 for i, (L, f0) in enumerate(zip(lines, starts)):
@@ -119,20 +109,20 @@ for i, (L, f0) in enumerate(zip(lines, starts)):
         o_g.append((f0 + 6, fmid + 8, "lean_in" if i == 3 else "nod"))
         n_g.append((fend - 10, fend + 12, "nod" if i == 1 else "look_away"))
     o_g.append((fend + 2, fend + 18, "weight_shift"))
-kit.apply_idle(orig, WALK_END + 1, WALK2_START - 1,
+film_cast.apply_idle(orig, WALK_END + 1, WALK2_START - 1,
                (OP[0], OP[1], floor_z(*OP)), ohead, fps=FPS,
                look_at_fn=lambda f: NP, gestures=o_g)
-kit.apply_idle(nrig, 1, WALK2_START - 1, (NP[0], NP[1], floor_z(*NP)),
+film_cast.apply_idle(nrig, 1, WALK2_START - 1, (NP[0], NP[1], floor_z(*NP)),
                nhead, fps=FPS, look_at_fn=lambda f: his_xy(f), gestures=n_g)
-kit.apply_walk(orig, walk_pair(OP, (3.6, 17.5)), WALK2_START, FRAMES,    # away up the path toward the hall (the winter plate's lake lies west)
+film_cast.apply_walk(orig, walk_pair(OP, (3.6, 17.5)), WALK2_START, FRAMES,    # away up the path toward the hall (the winter plate's lake lies west)
                fps=FPS, stride_hz=1.15)
-kit.apply_walk(nrig, walk_pair(NP, (5.0, 18.4)), WALK2_START, FRAMES,
+film_cast.apply_walk(nrig, walk_pair(NP, (5.0, 18.4)), WALK2_START, FRAMES,
                fps=FPS, stride_hz=1.2)
 
 # faces: baseline closed+blinks over everything, then the lines
 rigs = {"oisin": (orig, octrl), "niamh": (nrig, nctrl)}
 for who, (r, fc) in rigs.items():
-    kit.apply_talk_tex(r, fc, [0.0] * FRAMES, 1, fps=FPS)
+    film_cast.apply_talk_tex(r, fc, [0.0] * FRAMES, 1, fps=FPS)
 for L, f0 in zip(lines, starts):
     # FILM_VIS_SUFFIX / FILM_ENV_SUFFIX (e.g. "_lam") select alternative
     # per-line viseme/envelope arrays for A/Bs; fall back to the plain ones
@@ -144,7 +134,7 @@ for L, f0 in zip(lines, starts):
         vis_p = pathlib.Path(f"{audio_dir}/l{L['i']}_vis.npy")
     vis = np.load(vis_p) if vis_p.exists() else None
     r, fc = rigs[L["who"]]
-    kit.apply_talk_tex(r, fc, env, f0, fps=FPS, blinks=False, visemes=vis)
+    film_cast.apply_talk_tex(r, fc, env, f0, fps=FPS, blinks=False, visemes=vis)
     # FILM_BLINK=lam: real blink EVENTS from the LAM curves replace the fixed
     # cadence during the line (l<i>_blink_lam.npy, 1 = lids closed)
     bl_p = pathlib.Path(f"{audio_dir}/l{L['i']}_blink_lam.npy")
@@ -157,6 +147,8 @@ for L, f0 in zip(lines, starts):
 # ── the edit, as data ────────────────────────────────────────────────
 CLOSE_N = {"cam": "-1.6,8.5,1.75", "tgt": "0.6,10.15,1.45", "lens": 45}
 CLOSE_O = {"cam": "0.97,9.05,1.62", "tgt": "-0.75,8.75,1.57", "lens": 55}   # 3/4 front (was a profile)
+CLOSE_N = film_cast.scale_close(CLOSE_N, nrig)
+CLOSE_O = film_cast.scale_close(CLOSE_O, orig)
 TWO = {"cam": "5.5,7.6,1.45", "tgt": "-0.8,7.5,1.35", "lens": 50}
 shots = [
     {"name": "s01_est", "f0": 1, "f1": 110, "cam": "-12,-8,6.5",
