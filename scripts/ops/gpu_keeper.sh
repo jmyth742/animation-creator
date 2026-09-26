@@ -117,6 +117,17 @@ bash /workspace/export_outcomes.sh 2>&1 | tail -2
 J
        ;;
   esac
+  # NEVER A NO-OP. The sweeps above finish in seconds once everything they cover exists,
+  # and on 25-26 Sep the card sat idle for 26 hours cycling through them. So every refill
+  # also drops one open-ended job that always has value: a new trio of lead candidates
+  # (fresh seed, hands scored by geometry, turntables) for the cast library.
+  if [ -f /workspace/loopwork/queue/84_cast_library.sh ] || [ -f /workspace/loopwork/queue/done/84_cast_library.sh.* ]; then
+    SRC=$(ls /workspace/loopwork/queue/done/84_cast_library.sh.* 2>/dev/null | tail -1)
+    [ -n "$SRC" ] && [ ! -f $Q/84_cast_library.sh ] && { sed "s/^SEED0=.*/SEED0=$(( 8000 + (c * 7 + $(date +%H)) * 10 ))/" "$SRC" > $Q/84_cast_library.sh; log "refill: cast library with a fresh seed"; }
+  fi
+  case $c in
+    99) : ;;
+  esac
   log "refilled backlog (cycle $c)"
 }
 
