@@ -25,3 +25,12 @@ order below is the research doc's order, which we skipped, restored.
 - `RIGIFY_face_<cast>.png` and `TALK_<cast>_l<i>.mp4`: face rig and every line, per cast.
 - `RIG_GATES.txt`: the numbers above for every cast.
 - `MOTION_<cast>_rigify.mp4`: three-shot reels with Niamh's stride scaled to her legs.
+
+## The loop (30 Sep)
+The GPU keeper refills from `scripts/ops/improve_loop.py` only. Each call writes one
+experiment; results go to `review/IMPROVE_LEDGER.md`; walk parameters that win on the
+measured score are adopted into `configs/walk_defaults.env`; a cast candidate that beats
+the adopted one on hand compactness by 10% is promoted (retopo, rig, gate, reel)
+automatically. Craft and face experiments produce A/B sheets for a human pick and are
+logged. VRoid/VRM is parked. Morning check: `tail review/IMPROVE_LEDGER.md` and the last
+DONE line in `loopwork/gpu_keeper.log`.
