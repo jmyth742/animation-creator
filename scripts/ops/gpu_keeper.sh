@@ -28,107 +28,13 @@ busy() {
 }
 
 refill() {
-  # A rotating set of experiments that always leaves something worth running. Rewritten
-  # 2026-09-23 around the finding that RETOPOLOGY BEFORE UniRig is what decides whether a
-  # character rigs at all: the rotation now pushes candidates through retopo -> rig ->
-  # reel and judges them, instead of repairing weights after the fact.
-  local c=$(( $(cat $STATE 2>/dev/null || echo 0) ))
-  echo $(( (c + 1) % 6 )) > $STATE
-  local P=series/tir-na-nog-legend/meshes/props
-  case $c in
-    0) cat > $Q/70_retopo_sweep.sh <<'J'
-cd /workspace/text-to-video
-P=series/tir-na-nog-legend/meshes/props
-# any textured candidate without a retopologised counterpart gets one
-for SRC in $P/st_*_tex.glb $P/*_hy.glb; do
-  [ -s "$SRC" ] || continue
-  BASE=$(basename "$SRC" .glb); TAG="rt_${BASE}"
-  [ -s "$P/${TAG}_retopo.glb" ] && continue
-  /workspace/blender42/blender -b --factory-startup --python scripts/blender3d/retopo_character.py -- \
-    "$SRC" "$TAG" 15000 2048 || true
-  break        # one per pass: retopology is slow and the queue should stay responsive
-done
-J
-       ;;
-    1) cat > $Q/71_rig_sweep.sh <<'J'
-cd /workspace/text-to-video
-P=series/tir-na-nog-legend/meshes/props
-# the Rigify route (see memory rigify-route): fit, generate, heat-bind, save the .blend
-for M in $P/cand_*_retopo.glb; do
-  [ -s "$M" ] || continue
-  BASE=$(basename "$M" _retopo.glb)
-  [ -s "/workspace/loopwork/rigify/${BASE}.blend" ] && continue
-  /workspace/blender42/blender -b --python scripts/blender3d/rigify_fit.py -- "$M" "/workspace/loopwork/rigify/${BASE}" 1.6 || true
-  /workspace/blender42/blender -b "/workspace/loopwork/rigify/${BASE}.blend" --python scripts/blender3d/rigify_check.py -- gate "/workspace/review/RIGIFY_gate_${BASE}_45.png" 45 || true
-  break
-done
-J
-       ;;
-    2) cat > $Q/72_reel_sweep.sh <<'J'
-cd /workspace/text-to-video
-for B in /workspace/loopwork/rigify/*.blend; do
-  [ -s "$B" ] || continue
-  BASE=$(basename "$B" .blend)
-  case "$BASE" in *_face) continue;; esac
-  OUT=/workspace/review/MOTION_${BASE}_rigify.mp4
-  [ -s "$OUT" ] && continue
-  rm -rf /workspace/loopwork/rigify/show_$BASE
-  RW_RES=1080 RW_SHOTS=walk,turn,idle /workspace/blender42/blender -b "$B" --python scripts/blender3d/rigify_walk.py -- \
-    /workspace/loopwork/rigify/show_$BASE 96 || true
-  bash scripts/ops/encode_showreel.sh /workspace/loopwork/rigify/show_$BASE "$OUT" 20 "walk turn idle" || true
-  break
-done
-bash /workspace/export_outcomes.sh 2>&1 | tail -1
-J
-       ;;
-    3) cat > $Q/73_gate_sweep.sh <<'J'
-cd /workspace/text-to-video
-P=series/tir-na-nog-legend/meshes/props
-for M in $P/cand_*_rigged.glb; do
-  [ -s "$M" ] || continue
-  BASE=$(basename "$M" _rigged.glb)
-  [ -s "/workspace/review/deform_${BASE}_60.png" ] && continue
-  for A in 35 60 90; do
-    GATE_ANGLE=$A /workspace/blender42/blender -b --factory-startup --python scripts/blender3d/deform_gate.py -- \
-      "$M" "$BASE" 1.6 /workspace/review/deform_${BASE}_${A}.png || true
-  done
-  break
-done
-J
-       ;;
-    4) cat > $Q/74_texture_upsample.sh <<'J'
-cd /workspace/text-to-video
-P=series/tir-na-nog-legend/meshes/props
-for M in $P/cand_*_retopo.glb; do
-  [ -s "$M" ] || continue
-  BASE=$(basename "$M" _retopo.glb)
-  [ -s "$P/${BASE}_hi.glb" ] && continue
-  FRONT=$P/${BASE}_retopo_base.png
-  [ -s "$FRONT" ] || continue
-  TEXHY_FACES=90000 /workspace/venv/bin/python -u scripts/blender3d/texture_hy3d.py \
-    "$M" "$FRONT" "$P/${BASE}_hi.glb" || true
-  break
-done
-J
-       ;;
-    5) cat > $Q/75_export.sh <<'J'
-cd /workspace/text-to-video
-bash /workspace/export_outcomes.sh 2>&1 | tail -2
-J
-       ;;
-  esac
-  # NEVER A NO-OP. The sweeps above finish in seconds once everything they cover exists,
-  # and on 25-26 Sep the card sat idle for 26 hours cycling through them. So every refill
-  # also drops one open-ended job that always has value: a new trio of lead candidates
-  # (fresh seed, hands scored by geometry, turntables) for the cast library.
-  if [ -f /workspace/loopwork/queue/84_cast_library.sh ] || [ -f /workspace/loopwork/queue/done/84_cast_library.sh.* ]; then
-    SRC=$(ls /workspace/loopwork/queue/done/84_cast_library.sh.* 2>/dev/null | tail -1)
-    [ -n "$SRC" ] && [ ! -f $Q/84_cast_library.sh ] && { sed "s/^SEED0=.*/SEED0=$(( 8000 + (c * 7 + $(date +%H)) * 10 ))/" "$SRC" > $Q/84_cast_library.sh; log "refill: cast library with a fresh seed"; }
-  fi
-  case $c in
-    99) : ;;
-  esac
-  log "refilled backlog (cycle $c)"
+  # THE RULE: the card never idles and every job is an improvement. The queue is refilled
+  # by the improvement loop, which writes exactly one experiment per call (cast library,
+  # walk-parameter sweep with measured adoption, craft and face A/B sheets, episode
+  # re-render when defaults changed) and never runs out. The earlier sweep rotation
+  # finished in seconds once its targets existed and idled the card for days.
+  log "refill: improvement loop"
+  /workspace/venv/bin/python scripts/ops/improve_loop.py >> $LOG 2>&1 || log "refill: improve_loop FAILED (see above)"
 }
 
 # DISK GUARD. When /workspace hits its quota every write silently produces a ZERO-BYTE
