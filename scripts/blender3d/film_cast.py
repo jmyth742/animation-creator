@@ -56,6 +56,10 @@ def load_cast(sc, MESHES, FPS):
         niamh, nrig = _append_rigify(RB_N, "niamh_rigify", "niamh_mv", "n")
         _ACTORS[orig.name] = rigify_anim.RigifyActor(orig, oisin, fps=FPS)
         _ACTORS[nrig.name] = rigify_anim.RigifyActor(nrig, niamh, fps=FPS)
+        if bpy.data.objects.get("painter_cam"):
+            import ground_relief
+            for a_ in _ACTORS.values():
+                a_.ground = ground_relief.ground_z
         _FACES[oisin.name] = os.environ.get("FILM_RIGIFY_FACE_O", "cand_" + os.path.basename(RB_O).split("_face")[0].split(".")[0] + "_kit")
         _FACES[niamh.name] = os.environ.get("FILM_RIGIFY_FACE_N", "cand_" + os.path.basename(RB_N).split("_face")[0].split(".")[0] + "_kit")
         print("FILM_CAST rigify:", RB_O, RB_N, "faces", _FACES, flush=True)

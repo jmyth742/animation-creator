@@ -42,7 +42,9 @@ OP = (-0.7, 8.6)
 
 
 def floor_z(x, y):
-    if bpy.data.objects.get("painter_cam"): return 0.0     # painted world: the floor is flat (the plate paints the relief)
+    if bpy.data.objects.get("painter_cam"):
+        import ground_relief                                   # painted world: the floor now carries the plate's relief
+        return ground_relief.ground_z(x, y)
     r = math.hypot(x, y - 20)
     return 0.35 * math.sin(x * 0.35) * math.cos(y * 0.3) * min(1, r / 8)
 

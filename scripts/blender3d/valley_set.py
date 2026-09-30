@@ -7,6 +7,7 @@ and can be filmed from any angle.
 Import-safe: build_set(sc) constructs the set and returns dict of anchors.
 """
 import math
+import os
 import bpy
 
 
@@ -154,6 +155,14 @@ def build_set(sc, winter=False):
         v.co.z = 0.0 if P is not None else 0.35 * math.sin(v.co.x * 0.35) * math.cos(v.co.y * 0.3) \
             * min(1, r / 8)
     floor.data.materials.append(grass)
+    # GROUND RELIEF (30 Sep): the plate paints a path climbing to the hall and a lake basin;
+    # a flat floor under it means the cast floats over the rises and nothing on the ground
+    # occludes them. If a depth map exists for the plate, displace the floor to match.
+    if P is not None and os.environ.get("SET_RELIEF", "1") not in ("", "0"):
+        _dn = os.environ.get("SET_RELIEF_NPY", "/workspace/loopwork/improve/plate_%s_depth.npy" % ("winter" if winter else "nw"))
+        if os.path.exists(_dn):
+            import ground_relief
+            ground_relief.apply(sc, floor, P.cam, _dn, lake_center=(-8.0, 19.0), lake_radius=7.0)
 
     # mountain walls: big displaced cones ringing the back
     for i, (mx, my, h, r) in enumerate([

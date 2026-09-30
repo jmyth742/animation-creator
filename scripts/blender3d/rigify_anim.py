@@ -30,6 +30,7 @@ class RigifyActor:
         self.PALM = float(os.environ.get("RW_PALM", "-70"))
         self._roll = {}
         self.sc = bpy.context.scene
+        self.ground = None          # set to a z(x, y) function when the set has relief
 
     # ---------------------------------------------------------------- helpers
     def rest(self, name):
@@ -153,11 +154,18 @@ class RigifyActor:
                     hoff = mathutils.Matrix.Rotation(cyaw, 3, 'Z') @ hip_off
                     return mathutils.Vector((cx, cy, cz)) + hoff + fw * (STRIDE * 0.25) + sd * lat
 
+                def grounded(c):
+                    # the contact's own ground height, not the root path's: on a slope the
+                    # two feet stand at different heights and the path z is only the centre
+                    if self.ground is not None:
+                        c = c.copy(); c.z = self.ground(c.x, c.y)
+                    return c
+
                 if pl < 0.5:
-                    pos = contact(k); pos.z += foot_rest[s].z
+                    pos = grounded(contact(k)); pos.z += foot_rest[s].z
                 else:
                     u = (pl - 0.5) / 0.5; ue = u * u * (3 - 2 * u)
-                    p0, p1 = contact(k), contact(k + 1)
+                    p0, p1 = grounded(contact(k)), grounded(contact(k + 1))
                     pos = p0.lerp(p1, ue); pos.z += foot_rest[s].z + LIFT * math.sin(math.pi * u)
                 Mw = mathutils.Matrix.Translation((x, y, z + bob)) @ mathutils.Matrix.Rotation(yaw, 4, 'Z')
                 self.key_loc("foot_ik." + s, Mw.inverted() @ pos, f)
@@ -192,10 +200,17 @@ class RigifyActor:
         chest = self.rest("chest")
         up = mathutils.Vector((chest.x - 0.06 * H, chest.y - 0.13 * H, chest.z + 0.02 * H))
         par = pb["upper_arm_parent.R"]
+        foot_rest = {s: self.rest("foot_ik." + s) for s in ("L", "R")}
+        Mw0 = mathutils.Matrix.Translation((pos[0], pos[1], pos[2] - 0.25 * self.DROP)) @ mathutils.Matrix.Rotation(yaw, 4, 'Z')
         for f in range(f0, f1 + 1):
             t = (f - f0) / FPS
             tb = 2 * math.pi * 0.22 * t; ts = 2 * math.pi * 0.07 * t
             g = dict(head_x=0.0, head_z=0.0, chest_x=0.0, chest_z=0.0, hips_y=0.0, raise_=0.0)
+            if self.ground is not None:
+                for s in ("L", "R"):
+                    fw = Mw0 @ mathutils.Vector((foot_rest[s].x, foot_rest[s].y, 0.0))
+                    fw.z = self.ground(fw.x, fw.y) + foot_rest[s].z
+                    self.key_loc("foot_ik." + s, Mw0.inverted() @ fw, f)
             for (fa, fb, kind) in gestures:
                 if fa <= f <= fb and kind in self.GESTURES:
                     u = (f - fa) / max(1, fb - fa)
