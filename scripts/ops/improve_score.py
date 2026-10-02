@@ -70,12 +70,23 @@ elif mode == "walk":
     best_s, best_v = ranked[0]
     cur_s = score(results.get(cur.get(knob, ""), {"knee": []}))
     line = "walk: %s sweep %s -> best %s (score %.1f), current %s (%.1f)" % (knob, ",".join(results), best_v, best_s, cur.get(knob), cur_s if cur_s < 1e9 else -1)
+    st = json.load(open(W + "/improve/state.json")); kb = st.setdefault("knobs", {}).setdefault(knob, {"step": 0.04, "min": 0.01, "done": False})
+    spread = max(sc for sc, _ in ranked if sc < 1e9) - best_s if ranked else 0
     if best_v != cur.get(knob) and best_s < cur_s - 1.0:
         cur[knob] = best_v
         open(REPO + "/configs/walk_defaults.env", "w").write("# adopted by improve_score.py\n" + "".join("%s=%s\n" % kv for kv in cur.items()))
-        st = json.load(open(W + "/improve/state.json")); st["defaults_ver"] = st.get("defaults_ver", 0) + 1; json.dump(st, open(W + "/improve/state.json", "w"), indent=1)
+        st["defaults_ver"] = st.get("defaults_ver", 0) + 1
         open(W + "/improve/defaults_ver", "w").write(str(st["defaults_ver"]))
         line += " ADOPTED"
+    elif spread < 1.0:
+        kb["done"] = True; line += " (no signal across the sweep: settled)"
+    else:
+        kb["step"] = kb["step"] / 2.0
+        if kb["step"] < kb.get("min", 0.01): kb["done"] = True; line += " (step below minimum: settled at %s)" % cur.get(knob)
+        else: line += " (step -> %g)" % kb["step"]
+    # a refinement step must be able to run again for the same inputs
+    st.setdefault("memo", {}).pop("walk_" + knob, None) if not kb["done"] and "ADOPTED" not in line else None
+    json.dump(st, open(W + "/improve/state.json", "w"), indent=1)
     log(line)
 
 elif mode in ("craft", "face"):
@@ -102,3 +113,54 @@ elif mode in ("craft", "face"):
         log("%s: %s A/B over %s -> %s (human pick)" % (mode, knob, ",".join(vals), os.path.basename(out)))
     else:
         log("%s: %s A/B produced no frames" % (mode, knob))
+
+elif mode == "plate_geo":
+    rnd = int(sys.argv[2]); from PIL import Image
+    st = json.load(open(W + "/improve/state.json"))
+    best = (st.get("plate_best_r", -1.0), None); old_r = None
+    for j in glob.glob("%s/geo/r%d_cn*_agree.json" % (W, rnd)):
+        d = json.load(open(j)); old_r = d["old"]
+        for p, r in d["plates"].items():
+            if r > best[0]: best = (r, p)
+    cands = sum(len(json.load(open(j))["plates"]) for j in glob.glob("%s/geo/r%d_cn*_agree.json" % (W, rnd)))
+    if old_r is None: log("plate_geo round %d: no results" % rnd)
+    else:
+        r, p = best
+        if p is not None and r > old_r + 0.08:
+            # adopt as the candidate plate: upscale for the projector, depth for the relief
+            SETS = REPO + "/series/tir-na-nog-legend/sets/tir_na_nog"
+            im = Image.open(p).convert("RGB"); im.save(SETS + "/master_geo.png")
+            im.resize((im.width * 2, im.height * 2), Image.LANCZOS).save(SETS + "/master_geo_4x.png")
+            subprocess.run(["/workspace/venv/bin/python", REPO + "/scripts/blender3d/plate_heightfield.py", SETS + "/master_geo.png", W + "/improve/plate_geo"], capture_output=True)
+            open(REPO + "/configs/scene_defaults.env", "w").write("# adopted by improve_score.py (plate_geo)\nSET_PLATE=%s/master_geo.png\nSET_RELIEF_NPY=%s/improve/plate_geo_depth.npy\nSET_RELIEF_GAIN=%s\n" % (SETS, W, os.environ.get("SET_RELIEF_GAIN", "0.6")))
+            st["plate_ver"] = st.get("plate_ver", 0) + 1; st["plate_best_r"] = r
+            guide = Image.open(W + "/geo/valley_depth.png").convert("RGB"); oldp = Image.open(SETS + "/master_4x.png").convert("RGB")
+            sw, sh = 560, 320; sheet = Image.new("RGB", (sw * 3, sh + 24), "white")
+            from PIL import ImageDraw
+            for i, (t, l) in enumerate(((guide, "set geometry depth"), (oldp, "old plate r=%.2f" % old_r), (im, "geometry plate r=%.2f" % r))):
+                sheet.paste(t.resize((sw, sh), Image.LANCZOS), (i * sw, 24)); ImageDraw.Draw(sheet).text((i * sw + 6, 5), l, fill="black")
+            sheet.save(R + "/PLATE_FROM_GEOMETRY.png")
+            log("plate_geo round %d: %d plates, best %s agreement r=%.3f vs old plate r=%.3f -> ADOPTED as master_geo.png (plate v%d)" % (rnd, cands, os.path.basename(p), r, old_r, st["plate_ver"]))
+        else:
+            log("plate_geo round %d: %d plates, best agreement r=%.3f vs old plate r=%.3f, adopted r=%.3f stands" % (rnd, cands, best[0], old_r, st.get("plate_best_r", -1)))
+    json.dump(st, open(W + "/improve/state.json", "w"), indent=1)
+
+elif mode == "scene_fit":
+    cyc = sys.argv[2]; rows = []
+    for f in glob.glob(W + "/improve/sf_g*.txt"):
+        g = f.split("sf_g")[1][:-4]; onp = []; p95 = []
+        for l in open(f):
+            m = re.match(r"SF \S+: on path (\d+)%.*p95 (\d+) mm", l)
+            if m: onp.append(int(m.group(1))); p95.append(int(m.group(2)))
+        if onp: rows.append((sum(onp) / len(onp) - 0.5 * max(p95), g, sum(onp) / len(onp), max(p95)))
+    if not rows: log("scene_fit @%s: no audits" % cyc)
+    else:
+        rows.sort(reverse=True); sc, g, onp, p95 = rows[0]
+        open(W + "/improve/sf_best", "w").write(g)
+        cur = {}
+        if os.path.exists(REPO + "/configs/scene_defaults.env"):
+            for l in open(REPO + "/configs/scene_defaults.env"):
+                if "=" in l and not l.startswith("#"): k, v = l.strip().split("=", 1); cur[k] = v
+        changed = cur.get("SET_RELIEF_GAIN") != g; cur["SET_RELIEF_GAIN"] = g
+        open(REPO + "/configs/scene_defaults.env", "w").write("# adopted by improve_score.py (scene_fit)\n" + "".join("%s=%s\n" % kv for kv in cur.items()))
+        log("scene_fit @%s: gains %s -> best gain %s (on path %.0f%%, foot float p95 %d mm)%s" % (cyc, ",".join(r[1] for r in sorted(rows, key=lambda r: r[1])), g, onp, p95, " ADOPTED" if changed else " (unchanged)"))

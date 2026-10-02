@@ -76,6 +76,10 @@ vram_free_mb() {
 }
 
 log "keeper started"
+# the utilisation sampler makes the duty cycle visible in review/IMPROVE_STATUS.md
+if ! { [ -f /workspace/loopwork/gpu_util.pid ] && kill -0 "$(cat /workspace/loopwork/gpu_util.pid)" 2>/dev/null; }; then
+  setsid nohup bash scripts/ops/gpu_util_sampler.sh > /dev/null 2>&1 &
+fi
 FAILS=0
 while true; do
   if ! busy; then

@@ -1,80 +1,184 @@
 #!/usr/bin/env python3
 """
-THE IMPROVEMENT LOOP. Called by the GPU keeper whenever the queue is empty; writes exactly
-one job into the queue, so the card is never idle, and every job is an experiment whose
-result is recorded in review/IMPROVE_LEDGER.md. Experiments rotate and never run out:
-the generative ones take a fresh seed each cycle, the sweeps refine their step.
+THE IMPROVEMENT LOOP (v2). Called by the GPU keeper whenever the queue is empty; writes
+exactly one job, so the card never idles -- and every job must be able to CHANGE something.
 
-Experiments
-  cast       three new lead candidates, hands scored by geometry; a candidate that beats
-             the adopted cast by 10% is retopologised, rigged and gated automatically
-  walk       one walk parameter perturbed on the benchmark rig, scored on slide/knee/reach;
-             a win is written to configs/walk_defaults.env
-  craft      one render variable (line width, AO, haze, line alpha) A/B on a fixed
-             close-up and wide shot; sheet for a human pick, logged
-  face       mouth plate / lip colour A/B on the close-up; sheet, logged
-  episode    when walk defaults changed since the last masters, re-render episode 1
+v1 rotated the same sweeps forever: 131 walk sweeps that scored identically (the slide
+metric was never measured), 88 copies of the same A/B sheets, and a cast search that
+re-evaluated the same candidates hourly. Two days of a busy card and nothing moved.
 
-State in /workspace/loopwork/improve/state.json.
+v2 rules
+  - every experiment is keyed on the inputs it depends on (walk defaults, adopted cast,
+    adopted plate, scene defaults). Once run for those inputs it is SETTLED and not run
+    again until an input changes.
+  - walk knobs REFINE: the sweep narrows around the current value until the step is below
+    its minimum or the score shows no signal; then the knob is settled.
+  - substantive work comes first: a face rig for a newly adopted cast, the geometry-first
+    plate (scored by depth agreement), scene fit (scored by foot float and on-path time),
+    a master re-render whenever anything was adopted (with the scene-fit audit on the result).
+  - the open-ended cast search is the fallback, with fresh seeds, when everything is settled.
+  - review/IMPROVE_STATUS.md is rewritten after every job: adopted, settled, duty cycle.
+
+State: /workspace/loopwork/improve/state.json   Ledger: review/IMPROVE_LEDGER.md
 """
-import json, os, sys, time, random
+import json, os, sys, time, random, hashlib, glob
 
 W = "/workspace/loopwork"; Q = W + "/queue"; ST = W + "/improve/state.json"
-REPO = "/workspace/text-to-video"; R = "/workspace/review"
+REPO = "/workspace/text-to-video"; R = "/workspace/review"; RG = W + "/rigify"
+P = "series/tir-na-nog-legend/meshes/props"
 os.makedirs(W + "/improve", exist_ok=True)
-st = json.load(open(ST)) if os.path.exists(ST) else {"cycle": 0, "walk_i": 0, "craft_i": 0, "face_i": 0, "defaults_ver": 0, "masters_ver": 0}
-ORDER = ["cast", "walk", "craft", "walk", "face", "cast", "walk", "episode"]
-exp = ORDER[st["cycle"] % len(ORDER)]
+st = json.load(open(ST)) if os.path.exists(ST) else {}
+for k, v in {"cycle": 0, "defaults_ver": 0, "masters_ver": "", "plate_ver": 0, "plate_rounds": 0, "memo": {}, "knobs": {},
+             "adopted": {"oisin": ["st_chibi3_oisin_m7302", 0.73], "niamh": ["st_chibi3_niamh_m7302", 0.74]}}.items():
+    st.setdefault(k, v)
 st["cycle"] += 1
-HEAD = "cd %s\nset -a; . configs/walk_defaults.env; set +a\nLEDGER=%s/IMPROVE_LEDGER.md\n" % (REPO, R)
-TAIL = "\nbash /workspace/export_outcomes.sh 2>&1 | tail -1\n"
 
-if exp == "cast":
-    seed = 20000 + st["cycle"] * 10 + random.randint(0, 9)
-    body = HEAD + """
-# cast: three fresh candidates per lead, hands scored; auto-adopt on a clear win
-P=series/tir-na-nog-legend/meshes/props; RG=/workspace/loopwork/rigify
-for WHO in oisin niamh; do for K in 0 1 2; do
-  SEED=$((%d + K)); TAG=${WHO}_m$SEED
-  [ -s $P/st_chibi3_${TAG}.glb ] && continue
-  POSE_MODE=apose OPEN_MOUTH=1 TEST_SEED=$SEED /workspace/venv/bin/python -u scripts/blender3d/style_test.py chibi3 $TAG 2>&1 | tail -1
-  [ -s $P/st_chibi3_${TAG}.glb ] && /workspace/blender42/blender -b --factory-startup --python scripts/blender3d/mesh_turntable.py -- $P/st_chibi3_${TAG}.glb /workspace/review/library_${TAG}.png $TAG > /dev/null 2>&1
-done; done
-/workspace/venv/bin/python scripts/blender3d/pick_hands.py $P 'st_chibi3_*_m*.glb' > /workspace/review/hand_scores.txt 2>&1
-/workspace/venv/bin/python scripts/ops/improve_score.py cast %d
-""" % (seed, st["cycle"])
-elif exp == "walk":
-    knobs = [("RW_STRIDE", [0.50, 0.53, 0.56, 0.60, 0.64]), ("RW_DROP", [0.045, 0.055, 0.062, 0.070, 0.080]), ("RW_ARM_OUT", [6, 10, 14, 18])]
-    k, vals = knobs[st["walk_i"] % len(knobs)]; st["walk_i"] += 1
-    body = HEAD + """
-# walk: sweep %s on the benchmark rig, measured, adopt a win into configs/walk_defaults.env
-RG=/workspace/loopwork/rigify; B=$RG/oisin4.blend; [ -s $B ] || B=$RG/chibi.blend
+def env_file(p):
+    d = {}
+    if os.path.exists(p):
+        for l in open(p):
+            if "=" in l and not l.startswith("#"): k, v = l.strip().split("=", 1); d[k] = v
+    return d
+walk_def = env_file(REPO + "/configs/walk_defaults.env"); scene_def = env_file(REPO + "/configs/scene_defaults.env")
+ao, an = st["adopted"]["oisin"][0], st["adopted"]["niamh"][0]
+scene_sig = hashlib.md5(json.dumps(scene_def, sort_keys=True).encode()).hexdigest()[:6]
+inputs_ver = "d%d|%s|%s|p%d|s%s" % (st["defaults_ver"], ao, an, st["plate_ver"], scene_sig)
+st["inputs_ver"] = inputs_ver
+short = hashlib.md5(inputs_ver.encode()).hexdigest()[:6]
+
+def fresh(key, ver=None): return st["memo"].get(key, {}).get("ver") != (ver or inputs_ver)
+def mark(key, ver=None, result="queued"): st["memo"][key] = {"ver": ver or inputs_ver, "result": result, "at": time.strftime("%F %H:%M")}
+
+def cast_env():
+    """FILM_RIGIFY_O/N for the adopted cast when their face rigs exist; the film loader's
+    defaults (oisin4/niamh4) otherwise."""
+    e = []
+    for who, name in (("O", ao), ("N", an)):
+        if os.path.exists("%s/%s_face.blend" % (RG, name)): e.append("FILM_RIGIFY_%s=%s/%s_face.blend" % (who, RG, name))
+    return " ".join(e)
+HEAD = ("cd %s\nset -a; . configs/walk_defaults.env; [ -f configs/scene_defaults.env ] && . configs/scene_defaults.env; set +a\n"
+        "LEDGER=%s/IMPROVE_LEDGER.md; export %s\n" % (REPO, R, cast_env() or "IMPROVE_CYCLE=%d" % st["cycle"]))
+TAIL = "\n/workspace/venv/bin/python scripts/ops/improve_status.py > /dev/null 2>&1\nbash /workspace/export_outcomes.sh 2>&1 | tail -1\n"
+MASTER_ENV = ('export CHAR_NORMALFIX=1 CHAR_NORMALFIX_INTERP=1 FILM_LINES=4.8 FILM_LINE_MINLEN=40 FILM_LINE_CREASE=0 FILM_RES=1664x960 '
+              'FILM_INTEGRATE=0.22 CHAR_HAZE_SAT=0.3 FILM_CONTACT=1 SET_SUN="52,118" FILM_LINE_TINT="0.14,0.09,0.12" FILM_LINE_ALPHA=0.82 CHAR_AO=0.35 FILM_STEP_ANIM=2')
+BUILD_ENV = "CHAR_NORMALFIX=0 FILM_RIG=rigify FILM_BLINK=lam FILM_VIS_SUFFIX=_lam FILM_ENV_SUFFIX=_lam"
+PROBES = ('"s02_walk -4.2,0.5,1.3 0,2,1.2 42 160 pan" "s03_meet 5.5,7.6,1.45 -0.8,7.5,1.35 50 221 static" "s11_away 0.2,2.8,1.5 3.6,15.5,1.6 32 1150 crane:2.6"')
+
+
+def x_cast_face():
+    """A newly adopted cast member has a body rig but no face rig: build it (the film
+    loader needs <name>_face.blend and the cand_<name>_kit face variants) before anything
+    downstream can use the adoption."""
+    for name in (ao, an):
+        if os.path.exists("%s/%s.blend" % (RG, name)) and not os.path.exists("%s/%s_face.blend" % (RG, name)) and fresh("cast_face_" + name, name):
+            mark("cast_face_" + name, name)
+            lip = "0.45,0.30,0.16" if "oisin" in name else "0.62,0.30,0.30"
+            return "cast_face", HEAD + """
+# cast_face: face rig + painted visemes for the adopted %s
+C=%s; P=%s; RG=%s; B=/workspace/blender42/blender
+[ -s $P/cand_${C}_retopo.glb ] || exit 0
+RF_FACE=1 $B -b --python scripts/blender3d/rigify_fit.py -- $P/cand_${C}_retopo.glb $RG/${C}_face 1.6 || exit 0
+FCG_EYE=0.44 FCG_MOUTH=${FCG_MOUTH:-0.195} FCG_EYEX=0.40 $B -b --factory-startup --python scripts/blender3d/face_calib_geom.py -- $P/cand_${C}_retopo.glb 1.6 $P/cand_${C}_kit_face.json
+CHAR_NORMALFIX=0 FP_MOUTH_PLATE=${FP_MOUTH_PLATE:-1.5} $B -b --factory-startup --python scripts/blender3d/face_paint.py -- --keep-eyes $P/cand_${C}_retopo.glb $P/cand_${C}_kit_face.json 1.6 $P cand_${C}_kit "%s"
+A=/workspace/loopwork/film_audio; rm -rf $RG/face_cand_${C}_kit
+RT_RES=720 RT_FRAMES=40 RT_HEAD=0.74 RT_LENS=85 $B -b $RG/${C}_face.blend --python scripts/blender3d/rigify_talk.py -- /workspace/loopwork/day3/film_audio/l0.json $A/l0_vis_lam.npy $A/l0_blink_lam.npy $A/l0.wav $P cand_${C}_kit $RG/face_cand_${C}_kit > /dev/null 2>&1
+N=$(ls $RG/face_cand_${C}_kit/t_*.png 2>/dev/null | wc -l)
+echo "- $(date +%%F\\ %%H:%%M) cast_face: $C face rig $([ -s $RG/${C}_face.blend ] && echo built || echo FAILED), talk probe $N frames" >> $LEDGER
+""" % (name, name, P, RG, lip)
+    return None
+
+
+def x_plate_geo():
+    """Geometry-first plate: paint the valley conditioned on the real set's depth, three
+    strengths x three ControlNet weights per round, scored by Depth-Anything agreement with
+    the geometry. Three rounds (fresh seeds), then settled until the geometry changes."""
+    if st["plate_rounds"] >= 3 or not os.path.exists(W + "/geo/valley_depth.png"): return None
+    rnd = st["plate_rounds"]; st["plate_rounds"] += 1; mark("plate_geo_r%d" % rnd, "g1")
+    return "plate_geo", HEAD + """
+# plate_geo round %d: 9 plates, agreement-scored, best adopted as the candidate plate if it beats the old one
+curl -s -m 10 -X POST http://127.0.0.1:8188/free -H 'Content-Type: application/json' -d '{"unload_models": true, "free_memory": true}' >/dev/null 2>&1; sleep 4
+for CN in 0.6 0.8 1.0; do
+  HF_HOME=/workspace/hf_cache PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True PG_CN=$CN PG_SEED=%d /workspace/venv/bin/python scripts/blender3d/plate_from_geometry.py \\
+    /workspace/loopwork/geo/valley_depth.png series/tir-na-nog-legend/sets/tir_na_nog/master_4x.png /workspace/loopwork/geo/r%d_cn${CN} 0.55 0.75 0.9 2>&1 | grep -E "^PG agreement|Traceback|Error"
+done
+/workspace/venv/bin/python scripts/ops/improve_score.py plate_geo %d
+""" % (rnd, 6100 + rnd * 7, rnd, rnd)
+
+
+def x_scene_fit():
+    """Scene fit: build episode 1 at three relief gains with the current plate and cast,
+    audit foot float and on-path time, adopt the best gain, render three probe shots."""
+    if not fresh("scene_fit"): return None
+    mark("scene_fit")
+    npy = "SET_RELIEF_NPY=%s" % scene_def["SET_RELIEF_NPY"] if "SET_RELIEF_NPY" in scene_def else ""
+    plate = "SET_PLATE=%s" % scene_def["SET_PLATE"] if "SET_PLATE" in scene_def else ""
+    return "scene_fit", HEAD + """
+# scene_fit @ %s: relief gain sweep, audited
+W=/workspace/loopwork; R=/workspace/review; B=/workspace/blender42/blender
+for G in 0.4 0.6 0.8; do
+  %s %s %s SET_RELIEF_GAIN=$G $B -b --python scripts/blender3d/build_film.py -- $W/film_audio $R/sf_g$G.blend $W/sf_shots_g$G.json < /dev/null > $W/improve/sf_build_g$G.log 2>&1
+  grep -q "FILM SCENE SAVED" $W/improve/sf_build_g$G.log || continue
+  %s $B -b $R/sf_g$G.blend --python scripts/blender3d/scene_fit_audit.py -- $W/sf_shots_g$G.json $W/improve/sf_audit_g$G > $W/improve/sf_g$G.txt 2>&1
+done
+/workspace/venv/bin/python scripts/ops/improve_score.py scene_fit %d
+BEST=$(cat $W/improve/sf_best 2>/dev/null); [ -n "$BEST" ] || exit 0
+%s; export CHAR_NORMALFIX=0 FILM_LINES=2.4 FILM_LINE_MINLEN=20 FILM_RES=832x480
+for S in %s; do set -- $S; rm -rf $W/improve/sfp_$1
+  $B -b --factory-startup $R/sf_g$BEST.blend --python scripts/blender3d/film.py -- $W/improve/sfp_$1 "$2" "$3" $4 $5 $5 "$6" 832 480 < /dev/null > $W/improve/sfp_$1.log 2>&1 &
+done; wait
+/workspace/venv/bin/python - <<'EOF'
+from PIL import Image, ImageDraw; import glob
+ims=[Image.open(sorted(glob.glob('/workspace/loopwork/improve/sfp_%%s/*.png'%%n))[0]).convert('RGB') for n in ('s02_walk','s03_meet','s11_away') if glob.glob('/workspace/loopwork/improve/sfp_%%s/*.png'%%n)]
+if ims:
+    w,h=ims[0].size; s=Image.new('RGB',(w*len(ims),h+24),'black'); [s.paste(im,(i*w,24)) for i,im in enumerate(ims)]
+    ImageDraw.Draw(s).text((8,5),'scene fit %s gain '+open('/workspace/loopwork/improve/sf_best').read().strip(),fill='white'); s.save('/workspace/review/SCENE_FIT_%s.png')
+EOF
+cp $R/sf_g$BEST.blend $R/film_nw_loop.blend; cp $W/sf_shots_g$BEST.json $W/film_shots_loop.json
+""" % (inputs_ver, BUILD_ENV, plate, npy, plate, st["cycle"], MASTER_ENV, PROBES, short, short)
+
+
+def x_walk():
+    """One knob, refined around the current value; the scorer narrows the step or settles it."""
+    ranges = {"RW_STRIDE": (0.40, 0.76, 0.04, 0.01), "RW_DROP": (0.03, 0.10, 0.01, 0.0025), "RW_ARM_OUT": (2, 22, 4, 1)}
+    for k, (lo, hi, step, mins) in ranges.items():
+        kb = st["knobs"].setdefault(k, {"lo": lo, "hi": hi, "step": step, "min": mins, "done": False})
+        if kb["done"] or not fresh("walk_" + k): continue
+        cur = float(walk_def.get(k, (lo + hi) / 2)); s = kb["step"]
+        vals = sorted(set(round(min(hi, max(lo, cur + i * s)), 4) for i in (-2, -1, 0, 1, 2)))
+        mark("walk_" + k)
+        return "walk", HEAD + """
+# walk: refine %s around %s (step %s) on the benchmark rig; a win is adopted, no win halves the step
+RG=/workspace/loopwork/rigify; B=$RG/oisin4.blend
 OUT=/workspace/loopwork/improve/walk_%s_%d.txt; : > $OUT
-for V in %s; do
-  echo "== %s=$V ==" >> $OUT
-  %s=$V /workspace/blender42/blender -b $B --python /workspace/loopwork/rigify/gate_metrics.py 2>&1 | grep -E "^(WM  *[0-9]+ |RW foot)" >> $OUT
+for V in %s; do echo "== %s=$V ==" >> $OUT
+  %s=$V /workspace/blender42/blender -b $B --python $RG/gate_metrics.py 2>&1 | grep -E "^(WM  *[0-9]+ |RW foot)" >> $OUT
 done
 /workspace/venv/bin/python scripts/ops/improve_score.py walk %s $OUT
-""" % (k, k, st["cycle"], " ".join(str(v) for v in vals), k, k, k)
-elif exp == "craft":
-    knobs = [("FILM_LINES", ["3.2", "4.8", "6.4"]), ("CHAR_AO", ["0", "0.35", "0.6"]), ("FILM_INTEGRATE", ["0", "0.22", "0.4"]), ("FILM_LINE_ALPHA", ["0.6", "0.82", "1.0"])]
-    k, vals = knobs[st["craft_i"] % len(knobs)]; st["craft_i"] += 1
-    body = HEAD + """
-# craft: A/B %s on a close-up and a wide shot of the latest episode-1 build
-BL=/workspace/review/film_nw_rigify_cast4.blend; [ -s $BL ] || exit 0
-export CHAR_NORMALFIX=1 CHAR_NORMALFIX_INTERP=1 FILM_LINES=4.8 FILM_LINE_MINLEN=40 FILM_INTEGRATE=0.22 CHAR_HAZE_SAT=0.3 FILM_CONTACT=1 SET_SUN="52,118" FILM_LINE_TINT="0.14,0.09,0.12" FILM_LINE_ALPHA=0.82 CHAR_AO=0.35
+""" % (k, cur, s, k, st["cycle"], " ".join("%g" % v for v in vals), k, k, k)
+    return None
+
+
+def x_ab(kind):
+    knobs = {"craft": [("FILM_LINES", ["3.2", "4.8", "6.4"]), ("CHAR_AO", ["0", "0.35", "0.6"]), ("FILM_INTEGRATE", ["0", "0.22", "0.4"]), ("FILM_LINE_ALPHA", ["0.6", "0.82", "1.0"])],
+             "face": [("FP_MOUTH_PLATE", ["1.2", "1.5", "1.9"]), ("FCG_MOUTH", ["0.17", "0.195", "0.22"])]}[kind]
+    for k, vals in knobs:
+        if not fresh("%s_%s" % (kind, k)): continue
+        mark("%s_%s" % (kind, k))
+        if kind == "craft":
+            bl = R + "/film_nw_loop.blend" if os.path.exists(R + "/film_nw_loop.blend") else R + "/film_nw_rigify_cast4.blend"
+            return "craft", HEAD + """
+# craft: A/B %s on a close-up and a wide shot (once per input set)
+BL=%s; [ -s $BL ] || exit 0
+%s
 for V in %s; do for S in "close -2.0,7.4,1.48 0.0,6.95,1.44 55 317" "wide 5.5,7.6,1.45 -0.8,7.5,1.35 50 221"; do
   set -- $S; D=/workspace/loopwork/improve/craft_%s_${V}_$1; rm -rf $D
   %s=$V /workspace/blender42/blender -b --factory-startup $BL --python scripts/blender3d/film.py -- $D "$2" "$3" $4 $5 $5 static 1248 720 < /dev/null > $D.log 2>&1 &
 done; done; wait
 /workspace/venv/bin/python scripts/ops/improve_score.py craft %s "%s"
-""" % (k, " ".join(vals), k, k, k, " ".join(vals))
-elif exp == "face":
-    knobs = [("FP_MOUTH_PLATE", ["1.2", "1.5", "1.9"]), ("FCG_MOUTH", ["0.17", "0.195", "0.22"])]
-    k, vals = knobs[st["face_i"] % len(knobs)]; st["face_i"] += 1
-    body = HEAD + """
-# face: A/B %s on the lead's close-up, jaw-open frames
-P=series/tir-na-nog-legend/meshes/props; RG=/workspace/loopwork/rigify; A=/workspace/loopwork/film_audio
+""" % (k, bl, MASTER_ENV, " ".join(vals), k, k, k, " ".join(vals))
+        return "face", HEAD + """
+# face: A/B %s on the lead's close-up, jaw-open frames (once per input set)
+P=%s; RG=/workspace/loopwork/rigify; A=/workspace/loopwork/film_audio
 for V in %s; do
   N=cand_oisin4_%s_${V//./}
   FCG_EYE=0.44 FCG_MOUTH=${FCG_MOUTH:-0.195} FCG_EYEX=0.40 %s=$V /workspace/blender42/blender -b --factory-startup --python scripts/blender3d/face_calib_geom.py -- $P/cand_oisin4_retopo.glb 1.6 $P/${N}_face.json > /dev/null 2>&1
@@ -83,27 +187,55 @@ for V in %s; do
   RT_RES=720 RT_FRAMES=40 RT_HEAD=0.74 RT_LENS=85 /workspace/blender42/blender -b $RG/oisin4_face.blend --python scripts/blender3d/rigify_talk.py -- /workspace/loopwork/day3/film_audio/l0.json $A/l0_vis_lam.npy $A/l0_blink_lam.npy $A/l0.wav $P $N $RG/face_$N > /dev/null 2>&1
 done
 /workspace/venv/bin/python scripts/ops/improve_score.py face %s "%s"
-""" % (k, " ".join(vals), k, k, k, k, " ".join(vals))
-else:
-    if st.get("defaults_ver", 0) <= st.get("masters_ver", 0):
-        # nothing changed: fall through to a cast cycle instead of an idle
-        st["cycle"] += 1
-        json.dump(st, open(ST, "w"))
-        os.execv(sys.executable, [sys.executable] + sys.argv)
-    st["masters_ver"] = st["defaults_ver"]
-    body = HEAD + """
-# episode: walk defaults changed since the last masters -> re-render episode 1
-W=/workspace/loopwork; R=/workspace/review; B=/workspace/blender42/blender
-CHAR_NORMALFIX=0 FILM_RIG=rigify FILM_BLINK=lam FILM_VIS_SUFFIX=_lam FILM_ENV_SUFFIX=_lam $B -b --python scripts/blender3d/build_film.py -- $W/film_audio $R/film_nw_rigify_cast4.blend $W/film_shots_rc4.json < /dev/null > $W/imp_build.log 2>&1
-grep -q "FILM SCENE SAVED" $W/imp_build.log || exit 0
-export CHAR_NORMALFIX=1 CHAR_NORMALFIX_INTERP=1 FILM_LINES=4.8 FILM_LINE_MINLEN=40 FILM_LINE_CREASE=0 FILM_RES=1664x960 FILM_INTEGRATE=0.22 CHAR_HAZE_SAT=0.3 FILM_CONTACT=1 SET_SUN="52,118" FILM_LINE_TINT="0.14,0.09,0.12" FILM_LINE_ALPHA=0.82 CHAR_AO=0.35 FILM_STEP_ANIM=2
-/workspace/venv/bin/python scripts/blender3d/shot_language.py $W/film_shots_rc4.json $W/sl_film_shots_rc4.json > /dev/null 2>&1
-rm -rf $W/filmIMP $W/filmIMP.*.log
-bash scripts/ops/render_episode.sh sl_film_shots_rc4.json film_nw_rigify_cast4.blend filmIMP "The Nine Waterfalls" film_audio $R/nine_waterfalls_rigify_cast4.mp4 6 > $W/imp_render.log 2>&1
-[ -f $R/nine_waterfalls_rigify_cast4.mp4 ] && ffmpeg -v error -y -i $R/nine_waterfalls_rigify_cast4.mp4 -c:v libx264 -crf 23 -preset medium -pix_fmt yuv420p -c:a aac -movflags +faststart $R/nine_waterfalls_rigify_cast4_web.mp4
-echo "- $(date +%%F\\ %%H:%%M) episode: re-rendered episode 1 with walk defaults v$(cat /workspace/loopwork/improve/defaults_ver 2>/dev/null || echo ?)" >> $LEDGER
-"""
+""" % (k, P, " ".join(vals), k, k, k, k, " ".join(vals))
+    return None
+
+
+def x_episode():
+    """Something was adopted since the last masters: re-render episode 1 with everything
+    current, audit it, and record the numbers. Nothing is overwritten -- the output carries
+    the inputs hash."""
+    if st["masters_ver"] == inputs_ver: return None
+    st["masters_ver"] = inputs_ver
+    npy = "SET_RELIEF_NPY=%s" % scene_def["SET_RELIEF_NPY"] if "SET_RELIEF_NPY" in scene_def else ""
+    plate = "SET_PLATE=%s" % scene_def["SET_PLATE"] if "SET_PLATE" in scene_def else ""
+    return "episode", HEAD + """
+# episode @ %s -> nine_waterfalls_loop_%s.mp4
+W=/workspace/loopwork; R=/workspace/review; B=/workspace/blender42/blender; H=%s
+%s %s %s $B -b --python scripts/blender3d/build_film.py -- $W/film_audio $R/film_nw_loop_$H.blend $W/film_shots_loop_$H.json < /dev/null > $W/improve/ep_build_$H.log 2>&1
+grep -q "FILM SCENE SAVED" $W/improve/ep_build_$H.log || { echo "- $(date +%%F\\ %%H:%%M) episode @ $H: BUILD FAILED" >> $LEDGER; exit 0; }
+%s $B -b $R/film_nw_loop_$H.blend --python scripts/blender3d/scene_fit_audit.py -- $W/film_shots_loop_$H.json $W/improve/ep_audit_$H > $W/improve/ep_audit_$H.txt 2>&1
+%s
+/workspace/venv/bin/python scripts/blender3d/shot_language.py $W/film_shots_loop_$H.json $W/sl_film_shots_loop_$H.json > /dev/null 2>&1
+rm -rf $W/filmL$H $W/filmL$H.*.log
+bash scripts/ops/render_episode.sh sl_film_shots_loop_$H.json film_nw_loop_$H.blend filmL$H "The Nine Waterfalls" film_audio $R/nine_waterfalls_loop_$H.mp4 6 > $W/improve/ep_render_$H.log 2>&1
+[ -f $R/nine_waterfalls_loop_$H.mp4 ] && ffmpeg -v error -y -i $R/nine_waterfalls_loop_$H.mp4 -c:v libx264 -crf 23 -preset medium -pix_fmt yuv420p -c:a aac -movflags +faststart $R/nine_waterfalls_loop_${H}_web.mp4
+rm -rf $W/filmL$H
+echo "- $(date +%%F\\ %%H:%%M) episode @ $H (%s): $([ -f $R/nine_waterfalls_loop_${H}_web.mp4 ] && echo rendered nine_waterfalls_loop_${H}_web.mp4 || echo RENDER FAILED); $(grep -h '^SF' $W/improve/ep_audit_$H.txt | tr '\\n' ';')" >> $LEDGER
+""" % (inputs_ver, short, short, BUILD_ENV, plate, npy, plate, MASTER_ENV, inputs_ver)
+
+
+def x_cast():
+    seed = 20000 + st["cycle"] * 10 + random.randint(0, 9)
+    return "cast", HEAD + """
+# cast (fallback search): three fresh candidates per lead, hands scored; auto-adopt on a clear win
+P=%s; RG=/workspace/loopwork/rigify
+for WHO in oisin niamh; do for K in 0 1 2; do
+  SEED=$((%d + K)); TAG=${WHO}_m$SEED
+  [ -s $P/st_chibi3_${TAG}.glb ] && continue
+  POSE_MODE=apose OPEN_MOUTH=1 TEST_SEED=$SEED /workspace/venv/bin/python -u scripts/blender3d/style_test.py chibi3 $TAG 2>&1 | tail -1
+  [ -s $P/st_chibi3_${TAG}.glb ] && /workspace/blender42/blender -b --factory-startup --python scripts/blender3d/mesh_turntable.py -- $P/st_chibi3_${TAG}.glb /workspace/review/library_${TAG}.png $TAG > /dev/null 2>&1
+done; done
+/workspace/venv/bin/python scripts/blender3d/pick_hands.py $P 'st_chibi3_*_m*.glb' > /workspace/review/hand_scores.txt 2>&1
+/workspace/venv/bin/python scripts/ops/improve_score.py cast %d
+""" % (P, seed, st["cycle"])
+
+
+for fn in (x_cast_face, x_plate_geo, x_scene_fit, x_walk, x_episode, lambda: x_ab("craft"), lambda: x_ab("face"), x_cast):
+    r = fn()
+    if r: break
+exp, body = r
 json.dump(st, open(ST, "w"), indent=1)
 job = "%s/90_improve_%s_%04d.sh" % (Q, exp, st["cycle"])
 open(job, "w").write(body + TAIL)
-print("IMPROVE wrote", os.path.basename(job))
+print("IMPROVE wrote", os.path.basename(job), "inputs", inputs_ver)

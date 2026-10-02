@@ -51,11 +51,14 @@ from transformers import pipeline as hfp
 dp = hfp("depth-estimation", model="depth-anything/Depth-Anything-V2-Small-hf", device=0)
 gd = np.asarray(guide.convert("L"), dtype=np.float32) / 255.0
 def agree(im):
-    d = np.asarray(dp(im)["depth"].resize((W, H)), dtype=np.float32); d = (d - d.min()) / (d.ptp() + 1e-6)
+    d = np.asarray(dp(im)["depth"].resize((W, H)), dtype=np.float32); d = (d - d.min()) / (np.ptp(d) + 1e-6)
     m = gd > 0.02                     # ignore sky
     return float(np.corrcoef(d[m], gd[m])[0, 1])
 rows = [("old plate", old, agree(old))] + [("strength %.2f" % s, im, agree(im)) for s, p, im in outs]
 for n, _, a in rows: print("PG agreement %-14s r=%.3f" % (n, a), flush=True)
+import json
+json.dump({"old": rows[0][2], "plates": {p: a for (s, p, im), (_, _, a) in zip(outs, rows[1:])}, "cn": CN, "seed": SEED},
+          open(out + "_agree.json", "w"), indent=1)
 # contact sheet: guide | old | new...
 tiles = [guide] + [im for _, im, _ in rows]
 sw, sh = 560, 320
