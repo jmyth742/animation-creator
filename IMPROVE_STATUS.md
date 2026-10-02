@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-02 20:24. Cycle 355.
+Updated 2026-10-02 20:26. Cycle 356.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- mean utilisation **13%**, samples with the card working (>=20%): **13%** of 61
+- mean utilisation **12%**, samples with the card working (>=20%): **12%** of 63
 
 ## Adopted (what the masters are rendered with)
 
@@ -22,6 +22,7 @@ Updated 2026-10-02 20:24. Cycle 355.
 - plate_geo_r1: queued @ g1
 - plate_geo_r2: queued @ g1
 - scene_fit: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
+- walk knob RW_STRIDE: refining (lo 0.4, hi 0.76, step 0.02)
 
 ## Awaiting a human pick
 
@@ -34,7 +35,6 @@ Updated 2026-10-02 20:24. Cycle 355.
 
 ## Last 12 experiments
 
-- 2026-10-02 18:49 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
 - 2026-10-02 18:51 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
 - 2026-10-02 18:55 craft: FILM_LINE_ALPHA A/B over 0.6,0.82,1.0 -> AB_craft_FILM_LINE_ALPHA.png (human pick)
 - 2026-10-02 18:56 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
@@ -46,3 +46,4 @@ Updated 2026-10-02 20:24. Cycle 355.
 - 2026-10-02 19:55 plate_geo round 1: 9 plates, best r1_cn1.0_s90.png agreement r=0.837 vs old plate r=0.561 -> ADOPTED as master_geo.png (plate v2)
 - 2026-10-02 19:59 plate_geo round 2: 9 plates, best agreement r=0.837 vs old plate r=0.561, adopted r=0.837 stands
 - 2026-10-02 20:24 scene_fit @355: gains 0.4,0.6,0.8 -> best gain 0.6 (on path 79%, foot float p95 18 mm) (unchanged)
+- 2026-10-02 20:26 walk: RW_STRIDE sweep 0.52,0.56,0.6,0.64,0.68 -> best 0.6 (score 1.3), current 0.6 (1.3) (step -> 0.02)
