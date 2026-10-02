@@ -1,0 +1,43 @@
+# Improvement status
+
+Updated 2026-10-02 19:25. Cycle 350.
+
+## GPU duty cycle (last 24 h, 1-min samples)
+
+- mean utilisation **49%**, samples with the card working (>=20%): **50%** of 2
+
+## Adopted (what the masters are rendered with)
+
+- walk: RW_STRIDE=0.6, RW_DROP=0.062, RW_ARM_OUT=10 (defaults v1)
+- scene: flat floor, original plate (plate v0)
+- cast oisin: st_chibi3_oisin_m22223 (hand compactness 0.35, lower is better)
+- cast niamh: st_chibi3_niamh_m20705_tex (hand compactness 0.20, lower is better)
+- masters: nine_waterfalls_rigify_oisin4_web.mp4, nine_waterfalls_rigify_cast4d_web.mp4, nine_waterfalls_rigify_cast4_web.mp4
+- masters built at inputs: 1; current inputs: -
+
+## Settled (not re-run until an input changes)
+
+
+## Awaiting a human pick
+
+- AB_craft_CHAR_AO.png
+- AB_craft_FILM_INTEGRATE.png
+- AB_craft_FILM_LINES.png
+- AB_craft_FILM_LINE_ALPHA.png
+- AB_face_FCG_MOUTH.png
+- AB_face_FP_MOUTH_PLATE.png
+
+## Last 12 experiments
+
+- 2026-10-02 17:58 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 18:00 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 18:02 craft: FILM_INTEGRATE A/B over 0,0.22,0.4 -> AB_craft_FILM_INTEGRATE.png (human pick)
+- 2026-10-02 18:04 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 18:11 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-02 18:48 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
+- 2026-10-02 18:48 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 18:49 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 18:51 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 18:55 craft: FILM_LINE_ALPHA A/B over 0.6,0.82,1.0 -> AB_craft_FILM_LINE_ALPHA.png (human pick)
+- 2026-10-02 18:56 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 19:03 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)

@@ -1,0 +1,316 @@
+# Improvement ledger
+
+One line per experiment the GPU loop ran, newest last.
+
+- 2026-10-01 01:39 cast: oisin candidate st_chibi3_oisin_m11730 hands 0.41 beats st_chibi3_oisin_m7302 (0.73) -> retopo+rig+gate queued
+- 2026-10-01 01:39 cast: niamh candidate st_chibi3_niamh_m11731 hands 0.31 beats st_chibi3_niamh_m7302 (0.74) -> retopo+rig+gate queued
+- 2026-10-01 02:02 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.56 (299.7) ADOPTED
+- 2026-10-01 02:05 craft: FILM_LINES A/B over 3.2,4.8,6.4 -> AB_craft_FILM_LINES.png (human pick)
+- 2026-10-01 02:07 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 02:14 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-01 02:49 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 02:49 cast: niamh best new candidate st_chibi3_niamh_m11731 hands 0.31, adopted st_chibi3_niamh_m11731 (0.31) stands
+- 2026-10-01 02:51 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- %F %H:%M episode: re-rendered episode 1 with walk defaults v1
+- 2026-10-01 05:31 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 05:31 cast: niamh best new candidate st_chibi3_niamh_m11731 hands 0.31, adopted st_chibi3_niamh_m11731 (0.31) stands
+- 2026-10-01 05:33 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 05:37 craft: CHAR_AO A/B over 0,0.35,0.6 -> AB_craft_CHAR_AO.png (human pick)
+- 2026-10-01 05:39 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 05:46 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-01 06:21 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 06:21 cast: niamh best new candidate st_chibi3_niamh_m11731 hands 0.31, adopted st_chibi3_niamh_m11731 (0.31) stands
+- 2026-10-01 06:23 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 06:24 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 06:28 craft: FILM_INTEGRATE A/B over 0,0.22,0.4 -> AB_craft_FILM_INTEGRATE.png (human pick)
+- 2026-10-01 06:29 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 06:37 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-01 07:13 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 07:13 cast: niamh best new candidate st_chibi3_niamh_m11731 hands 0.31, adopted st_chibi3_niamh_m11731 (0.31) stands
+- 2026-10-01 07:15 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 07:16 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 07:20 craft: FILM_LINE_ALPHA A/B over 0.6,0.82,1.0 -> AB_craft_FILM_LINE_ALPHA.png (human pick)
+- 2026-10-01 07:21 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 07:29 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-01 08:03 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 08:03 cast: niamh best new candidate st_chibi3_niamh_m11731 hands 0.31, adopted st_chibi3_niamh_m11731 (0.31) stands
+- 2026-10-01 08:05 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 08:07 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 08:10 craft: FILM_LINES A/B over 3.2,4.8,6.4 -> AB_craft_FILM_LINES.png (human pick)
+- 2026-10-01 08:11 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 08:19 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-01 08:57 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 08:57 cast: niamh best new candidate st_chibi3_niamh_m11731 hands 0.31, adopted st_chibi3_niamh_m11731 (0.31) stands
+- 2026-10-01 08:59 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 09:00 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 09:03 craft: CHAR_AO A/B over 0,0.35,0.6 -> AB_craft_CHAR_AO.png (human pick)
+- 2026-10-01 09:04 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 09:12 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-01 09:48 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 09:48 cast: niamh best new candidate st_chibi3_niamh_m11731 hands 0.31, adopted st_chibi3_niamh_m11731 (0.31) stands
+- 2026-10-01 09:50 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 09:51 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 09:54 craft: FILM_INTEGRATE A/B over 0,0.22,0.4 -> AB_craft_FILM_INTEGRATE.png (human pick)
+- 2026-10-01 09:55 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 10:03 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-01 10:40 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 10:40 cast: niamh best new candidate st_chibi3_niamh_m11731 hands 0.31, adopted st_chibi3_niamh_m11731 (0.31) stands
+- 2026-10-01 10:42 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 10:43 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 10:46 craft: FILM_LINE_ALPHA A/B over 0.6,0.82,1.0 -> AB_craft_FILM_LINE_ALPHA.png (human pick)
+- 2026-10-01 10:48 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 10:55 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-01 11:34 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 11:34 cast: niamh best new candidate st_chibi3_niamh_m11731 hands 0.31, adopted st_chibi3_niamh_m11731 (0.31) stands
+- 2026-10-01 11:36 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 11:37 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 11:40 craft: FILM_LINES A/B over 3.2,4.8,6.4 -> AB_craft_FILM_LINES.png (human pick)
+- 2026-10-01 11:42 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 11:49 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-01 12:25 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 12:25 cast: niamh candidate st_chibi3_niamh_m20705 hands 0.25 beats st_chibi3_niamh_m11731 (0.31) -> retopo+rig+gate queued
+- 2026-10-01 12:37 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 12:39 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 12:41 craft: CHAR_AO A/B over 0,0.35,0.6 -> AB_craft_CHAR_AO.png (human pick)
+- 2026-10-01 12:43 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 12:50 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-01 13:28 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 13:28 cast: niamh candidate st_chibi3_niamh_m20705_tex hands 0.20 beats st_chibi3_niamh_m20705 (0.25) -> retopo+rig+gate queued
+- 2026-10-01 13:31 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 13:32 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 13:35 craft: FILM_INTEGRATE A/B over 0,0.22,0.4 -> AB_craft_FILM_INTEGRATE.png (human pick)
+- 2026-10-01 13:37 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 13:44 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-01 14:21 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 14:21 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-01 14:23 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 14:24 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 14:27 craft: FILM_LINE_ALPHA A/B over 0.6,0.82,1.0 -> AB_craft_FILM_LINE_ALPHA.png (human pick)
+- 2026-10-01 14:29 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 14:36 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-01 15:13 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 15:13 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-01 15:15 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 15:16 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 15:20 craft: FILM_LINES A/B over 3.2,4.8,6.4 -> AB_craft_FILM_LINES.png (human pick)
+- 2026-10-01 15:22 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 15:29 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-01 16:06 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 16:06 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-01 16:08 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 16:09 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 16:13 craft: CHAR_AO A/B over 0,0.35,0.6 -> AB_craft_CHAR_AO.png (human pick)
+- 2026-10-01 16:14 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 16:22 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-01 16:59 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 16:59 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-01 17:01 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 17:02 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 17:05 craft: FILM_INTEGRATE A/B over 0,0.22,0.4 -> AB_craft_FILM_INTEGRATE.png (human pick)
+- 2026-10-01 17:06 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 17:14 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-01 17:52 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 17:52 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-01 17:54 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 17:55 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 17:59 craft: FILM_LINE_ALPHA A/B over 0.6,0.82,1.0 -> AB_craft_FILM_LINE_ALPHA.png (human pick)
+- 2026-10-01 18:00 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 18:08 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-01 18:49 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 18:49 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-01 18:51 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 18:52 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 18:56 craft: FILM_LINES A/B over 3.2,4.8,6.4 -> AB_craft_FILM_LINES.png (human pick)
+- 2026-10-01 18:57 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 19:04 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-01 19:45 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 19:45 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-01 19:47 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 19:48 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 19:52 craft: CHAR_AO A/B over 0,0.35,0.6 -> AB_craft_CHAR_AO.png (human pick)
+- 2026-10-01 19:54 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 20:01 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-01 20:41 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 20:41 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-01 20:42 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 20:44 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 20:46 craft: FILM_INTEGRATE A/B over 0,0.22,0.4 -> AB_craft_FILM_INTEGRATE.png (human pick)
+- 2026-10-01 20:47 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 20:55 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-01 21:35 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 21:35 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-01 21:37 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 21:38 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 21:42 craft: FILM_LINE_ALPHA A/B over 0.6,0.82,1.0 -> AB_craft_FILM_LINE_ALPHA.png (human pick)
+- 2026-10-01 21:43 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 21:50 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-01 22:29 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 22:29 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-01 22:31 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 22:33 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 22:37 craft: FILM_LINES A/B over 3.2,4.8,6.4 -> AB_craft_FILM_LINES.png (human pick)
+- 2026-10-01 22:38 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 22:45 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-01 23:24 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-01 23:24 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-01 23:26 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-01 23:27 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-01 23:31 craft: CHAR_AO A/B over 0,0.35,0.6 -> AB_craft_CHAR_AO.png (human pick)
+- 2026-10-01 23:32 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-01 23:40 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-02 00:17 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-02 00:17 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 00:19 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 00:20 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 00:23 craft: FILM_INTEGRATE A/B over 0,0.22,0.4 -> AB_craft_FILM_INTEGRATE.png (human pick)
+- 2026-10-02 00:24 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 00:32 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-02 01:10 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-02 01:10 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 01:11 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 01:13 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 01:16 craft: FILM_LINE_ALPHA A/B over 0.6,0.82,1.0 -> AB_craft_FILM_LINE_ALPHA.png (human pick)
+- 2026-10-02 01:17 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 01:24 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-02 02:02 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-02 02:02 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 02:04 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 02:05 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 02:09 craft: FILM_LINES A/B over 3.2,4.8,6.4 -> AB_craft_FILM_LINES.png (human pick)
+- 2026-10-02 02:11 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 02:18 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-02 02:55 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-02 02:55 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 02:57 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 02:58 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 03:02 craft: CHAR_AO A/B over 0,0.35,0.6 -> AB_craft_CHAR_AO.png (human pick)
+- 2026-10-02 03:03 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 03:11 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-02 03:48 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-02 03:48 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 03:50 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 03:52 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 03:54 craft: FILM_INTEGRATE A/B over 0,0.22,0.4 -> AB_craft_FILM_INTEGRATE.png (human pick)
+- 2026-10-02 03:55 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 04:02 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-02 04:40 cast: oisin best new candidate st_chibi3_oisin_m11730_tex hands 0.39, adopted st_chibi3_oisin_m11730 (0.41) stands
+- 2026-10-02 04:40 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 04:42 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 04:43 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 04:47 craft: FILM_LINE_ALPHA A/B over 0.6,0.82,1.0 -> AB_craft_FILM_LINE_ALPHA.png (human pick)
+- 2026-10-02 04:48 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 04:55 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-02 05:32 cast: oisin candidate st_chibi3_oisin_m22223 hands 0.35 beats st_chibi3_oisin_m11730 (0.41) -> retopo+rig+gate queued
+- 2026-10-02 05:32 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 05:45 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 05:46 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 05:50 craft: FILM_LINES A/B over 3.2,4.8,6.4 -> AB_craft_FILM_LINES.png (human pick)
+- 2026-10-02 05:51 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 05:58 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-02 06:36 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
+- 2026-10-02 06:36 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 06:38 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 06:40 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 06:42 craft: CHAR_AO A/B over 0,0.35,0.6 -> AB_craft_CHAR_AO.png (human pick)
+- 2026-10-02 06:44 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 06:51 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-02 07:28 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
+- 2026-10-02 07:28 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 07:30 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 07:32 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 07:34 craft: FILM_INTEGRATE A/B over 0,0.22,0.4 -> AB_craft_FILM_INTEGRATE.png (human pick)
+- 2026-10-02 07:36 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 07:43 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-02 08:20 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
+- 2026-10-02 08:20 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 08:22 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 08:24 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 08:26 craft: FILM_LINE_ALPHA A/B over 0.6,0.82,1.0 -> AB_craft_FILM_LINE_ALPHA.png (human pick)
+- 2026-10-02 08:28 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 08:35 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-02 09:13 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
+- 2026-10-02 09:13 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 09:15 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 09:16 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 09:19 craft: FILM_LINES A/B over 3.2,4.8,6.4 -> AB_craft_FILM_LINES.png (human pick)
+- 2026-10-02 09:21 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 09:28 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-02 10:04 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
+- 2026-10-02 10:04 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 10:06 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 10:08 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 10:10 craft: CHAR_AO A/B over 0,0.35,0.6 -> AB_craft_CHAR_AO.png (human pick)
+- 2026-10-02 10:12 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 10:19 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-02 10:57 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
+- 2026-10-02 10:57 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 10:59 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 11:00 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 11:03 craft: FILM_INTEGRATE A/B over 0,0.22,0.4 -> AB_craft_FILM_INTEGRATE.png (human pick)
+- 2026-10-02 11:04 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 11:12 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-02 11:50 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
+- 2026-10-02 11:50 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 11:51 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 11:53 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 11:56 craft: FILM_LINE_ALPHA A/B over 0.6,0.82,1.0 -> AB_craft_FILM_LINE_ALPHA.png (human pick)
+- 2026-10-02 11:57 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 12:05 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-02 12:42 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
+- 2026-10-02 12:42 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 12:44 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 12:45 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 12:49 craft: FILM_LINES A/B over 3.2,4.8,6.4 -> AB_craft_FILM_LINES.png (human pick)
+- 2026-10-02 12:50 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 12:57 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-02 13:36 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
+- 2026-10-02 13:36 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 13:37 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 13:39 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 13:43 craft: CHAR_AO A/B over 0,0.35,0.6 -> AB_craft_CHAR_AO.png (human pick)
+- 2026-10-02 13:44 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 13:51 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-02 14:30 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
+- 2026-10-02 14:30 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 14:32 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 14:33 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 14:36 craft: FILM_INTEGRATE A/B over 0,0.22,0.4 -> AB_craft_FILM_INTEGRATE.png (human pick)
+- 2026-10-02 14:37 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 14:44 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-02 15:20 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
+- 2026-10-02 15:20 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 15:22 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 15:24 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 15:27 craft: FILM_LINE_ALPHA A/B over 0.6,0.82,1.0 -> AB_craft_FILM_LINE_ALPHA.png (human pick)
+- 2026-10-02 15:29 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 15:36 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-02 16:13 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
+- 2026-10-02 16:13 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 16:15 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 16:16 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 16:19 craft: FILM_LINES A/B over 3.2,4.8,6.4 -> AB_craft_FILM_LINES.png (human pick)
+- 2026-10-02 16:21 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 16:28 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-02 17:04 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
+- 2026-10-02 17:04 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 17:06 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 17:07 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 17:11 craft: CHAR_AO A/B over 0,0.35,0.6 -> AB_craft_CHAR_AO.png (human pick)
+- 2026-10-02 17:13 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 17:20 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-02 17:57 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
+- 2026-10-02 17:57 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 17:58 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 18:00 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 18:02 craft: FILM_INTEGRATE A/B over 0,0.22,0.4 -> AB_craft_FILM_INTEGRATE.png (human pick)
+- 2026-10-02 18:04 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 18:11 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-02 18:48 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
+- 2026-10-02 18:48 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-02 18:49 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
+- 2026-10-02 18:51 walk: RW_STRIDE sweep 0.5,0.53,0.56,0.6,0.64 -> best 0.6 (score 297.6), current 0.6 (297.6)
+- 2026-10-02 18:55 craft: FILM_LINE_ALPHA A/B over 0.6,0.82,1.0 -> AB_craft_FILM_LINE_ALPHA.png (human pick)
+- 2026-10-02 18:56 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
+- 2026-10-02 19:03 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-02 19:41 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
+- 2026-10-02 19:41 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
