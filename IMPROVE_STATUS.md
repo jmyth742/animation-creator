@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-02 22:46. Cycle 365.
+Updated 2026-10-02 22:48. Cycle 366.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- mean utilisation **9%**, samples with the card working (>=20%): **10%** of 203
+- mean utilisation **9%**, samples with the card working (>=20%): **10%** of 205
 
 ## Adopted (what the masters are rendered with)
 
@@ -19,6 +19,7 @@ Updated 2026-10-02 22:46. Cycle 365.
 
 - cast_face_st_chibi3_oisin_m22223: queued @ st_chibi3_oisin_m22223
 - craft_CHAR_AO: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
+- craft_FILM_INTEGRATE: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 - craft_FILM_LINES: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 - plate_geo_r0: queued @ g1
 - plate_geo_r1: queued @ g1
@@ -42,7 +43,6 @@ Updated 2026-10-02 22:46. Cycle 365.
 
 ## Last 12 experiments
 
-- 2026-10-02 19:59 plate_geo round 2: 9 plates, best agreement r=0.837 vs old plate r=0.561, adopted r=0.837 stands
 - 2026-10-02 20:24 scene_fit @355: gains 0.4,0.6,0.8 -> best gain 0.6 (on path 79%, foot float p95 18 mm) (unchanged)
 - 2026-10-02 20:26 walk: RW_STRIDE sweep 0.52,0.56,0.6,0.64,0.68 -> best 0.6 (score 1.3), current 0.6 (1.3) (step -> 0.02)
 - 2026-10-02 20:28 walk: RW_STRIDE sweep 0.56,0.58,0.6,0.62,0.64 -> best 0.62 (score 0.4), current 0.6 (1.3) (step -> 0.01)
@@ -54,3 +54,4 @@ Updated 2026-10-02 22:46. Cycle 365.
 - 2026-10-02 22:41 episode @ 97c79e (d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7): rendered nine_waterfalls_loop_97c79e_web.mp4; 
 - 2026-10-02 22:44 craft: FILM_LINES A/B over 3.2,4.8,6.4 -> AB_craft_FILM_LINES.png (human pick)
 - 2026-10-02 22:46 craft: CHAR_AO A/B over 0,0.35,0.6 -> AB_craft_CHAR_AO.png (human pick)
+- 2026-10-02 22:48 craft: FILM_INTEGRATE A/B over 0,0.22,0.4 -> AB_craft_FILM_INTEGRATE.png (human pick)
