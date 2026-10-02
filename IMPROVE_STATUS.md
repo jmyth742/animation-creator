@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-02 20:36. Cycle 362.
+Updated 2026-10-02 22:41. Cycle 363.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- mean utilisation **10%**, samples with the card working (>=20%): **10%** of 73
+- mean utilisation **9%**, samples with the card working (>=20%): **11%** of 197
 
 ## Adopted (what the masters are rendered with)
 
@@ -12,8 +12,8 @@ Updated 2026-10-02 20:36. Cycle 362.
 - scene: SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png, SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy, SET_RELIEF_GAIN=0.6 (plate v2)
 - cast oisin: st_chibi3_oisin_m22223 (hand compactness 0.35, lower is better)
 - cast niamh: st_chibi3_niamh_m20705_tex (hand compactness 0.20, lower is better)
-- masters: nine_waterfalls_rigify_oisin4_web.mp4, nine_waterfalls_rigify_cast4d_web.mp4, nine_waterfalls_rigify_cast4_web.mp4
-- masters built at inputs: 1; current inputs: d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
+- masters: nine_waterfalls_rigify_cast4d_web.mp4, nine_waterfalls_rigify_cast4_web.mp4, nine_waterfalls_loop_97c79e_web.mp4
+- masters built at inputs: d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7; current inputs: d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 
 ## Settled (not re-run until an input changes)
 
@@ -40,7 +40,6 @@ Updated 2026-10-02 20:36. Cycle 362.
 
 ## Last 12 experiments
 
-- 2026-10-02 19:45 cast_face: st_chibi3_oisin_m22223 face rig built, talk probe 40 frames
 - 2026-10-02 19:51 plate_geo round 0: 9 plates, best r0_cn1.0_s90.png agreement r=0.809 vs old plate r=0.561 -> ADOPTED as master_geo.png (plate v1)
 - 2026-10-02 19:55 plate_geo round 1: 9 plates, best r1_cn1.0_s90.png agreement r=0.837 vs old plate r=0.561 -> ADOPTED as master_geo.png (plate v2)
 - 2026-10-02 19:59 plate_geo round 2: 9 plates, best agreement r=0.837 vs old plate r=0.561, adopted r=0.837 stands
@@ -52,3 +51,4 @@ Updated 2026-10-02 20:36. Cycle 362.
 - 2026-10-02 20:33 walk: RW_DROP sweep 0.052,0.057,0.062,0.067,0.072 -> best 0.057 (score 0.8), current 0.062 (1.3) (step -> 0.0025)
 - 2026-10-02 20:34 walk: RW_DROP sweep 0.057,0.0595,0.062,0.0645,0.067 -> best 0.057 (score 0.8), current 0.062 (1.3) (step below minimum: settled at 0.062)
 - 2026-10-02 20:36 walk: RW_ARM_OUT sweep 2,6,10,14,18 -> best 10 (score 1.3), current 10 (1.3) (no signal across the sweep: settled)
+- 2026-10-02 22:41 episode @ 97c79e (d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7): rendered nine_waterfalls_loop_97c79e_web.mp4;
