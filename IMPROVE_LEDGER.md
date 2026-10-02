@@ -318,3 +318,4 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-02 19:51 plate_geo round 0: 9 plates, best r0_cn1.0_s90.png agreement r=0.809 vs old plate r=0.561 -> ADOPTED as master_geo.png (plate v1)
 - 2026-10-02 19:55 plate_geo round 1: 9 plates, best r1_cn1.0_s90.png agreement r=0.837 vs old plate r=0.561 -> ADOPTED as master_geo.png (plate v2)
 - 2026-10-02 19:59 plate_geo round 2: 9 plates, best agreement r=0.837 vs old plate r=0.561, adopted r=0.837 stands
+- 2026-10-02 20:24 scene_fit @355: gains 0.4,0.6,0.8 -> best gain 0.6 (on path 79%, foot float p95 18 mm) (unchanged)
