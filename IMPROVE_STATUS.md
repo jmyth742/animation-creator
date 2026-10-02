@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-02 20:29. Cycle 358.
+Updated 2026-10-02 20:31. Cycle 359.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- mean utilisation **12%**, samples with the card working (>=20%): **12%** of 66
+- mean utilisation **11%**, samples with the card working (>=20%): **11%** of 68
 
 ## Adopted (what the masters are rendered with)
 
@@ -24,6 +24,7 @@ Updated 2026-10-02 20:29. Cycle 358.
 - scene_fit: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 - walk_RW_STRIDE: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 - walk knob RW_STRIDE: settled (lo 0.4, hi 0.76, step 0.005)
+- walk knob RW_DROP: refining (lo 0.03, hi 0.1, step 0.005)
 
 ## Awaiting a human pick
 
@@ -36,7 +37,6 @@ Updated 2026-10-02 20:29. Cycle 358.
 
 ## Last 12 experiments
 
-- 2026-10-02 18:56 walk: RW_DROP sweep 0.045,0.055,0.062,0.07,0.08 -> best 0.055 (score 297.2), current 0.062 (297.6)
 - 2026-10-02 19:03 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
 - 2026-10-02 19:41 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
 - 2026-10-02 19:41 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
@@ -48,3 +48,4 @@ Updated 2026-10-02 20:29. Cycle 358.
 - 2026-10-02 20:26 walk: RW_STRIDE sweep 0.52,0.56,0.6,0.64,0.68 -> best 0.6 (score 1.3), current 0.6 (1.3) (step -> 0.02)
 - 2026-10-02 20:28 walk: RW_STRIDE sweep 0.56,0.58,0.6,0.62,0.64 -> best 0.62 (score 0.4), current 0.6 (1.3) (step -> 0.01)
 - 2026-10-02 20:29 walk: RW_STRIDE sweep 0.58,0.59,0.6,0.61,0.62 -> best 0.61 (score 0.4), current 0.6 (1.3) (step below minimum: settled at 0.6)
+- 2026-10-02 20:31 walk: RW_DROP sweep 0.042,0.052,0.062,0.072,0.082 -> best 0.062 (score 1.3), current 0.062 (1.3) (step -> 0.005)

@@ -322,3 +322,4 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-02 20:26 walk: RW_STRIDE sweep 0.52,0.56,0.6,0.64,0.68 -> best 0.6 (score 1.3), current 0.6 (1.3) (step -> 0.02)
 - 2026-10-02 20:28 walk: RW_STRIDE sweep 0.56,0.58,0.6,0.62,0.64 -> best 0.62 (score 0.4), current 0.6 (1.3) (step -> 0.01)
 - 2026-10-02 20:29 walk: RW_STRIDE sweep 0.58,0.59,0.6,0.61,0.62 -> best 0.61 (score 0.4), current 0.6 (1.3) (step below minimum: settled at 0.6)
+- 2026-10-02 20:31 walk: RW_DROP sweep 0.042,0.052,0.062,0.072,0.082 -> best 0.062 (score 1.3), current 0.062 (1.3) (step -> 0.005)
