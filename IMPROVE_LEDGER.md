@@ -321,3 +321,4 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-02 20:24 scene_fit @355: gains 0.4,0.6,0.8 -> best gain 0.6 (on path 79%, foot float p95 18 mm) (unchanged)
 - 2026-10-02 20:26 walk: RW_STRIDE sweep 0.52,0.56,0.6,0.64,0.68 -> best 0.6 (score 1.3), current 0.6 (1.3) (step -> 0.02)
 - 2026-10-02 20:28 walk: RW_STRIDE sweep 0.56,0.58,0.6,0.62,0.64 -> best 0.62 (score 0.4), current 0.6 (1.3) (step -> 0.01)
+- 2026-10-02 20:29 walk: RW_STRIDE sweep 0.58,0.59,0.6,0.61,0.62 -> best 0.61 (score 0.4), current 0.6 (1.3) (step below minimum: settled at 0.6)
