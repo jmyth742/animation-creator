@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-02 20:34. Cycle 361.
+Updated 2026-10-02 20:36. Cycle 362.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- mean utilisation **11%**, samples with the card working (>=20%): **11%** of 71
+- mean utilisation **10%**, samples with the card working (>=20%): **10%** of 73
 
 ## Adopted (what the masters are rendered with)
 
@@ -22,10 +22,12 @@ Updated 2026-10-02 20:34. Cycle 361.
 - plate_geo_r1: queued @ g1
 - plate_geo_r2: queued @ g1
 - scene_fit: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
+- walk_RW_ARM_OUT: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 - walk_RW_DROP: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 - walk_RW_STRIDE: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 - walk knob RW_STRIDE: settled (lo 0.4, hi 0.76, step 0.005)
 - walk knob RW_DROP: settled (lo 0.03, hi 0.1, step 0.00125)
+- walk knob RW_ARM_OUT: settled (lo 2, hi 22, step 4)
 
 ## Awaiting a human pick
 
@@ -38,7 +40,6 @@ Updated 2026-10-02 20:34. Cycle 361.
 
 ## Last 12 experiments
 
-- 2026-10-02 19:41 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
 - 2026-10-02 19:45 cast_face: st_chibi3_oisin_m22223 face rig built, talk probe 40 frames
 - 2026-10-02 19:51 plate_geo round 0: 9 plates, best r0_cn1.0_s90.png agreement r=0.809 vs old plate r=0.561 -> ADOPTED as master_geo.png (plate v1)
 - 2026-10-02 19:55 plate_geo round 1: 9 plates, best r1_cn1.0_s90.png agreement r=0.837 vs old plate r=0.561 -> ADOPTED as master_geo.png (plate v2)
@@ -50,3 +51,4 @@ Updated 2026-10-02 20:34. Cycle 361.
 - 2026-10-02 20:31 walk: RW_DROP sweep 0.042,0.052,0.062,0.072,0.082 -> best 0.062 (score 1.3), current 0.062 (1.3) (step -> 0.005)
 - 2026-10-02 20:33 walk: RW_DROP sweep 0.052,0.057,0.062,0.067,0.072 -> best 0.057 (score 0.8), current 0.062 (1.3) (step -> 0.0025)
 - 2026-10-02 20:34 walk: RW_DROP sweep 0.057,0.0595,0.062,0.0645,0.067 -> best 0.057 (score 0.8), current 0.062 (1.3) (step below minimum: settled at 0.062)
+- 2026-10-02 20:36 walk: RW_ARM_OUT sweep 2,6,10,14,18 -> best 10 (score 1.3), current 10 (1.3) (no signal across the sweep: settled)
