@@ -328,3 +328,4 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-02 20:36 walk: RW_ARM_OUT sweep 2,6,10,14,18 -> best 10 (score 1.3), current 10 (1.3) (no signal across the sweep: settled)
 - 2026-10-02 22:41 episode @ 97c79e (d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7): rendered nine_waterfalls_loop_97c79e_web.mp4; 
 - 2026-10-02 22:44 craft: FILM_LINES A/B over 3.2,4.8,6.4 -> AB_craft_FILM_LINES.png (human pick)
+- 2026-10-02 22:46 craft: CHAR_AO A/B over 0,0.35,0.6 -> AB_craft_CHAR_AO.png (human pick)
