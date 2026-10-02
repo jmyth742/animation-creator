@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-02 23:05. Cycle 369.
+Updated 2026-10-02 23:43. Cycle 370.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- mean utilisation **8%**, samples with the card working (>=20%): **10%** of 222
+- mean utilisation **12%**, samples with the card working (>=20%): **13%** of 260
 
 ## Adopted (what the masters are rendered with)
 
@@ -46,8 +46,6 @@ Updated 2026-10-02 23:05. Cycle 369.
 
 ## Last 12 experiments
 
-- 2026-10-02 20:29 walk: RW_STRIDE sweep 0.58,0.59,0.6,0.61,0.62 -> best 0.61 (score 0.4), current 0.6 (1.3) (step below minimum: settled at 0.6)
-- 2026-10-02 20:31 walk: RW_DROP sweep 0.042,0.052,0.062,0.072,0.082 -> best 0.062 (score 1.3), current 0.062 (1.3) (step -> 0.005)
 - 2026-10-02 20:33 walk: RW_DROP sweep 0.052,0.057,0.062,0.067,0.072 -> best 0.057 (score 0.8), current 0.062 (1.3) (step -> 0.0025)
 - 2026-10-02 20:34 walk: RW_DROP sweep 0.057,0.0595,0.062,0.0645,0.067 -> best 0.057 (score 0.8), current 0.062 (1.3) (step below minimum: settled at 0.062)
 - 2026-10-02 20:36 walk: RW_ARM_OUT sweep 2,6,10,14,18 -> best 10 (score 1.3), current 10 (1.3) (no signal across the sweep: settled)
@@ -58,3 +56,5 @@ Updated 2026-10-02 23:05. Cycle 369.
 - 2026-10-02 22:51 craft: FILM_LINE_ALPHA A/B over 0.6,0.82,1.0 -> AB_craft_FILM_LINE_ALPHA.png (human pick)
 - 2026-10-02 22:58 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
 - 2026-10-02 23:05 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-02 23:43 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
+- 2026-10-02 23:43 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
