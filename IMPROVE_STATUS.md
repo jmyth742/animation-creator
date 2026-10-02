@@ -1,24 +1,25 @@
 # Improvement status
 
-Updated 2026-10-02 19:51. Cycle 352.
+Updated 2026-10-02 19:55. Cycle 353.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- mean utilisation **21%**, samples with the card working (>=20%): **21%** of 28
+- mean utilisation **18%**, samples with the card working (>=20%): **18%** of 32
 
 ## Adopted (what the masters are rendered with)
 
 - walk: RW_STRIDE=0.6, RW_DROP=0.062, RW_ARM_OUT=10 (defaults v1)
-- scene: SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png, SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy, SET_RELIEF_GAIN=0.6 (plate v1)
+- scene: SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png, SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy, SET_RELIEF_GAIN=0.6 (plate v2)
 - cast oisin: st_chibi3_oisin_m22223 (hand compactness 0.35, lower is better)
 - cast niamh: st_chibi3_niamh_m20705_tex (hand compactness 0.20, lower is better)
 - masters: nine_waterfalls_rigify_oisin4_web.mp4, nine_waterfalls_rigify_cast4d_web.mp4, nine_waterfalls_rigify_cast4_web.mp4
-- masters built at inputs: 1; current inputs: d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p0|s99914b
+- masters built at inputs: 1; current inputs: d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p1|s39c2a7
 
 ## Settled (not re-run until an input changes)
 
 - cast_face_st_chibi3_oisin_m22223: queued @ st_chibi3_oisin_m22223
 - plate_geo_r0: queued @ g1
+- plate_geo_r1: queued @ g1
 
 ## Awaiting a human pick
 
@@ -31,7 +32,6 @@ Updated 2026-10-02 19:51. Cycle 352.
 
 ## Last 12 experiments
 
-- 2026-10-02 18:11 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
 - 2026-10-02 18:48 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
 - 2026-10-02 18:48 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
 - 2026-10-02 18:49 walk: RW_ARM_OUT sweep 6,10,14,18 -> best 10 (score 297.6), current 10 (297.6)
@@ -43,3 +43,4 @@ Updated 2026-10-02 19:51. Cycle 352.
 - 2026-10-02 19:41 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
 - 2026-10-02 19:45 cast_face: st_chibi3_oisin_m22223 face rig built, talk probe 40 frames
 - 2026-10-02 19:51 plate_geo round 0: 9 plates, best r0_cn1.0_s90.png agreement r=0.809 vs old plate r=0.561 -> ADOPTED as master_geo.png (plate v1)
+- 2026-10-02 19:55 plate_geo round 1: 9 plates, best r1_cn1.0_s90.png agreement r=0.837 vs old plate r=0.561 -> ADOPTED as master_geo.png (plate v2)
