@@ -54,10 +54,21 @@ def agree(im):
     d = np.asarray(dp(im)["depth"].resize((W, H)), dtype=np.float32); d = (d - d.min()) / (np.ptp(d) + 1e-6)
     m = gd > 0.02                     # ignore sky
     return float(np.corrcoef(d[m], gd[m])[0, 1])
+# STYLE GATE: geometry agreement alone adopted a plate that looked like a different show
+# (r=0.84, but flat SDXL colouring, hall a block, waterfall gone). CLIP image similarity
+# to the original plate: the show's own other setups score >= 0.88 against it.
+from transformers import CLIPModel, CLIPProcessor
+cm = CLIPModel.from_pretrained("openai/clip-vit-base-patch32", use_safetensors=True); cp = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+def cemb(im):
+    with torch.no_grad(): e = cm.get_image_features(**cp(images=im, return_tensors="pt"))
+    e = e if torch.is_tensor(e) else e.pooler_output
+    return torch.nn.functional.normalize(e, dim=-1)
+_old_e = cemb(Image.open(old_p).convert("RGB"))
+def style(im): return float((cemb(im) @ _old_e.T).item())
 rows = [("old plate", old, agree(old))] + [("strength %.2f" % s, im, agree(im)) for s, p, im in outs]
-for n, _, a in rows: print("PG agreement %-14s r=%.3f" % (n, a), flush=True)
+for n, im_, a in rows: print("PG agreement %-14s r=%.3f  CLIP style %.3f" % (n, a, style(im_)), flush=True)
 import json
-json.dump({"old": rows[0][2], "plates": {p: a for (s, p, im), (_, _, a) in zip(outs, rows[1:])}, "cn": CN, "seed": SEED},
+json.dump({"old": rows[0][2], "plates": {p: a for (s, p, im), (_, _, a) in zip(outs, rows[1:])}, "style": {p: style(im) for s, p, im in outs}, "cn": CN, "seed": SEED},
           open(out + "_agree.json", "w"), indent=1)
 # contact sheet: guide | old | new...
 tiles = [guide] + [im for _, im, _ in rows]

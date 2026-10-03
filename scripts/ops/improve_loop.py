@@ -108,8 +108,9 @@ done
 def x_scene_fit():
     """Scene fit: build episode 1 at three relief gains with the current plate and cast,
     audit foot float and on-path time, adopt the best gain, render three probe shots."""
-    if not fresh("scene_fit"): return None
-    mark("scene_fit")
+    sf_ver = "%s|%s|p%d" % (ao, an, st["plate_ver"])          # its own output (the gain) must not re-trigger it
+    if not fresh("scene_fit", sf_ver): return None
+    mark("scene_fit", sf_ver)
     npy = "SET_RELIEF_NPY=%s" % scene_def["SET_RELIEF_NPY"] if "SET_RELIEF_NPY" in scene_def else ""
     plate = "SET_PLATE=%s" % scene_def["SET_PLATE"] if "SET_PLATE" in scene_def else ""
     return "scene_fit", HEAD + """

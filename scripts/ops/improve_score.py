@@ -117,10 +117,12 @@ elif mode in ("craft", "face"):
 elif mode == "plate_geo":
     rnd = int(sys.argv[2]); from PIL import Image
     st = json.load(open(W + "/improve/state.json"))
-    best = (st.get("plate_best_r", -1.0), None); old_r = None
+    STYLE_MIN = float(os.environ.get("PG_STYLE_MIN", "0.88"))      # the show's own other setups score >= 0.88
+    best = (st.get("plate_best_r", -1.0), None); old_r = None; rejected = 0
     for j in glob.glob("%s/geo/r%d_cn*_agree.json" % (W, rnd)):
         d = json.load(open(j)); old_r = d["old"]
         for p, r in d["plates"].items():
+            if d.get("style", {}).get(p, 0.0) < STYLE_MIN: rejected += 1; continue
             if r > best[0]: best = (r, p)
     cands = sum(len(json.load(open(j))["plates"]) for j in glob.glob("%s/geo/r%d_cn*_agree.json" % (W, rnd)))
     if old_r is None: log("plate_geo round %d: no results" % rnd)
@@ -142,7 +144,7 @@ elif mode == "plate_geo":
             sheet.save(R + "/PLATE_FROM_GEOMETRY.png")
             log("plate_geo round %d: %d plates, best %s agreement r=%.3f vs old plate r=%.3f -> ADOPTED as master_geo.png (plate v%d)" % (rnd, cands, os.path.basename(p), r, old_r, st["plate_ver"]))
         else:
-            log("plate_geo round %d: %d plates, best agreement r=%.3f vs old plate r=%.3f, adopted r=%.3f stands" % (rnd, cands, best[0], old_r, st.get("plate_best_r", -1)))
+            log("plate_geo round %d: %d plates (%d failed the style gate >=%.2f), best agreement r=%.3f vs old plate r=%.3f, adopted r=%.3f stands" % (rnd, cands, rejected, STYLE_MIN, best[0], old_r, st.get("plate_best_r", -1)))
     json.dump(st, open(W + "/improve/state.json", "w"), indent=1)
 
 elif mode == "scene_fit":
