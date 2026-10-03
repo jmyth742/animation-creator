@@ -88,6 +88,24 @@ echo "- $(date +%%F\\ %%H:%%M) cast_face: $C face rig $([ -s $RG/${C}_face.blend
     return None
 
 
+def x_plate_flux():
+    """Geometry-first plate, FLUX route (the family the plates came from): three denoise
+    levels x three ControlNet strengths per round, scored by depth agreement AND CLIP style;
+    adopted only if it beats the old plate's geometry while passing the style gate."""
+    U = REPO + "/ComfyUI/models/unet/flux1-dev-Q8_0.gguf"; C = REPO + "/ComfyUI/models/controlnet/flux_union_pro2.safetensors"
+    if not (os.path.exists(U) and os.path.getsize(U) > 12e9 and os.path.exists(C) and os.path.getsize(C) > 6e9): return None
+    rnd = st.get("flux_rounds", 0)
+    if rnd >= 3: return None
+    st["flux_rounds"] = rnd + 1; mark("plate_flux_r%d" % rnd, "g1")
+    return "plate_flux", HEAD + """
+# plate_flux round %d: FLUX-dev + depth ControlNet, 9 plates, agreement + style scored
+for CN in 0.5 0.7 0.9; do
+  PF_CN=$CN PF_SEED=%d /workspace/venv/bin/python scripts/blender3d/plate_flux_depth.py /workspace/loopwork/geo/r%d_cn${CN}_flux 0.6 0.75 0.9 2>&1 | grep -E "^PF|Traceback|Error"
+done
+/workspace/venv/bin/python scripts/ops/improve_score.py plate_geo %d
+""" % (rnd, 6100 + rnd * 7, 10 + rnd, 10 + rnd)
+
+
 def x_plate_geo():
     """Geometry-first plate: paint the valley conditioned on the real set's depth, three
     strengths x three ControlNet weights per round, scored by Depth-Anything agreement with
@@ -232,7 +250,7 @@ done; done
 """ % (P, seed, st["cycle"])
 
 
-for fn in (x_cast_face, x_plate_geo, x_scene_fit, x_walk, x_episode, lambda: x_ab("craft"), lambda: x_ab("face"), x_cast):
+for fn in (x_cast_face, x_plate_flux, x_plate_geo, x_scene_fit, x_walk, x_episode, lambda: x_ab("craft"), lambda: x_ab("face"), x_cast):
     r = fn()
     if r: break
 exp, body = r
