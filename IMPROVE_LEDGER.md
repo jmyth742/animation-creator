@@ -365,3 +365,4 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-03 08:15 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
 - 2026-10-03 08:30 cast_face: st_chibi3_oisin_m23845 face rig built, talk probe 40 frames
 - 2026-10-03 08:50 scene_fit @386: gains 0.4,0.6,0.8 -> best gain 0.4 (on path 80%, foot float p95 0 mm) ADOPTED
+- 2026-10-03 09:11 scene_fit @387: gains 0.4,0.6,0.8 -> best gain 0.4 (on path 80%, foot float p95 0 mm) (unchanged)
