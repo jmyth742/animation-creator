@@ -367,3 +367,4 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-03 08:50 scene_fit @386: gains 0.4,0.6,0.8 -> best gain 0.4 (on path 80%, foot float p95 0 mm) ADOPTED
 - 2026-10-03 09:11 scene_fit @387: gains 0.4,0.6,0.8 -> best gain 0.4 (on path 80%, foot float p95 0 mm) (unchanged)
 - 2026-10-03 10:37 scene_fit @389: gains 0.4,0.6,0.8 -> best gain 0.8 (on path 85%, foot float p95 0 mm) ADOPTED
+- 2026-10-05 16:18 plate_geo round 10: 9 plates (6 failed the style gate >=0.88), best agreement r=0.598 vs old plate r=0.561, adopted r=-1.000 stands
