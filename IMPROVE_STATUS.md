@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-05 19:43. Cycle 397.
+Updated 2026-10-05 19:47. Cycle 398.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **3%** of the last 24 h (48 busy minutes; 1219 minutes unsampled, counted idle); mean utilisation of sampled minutes 19%
+- card working (>=20%) **3%** of the last 24 h (48 busy minutes; 1215 minutes unsampled, counted idle); mean utilisation of sampled minutes 19%
 
 ## Adopted (what the masters are rendered with)
 
@@ -21,7 +21,7 @@ Updated 2026-10-05 19:43. Cycle 397.
 - cast_face_st_chibi3_oisin_m23845: queued @ st_chibi3_oisin_m23845
 - craft_CHAR_AO: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 - craft_FILM_INTEGRATE: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
-- craft_FILM_LINES: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
+- craft_FILM_LINES: queued @ d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p7|scb8174
 - craft_FILM_LINE_ALPHA: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 - face_FCG_MOUTH: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 - face_FP_MOUTH_PLATE: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
@@ -47,7 +47,6 @@ Updated 2026-10-05 19:43. Cycle 397.
 
 ## Last 12 experiments
 
-- 2026-10-05 16:18 plate_geo round 10: 9 plates (6 failed the style gate >=0.88), best agreement r=0.598 vs old plate r=0.561, adopted r=-1.000 stands
 - 2026-10-05 16:27 plate_geo round 11: 9 plates (2 failed the style gate >=0.85), best agreement r=0.601 vs old plate r=0.561, adopted r=-1.000 stands
 - 2026-10-05 16:37 plate_geo round 10: 9 plates, best r10_cn0.9_flux_d90.png agreement r=0.609 vs old plate r=0.297 -> ADOPTED as master_geo.png (plate v4)
 - 2026-10-05 16:46 plate_geo round 11: 9 plates (2 failed the style gate >=0.85), best agreement r=0.609 vs old plate r=0.297, adopted r=0.609 stands
@@ -58,4 +57,5 @@ Updated 2026-10-05 19:43. Cycle 397.
 - 2026-10-05 16:59 plate_geo round 13: no results
 - 2026-10-05 17:18 scene_fit @396: gains 0.4,0.6,0.8 -> best gain 0.4 (on path 84%, foot float p95 0 mm) ADOPTED
 - 2026-10-05 17:43 scene_fit @396: gains 0.4,0.6,0.8 -> best gain 0.8 (on path 83%, foot float p95 0 mm) ADOPTED
-- 2026-10-05 19:43 episode @ 419a38 (d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p7|scb8174): rendered nine_waterfalls_loop_419a38_web.mp4;
+- 2026-10-05 19:43 episode @ 419a38 (d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p7|scb8174): rendered nine_waterfalls_loop_419a38_web.mp4; 
+- 2026-10-05 19:47 craft: FILM_LINES A/B over 3.2,4.8,6.4 -> AB_craft_FILM_LINES.png (human pick)
