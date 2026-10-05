@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-05 16:37. Cycle 393.
+Updated 2026-10-05 16:46. Cycle 394.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **1%** of the last 24 h (15 busy minutes; 1404 minutes unsampled, counted idle); mean utilisation of sampled minutes 40%
+- card working (>=20%) **1%** of the last 24 h (21 busy minutes; 1395 minutes unsampled, counted idle); mean utilisation of sampled minutes 44%
 
 ## Adopted (what the masters are rendered with)
 
@@ -13,7 +13,7 @@ Updated 2026-10-05 16:37. Cycle 393.
 - cast oisin: st_chibi3_oisin_m23845 (hand compactness 0.31, lower is better)
 - cast niamh: st_chibi3_niamh_m20705_tex (hand compactness 0.20, lower is better)
 - masters: nine_waterfalls_rigify_cast4d_web.mp4, nine_waterfalls_rigify_cast4_web.mp4, nine_waterfalls_loop_97c79e_web.mp4
-- masters built at inputs: ; current inputs: d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p3|s72705d
+- masters built at inputs: ; current inputs: d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p4|scb8174
 
 ## Settled (not re-run until an input changes)
 
@@ -46,7 +46,6 @@ Updated 2026-10-05 16:37. Cycle 393.
 
 ## Last 12 experiments
 
-- 2026-10-03 07:02 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
 - 2026-10-03 07:38 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
 - 2026-10-03 07:38 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
 - 2026-10-03 08:15 cast: oisin candidate st_chibi3_oisin_m23845 hands 0.31 beats st_chibi3_oisin_m22223 (0.35) -> retopo+rig+gate queued
@@ -58,3 +57,4 @@ Updated 2026-10-05 16:37. Cycle 393.
 - 2026-10-05 16:18 plate_geo round 10: 9 plates (6 failed the style gate >=0.88), best agreement r=0.598 vs old plate r=0.561, adopted r=-1.000 stands
 - 2026-10-05 16:27 plate_geo round 11: 9 plates (2 failed the style gate >=0.85), best agreement r=0.601 vs old plate r=0.561, adopted r=-1.000 stands
 - 2026-10-05 16:37 plate_geo round 10: 9 plates, best r10_cn0.9_flux_d90.png agreement r=0.609 vs old plate r=0.297 -> ADOPTED as master_geo.png (plate v4)
+- 2026-10-05 16:46 plate_geo round 11: 9 plates (2 failed the style gate >=0.85), best agreement r=0.609 vs old plate r=0.297, adopted r=0.609 stands
