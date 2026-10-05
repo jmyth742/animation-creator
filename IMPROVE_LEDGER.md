@@ -378,3 +378,4 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-05 16:59 plate_geo round 13: no results
 - 2026-10-05 17:18 scene_fit @396: gains 0.4,0.6,0.8 -> best gain 0.4 (on path 84%, foot float p95 0 mm) ADOPTED
 - 2026-10-05 17:43 scene_fit @396: gains 0.4,0.6,0.8 -> best gain 0.8 (on path 83%, foot float p95 0 mm) ADOPTED
+- 2026-10-05 19:43 episode @ 419a38 (d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p7|scb8174): rendered nine_waterfalls_loop_419a38_web.mp4; 

@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-05 17:43. Cycle 396.
+Updated 2026-10-05 19:43. Cycle 397.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **1%** of the last 24 h (28 busy minutes; 1338 minutes unsampled, counted idle); mean utilisation of sampled minutes 25%
+- card working (>=20%) **3%** of the last 24 h (48 busy minutes; 1219 minutes unsampled, counted idle); mean utilisation of sampled minutes 19%
 
 ## Adopted (what the masters are rendered with)
 
@@ -12,8 +12,8 @@ Updated 2026-10-05 17:43. Cycle 396.
 - scene: SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png, SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy, SET_RELIEF_GAIN=0.8 (plate v7)
 - cast oisin: st_chibi3_oisin_m23845 (hand compactness 0.31, lower is better)
 - cast niamh: st_chibi3_niamh_m20705_tex (hand compactness 0.20, lower is better)
-- masters: nine_waterfalls_rigify_cast4d_web.mp4, nine_waterfalls_rigify_cast4_web.mp4, nine_waterfalls_loop_97c79e_web.mp4
-- masters built at inputs: ; current inputs: d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p7|sf29ab3
+- masters: nine_waterfalls_rigify_cast4_web.mp4, nine_waterfalls_loop_97c79e_web.mp4, nine_waterfalls_loop_419a38_web.mp4
+- masters built at inputs: d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p7|scb8174; current inputs: d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p7|scb8174
 
 ## Settled (not re-run until an input changes)
 
@@ -47,7 +47,6 @@ Updated 2026-10-05 17:43. Cycle 396.
 
 ## Last 12 experiments
 
-- 2026-10-03 10:37 scene_fit @389: gains 0.4,0.6,0.8 -> best gain 0.8 (on path 85%, foot float p95 0 mm) ADOPTED
 - 2026-10-05 16:18 plate_geo round 10: 9 plates (6 failed the style gate >=0.88), best agreement r=0.598 vs old plate r=0.561, adopted r=-1.000 stands
 - 2026-10-05 16:27 plate_geo round 11: 9 plates (2 failed the style gate >=0.85), best agreement r=0.601 vs old plate r=0.561, adopted r=-1.000 stands
 - 2026-10-05 16:37 plate_geo round 10: 9 plates, best r10_cn0.9_flux_d90.png agreement r=0.609 vs old plate r=0.297 -> ADOPTED as master_geo.png (plate v4)
@@ -59,3 +58,4 @@ Updated 2026-10-05 17:43. Cycle 396.
 - 2026-10-05 16:59 plate_geo round 13: no results
 - 2026-10-05 17:18 scene_fit @396: gains 0.4,0.6,0.8 -> best gain 0.4 (on path 84%, foot float p95 0 mm) ADOPTED
 - 2026-10-05 17:43 scene_fit @396: gains 0.4,0.6,0.8 -> best gain 0.8 (on path 83%, foot float p95 0 mm) ADOPTED
+- 2026-10-05 19:43 episode @ 419a38 (d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p7|scb8174): rendered nine_waterfalls_loop_419a38_web.mp4;
