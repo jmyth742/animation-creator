@@ -28,7 +28,8 @@ out = ["# Improvement status", "", "Updated %s. Cycle %d." % (time.strftime("%F 
 out += ["## GPU duty cycle (last 24 h, 1-min samples)", ""]
 if util:
     busy = sum(1 for u in util if u >= 20)
-    out += ["- mean utilisation **%d%%**, samples with the card working (>=20%%): **%d%%** of %d" % (sum(util) / len(util), 100 * busy // len(util), len(util))]
+    # a missing sample is a minute the sampler could not write (full disk, dead pod): count it as idle
+    out += ["- card working (>=20%%) **%d%%** of the last 24 h (%d busy minutes; %d minutes unsampled, counted idle); mean utilisation of sampled minutes %d%%" % (100 * busy // 1440, busy, max(0, 1440 - len(util)), sum(util) / len(util))]
 else:
     out += ["- sampler has no data yet"]
 out += ["", "## Adopted (what the masters are rendered with)", ""]
