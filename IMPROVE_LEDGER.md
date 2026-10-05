@@ -384,3 +384,4 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-05 19:52 craft: FILM_INTEGRATE A/B over 0,0.22,0.4 -> AB_craft_FILM_INTEGRATE.png (human pick)
 - 2026-10-05 19:55 craft: FILM_LINE_ALPHA A/B over 0.6,0.82,1.0 -> AB_craft_FILM_LINE_ALPHA.png (human pick)
 - 2026-10-05 20:03 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
+- 2026-10-05 20:11 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
