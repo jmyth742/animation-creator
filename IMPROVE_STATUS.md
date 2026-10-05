@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-05 20:52. Cycle 404.
+Updated 2026-10-05 21:33. Cycle 405.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **4%** of the last 24 h (63 busy minutes; 1149 minutes unsampled, counted idle); mean utilisation of sampled minutes 19%
+- card working (>=20%) **5%** of the last 24 h (76 busy minutes; 1109 minutes unsampled, counted idle); mean utilisation of sampled minutes 21%
 
 ## Adopted (what the masters are rendered with)
 
@@ -47,8 +47,6 @@ Updated 2026-10-05 20:52. Cycle 404.
 
 ## Last 12 experiments
 
-- 2026-10-05 16:59 plate_geo round 13: no results
-- 2026-10-05 17:18 scene_fit @396: gains 0.4,0.6,0.8 -> best gain 0.4 (on path 84%, foot float p95 0 mm) ADOPTED
 - 2026-10-05 17:43 scene_fit @396: gains 0.4,0.6,0.8 -> best gain 0.8 (on path 83%, foot float p95 0 mm) ADOPTED
 - 2026-10-05 19:43 episode @ 419a38 (d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p7|scb8174): rendered nine_waterfalls_loop_419a38_web.mp4; 
 - 2026-10-05 19:47 craft: FILM_LINES A/B over 3.2,4.8,6.4 -> AB_craft_FILM_LINES.png (human pick)
@@ -59,3 +57,5 @@ Updated 2026-10-05 20:52. Cycle 404.
 - 2026-10-05 20:11 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
 - 2026-10-05 20:52 cast: oisin best new candidate st_chibi3_oisin_m23845 hands 0.31, adopted st_chibi3_oisin_m23845 (0.31) stands
 - 2026-10-05 20:52 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-05 21:33 cast: oisin best new candidate st_chibi3_oisin_m23845 hands 0.31, adopted st_chibi3_oisin_m23845 (0.31) stands
+- 2026-10-05 21:33 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
