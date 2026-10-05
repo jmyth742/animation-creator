@@ -98,9 +98,9 @@ while true; do
     fi
     if [ -n "${job:-}" ]; then
       # jobs whose name says they need the card to themselves get ComfyUI's memory back
-      case "$(basename $job)" in
-        *apose*|*rig*|*texture*|*tex*|*hy3d*|*upsample*|*momask*|*motion*) free_comfy ;;
-      esac
+      # ComfyUI keeps the last model resident (FLUX-dev: ~19 GB of 24). Every job gets the
+      # card clean; ComfyUI reloads in under a minute when a job needs it.
+      free_comfy
       log "RUN $(basename $job) (vram free $(vram_free_mb) MB)"
       T0=$(date +%s)
       # WATCHDOG (5 Oct): a job whose render pool died on a full disk sat "running" for two
