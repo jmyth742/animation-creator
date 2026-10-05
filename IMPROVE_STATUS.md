@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-05 16:46. Cycle 394.
+Updated 2026-10-05 16:54. Cycle 395.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **1%** of the last 24 h (21 busy minutes; 1395 minutes unsampled, counted idle); mean utilisation of sampled minutes 44%
+- card working (>=20%) **1%** of the last 24 h (26 busy minutes; 1387 minutes unsampled, counted idle); mean utilisation of sampled minutes 47%
 
 ## Adopted (what the masters are rendered with)
 
@@ -27,6 +27,7 @@ Updated 2026-10-05 16:46. Cycle 394.
 - face_FP_MOUTH_PLATE: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 - plate_flux_r0: queued @ g1
 - plate_flux_r1: queued @ g1
+- plate_flux_r2: queued @ g1
 - scene_fit: queued @ st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p3
 - walk_RW_ARM_OUT: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 - walk_RW_DROP: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
@@ -46,7 +47,6 @@ Updated 2026-10-05 16:46. Cycle 394.
 
 ## Last 12 experiments
 
-- 2026-10-03 07:38 cast: oisin best new candidate st_chibi3_oisin_m22223 hands 0.35, adopted st_chibi3_oisin_m22223 (0.35) stands
 - 2026-10-03 07:38 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
 - 2026-10-03 08:15 cast: oisin candidate st_chibi3_oisin_m23845 hands 0.31 beats st_chibi3_oisin_m22223 (0.35) -> retopo+rig+gate queued
 - 2026-10-03 08:15 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
@@ -58,3 +58,4 @@ Updated 2026-10-05 16:46. Cycle 394.
 - 2026-10-05 16:27 plate_geo round 11: 9 plates (2 failed the style gate >=0.85), best agreement r=0.601 vs old plate r=0.561, adopted r=-1.000 stands
 - 2026-10-05 16:37 plate_geo round 10: 9 plates, best r10_cn0.9_flux_d90.png agreement r=0.609 vs old plate r=0.297 -> ADOPTED as master_geo.png (plate v4)
 - 2026-10-05 16:46 plate_geo round 11: 9 plates (2 failed the style gate >=0.85), best agreement r=0.609 vs old plate r=0.297, adopted r=0.609 stands
+- 2026-10-05 16:54 plate_geo round 12: 9 plates (1 failed the style gate >=0.85), best agreement r=0.609 vs old plate r=0.297, adopted r=0.609 stands
