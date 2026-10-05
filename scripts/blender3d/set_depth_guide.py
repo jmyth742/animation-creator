@@ -26,6 +26,14 @@ NEAR, FAR = float(os.environ.get("DG_NEAR", "4.0")), float(os.environ.get("DG_FA
 sc = bpy.context.scene
 for o in list(bpy.data.objects): bpy.data.objects.remove(o, do_unlink=True)
 valley_set.build_set(sc, winter=winter)
+# GROUND-ONLY guide (5 Oct): with the full blockout as conditioning, FLUX faithfully painted
+# the blockout -- cone trees, cone mountains, a box hall (r10_cn0.7_flux_d90). What the
+# characters need to obey is the GROUND: its slope, the lake, the path, and where the hall
+# mass and the cross stand. Trees and mountains are the painting's business.
+if os.environ.get("DG_GROUND_ONLY", "1") not in ("", "0"):
+    for o in list(bpy.data.objects):
+        if o.type == 'MESH' and (o.name.startswith(("can", "trunk", "mtn", "cren", "col", "door", "towerroof", "foam"))):
+            bpy.data.objects.remove(o, do_unlink=True)
 cam_d = bpy.data.cameras.new("guide"); cam_d.lens = 32.0; cam_d.sensor_width = 36
 cam = bpy.data.objects.new("guide", cam_d); sc.collection.objects.link(cam)
 loc, tgt = mathutils.Vector(valley_set.PAINTER_LOC), mathutils.Vector(valley_set.PAINTER_TGT)
@@ -72,4 +80,9 @@ bpy.ops.render.render(write_still=True)
 import glob, shutil
 d = sorted(glob.glob(out + "_depth_*.png"))
 if d: shutil.move(d[-1], out + "_depth.png")
+# soften: hard primitive edges read as literal shapes to the ControlNet
+blur = float(os.environ.get("DG_BLUR", "4"))
+if blur > 0:   # Blender's python has no PIL: blur in the venv
+    import subprocess
+    subprocess.run(["/workspace/venv/bin/python", "-c", "from PIL import Image, ImageFilter; import sys; Image.open(sys.argv[1]).filter(ImageFilter.GaussianBlur(float(sys.argv[2]))).save(sys.argv[1])", out + "_depth.png", str(blur)], check=False)
 print("DEPTH_GUIDE", out + "_color.png", out + "_depth.png", flush=True)

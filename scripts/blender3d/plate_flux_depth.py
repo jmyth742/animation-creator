@@ -31,12 +31,12 @@ def wf(den, seed, prefix):
         "4n": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": ""}},
         "4g": {"class_type": "FluxGuidance", "inputs": {"conditioning": ["4", 0], "guidance": 3.5}},
         "20": {"class_type": "LoadImage", "inputs": {"image": "geo_plate_old.png"}},
-        "21": {"class_type": "LoadImage", "inputs": {"image": "geo_depth.png"}},
+        "21": {"class_type": "LoadImage", "inputs": {"image": os.environ.get("PF_GUIDE_COMFY", "geo_depth2.png")}},
         "22": {"class_type": "VAEEncode", "inputs": {"pixels": ["20", 0], "vae": ["3", 0]}},
         "23": {"class_type": "ControlNetLoader", "inputs": {"control_net_name": "flux_union_pro2.safetensors"}},
         "24": {"class_type": "SetUnionControlNetType", "inputs": {"control_net": ["23", 0], "type": "depth"}},
         "25": {"class_type": "ControlNetApplyAdvanced", "inputs": {"positive": ["4g", 0], "negative": ["4n", 0], "control_net": ["24", 0], "image": ["21", 0],
-                                                                    "strength": CN, "start_percent": 0.0, "end_percent": 0.8, "vae": ["3", 0]}},
+                                                                    "strength": CN, "start_percent": 0.0, "end_percent": float(os.environ.get("PF_END", "0.6")), "vae": ["3", 0]}},
         "6": {"class_type": "ModelSamplingFlux", "inputs": {"model": ["1", 0], "max_shift": 1.15, "base_shift": 0.5, "width": W, "height": H}},
         "7": {"class_type": "RandomNoise", "inputs": {"noise_seed": seed}},
         "8": {"class_type": "BasicGuider", "inputs": {"model": ["6", 0], "conditioning": ["25", 0]}},
@@ -69,12 +69,13 @@ for den in dens:
 
 # scoring: geometry agreement (Depth-Anything vs the guide) and CLIP style vs the original plate
 from transformers import pipeline as hfp, CLIPModel, CLIPProcessor
-guide = Image.open("/workspace/loopwork/geo/valley_depth.png").convert("L").resize((W, H), Image.LANCZOS)
+guide = Image.open(os.environ.get("PF_GUIDE", "/workspace/loopwork/geo/valley2_depth.png")).convert("L").resize((W, H), Image.LANCZOS)
 old = Image.open(COMFY + "/input/geo_plate_old.png").convert("RGB")
 dp = hfp("depth-estimation", model="depth-anything/Depth-Anything-V2-Small-hf", device=0)
 gd = np.asarray(guide, dtype=np.float32) / 255.0
 def agree(im):
-    d = np.asarray(dp(im)["depth"].resize((W, H)), dtype=np.float32); d = (d - d.min()) / (np.ptp(d) + 1e-6); m = gd > 0.02
+    d = np.asarray(dp(im)["depth"].resize((W, H)), dtype=np.float32); d = (d - d.min()) / (np.ptp(d) + 1e-6)
+    m = gd > 0.02; m[: int(H * 0.45)] = False           # ground band: below the horizon, where the cast walks
     return float(np.corrcoef(d[m], gd[m])[0, 1])
 cm = CLIPModel.from_pretrained("openai/clip-vit-base-patch32", use_safetensors=True); cp = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 def cemb(im):

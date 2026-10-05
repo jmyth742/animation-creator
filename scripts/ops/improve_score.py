@@ -117,7 +117,7 @@ elif mode in ("craft", "face"):
 elif mode == "plate_geo":
     rnd = int(sys.argv[2]); from PIL import Image
     st = json.load(open(W + "/improve/state.json"))
-    STYLE_MIN = float(os.environ.get("PG_STYLE_MIN", "0.88"))      # the show's own other setups score >= 0.88
+    STYLE_MIN = float(os.environ.get("PG_STYLE_MIN", "0.85"))      # FLUX plates that keep the look score 0.83-0.94; SDXL ones that lost it 0.75-0.80
     best = (st.get("plate_best_r", -1.0), None); old_r = None; rejected = 0
     for j in glob.glob("%s/geo/r%d_cn*_agree.json" % (W, rnd)):
         d = json.load(open(j)); old_r = d["old"]
