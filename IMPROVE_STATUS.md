@@ -1,15 +1,15 @@
 # Improvement status
 
-Updated 2026-10-05 16:54. Cycle 395.
+Updated 2026-10-05 17:19. Cycle 395.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **1%** of the last 24 h (26 busy minutes; 1387 minutes unsampled, counted idle); mean utilisation of sampled minutes 47%
+- card working (>=20%) **1%** of the last 24 h (28 busy minutes; 1362 minutes unsampled, counted idle); mean utilisation of sampled minutes 33%
 
 ## Adopted (what the masters are rendered with)
 
 - walk: RW_STRIDE=0.6, RW_DROP=0.062, RW_ARM_OUT=10 (defaults v1)
-- scene: SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png, SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy, SET_RELIEF_GAIN=0.8 (plate v4)
+- scene: SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png, SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy, SET_RELIEF_GAIN=0.4 (plate v7)
 - cast oisin: st_chibi3_oisin_m23845 (hand compactness 0.31, lower is better)
 - cast niamh: st_chibi3_niamh_m20705_tex (hand compactness 0.20, lower is better)
 - masters: nine_waterfalls_rigify_cast4d_web.mp4, nine_waterfalls_rigify_cast4_web.mp4, nine_waterfalls_loop_97c79e_web.mp4
@@ -47,11 +47,6 @@ Updated 2026-10-05 16:54. Cycle 395.
 
 ## Last 12 experiments
 
-- 2026-10-03 07:38 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
-- 2026-10-03 08:15 cast: oisin candidate st_chibi3_oisin_m23845 hands 0.31 beats st_chibi3_oisin_m22223 (0.35) -> retopo+rig+gate queued
-- 2026-10-03 08:15 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
-- 2026-10-03 08:30 cast_face: st_chibi3_oisin_m23845 face rig built, talk probe 40 frames
-- 2026-10-03 08:50 scene_fit @386: gains 0.4,0.6,0.8 -> best gain 0.4 (on path 80%, foot float p95 0 mm) ADOPTED
 - 2026-10-03 09:11 scene_fit @387: gains 0.4,0.6,0.8 -> best gain 0.4 (on path 80%, foot float p95 0 mm) (unchanged)
 - 2026-10-03 10:37 scene_fit @389: gains 0.4,0.6,0.8 -> best gain 0.8 (on path 85%, foot float p95 0 mm) ADOPTED
 - 2026-10-05 16:18 plate_geo round 10: 9 plates (6 failed the style gate >=0.88), best agreement r=0.598 vs old plate r=0.561, adopted r=-1.000 stands
@@ -59,3 +54,8 @@ Updated 2026-10-05 16:54. Cycle 395.
 - 2026-10-05 16:37 plate_geo round 10: 9 plates, best r10_cn0.9_flux_d90.png agreement r=0.609 vs old plate r=0.297 -> ADOPTED as master_geo.png (plate v4)
 - 2026-10-05 16:46 plate_geo round 11: 9 plates (2 failed the style gate >=0.85), best agreement r=0.609 vs old plate r=0.297, adopted r=0.609 stands
 - 2026-10-05 16:54 plate_geo round 12: 9 plates (1 failed the style gate >=0.85), best agreement r=0.609 vs old plate r=0.297, adopted r=0.609 stands
+- 2026-10-05 16:56 plate_geo round 10: 9 plates, best r10_cn0.7_flux_d90.png agreement r=0.598 style 0.910 vs old plate r=0.297 -> ADOPTED as master_geo.png (plate v5)
+- 2026-10-05 16:57 plate_geo round 11: 9 plates, best r11_cn0.7_flux_d75.png agreement r=0.601 style 0.907 vs old plate r=0.297 -> ADOPTED as master_geo.png (plate v6)
+- 2026-10-05 16:59 plate_geo round 12: 9 plates, best r12_cn0.7_flux_d75.png agreement r=0.595 style 0.930 vs old plate r=0.297 -> ADOPTED as master_geo.png (plate v7)
+- 2026-10-05 16:59 plate_geo round 13: no results
+- 2026-10-05 17:18 scene_fit @396: gains 0.4,0.6,0.8 -> best gain 0.4 (on path 84%, foot float p95 0 mm) ADOPTED

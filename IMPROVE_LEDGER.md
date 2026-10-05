@@ -372,3 +372,8 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-05 16:37 plate_geo round 10: 9 plates, best r10_cn0.9_flux_d90.png agreement r=0.609 vs old plate r=0.297 -> ADOPTED as master_geo.png (plate v4)
 - 2026-10-05 16:46 plate_geo round 11: 9 plates (2 failed the style gate >=0.85), best agreement r=0.609 vs old plate r=0.297, adopted r=0.609 stands
 - 2026-10-05 16:54 plate_geo round 12: 9 plates (1 failed the style gate >=0.85), best agreement r=0.609 vs old plate r=0.297, adopted r=0.609 stands
+- 2026-10-05 16:56 plate_geo round 10: 9 plates, best r10_cn0.7_flux_d90.png agreement r=0.598 style 0.910 vs old plate r=0.297 -> ADOPTED as master_geo.png (plate v5)
+- 2026-10-05 16:57 plate_geo round 11: 9 plates, best r11_cn0.7_flux_d75.png agreement r=0.601 style 0.907 vs old plate r=0.297 -> ADOPTED as master_geo.png (plate v6)
+- 2026-10-05 16:59 plate_geo round 12: 9 plates, best r12_cn0.7_flux_d75.png agreement r=0.595 style 0.930 vs old plate r=0.297 -> ADOPTED as master_geo.png (plate v7)
+- 2026-10-05 16:59 plate_geo round 13: no results
+- 2026-10-05 17:18 scene_fit @396: gains 0.4,0.6,0.8 -> best gain 0.4 (on path 84%, foot float p95 0 mm) ADOPTED
