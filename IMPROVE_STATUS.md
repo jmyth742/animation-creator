@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-05 20:11. Cycle 403.
+Updated 2026-10-05 20:52. Cycle 404.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **3%** of the last 24 h (48 busy minutes; 1190 minutes unsampled, counted idle); mean utilisation of sampled minutes 17%
+- card working (>=20%) **4%** of the last 24 h (63 busy minutes; 1149 minutes unsampled, counted idle); mean utilisation of sampled minutes 19%
 
 ## Adopted (what the masters are rendered with)
 
@@ -47,8 +47,6 @@ Updated 2026-10-05 20:11. Cycle 403.
 
 ## Last 12 experiments
 
-- 2026-10-05 16:57 plate_geo round 11: 9 plates, best r11_cn0.7_flux_d75.png agreement r=0.601 style 0.907 vs old plate r=0.297 -> ADOPTED as master_geo.png (plate v6)
-- 2026-10-05 16:59 plate_geo round 12: 9 plates, best r12_cn0.7_flux_d75.png agreement r=0.595 style 0.930 vs old plate r=0.297 -> ADOPTED as master_geo.png (plate v7)
 - 2026-10-05 16:59 plate_geo round 13: no results
 - 2026-10-05 17:18 scene_fit @396: gains 0.4,0.6,0.8 -> best gain 0.4 (on path 84%, foot float p95 0 mm) ADOPTED
 - 2026-10-05 17:43 scene_fit @396: gains 0.4,0.6,0.8 -> best gain 0.8 (on path 83%, foot float p95 0 mm) ADOPTED
@@ -59,3 +57,5 @@ Updated 2026-10-05 20:11. Cycle 403.
 - 2026-10-05 19:55 craft: FILM_LINE_ALPHA A/B over 0.6,0.82,1.0 -> AB_craft_FILM_LINE_ALPHA.png (human pick)
 - 2026-10-05 20:03 face: FP_MOUTH_PLATE A/B over 1.2,1.5,1.9 -> AB_face_FP_MOUTH_PLATE.png (human pick)
 - 2026-10-05 20:11 face: FCG_MOUTH A/B over 0.17,0.195,0.22 -> AB_face_FCG_MOUTH.png (human pick)
+- 2026-10-05 20:52 cast: oisin best new candidate st_chibi3_oisin_m23845 hands 0.31, adopted st_chibi3_oisin_m23845 (0.31) stands
+- 2026-10-05 20:52 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
