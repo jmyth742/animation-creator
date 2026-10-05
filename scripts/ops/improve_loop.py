@@ -93,7 +93,7 @@ def x_plate_flux():
     levels x three ControlNet strengths per round, scored by depth agreement AND CLIP style;
     adopted only if it beats the old plate's geometry while passing the style gate."""
     U = REPO + "/ComfyUI/models/unet/flux1-dev-Q8_0.gguf"; C = REPO + "/ComfyUI/models/controlnet/flux_union_pro2.safetensors"
-    if not (os.path.exists(U) and os.path.getsize(U) > 12e9 and os.path.exists(C) and os.path.getsize(C) > 6e9): return None
+    if not (os.path.exists(U) and os.path.getsize(U) > 12e9 and os.path.exists(C) and os.path.getsize(C) > 3e9): return None
     rnd = st.get("flux_rounds", 0)
     if rnd >= 3: return None
     st["flux_rounds"] = rnd + 1; mark("plate_flux_r%d" % rnd, "g1")
