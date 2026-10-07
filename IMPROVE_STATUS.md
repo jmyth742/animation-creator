@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-07 20:57. Cycle 473.
+Updated 2026-10-07 21:42. Cycle 474.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **30%** of the last 24 h (443 busy minutes; 3 minutes unsampled, counted idle); mean utilisation of sampled minutes 30%
+- card working (>=20%) **30%** of the last 24 h (442 busy minutes; 3 minutes unsampled, counted idle); mean utilisation of sampled minutes 30%
 
 ## Adopted (what the masters are rendered with)
 
@@ -47,8 +47,6 @@ Updated 2026-10-07 20:57. Cycle 473.
 
 ## Last 12 experiments
 
-- 2026-10-07 17:09 cast: oisin best new candidate st_chibi3_oisin_m23845 hands 0.31, adopted st_chibi3_oisin_m23845 (0.31) stands
-- 2026-10-07 17:09 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
 - 2026-10-07 17:55 cast: oisin best new candidate st_chibi3_oisin_m23845 hands 0.31, adopted st_chibi3_oisin_m23845 (0.31) stands
 - 2026-10-07 17:55 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
 - 2026-10-07 18:40 cast: oisin best new candidate st_chibi3_oisin_m23845 hands 0.31, adopted st_chibi3_oisin_m23845 (0.31) stands
@@ -59,3 +57,5 @@ Updated 2026-10-07 20:57. Cycle 473.
 - 2026-10-07 20:12 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
 - 2026-10-07 20:57 cast: oisin best new candidate st_chibi3_oisin_m23845 hands 0.31, adopted st_chibi3_oisin_m23845 (0.31) stands
 - 2026-10-07 20:57 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
+- 2026-10-07 21:42 cast: oisin best new candidate st_chibi3_oisin_m23845 hands 0.31, adopted st_chibi3_oisin_m23845 (0.31) stands
+- 2026-10-07 21:42 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
