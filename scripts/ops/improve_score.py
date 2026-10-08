@@ -171,3 +171,28 @@ elif mode == "scene_fit":
         changed = cur.get("SET_RELIEF_GAIN") != g; cur["SET_RELIEF_GAIN"] = g
         open(REPO + "/configs/scene_defaults.env", "w").write("# adopted by improve_score.py (scene_fit)\n" + "".join("%s=%s\n" % kv for kv in cur.items()))
         log("scene_fit @%s: gains %s -> best gain %s (on path %.0f%%, foot float p95 %d mm)%s" % (cyc, ",".join(r[1] for r in sorted(rows, key=lambda r: r[1])), g, onp, p95, " ADOPTED" if changed else " (unchanged)"))
+
+elif mode == "plate_shots":
+    rnd = int(sys.argv[2]); from PIL import Image
+    st = json.load(open(W + "/improve/state.json")); SETS = REPO + "/series/tir-na-nog-legend/sets/tir_na_nog"
+    STYLE_MIN = float(os.environ.get("PS_STYLE_MIN", "0.80"))     # a different heading of the same place: lower than the master's gate
+    adopted = 0; parts = []
+    for setup in ("side", "reverse", "closer"):
+        best = (st.get("shot_best_%s" % setup, -1.0), None); br = bs = None; rej = 0; n = 0
+        for j in glob.glob("%s/geo/ps%d_%s_cn*_agree.json" % (W, rnd, setup)):
+            d = json.load(open(j))
+            for pth, r in d["plates"].items():
+                n += 1; sty = d.get("style", {}).get(pth, 0.0)
+                if sty < STYLE_MIN: rej += 1; continue
+                sc = r + 0.6 * (sty - STYLE_MIN)
+                if sc > best[0]: best = (sc, pth); br, bs = r, sty
+        if best[1] is not None:
+            im = Image.open(best[1]).convert("RGB"); im.save("%s/%s_geo.png" % (SETS, setup))
+            im.resize((im.width * 2, im.height * 2), Image.LANCZOS).save("%s/%s_geo_4x.png" % (SETS, setup))
+            st["shot_best_%s" % setup] = best[0]; adopted += 1
+            parts.append("%s r=%.2f style=%.2f ADOPTED (%d/%d passed)" % (setup, br, bs, n - rej, n))
+        else:
+            parts.append("%s: none of %d beat the standing plate (%d failed style)" % (setup, n, rej))
+    if adopted: st["plate_ver"] = st.get("plate_ver", 0) + 1
+    log("plate_shots round %d: %s%s" % (rnd, "; ".join(parts), " -> plate v%d" % st["plate_ver"] if adopted else ""))
+    json.dump(st, open(W + "/improve/state.json", "w"), indent=1)

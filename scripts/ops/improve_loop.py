@@ -40,7 +40,8 @@ def env_file(p):
             if "=" in l and not l.startswith("#"): k, v = l.strip().split("=", 1); d[k] = v
     return d
 walk_def = env_file(REPO + "/configs/walk_defaults.env"); scene_def = env_file(REPO + "/configs/scene_defaults.env")
-ao, an = st["adopted"]["oisin"][0], st["adopted"]["niamh"][0]
+def rstrip_tex(n): return n[:-4] if n.endswith("_tex") else n     # the textured glb's name; rigs and faces carry the base name
+ao, an = rstrip_tex(st["adopted"]["oisin"][0]), rstrip_tex(st["adopted"]["niamh"][0])
 scene_sig = hashlib.md5(json.dumps(scene_def, sort_keys=True).encode()).hexdigest()[:6]
 inputs_ver = "d%d|%s|%s|p%d|s%s" % (st["defaults_ver"], ao, an, st["plate_ver"], scene_sig)
 st["inputs_ver"] = inputs_ver
@@ -104,6 +105,27 @@ for CN in 0.5 0.7 0.9; do
 done
 /workspace/venv/bin/python scripts/ops/improve_score.py plate_geo %d
 """ % (rnd, 6100 + rnd * 7, 10 + rnd, 10 + rnd)
+
+
+def x_plate_shots():
+    """Per-shot setups of the adopted master plate (side, reverse, closer): the renderer swaps
+    them in by shot heading, so every angle of the valley must be the same place. Each is
+    painted from its own geometry guide, img2img from the old setup plate, style-judged
+    against the adopted master. Two rounds, then settled until the master plate changes."""
+    if st["plate_ver"] == 0 or not os.path.exists(REPO + "/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png"): return None
+    for c in ("side", "reverse", "closer"):
+        if not os.path.exists(W + "/geo/valley2_%s_depth.png" % c): return None
+    key = "plate_shots_m%d" % st.get("plate_master_ver", st["plate_ver"]); rnd = st.get("shots_rounds", 0)
+    if rnd >= 2: return None
+    st["shots_rounds"] = rnd + 1; mark(key + "_r%d" % rnd, "g2")
+    body = HEAD + "# plate_shots round %d: side / reverse / closer painted from their own geometry guides\n" % rnd
+    body += "curl -s -m 10 -X POST http://127.0.0.1:8188/free -H 'Content-Type: application/json' -d '{\"unload_models\": true, \"free_memory\": true}' >/dev/null 2>&1; sleep 4\n"
+    for c in ("side", "reverse", "closer"):
+        body += ("for CN in 0.6 0.8; do PF_CN=$CN PF_SEED=%d PF_GUIDE=/workspace/loopwork/geo/valley2_%s_depth.png PF_GUIDE_COMFY=geo_depth2_%s.png PF_INIT_COMFY=geo_init_%s.png "
+                 "PF_STYLE_REF=series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png /workspace/venv/bin/python scripts/blender3d/plate_flux_depth.py "
+                 "/workspace/loopwork/geo/ps%d_%s_cn${CN} 0.7 0.85 2>&1 | grep -E '^PF agreement|Traceback|Error'; done\n") % (7100 + rnd * 11, c, c, c, rnd, c)
+    body += "/workspace/venv/bin/python scripts/ops/improve_score.py plate_shots %d\n" % rnd
+    return "plate_shots", body
 
 
 def x_plate_geo():
@@ -250,7 +272,7 @@ done; done
 """ % (P, seed, st["cycle"])
 
 
-for fn in (x_cast_face, x_plate_flux, x_plate_geo, x_scene_fit, x_walk, x_episode, lambda: x_ab("craft"), lambda: x_ab("face"), x_cast):
+for fn in (x_cast_face, x_plate_flux, x_plate_shots, x_plate_geo, x_scene_fit, x_walk, x_episode, lambda: x_ab("craft"), lambda: x_ab("face"), x_cast):
     r = fn()
     if r: break
 exp, body = r

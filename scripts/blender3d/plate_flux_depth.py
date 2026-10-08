@@ -30,7 +30,7 @@ def wf(den, seed, prefix):
         "4": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": PROMPT}},
         "4n": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": ""}},
         "4g": {"class_type": "FluxGuidance", "inputs": {"conditioning": ["4", 0], "guidance": 3.5}},
-        "20": {"class_type": "LoadImage", "inputs": {"image": "geo_plate_old.png"}},
+        "20": {"class_type": "LoadImage", "inputs": {"image": os.environ.get("PF_INIT_COMFY", "geo_plate_old.png")}},
         "21": {"class_type": "LoadImage", "inputs": {"image": os.environ.get("PF_GUIDE_COMFY", "geo_depth2.png")}},
         "22": {"class_type": "VAEEncode", "inputs": {"pixels": ["20", 0], "vae": ["3", 0]}},
         "23": {"class_type": "ControlNetLoader", "inputs": {"control_net_name": "flux_union_pro2.safetensors"}},
@@ -63,14 +63,15 @@ def run(w):
 
 outs = []
 for den in dens:
-    t0 = time.time(); p = run(wf(den, SEED, "geo/pf_%d_%02d" % (SEED, int(den * 100))))
+    t0 = time.time(); p = run(wf(den, SEED, "geo/pf_%s_%d_%02d" % (os.path.basename(out), SEED, int(den * 100))))
     dst = "%s_d%02d.png" % (out, int(den * 100)); shutil.copy(p, dst); outs.append((den, dst, Image.open(dst).convert("RGB")))
     print("PF plate denoise %.2f -> %s (%.0fs)" % (den, dst, time.time() - t0), flush=True)
 
 # scoring: geometry agreement (Depth-Anything vs the guide) and CLIP style vs the original plate
 from transformers import pipeline as hfp, CLIPModel, CLIPProcessor
 guide = Image.open(os.environ.get("PF_GUIDE", "/workspace/loopwork/geo/valley2_depth.png")).convert("L").resize((W, H), Image.LANCZOS)
-old = Image.open(COMFY + "/input/geo_plate_old.png").convert("RGB")
+old = Image.open(COMFY + "/input/" + os.environ.get("PF_INIT_COMFY", "geo_plate_old.png")).convert("RGB")
+style_ref = Image.open(os.environ.get("PF_STYLE_REF", COMFY + "/input/geo_plate_old.png")).convert("RGB").resize((W, H), Image.LANCZOS)
 dp = hfp("depth-estimation", model="depth-anything/Depth-Anything-V2-Small-hf", device=0)
 gd = np.asarray(guide, dtype=np.float32) / 255.0
 def agree(im):
@@ -82,7 +83,7 @@ def cemb(im):
     with torch.no_grad(): e = cm.get_image_features(**cp(images=im, return_tensors="pt"))
     e = e if torch.is_tensor(e) else e.pooler_output
     return torch.nn.functional.normalize(e, dim=-1)
-oe = cemb(old)
+oe = cemb(style_ref)      # style is judged against the adopted master plate, not the init image
 def style(im): return float((cemb(im) @ oe.T).item())
 old_r = agree(old); print("PF agreement old plate r=%.3f" % old_r, flush=True)
 res = {"old": old_r, "plates": {}, "style": {}, "cn": CN, "seed": SEED}
