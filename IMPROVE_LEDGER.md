@@ -586,3 +586,4 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-08 19:19 cast: oisin best new candidate st_chibi3_oisin_m23845 hands 0.31, adopted st_chibi3_oisin_m23845 (0.31) stands
 - 2026-10-08 19:19 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
 - 2026-10-08 19:24 cast_face: st_chibi3_niamh_m20705 face rig built, talk probe 40 frames
+- 2026-10-08 19:36 plate_geo winter round 10: 9 plates, best r10_winter_cn0.7_flux_d90.png agreement r=0.608 style 0.892 vs old plate r=0.298 -> ADOPTED as master_winter_geo.png (plate v8)
