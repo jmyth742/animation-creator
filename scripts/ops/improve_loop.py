@@ -257,7 +257,7 @@ def x_episode():
     for ep in (1, 2, 3):
         e = EPISODES[ep]; iv = ep_inputs(ep)
         if masters.get(str(ep)) == iv: continue
-        if ep > 1 and e["plate"] not in scene_def: continue          # no geometry plate for that set yet: nothing new to render
+        # an episode without a geometry plate of its own still re-renders when the cast or walk changed
         masters[str(ep)] = iv; st["masters_ver"] = iv
         h = hashlib.md5(iv.encode()).hexdigest()[:6]
         env = " ".join(["SET_PLATE=%s" % scene_def[e["plate"]]] if e["plate"] in scene_def else []) + " " + \
