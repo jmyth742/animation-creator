@@ -97,7 +97,7 @@ def x_plate_flux():
     only if it beats the old plate's geometry while passing the style gate. Three rounds per set."""
     U = REPO + "/ComfyUI/models/unet/flux1-dev-Q8_0.gguf"; C = REPO + "/ComfyUI/models/controlnet/flux_union_pro2.safetensors"
     if not (os.path.exists(U) and os.path.getsize(U) > 12e9 and os.path.exists(C) and os.path.getsize(C) > 3e9): return None
-    from improve_sets import SETS
+    from improve_sets import SETS, PROMPTS
     for name, cfg in SETS.items():
         if not (os.path.exists(cfg["guide"]) and os.path.exists(REPO + "/ComfyUI/input/" + cfg["init"])): continue
         rk = "flux_rounds" if name == "valley" else "flux_rounds_" + name
@@ -109,10 +109,10 @@ def x_plate_flux():
 # plate_flux %s round %d: FLUX-dev + depth ControlNet, 9 plates, ground agreement + style scored
 curl -s -m 10 -X POST http://127.0.0.1:8188/free -H 'Content-Type: application/json' -d '{"unload_models": true, "free_memory": true}' >/dev/null 2>&1; sleep 4
 for CN in 0.5 0.7 0.9; do
-  PF_CN=$CN PF_SEED=%d PF_GUIDE=%s PF_GUIDE_COMFY=%s PF_INIT_COMFY=%s PF_STYLE_REF=%s /workspace/venv/bin/python scripts/blender3d/plate_flux_depth.py /workspace/loopwork/geo/%s${CN}_flux 0.6 0.75 0.9 2>&1 | grep -E "^PF agreement|Traceback|Error"
+  PG_PROMPT=%s PF_CN=$CN PF_SEED=%d PF_GUIDE=%s PF_GUIDE_COMFY=%s PF_INIT_COMFY=%s PF_STYLE_REF=%s /workspace/venv/bin/python scripts/blender3d/plate_flux_depth.py /workspace/loopwork/geo/%s${CN}_flux 0.6 0.75 0.9 2>&1 | grep -E "^PF agreement|Traceback|Error"
 done
 /workspace/venv/bin/python scripts/ops/improve_score.py plate_geo %d %s
-""" % (name, rnd, 6100 + rnd * 7, cfg["guide"], cfg["comfy_guide"], cfg["init"], cfg["style_ref"], stem, 10 + rnd, name)
+""" % (name, rnd, json.dumps(PROMPTS[name]), 6100 + rnd * 7, cfg["guide"], cfg["comfy_guide"], cfg["init"], cfg["style_ref"], stem, 10 + rnd, name)
     return None
 
 
