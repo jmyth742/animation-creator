@@ -1,19 +1,19 @@
 # Improvement status
 
-Updated 2026-10-08 21:45. Cycle 515.
+Updated 2026-10-08 21:54. Cycle 516.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **30%** of the last 24 h (434 busy minutes; 3 minutes unsampled, counted idle); mean utilisation of sampled minutes 29%
+- card working (>=20%) **30%** of the last 24 h (435 busy minutes; 3 minutes unsampled, counted idle); mean utilisation of sampled minutes 29%
 
 ## Adopted (what the masters are rendered with)
 
 - walk: RW_STRIDE=0.6, RW_DROP=0.062, RW_ARM_OUT=10 (defaults v1)
-- scene: SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png, SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy, SET_RELIEF_GAIN=0.8, SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png, SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy (plate v14)
+- scene: SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png, SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy, SET_RELIEF_GAIN=0.8, SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png, SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy (plate v15)
 - cast oisin: st_chibi3_oisin_m23845 (hand compactness 0.31, lower is better)
 - cast niamh: st_chibi3_niamh_m20705_tex (hand compactness 0.20, lower is better)
 - masters: nine_waterfalls_rigify_cast4_web.mp4, nine_waterfalls_loop_97c79e_web.mp4, nine_waterfalls_loop_419a38_web.mp4
-- masters built at inputs: d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p7|scb8174; current inputs: d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705|p13|s84a4b1
+- masters built at inputs: d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p7|scb8174; current inputs: d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705|p14|s84a4b1
 
 ## Settled (not re-run until an input changes)
 
@@ -35,6 +35,7 @@ Updated 2026-10-08 21:45. Cycle 515.
 - plate_flux_winter_r0: queued @ g2
 - plate_flux_winter_r1: queued @ g2
 - plate_flux_winter_r2: queued @ g2
+- plate_hires_valley_master: queued @ bb967a36
 - plate_shots_m13_r1: queued @ g2
 - plate_shots_m9_r0: queued @ g2
 - scene_fit: queued @ st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p7
@@ -56,7 +57,6 @@ Updated 2026-10-08 21:45. Cycle 515.
 
 ## Last 12 experiments
 
-- 2026-10-08 19:24 cast_face: st_chibi3_niamh_m20705 face rig built, talk probe 40 frames
 - 2026-10-08 19:36 plate_geo winter round 10: 9 plates, best r10_winter_cn0.7_flux_d90.png agreement r=0.608 style 0.892 vs old plate r=0.298 -> ADOPTED as master_winter_geo.png (plate v8)
 - 2026-10-08 19:49 plate_geo winter round 11: 9 plates (3 failed the style gate >=0.85), best agreement r=0.634 vs old plate r=0.298, adopted r=0.634 stands
 - 2026-10-08 20:02 plate_geo winter round 12: 9 plates, best r12_winter_cn0.7_flux_d75.png agreement r=0.641 style 0.868 vs old plate r=0.298 -> ADOPTED as master_winter_geo.png (plate v9)
@@ -68,3 +68,4 @@ Updated 2026-10-08 21:45. Cycle 515.
 - 2026-10-08 21:18 plate_geo winter round 11: 9 plates, best r11_winter_cn0.9_flux_d60.png agreement r=0.459 style 0.936 vs old plate r=0.298 -> ADOPTED as master_winter_geo.png (plate v13)
 - 2026-10-08 21:30 plate_geo winter round 12: 9 plates (5 failed the style gate >=0.85), best agreement r=0.511 vs old plate r=0.298, adopted r=0.511 stands
 - 2026-10-08 21:45 plate_shots round 1: side r=0.55 style=0.90 ADOPTED (4/4 passed); reverse r=0.46 style=0.91 ADOPTED (4/4 passed); closer r=0.61 style=0.89 ADOPTED (4/4 passed) -> plate v14
+- 2026-10-08 21:54 plate_hires valley_master: hr_valley_master_cn0.5_d25.png sharpness x1.19 vs the upscale, style 0.983, ground +0.002 -> ADOPTED as master_geo_4x.png (plate v15)
