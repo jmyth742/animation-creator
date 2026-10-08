@@ -206,3 +206,28 @@ elif mode == "plate_shots":
     if adopted: st["plate_ver"] = st.get("plate_ver", 0) + 1
     log("plate_shots round %d: %s%s" % (rnd, "; ".join(parts), " -> plate v%d" % st["plate_ver"] if adopted else ""))
     json.dump(st, open(W + "/improve/state.json", "w"), indent=1)
+
+elif mode == "plate_hires":
+    # a refine pass over an adopted plate at 2016x1152: adopted as the projector's _4x only if it
+    # is sharper than the Lanczos upscale AND still the same picture (style >= 0.95, ground r within 0.03)
+    tag = sys.argv[2]; target = sys.argv[3]              # e.g. valley_master, path of the adopted plate (its _4x gets replaced)
+    from PIL import Image
+    st = json.load(open(W + "/improve/state.json")); rows = []
+    for j in glob.glob("%s/geo/hr_%s_*_agree.json" % (W, tag)):
+        d = json.load(open(j))
+        for p, r in d["plates"].items():
+            rows.append((d["sharp"][p] / max(1e-6, d["old_sharp"]), r - d["old"], d["style"][p], p))
+    ok = [x for x in rows if x[2] >= 0.95 and x[1] >= -0.03]
+    if not rows: log("plate_hires %s: no results" % tag)
+    elif not ok: log("plate_hires %s: %d candidates, none kept the picture (style>=0.95, ground within 0.03)" % (tag, len(rows)))
+    else:
+        ok.sort(reverse=True); gain, dr, sty, p = ok[0]
+        if gain > 1.15:
+            im = Image.open(p).convert("RGB"); up = target[:-4] + "_4x.png"
+            if os.path.exists(up) and not os.path.exists(up[:-4] + "_lanczos.png"): os.rename(up, up[:-4] + "_lanczos.png")
+            im.resize((2688, 1536), Image.LANCZOS).save(up)
+            st["plate_ver"] = st.get("plate_ver", 0) + 1; st.setdefault("hires", {})[tag] = os.path.basename(p)
+            log("plate_hires %s: %s sharpness x%.2f vs the upscale, style %.3f, ground %+.3f -> ADOPTED as %s (plate v%d)" % (tag, os.path.basename(p), gain, sty, dr, os.path.basename(up), st["plate_ver"]))
+        else:
+            log("plate_hires %s: best sharpness x%.2f (need >1.15), style %.3f -> not adopted" % (tag, gain, sty))
+    json.dump(st, open(W + "/improve/state.json", "w"), indent=1)

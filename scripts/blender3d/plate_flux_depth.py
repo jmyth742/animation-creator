@@ -15,7 +15,16 @@ from PIL import Image
 COMFY = "/workspace/text-to-video/ComfyUI"
 out = sys.argv[1]; dens = [float(d) for d in sys.argv[2:]] or [0.6, 0.75, 0.9]
 CN = float(os.environ.get("PF_CN", "0.7")); SEED = int(os.environ.get("PF_SEED", "6100")); STEPS = int(os.environ.get("PF_STEPS", "24"))
-W, H = 1344, 768
+W, H = int(os.environ.get("PF_W", "1344")), int(os.environ.get("PF_H", "768"))     # hires pass: 2016x1152
+# PF_INIT_PATH: an absolute image to use as the init (staged into ComfyUI/input at W x H)
+if os.environ.get("PF_INIT_PATH"):
+    _n = "geo_init_" + os.path.basename(out) + ".png"
+    Image.open(os.environ["PF_INIT_PATH"]).convert("RGB").resize((W, H), Image.LANCZOS).save(os.path.join(COMFY, "input", _n))
+    os.environ["PF_INIT_COMFY"] = _n
+if os.environ.get("PF_GUIDE") and (W, H) != (1344, 768):
+    _g = "geo_guide_" + os.path.basename(out) + ".png"
+    Image.open(os.environ["PF_GUIDE"]).convert("RGB").resize((W, H), Image.LANCZOS).save(os.path.join(COMFY, "input", _g))
+    os.environ["PF_GUIDE_COMFY"] = _g
 PROMPT = os.environ.get("PG_PROMPT",
     "anime background art, painted cel background, lush green valley of Tir na nOg, a golden stone hall "
     "with round celtic emblems and battlements standing on a grassy rise, a tall standing celtic stone cross "
@@ -86,8 +95,12 @@ def cemb(im):
 oe = cemb(style_ref)      # style is judged against the adopted master plate, not the init image
 def style(im): return float((cemb(im) @ oe.T).item())
 old_r = agree(old); print("PF agreement old plate r=%.3f" % old_r, flush=True)
-res = {"old": old_r, "plates": {}, "style": {}, "cn": CN, "seed": SEED}
+def sharp(im):
+    g = np.asarray(im.convert("L"), dtype=np.float32)
+    lap = g[1:-1, 1:-1] * 4 - g[:-2, 1:-1] - g[2:, 1:-1] - g[1:-1, :-2] - g[1:-1, 2:]
+    return float(lap.var())
+res = {"old": old_r, "plates": {}, "style": {}, "sharp": {}, "old_sharp": sharp(old), "cn": CN, "seed": SEED, "size": [W, H]}
 for den, dst, im in outs:
-    res["plates"][dst] = agree(im); res["style"][dst] = style(im)
+    res["plates"][dst] = agree(im); res["style"][dst] = style(im); res["sharp"][dst] = sharp(im)
     print("PF agreement denoise %.2f r=%.3f  CLIP style %.3f" % (den, res["plates"][dst], res["style"][dst]), flush=True)
 json.dump(res, open(out + "_agree.json", "w"), indent=1); print("PF_DONE", out + "_agree.json", flush=True)

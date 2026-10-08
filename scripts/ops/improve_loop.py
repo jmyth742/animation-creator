@@ -137,6 +137,32 @@ def x_plate_shots():
     return "plate_shots", body
 
 
+def x_plate_hires():
+    """Refine every adopted plate at 2016x1152 (FLUX img2img, low denoise, depth held): the
+    projector's _4x must out-resolve a 1664x960 frame, and a Lanczos upscale of 1344x768 does
+    not. Once per adopted plate; scored on sharpness with the picture held (style >= 0.95)."""
+    from improve_sets import SETS, PROMPTS
+    S = REPO + "/series/tir-na-nog-legend/sets/"
+    targets = []
+    if "SET_PLATE" in scene_def:
+        targets.append(("valley_master", scene_def["SET_PLATE"], W + "/geo/valley2_depth.png", "valley"))
+        for c in ("side", "reverse", "closer"):
+            if os.path.exists(S + "tir_na_nog/%s_geo.png" % c): targets.append(("valley_" + c, S + "tir_na_nog/%s_geo.png" % c, W + "/geo/valley2_%s_depth.png" % c, "valley"))
+    if "SET_PLATE_WINTER" in scene_def: targets.append(("winter_master", scene_def["SET_PLATE_WINTER"], W + "/geo/valley2_depth.png", "winter"))
+    if "SET_PLATE_CLIFF" in scene_def: targets.append(("cliff_master", scene_def["SET_PLATE_CLIFF"], W + "/geo/cliff2_depth.png", "cliff"))
+    for tag, plate, guide, setname in targets:
+        key = "plate_hires_" + tag; ver = hashlib.md5(open(plate, "rb").read(65536)).hexdigest()[:8]
+        if not fresh(key, ver): continue
+        mark(key, ver)
+        return "plate_hires", HEAD + """
+# plate_hires %s: refine the adopted plate at 2016x1152, depth held, picture held
+curl -s -m 10 -X POST http://127.0.0.1:8188/free -H 'Content-Type: application/json' -d '{"unload_models": true, "free_memory": true}' >/dev/null 2>&1; sleep 4
+PG_PROMPT=%s PF_W=2016 PF_H=1152 PF_CN=0.5 PF_END=0.5 PF_STEPS=20 PF_SEED=6177 PF_GUIDE=%s PF_INIT_PATH=%s PF_STYLE_REF=%s /workspace/venv/bin/python scripts/blender3d/plate_flux_depth.py /workspace/loopwork/geo/hr_%s_cn0.5 0.25 0.35 0.45 2>&1 | grep -E "^PF agreement|Traceback|Error"
+/workspace/venv/bin/python scripts/ops/improve_score.py plate_hires %s %s
+""" % (tag, json.dumps(PROMPTS[setname]), guide, plate, plate, tag, tag, plate)
+    return None
+
+
 def x_plate_geo():
     """Geometry-first plate: paint the valley conditioned on the real set's depth, three
     strengths x three ControlNet weights per round, scored by Depth-Anything agreement with
@@ -297,7 +323,7 @@ done; done
 """ % (P, seed, st["cycle"])
 
 
-for fn in (x_cast_face, x_plate_flux, x_plate_shots, x_plate_geo, x_scene_fit, x_walk, x_episode, lambda: x_ab("craft"), lambda: x_ab("face"), x_cast):
+for fn in (x_cast_face, x_plate_flux, x_plate_shots, x_plate_hires, x_plate_geo, x_scene_fit, x_walk, x_episode, lambda: x_ab("craft"), lambda: x_ab("face"), x_cast):
     r = fn()
     if r: break
 exp, body = r
