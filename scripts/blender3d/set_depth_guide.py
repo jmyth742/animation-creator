@@ -37,6 +37,13 @@ if os.environ.get("DG_GROUND_ONLY", "1") not in ("", "0"):
 cam_d = bpy.data.cameras.new("guide"); cam_d.lens = 32.0; cam_d.sensor_width = 36
 cam = bpy.data.objects.new("guide", cam_d); sc.collection.objects.link(cam)
 loc, tgt = mathutils.Vector(valley_set.PAINTER_LOC), mathutils.Vector(valley_set.PAINTER_TGT)
+# per-shot setups (8 Oct): the renderer swaps in <setup>_geo plates by shot heading (master <50
+# deg, side <130, reverse beyond; closer = master heading at a long lens). Guide cameras for
+# those headings, framed on the set: DG_CAM=side|reverse|closer, else the master pose.
+_cam = os.environ.get("DG_CAM", "master")
+if _cam == "side":    loc, tgt = mathutils.Vector((-24.0, 14.0, 4.0)), mathutils.Vector((8.0, 17.0, 2.5))
+if _cam == "reverse": loc, tgt = mathutils.Vector((9.0, 31.0, 4.5)), mathutils.Vector((-10.0, -4.0, 1.5))
+if _cam == "closer":  loc, tgt = mathutils.Vector((-8.0, 2.0, 3.0)), mathutils.Vector((4.0, 22.0, 2.5)); cam_d.lens = 60.0
 cam.location = loc
 cam.rotation_euler = (tgt - loc).to_track_quat('-Z', 'Y').to_euler()
 sc.camera = cam
