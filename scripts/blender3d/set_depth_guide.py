@@ -42,8 +42,8 @@ loc, tgt = mathutils.Vector(valley_set.PAINTER_LOC), mathutils.Vector(valley_set
 # those headings, framed on the set: DG_CAM=side|reverse|closer, else the master pose.
 _cam = os.environ.get("DG_CAM", "master")
 if _cam == "side":    loc, tgt = mathutils.Vector((-24.0, 14.0, 4.0)), mathutils.Vector((8.0, 17.0, 2.5))
-if _cam == "reverse": loc, tgt = mathutils.Vector((9.0, 31.0, 4.5)), mathutils.Vector((-10.0, -4.0, 1.5))
-if _cam == "closer":  loc, tgt = mathutils.Vector((-8.0, 2.0, 3.0)), mathutils.Vector((4.0, 22.0, 2.5)); cam_d.lens = 60.0
+if _cam == "reverse": loc, tgt = mathutils.Vector((5.5, 21.0, 2.6)), mathutils.Vector((-9.0, -8.0, 1.2))    # from the hall steps, back over the meadow
+if _cam == "closer":  cam_d.lens = 60.0                                                                      # the master view, tighter lens
 cam.location = loc
 cam.rotation_euler = (tgt - loc).to_track_quat('-Z', 'Y').to_euler()
 sc.camera = cam
