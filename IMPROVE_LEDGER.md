@@ -588,3 +588,4 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-08 19:24 cast_face: st_chibi3_niamh_m20705 face rig built, talk probe 40 frames
 - 2026-10-08 19:36 plate_geo winter round 10: 9 plates, best r10_winter_cn0.7_flux_d90.png agreement r=0.608 style 0.892 vs old plate r=0.298 -> ADOPTED as master_winter_geo.png (plate v8)
 - 2026-10-08 19:49 plate_geo winter round 11: 9 plates (3 failed the style gate >=0.85), best agreement r=0.634 vs old plate r=0.298, adopted r=0.634 stands
+- 2026-10-08 20:02 plate_geo winter round 12: 9 plates, best r12_winter_cn0.7_flux_d75.png agreement r=0.641 style 0.868 vs old plate r=0.298 -> ADOPTED as master_winter_geo.png (plate v9)
