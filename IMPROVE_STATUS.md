@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-08 22:02. Cycle 517.
+Updated 2026-10-08 22:11. Cycle 518.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **30%** of the last 24 h (436 busy minutes; 3 minutes unsampled, counted idle); mean utilisation of sampled minutes 29%
+- card working (>=20%) **30%** of the last 24 h (437 busy minutes; 3 minutes unsampled, counted idle); mean utilisation of sampled minutes 29%
 
 ## Adopted (what the masters are rendered with)
 
@@ -36,6 +36,7 @@ Updated 2026-10-08 22:02. Cycle 517.
 - plate_flux_winter_r1: queued @ g2
 - plate_flux_winter_r2: queued @ g2
 - plate_hires_valley_master: queued @ bb967a36
+- plate_hires_valley_reverse: queued @ c9fb8ccd
 - plate_hires_valley_side: queued @ b3683ea8
 - plate_shots_m13_r1: queued @ g2
 - plate_shots_m9_r0: queued @ g2
@@ -58,7 +59,6 @@ Updated 2026-10-08 22:02. Cycle 517.
 
 ## Last 12 experiments
 
-- 2026-10-08 19:49 plate_geo winter round 11: 9 plates (3 failed the style gate >=0.85), best agreement r=0.634 vs old plate r=0.298, adopted r=0.634 stands
 - 2026-10-08 20:02 plate_geo winter round 12: 9 plates, best r12_winter_cn0.7_flux_d75.png agreement r=0.641 style 0.868 vs old plate r=0.298 -> ADOPTED as master_winter_geo.png (plate v9)
 - 2026-10-08 20:14 plate_geo cliff round 10: 9 plates (3 failed the style gate >=0.85), best agreement r=0.390 vs old plate r=0.322, adopted r=-1.000 stands
 - 2026-10-08 20:26 plate_geo cliff round 11: 9 plates (3 failed the style gate >=0.85), best agreement r=0.386 vs old plate r=0.322, adopted r=-1.000 stands
@@ -70,3 +70,4 @@ Updated 2026-10-08 22:02. Cycle 517.
 - 2026-10-08 21:45 plate_shots round 1: side r=0.55 style=0.90 ADOPTED (4/4 passed); reverse r=0.46 style=0.91 ADOPTED (4/4 passed); closer r=0.61 style=0.89 ADOPTED (4/4 passed) -> plate v14
 - 2026-10-08 21:54 plate_hires valley_master: hr_valley_master_cn0.5_d25.png sharpness x1.19 vs the upscale, style 0.983, ground +0.002 -> ADOPTED as master_geo_4x.png (plate v15)
 - 2026-10-08 22:02 plate_hires valley_side: 3 candidates, none kept the picture (style>=0.95, ground within 0.03)
+- 2026-10-08 22:11 plate_hires valley_reverse: best sharpness x1.13 (need >1.15), style 0.971 -> not adopted
