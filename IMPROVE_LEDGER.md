@@ -594,3 +594,4 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-08 20:38 plate_geo cliff round 12: 9 plates (3 failed the style gate >=0.85), best agreement r=0.382 vs old plate r=0.322, adopted r=-1.000 stands
 - 2026-10-08 20:53 plate_shots round 0: side r=0.56 style=0.87 ADOPTED (4/4 passed); reverse r=0.41 style=0.91 ADOPTED (4/4 passed); closer r=0.59 style=0.93 ADOPTED (4/4 passed) -> plate v11
 - 2026-10-08 21:05 plate_geo winter round 10: 9 plates, best r10_winter_cn0.7_flux_d60.png agreement r=0.397 style 0.932 vs old plate r=0.298 -> ADOPTED as master_winter_geo.png (plate v12)
+- 2026-10-08 21:18 plate_geo winter round 11: 9 plates, best r11_winter_cn0.9_flux_d60.png agreement r=0.459 style 0.936 vs old plate r=0.298 -> ADOPTED as master_winter_geo.png (plate v13)
