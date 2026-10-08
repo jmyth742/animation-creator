@@ -22,6 +22,7 @@ v2 rules
 State: /workspace/loopwork/improve/state.json   Ledger: review/IMPROVE_LEDGER.md
 """
 import json, os, sys, time, random, hashlib, glob
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 W = "/workspace/loopwork"; Q = W + "/queue"; ST = W + "/improve/state.json"
 REPO = "/workspace/text-to-video"; R = "/workspace/review"; RG = W + "/rigify"
@@ -90,21 +91,29 @@ echo "- $(date +%%F\\ %%H:%%M) cast_face: $C face rig $([ -s $RG/${C}_face.blend
 
 
 def x_plate_flux():
-    """Geometry-first plate, FLUX route (the family the plates came from): three denoise
-    levels x three ControlNet strengths per round, scored by depth agreement AND CLIP style;
-    adopted only if it beats the old plate's geometry while passing the style gate."""
+    """Geometry-first plate, FLUX route, for each painted set (valley, winter valley, cliff):
+    three denoise levels x three ControlNet strengths per round, scored by ground-band depth
+    agreement AND CLIP style against that set's own look; adopted into configs/scene_defaults.env
+    only if it beats the old plate's geometry while passing the style gate. Three rounds per set."""
     U = REPO + "/ComfyUI/models/unet/flux1-dev-Q8_0.gguf"; C = REPO + "/ComfyUI/models/controlnet/flux_union_pro2.safetensors"
     if not (os.path.exists(U) and os.path.getsize(U) > 12e9 and os.path.exists(C) and os.path.getsize(C) > 3e9): return None
-    rnd = st.get("flux_rounds", 0)
-    if rnd >= 3: return None
-    st["flux_rounds"] = rnd + 1; mark("plate_flux_r%d" % rnd, "g1")
-    return "plate_flux", HEAD + """
-# plate_flux round %d: FLUX-dev + depth ControlNet, 9 plates, agreement + style scored
+    from improve_sets import SETS
+    for name, cfg in SETS.items():
+        if not (os.path.exists(cfg["guide"]) and os.path.exists(REPO + "/ComfyUI/input/" + cfg["init"])): continue
+        rk = "flux_rounds" if name == "valley" else "flux_rounds_" + name
+        rnd = st.get(rk, 0)
+        if rnd >= 3: continue
+        st[rk] = rnd + 1; mark("plate_flux_%s_r%d" % (name, rnd), "g2")
+        stem = "r%d_cn" % (10 + rnd) if name == "valley" else "r%d_%s_cn" % (10 + rnd, name)
+        return "plate_flux", HEAD + """
+# plate_flux %s round %d: FLUX-dev + depth ControlNet, 9 plates, ground agreement + style scored
+curl -s -m 10 -X POST http://127.0.0.1:8188/free -H 'Content-Type: application/json' -d '{"unload_models": true, "free_memory": true}' >/dev/null 2>&1; sleep 4
 for CN in 0.5 0.7 0.9; do
-  PF_CN=$CN PF_SEED=%d /workspace/venv/bin/python scripts/blender3d/plate_flux_depth.py /workspace/loopwork/geo/r%d_cn${CN}_flux 0.6 0.75 0.9 2>&1 | grep -E "^PF|Traceback|Error"
+  PF_CN=$CN PF_SEED=%d PF_GUIDE=%s PF_GUIDE_COMFY=%s PF_INIT_COMFY=%s PF_STYLE_REF=%s /workspace/venv/bin/python scripts/blender3d/plate_flux_depth.py /workspace/loopwork/geo/%s${CN}_flux 0.6 0.75 0.9 2>&1 | grep -E "^PF agreement|Traceback|Error"
 done
-/workspace/venv/bin/python scripts/ops/improve_score.py plate_geo %d
-""" % (rnd, 6100 + rnd * 7, 10 + rnd, 10 + rnd)
+/workspace/venv/bin/python scripts/ops/improve_score.py plate_geo %d %s
+""" % (name, rnd, 6100 + rnd * 7, cfg["guide"], cfg["comfy_guide"], cfg["init"], cfg["style_ref"], stem, 10 + rnd, name)
+    return None
 
 
 def x_plate_shots():
@@ -232,28 +241,44 @@ done
     return None
 
 
+def ep_inputs(ep):
+    from improve_sets import EPISODES
+    e = EPISODES[ep]
+    keys = [e["plate"], e["npy"], "SET_RELIEF_GAIN"]
+    return "d%d|%s|%s|" % (st["defaults_ver"], ao, an) + "|".join("%s=%s" % (k, scene_def.get(k, "-")) for k in keys if k)
+
+
 def x_episode():
-    """Something was adopted since the last masters: re-render episode 1 with everything
-    current, audit it, and record the numbers. Nothing is overwritten -- the output carries
-    the inputs hash."""
-    if st["masters_ver"] == inputs_ver: return None
-    st["masters_ver"] = inputs_ver
-    npy = "SET_RELIEF_NPY=%s" % scene_def["SET_RELIEF_NPY"] if "SET_RELIEF_NPY" in scene_def else ""
-    plate = "SET_PLATE=%s" % scene_def["SET_PLATE"] if "SET_PLATE" in scene_def else ""
-    return "episode", HEAD + """
-# episode @ %s -> nine_waterfalls_loop_%s.mp4
-W=/workspace/loopwork; R=/workspace/review; B=/workspace/blender42/blender; H=%s
-%s %s %s $B -b --python scripts/blender3d/build_film.py -- $W/film_audio $R/film_nw_loop_$H.blend $W/film_shots_loop_$H.json < /dev/null > $W/improve/ep_build_$H.log 2>&1
-grep -q "FILM SCENE SAVED" $W/improve/ep_build_$H.log || { echo "- $(date +%%F\\ %%H:%%M) episode @ $H: BUILD FAILED" >> $LEDGER; exit 0; }
-%s $B -b $R/film_nw_loop_$H.blend --python scripts/blender3d/scene_fit_audit.py -- $W/film_shots_loop_$H.json $W/improve/ep_audit_$H > $W/improve/ep_audit_$H.txt 2>&1
-%s
-/workspace/venv/bin/python scripts/blender3d/shot_language.py $W/film_shots_loop_$H.json $W/sl_film_shots_loop_$H.json > /dev/null 2>&1
-rm -rf $W/filmL$H $W/filmL$H.*.log
-bash scripts/ops/render_episode.sh sl_film_shots_loop_$H.json film_nw_loop_$H.blend filmL$H "The Nine Waterfalls" film_audio $R/nine_waterfalls_loop_$H.mp4 6 > $W/improve/ep_render_$H.log 2>&1
-[ -f $R/nine_waterfalls_loop_$H.mp4 ] && ffmpeg -v error -y -i $R/nine_waterfalls_loop_$H.mp4 -c:v libx264 -crf 23 -preset medium -pix_fmt yuv420p -c:a aac -movflags +faststart $R/nine_waterfalls_loop_${H}_web.mp4
-rm -rf $W/filmL$H
-echo "- $(date +%%F\\ %%H:%%M) episode @ $H (%s): $([ -f $R/nine_waterfalls_loop_${H}_web.mp4 ] && echo rendered nine_waterfalls_loop_${H}_web.mp4 || echo RENDER FAILED); $(grep -h '^SF' $W/improve/ep_audit_$H.txt | tr '\\n' ';')" >> $LEDGER
-""" % (inputs_ver, short, short, BUILD_ENV, plate, npy, plate, MASTER_ENV, inputs_ver)
+    """Something was adopted since the last masters of an episode: re-render that episode with
+    everything current, audit it, and record the numbers. Nothing is overwritten -- the output
+    carries the inputs hash. Episode 1 first, then 2 and 3 (they take their own plates)."""
+    from improve_sets import EPISODES
+    masters = st.setdefault("masters", {})
+    for ep in (1, 2, 3):
+        e = EPISODES[ep]; iv = ep_inputs(ep)
+        if masters.get(str(ep)) == iv: continue
+        if ep > 1 and e["plate"] not in scene_def: continue          # no geometry plate for that set yet: nothing new to render
+        masters[str(ep)] = iv; st["masters_ver"] = iv
+        h = hashlib.md5(iv.encode()).hexdigest()[:6]
+        env = " ".join(["SET_PLATE=%s" % scene_def[e["plate"]]] if e["plate"] in scene_def else []) + " " + \
+              " ".join(["SET_RELIEF_NPY=%s" % scene_def[e["npy"]]] if e["npy"] and e["npy"] in scene_def else [])
+        return "episode", HEAD + """
+# episode %d @ %s -> %s_loop_%s.mp4
+W=/workspace/loopwork; R=/workspace/review; B=/workspace/blender42/blender; H=%s; EPO=%s
+export %s
+%s $B -b --python scripts/blender3d/%s -- $W/%s $R/film${EPO}_loop_$H.blend $W/film${EPO}_shots_loop_$H.json < /dev/null > $W/improve/ep%d_build_$H.log 2>&1
+grep -q "FILM SCENE SAVED" $W/improve/ep%d_build_$H.log || { echo "- $(date +%%F\ %%H:%%M) episode %d @ $H: BUILD FAILED" >> $LEDGER; exit 0; }
+$B -b $R/film${EPO}_loop_$H.blend --python scripts/blender3d/scene_fit_audit.py -- $W/film${EPO}_shots_loop_$H.json $W/improve/ep%d_audit_$H > $W/improve/ep%d_audit_$H.txt 2>&1 || true
+%s; export SET_SUN="%s"
+/workspace/venv/bin/python scripts/blender3d/shot_language.py $W/film${EPO}_shots_loop_$H.json $W/sl_film${EPO}_shots_loop_$H.json > /dev/null 2>&1
+rm -rf $W/filmL${EPO}$H $W/filmL${EPO}$H.*.log
+bash scripts/ops/render_episode.sh sl_film${EPO}_shots_loop_$H.json film${EPO}_loop_$H.blend filmL${EPO}$H "%s" %s $R/%s_loop_$H.mp4 6 > $W/improve/ep%d_render_$H.log 2>&1
+[ -f $R/%s_loop_$H.mp4 ] && ffmpeg -v error -y -i $R/%s_loop_$H.mp4 -c:v libx264 -crf 23 -preset medium -pix_fmt yuv420p -c:a aac -movflags +faststart $R/%s_loop_${H}_web.mp4
+rm -rf $W/filmL${EPO}$H
+echo "- $(date +%%F\ %%H:%%M) episode %d @ $H (%s): $([ -f $R/%s_loop_${H}_web.mp4 ] && echo rendered %s_loop_${H}_web.mp4 || echo RENDER FAILED); $(grep -h '^SF' $W/improve/ep%d_audit_$H.txt | tr '\n' ';')" >> $LEDGER
+""" % (ep, iv, e["out"], h, h, "" if ep == 1 else str(ep), env.strip() or "IMPROVE_EP=%d" % ep, BUILD_ENV, e["script"], e["audio"], ep, ep, ep, ep, ep,
+       MASTER_ENV, e["sun"], e["title"], e["audio"], e["out"], ep, e["out"], e["out"], e["out"], ep, iv, e["out"], e["out"], ep)
+    return None
 
 
 def x_cast():

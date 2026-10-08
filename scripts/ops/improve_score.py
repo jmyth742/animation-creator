@@ -115,41 +115,51 @@ elif mode in ("craft", "face"):
         log("%s: %s A/B produced no frames" % (mode, knob))
 
 elif mode == "plate_geo":
-    rnd = int(sys.argv[2]); from PIL import Image
+    rnd = int(sys.argv[2]); setname = sys.argv[3] if len(sys.argv) > 3 else "valley"
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); from improve_sets import SETS
+    cfg = SETS[setname]; from PIL import Image
     st = json.load(open(W + "/improve/state.json"))
     STYLE_MIN = float(os.environ.get("PG_STYLE_MIN", "0.85"))      # FLUX plates that keep the look score 0.83-0.94; SDXL ones that lost it 0.75-0.80
-    # selection among plates that pass the gate: agreement, with style margin above the gate
-    # as a tie-breaker worth up to ~0.06 -- a plate that keeps the golden hall at r=0.60 beats a
-    # muted brown one at r=0.61 (5 Oct: the max-agreement pick drifted the palette)
-    best = (st.get("plate_best_r", -1.0), None); best_r = None; best_style = None; old_r = None; rejected = 0
-    for j in glob.glob("%s/geo/r%d_cn*_agree.json" % (W, rnd)):
+    bk = "plate_best_r" if setname == "valley" else "plate_best_r_" + setname
+    pattern = "%s/geo/r%d_cn*_agree.json" % (W, rnd) if setname == "valley" else "%s/geo/r%d_%s_cn*_agree.json" % (W, rnd, setname)
+    # selection among plates that pass the gate: agreement, with style margin above the gate as a
+    # tie-breaker worth up to ~0.06 -- a plate that keeps the golden hall at r=0.60 beats a muted
+    # brown one at r=0.61 (5 Oct: the max-agreement pick drifted the palette)
+    best = (st.get(bk, -1.0), None); best_r = None; best_style = None; old_r = None; rejected = 0
+    for j in glob.glob(pattern):
         d = json.load(open(j)); old_r = d["old"]
         for p, r in d["plates"].items():
             sty = d.get("style", {}).get(p, 0.0)
             if sty < STYLE_MIN: rejected += 1; continue
             sc = r + 0.6 * (sty - STYLE_MIN)
             if sc > best[0]: best = (sc, p); best_r = r; best_style = sty
-    cands = sum(len(json.load(open(j))["plates"]) for j in glob.glob("%s/geo/r%d_cn*_agree.json" % (W, rnd)))
-    if old_r is None: log("plate_geo round %d: no results" % rnd)
+    cands = sum(len(json.load(open(j))["plates"]) for j in glob.glob(pattern))
+    if old_r is None: log("plate_geo %s round %d: no results" % (setname, rnd))
     else:
         sc, p = best; r = best_r if best_r is not None else sc
         if p is not None and r > old_r + 0.08:
-            # adopt as the candidate plate: upscale for the projector, depth for the relief
-            SETS = REPO + "/series/tir-na-nog-legend/sets/tir_na_nog"
-            im = Image.open(p).convert("RGB"); im.save(SETS + "/master_geo.png")
-            im.resize((im.width * 2, im.height * 2), Image.LANCZOS).save(SETS + "/master_geo_4x.png")
-            subprocess.run(["/workspace/venv/bin/python", REPO + "/scripts/blender3d/plate_heightfield.py", SETS + "/master_geo.png", W + "/improve/plate_geo"], capture_output=True)
-            open(REPO + "/configs/scene_defaults.env", "w").write("# adopted by improve_score.py (plate_geo)\nSET_PLATE=%s/master_geo.png\nSET_RELIEF_NPY=%s/improve/plate_geo_depth.npy\nSET_RELIEF_GAIN=%s\n" % (SETS, W, os.environ.get("SET_RELIEF_GAIN", "0.6")))
-            st["plate_ver"] = st.get("plate_ver", 0) + 1; st["plate_best_r"] = sc
-            guide = Image.open(W + "/geo/valley_depth.png").convert("RGB"); oldp = Image.open(SETS + "/master_4x.png").convert("RGB")
+            im = Image.open(p).convert("RGB"); im.save(cfg["out"])
+            im.resize((im.width * 2, im.height * 2), Image.LANCZOS).save(cfg["out"][:-4] + "_4x.png")
+            cur = {}
+            if os.path.exists(REPO + "/configs/scene_defaults.env"):
+                for l in open(REPO + "/configs/scene_defaults.env"):
+                    if "=" in l and not l.startswith("#"): k, v = l.strip().split("=", 1); cur[k] = v
+            cur[cfg["key"]] = cfg["out"]
+            if cfg["npy_key"]:
+                subprocess.run(["/workspace/venv/bin/python", REPO + "/scripts/blender3d/plate_heightfield.py", cfg["out"], cfg["depth_out"]], capture_output=True)
+                cur[cfg["npy_key"]] = cfg["depth_out"] + "_depth.npy"
+            cur.setdefault("SET_RELIEF_GAIN", os.environ.get("SET_RELIEF_GAIN", "0.6"))
+            open(REPO + "/configs/scene_defaults.env", "w").write("# adopted by improve_score.py (plate_geo)\n" + "".join("%s=%s\n" % kv for kv in cur.items()))
+            st["plate_ver"] = st.get("plate_ver", 0) + 1; st[bk] = sc
+            guide = Image.open(cfg["guide"]).convert("RGB"); oldp = Image.open(cfg["style_ref"]).convert("RGB")
             sw, sh = 560, 320; sheet = Image.new("RGB", (sw * 3, sh + 24), "white")
             from PIL import ImageDraw
-            for i, (t, l) in enumerate(((guide, "set geometry depth"), (oldp, "old plate r=%.2f" % old_r), (im, "geometry plate r=%.2f" % r))):
+            for i, (t, l) in enumerate(((guide, "set geometry depth"), (oldp, "old plate ground r=%.2f" % old_r), (im, "geometry plate ground r=%.2f style %.2f" % (r, best_style)))):
                 sheet.paste(t.resize((sw, sh), Image.LANCZOS), (i * sw, 24)); ImageDraw.Draw(sheet).text((i * sw + 6, 5), l, fill="black")
-            sheet.save(R + "/PLATE_FROM_GEOMETRY.png")
-            log("plate_geo round %d: %d plates, best %s agreement r=%.3f style %.3f vs old plate r=%.3f -> ADOPTED as master_geo.png (plate v%d)" % (rnd, cands, os.path.basename(p), r, best_style, old_r, st["plate_ver"]))
+            sheet.save(R + "/PLATE_FROM_GEOMETRY%s.png" % ("" if setname == "valley" else "_" + setname))
+            log("plate_geo %s round %d: %d plates, best %s agreement r=%.3f style %.3f vs old plate r=%.3f -> ADOPTED as %s (plate v%d)" % (setname, rnd, cands, os.path.basename(p), r, best_style, old_r, os.path.basename(cfg["out"]), st["plate_ver"]))
         else:
-            log("plate_geo round %d: %d plates (%d failed the style gate >=%.2f), best agreement r=%.3f vs old plate r=%.3f, adopted r=%.3f stands" % (rnd, cands, rejected, STYLE_MIN, best[0], old_r, st.get("plate_best_r", -1)))
+            log("plate_geo %s round %d: %d plates (%d failed the style gate >=%.2f), best agreement r=%.3f vs old plate r=%.3f, adopted r=%.3f stands" % (setname, rnd, cands, rejected, STYLE_MIN, best[0], old_r, st.get(bk, -1)))
     json.dump(st, open(W + "/improve/state.json", "w"), indent=1)
 
 elif mode == "scene_fit":

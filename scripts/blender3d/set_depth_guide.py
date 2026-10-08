@@ -17,7 +17,9 @@ import bpy, mathutils
 sys.path.insert(0, "/workspace/text-to-video/scripts/blender3d")
 os.environ["SET_BACKDROP"] = "0"           # primitives, no plate: geometry is the authority here
 os.environ["SET_RELIEF"] = "0"
+_set = os.environ.get("DG_SET", "valley")        # valley (episodes 1-2) or cliff (episode 3)
 import valley_set
+if _set == "cliff": import cliff_set
 
 argv = sys.argv[sys.argv.index("--") + 1:]
 out = argv[0]; winter = len(argv) > 1 and argv[1] == "winter"
@@ -25,7 +27,8 @@ NEAR, FAR = float(os.environ.get("DG_NEAR", "4.0")), float(os.environ.get("DG_FA
 
 sc = bpy.context.scene
 for o in list(bpy.data.objects): bpy.data.objects.remove(o, do_unlink=True)
-valley_set.build_set(sc, winter=winter)
+if _set == "cliff": cliff_set.build_set(sc)
+else: valley_set.build_set(sc, winter=winter)
 # GROUND-ONLY guide (5 Oct): with the full blockout as conditioning, FLUX faithfully painted
 # the blockout -- cone trees, cone mountains, a box hall (r10_cn0.7_flux_d90). What the
 # characters need to obey is the GROUND: its slope, the lake, the path, and where the hall
@@ -37,6 +40,7 @@ if os.environ.get("DG_GROUND_ONLY", "1") not in ("", "0"):
 cam_d = bpy.data.cameras.new("guide"); cam_d.lens = 32.0; cam_d.sensor_width = 36
 cam = bpy.data.objects.new("guide", cam_d); sc.collection.objects.link(cam)
 loc, tgt = mathutils.Vector(valley_set.PAINTER_LOC), mathutils.Vector(valley_set.PAINTER_TGT)
+if _set == "cliff": loc, tgt = mathutils.Vector((-17.0, -12.0, 8.0)), mathutils.Vector((7.0, 20.0, 4.8))   # cliff_set's painter pose
 # per-shot setups (8 Oct): the renderer swaps in <setup>_geo plates by shot heading (master <50
 # deg, side <130, reverse beyond; closer = master heading at a long lens). Guide cameras for
 # those headings, framed on the set: DG_CAM=side|reverse|closer, else the master pose.
