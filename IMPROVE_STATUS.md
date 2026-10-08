@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-08 22:28. Cycle 520.
+Updated 2026-10-08 22:48. Cycle 521.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **30%** of the last 24 h (440 busy minutes; 3 minutes unsampled, counted idle); mean utilisation of sampled minutes 29%
+- card working (>=20%) **30%** of the last 24 h (434 busy minutes; 2 minutes unsampled, counted idle); mean utilisation of sampled minutes 29%
 
 ## Adopted (what the masters are rendered with)
 
@@ -42,7 +42,7 @@ Updated 2026-10-08 22:28. Cycle 520.
 - plate_hires_winter_master: queued @ dd3a9630
 - plate_shots_m13_r1: queued @ g2
 - plate_shots_m9_r0: queued @ g2
-- scene_fit: queued @ st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p7
+- scene_fit: queued @ st_chibi3_oisin_m23845|st_chibi3_niamh_m20705|p16
 - walk_RW_ARM_OUT: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 - walk_RW_DROP: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 - walk_RW_STRIDE: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
@@ -61,7 +61,6 @@ Updated 2026-10-08 22:28. Cycle 520.
 
 ## Last 12 experiments
 
-- 2026-10-08 20:26 plate_geo cliff round 11: 9 plates (3 failed the style gate >=0.85), best agreement r=0.386 vs old plate r=0.322, adopted r=-1.000 stands
 - 2026-10-08 20:38 plate_geo cliff round 12: 9 plates (3 failed the style gate >=0.85), best agreement r=0.382 vs old plate r=0.322, adopted r=-1.000 stands
 - 2026-10-08 20:53 plate_shots round 0: side r=0.56 style=0.87 ADOPTED (4/4 passed); reverse r=0.41 style=0.91 ADOPTED (4/4 passed); closer r=0.59 style=0.93 ADOPTED (4/4 passed) -> plate v11
 - 2026-10-08 21:05 plate_geo winter round 10: 9 plates, best r10_winter_cn0.7_flux_d60.png agreement r=0.397 style 0.932 vs old plate r=0.298 -> ADOPTED as master_winter_geo.png (plate v12)
@@ -73,3 +72,4 @@ Updated 2026-10-08 22:28. Cycle 520.
 - 2026-10-08 22:11 plate_hires valley_reverse: best sharpness x1.13 (need >1.15), style 0.971 -> not adopted
 - 2026-10-08 22:20 plate_hires valley_closer: hr_valley_closer_cn0.5_d25.png sharpness x1.21 vs the upscale, style 0.976, ground -0.004 -> ADOPTED as closer_geo_4x.png (plate v16)
 - 2026-10-08 22:28 plate_hires winter_master: best sharpness x1.14 (need >1.15), style 0.961 -> not adopted
+- 2026-10-08 22:48 scene_fit @521: gains 0.4,0.6,0.8 -> best gain 0.8 (on path 84%, foot float p95 0 mm) (unchanged)
