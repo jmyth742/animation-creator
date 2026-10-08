@@ -1,6 +1,6 @@
 # Improvement status
 
-Updated 2026-10-08 22:11. Cycle 518.
+Updated 2026-10-08 22:20. Cycle 519.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
@@ -9,7 +9,7 @@ Updated 2026-10-08 22:11. Cycle 518.
 ## Adopted (what the masters are rendered with)
 
 - walk: RW_STRIDE=0.6, RW_DROP=0.062, RW_ARM_OUT=10 (defaults v1)
-- scene: SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png, SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy, SET_RELIEF_GAIN=0.8, SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png, SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy (plate v15)
+- scene: SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png, SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy, SET_RELIEF_GAIN=0.8, SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png, SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy (plate v16)
 - cast oisin: st_chibi3_oisin_m23845 (hand compactness 0.31, lower is better)
 - cast niamh: st_chibi3_niamh_m20705_tex (hand compactness 0.20, lower is better)
 - masters: nine_waterfalls_rigify_cast4_web.mp4, nine_waterfalls_loop_97c79e_web.mp4, nine_waterfalls_loop_419a38_web.mp4
@@ -35,6 +35,7 @@ Updated 2026-10-08 22:11. Cycle 518.
 - plate_flux_winter_r0: queued @ g2
 - plate_flux_winter_r1: queued @ g2
 - plate_flux_winter_r2: queued @ g2
+- plate_hires_valley_closer: queued @ a924056a
 - plate_hires_valley_master: queued @ bb967a36
 - plate_hires_valley_reverse: queued @ c9fb8ccd
 - plate_hires_valley_side: queued @ b3683ea8
@@ -59,7 +60,6 @@ Updated 2026-10-08 22:11. Cycle 518.
 
 ## Last 12 experiments
 
-- 2026-10-08 20:02 plate_geo winter round 12: 9 plates, best r12_winter_cn0.7_flux_d75.png agreement r=0.641 style 0.868 vs old plate r=0.298 -> ADOPTED as master_winter_geo.png (plate v9)
 - 2026-10-08 20:14 plate_geo cliff round 10: 9 plates (3 failed the style gate >=0.85), best agreement r=0.390 vs old plate r=0.322, adopted r=-1.000 stands
 - 2026-10-08 20:26 plate_geo cliff round 11: 9 plates (3 failed the style gate >=0.85), best agreement r=0.386 vs old plate r=0.322, adopted r=-1.000 stands
 - 2026-10-08 20:38 plate_geo cliff round 12: 9 plates (3 failed the style gate >=0.85), best agreement r=0.382 vs old plate r=0.322, adopted r=-1.000 stands
@@ -71,3 +71,4 @@ Updated 2026-10-08 22:11. Cycle 518.
 - 2026-10-08 21:54 plate_hires valley_master: hr_valley_master_cn0.5_d25.png sharpness x1.19 vs the upscale, style 0.983, ground +0.002 -> ADOPTED as master_geo_4x.png (plate v15)
 - 2026-10-08 22:02 plate_hires valley_side: 3 candidates, none kept the picture (style>=0.95, ground within 0.03)
 - 2026-10-08 22:11 plate_hires valley_reverse: best sharpness x1.13 (need >1.15), style 0.971 -> not adopted
+- 2026-10-08 22:20 plate_hires valley_closer: hr_valley_closer_cn0.5_d25.png sharpness x1.21 vs the upscale, style 0.976, ground -0.004 -> ADOPTED as closer_geo_4x.png (plate v16)
