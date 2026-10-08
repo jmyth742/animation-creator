@@ -1,15 +1,15 @@
 # Improvement status
 
-Updated 2026-10-08 20:38. Cycle 510.
+Updated 2026-10-08 20:53. Cycle 511.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **29%** of the last 24 h (427 busy minutes; 3 minutes unsampled, counted idle); mean utilisation of sampled minutes 29%
+- card working (>=20%) **29%** of the last 24 h (429 busy minutes; 3 minutes unsampled, counted idle); mean utilisation of sampled minutes 29%
 
 ## Adopted (what the masters are rendered with)
 
 - walk: RW_STRIDE=0.6, RW_DROP=0.062, RW_ARM_OUT=10 (defaults v1)
-- scene: SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png, SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy, SET_RELIEF_GAIN=0.8, SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png, SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy (plate v9)
+- scene: SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png, SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy, SET_RELIEF_GAIN=0.8 (plate v11)
 - cast oisin: st_chibi3_oisin_m23845 (hand compactness 0.31, lower is better)
 - cast niamh: st_chibi3_niamh_m20705_tex (hand compactness 0.20, lower is better)
 - masters: nine_waterfalls_rigify_cast4_web.mp4, nine_waterfalls_loop_97c79e_web.mp4, nine_waterfalls_loop_419a38_web.mp4
@@ -32,9 +32,7 @@ Updated 2026-10-08 20:38. Cycle 510.
 - plate_flux_r0: queued @ g1
 - plate_flux_r1: queued @ g1
 - plate_flux_r2: queued @ g1
-- plate_flux_winter_r0: queued @ g2
-- plate_flux_winter_r1: queued @ g2
-- plate_flux_winter_r2: queued @ g2
+- plate_shots_m9_r0: queued @ g2
 - scene_fit: queued @ st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p7
 - walk_RW_ARM_OUT: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 - walk_RW_DROP: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
@@ -54,7 +52,6 @@ Updated 2026-10-08 20:38. Cycle 510.
 
 ## Last 12 experiments
 
-- 2026-10-08 17:43 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
 - 2026-10-08 18:31 cast: oisin best new candidate st_chibi3_oisin_m23845 hands 0.31, adopted st_chibi3_oisin_m23845 (0.31) stands
 - 2026-10-08 18:31 cast: niamh best new candidate st_chibi3_niamh_m20705_tex hands 0.20, adopted st_chibi3_niamh_m20705_tex (0.20) stands
 - 2026-10-08 19:19 cast: oisin best new candidate st_chibi3_oisin_m23845 hands 0.31, adopted st_chibi3_oisin_m23845 (0.31) stands
@@ -66,3 +63,4 @@ Updated 2026-10-08 20:38. Cycle 510.
 - 2026-10-08 20:14 plate_geo cliff round 10: 9 plates (3 failed the style gate >=0.85), best agreement r=0.390 vs old plate r=0.322, adopted r=-1.000 stands
 - 2026-10-08 20:26 plate_geo cliff round 11: 9 plates (3 failed the style gate >=0.85), best agreement r=0.386 vs old plate r=0.322, adopted r=-1.000 stands
 - 2026-10-08 20:38 plate_geo cliff round 12: 9 plates (3 failed the style gate >=0.85), best agreement r=0.382 vs old plate r=0.322, adopted r=-1.000 stands
+- 2026-10-08 20:53 plate_shots round 0: side r=0.56 style=0.87 ADOPTED (4/4 passed); reverse r=0.41 style=0.91 ADOPTED (4/4 passed); closer r=0.59 style=0.93 ADOPTED (4/4 passed) -> plate v11
