@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-09 02:12. Cycle 529.
+Updated 2026-10-09 04:10. Cycle 530.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **28%** of the last 24 h (407 busy minutes; 3 minutes unsampled, counted idle); mean utilisation of sampled minutes 27%
+- card working (>=20%) **26%** of the last 24 h (388 busy minutes; 3 minutes unsampled, counted idle); mean utilisation of sampled minutes 26%
 
 ## Adopted (what the masters are rendered with)
 
@@ -12,8 +12,8 @@ Updated 2026-10-09 02:12. Cycle 529.
 - scene: SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png, SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy, SET_RELIEF_GAIN=0.8, SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png, SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy (plate v18)
 - cast oisin: oisin4 (hand compactness 0.73, lower is better)
 - cast niamh: niamh4 (hand compactness 0.74, lower is better)
-- masters: nine_waterfalls_loop_97c79e_web.mp4, nine_waterfalls_loop_419a38_web.mp4, nine_waterfalls_loop_c7a15f_web.mp4
-- masters built at inputs: d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705|SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png|SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy|SET_RELIEF_GAIN=0.8; current inputs: d1|oisin4|niamh4|p18|s84a4b1
+- masters: nine_waterfalls_loop_419a38_web.mp4, nine_waterfalls_loop_c7a15f_web.mp4, nine_waterfalls_loop_e794bc_web.mp4
+- masters built at inputs: d1|oisin4|niamh4|SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png|SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy|SET_RELIEF_GAIN=0.8; current inputs: d1|oisin4|niamh4|p18|s84a4b1
 
 ## Settled (not re-run until an input changes)
 
@@ -63,7 +63,6 @@ Updated 2026-10-09 02:12. Cycle 529.
 
 ## Last 12 experiments
 
-- 2026-10-08 22:20 plate_hires valley_closer: hr_valley_closer_cn0.5_d25.png sharpness x1.21 vs the upscale, style 0.976, ground -0.004 -> ADOPTED as closer_geo_4x.png (plate v16)
 - 2026-10-08 22:28 plate_hires winter_master: best sharpness x1.14 (need >1.15), style 0.961 -> not adopted
 - 2026-10-08 22:48 scene_fit @521: gains 0.4,0.6,0.8 -> best gain 0.8 (on path 84%, foot float p95 0 mm) (unchanged)
 - 2026-10-09 00:48 episode 1 @ c7a15f (d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705|SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png|SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy|SET_RELIEF_GAIN=0.8): rendered nine_waterfalls_loop_c7a15f_web.mp4; 
@@ -75,3 +74,4 @@ Updated 2026-10-09 02:12. Cycle 529.
 - 2026-10-09 01:43 plate_hires valley_reverse: hr_valley_reverse_cn0.5_d45.png sharpness x1.25 vs the upscale, style 0.977, ground -0.004 -> ADOPTED as reverse_geo_4x.png (plate v18)
 - 2026-10-09 01:51 plate_hires valley_closer: best sharpness x1.05 (need >1.15), style 0.979 -> not adopted
 - 2026-10-09 02:12 scene_fit @529: gains 0.4,0.6,0.8 -> best gain 0.8 (on path 84%, foot float p95 0 mm) (unchanged)
+- 2026-10-09 04:10 episode 1 @ e794bc (d1|oisin4|niamh4|SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png|SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy|SET_RELIEF_GAIN=0.8): rendered nine_waterfalls_loop_e794bc_web.mp4;
