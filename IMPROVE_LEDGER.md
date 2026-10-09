@@ -624,3 +624,4 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-09 09:28 plate_hires valley_reverse: hr_valley_reverse_cn0.5_d45.png sharpness x1.28 vs the upscale, style 0.958, ground -0.011 -> ADOPTED as reverse_geo_4x.png (plate v23)
 - 2026-10-09 09:36 plate_hires valley_closer: best sharpness x1.14 (need >1.15), style 0.954 -> not adopted
 - 2026-10-09 09:58 scene_fit ep2 @541: gains 0.4,0.6,0.8 -> best SET_RELIEF_GAIN_WINTER=0.4 (on path 80%, foot float p95 0 mm) ADOPTED
+- 2026-10-09 11:51 episode 2 @ f03553 (d1|oisin4|niamh4|SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png|SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy|SET_RELIEF_GAIN_WINTER=0.4): rendered first_snow_loop_f03553_web.mp4; 
