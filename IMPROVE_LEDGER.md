@@ -618,3 +618,4 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-09 08:07 craft: FILM_FILL A/B over 0,0.6,1.2 -> AB_craft_FILM_FILL.png (human pick)
 - 2026-10-09 08:21 plate_shots_geo round 0: side r=0.40 style=0.89 ADOPTED (4/4 passed); reverse: none of 4 beat the standing plate (0 failed style); closer r=0.46 style=0.88 ADOPTED (4/4 passed) -> plate v19
 - 2026-10-09 08:37 plate_shots_geo round 1: side r=0.42 style=0.92 ADOPTED (4/4 passed); reverse r=0.38 style=0.92 ADOPTED (4/4 passed); closer r=0.52 style=0.87 ADOPTED (4/4 passed) -> plate v20
+- 2026-10-09 08:52 plate_shots_winter_geo round 0: side r=0.53 style=0.88 ADOPTED (4/4 passed); reverse r=0.36 style=0.89 ADOPTED (4/4 passed); closer r=0.50 style=0.87 ADOPTED (4/4 passed) -> plate v21
