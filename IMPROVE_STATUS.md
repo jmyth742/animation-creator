@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-09 01:24. Cycle 525.
+Updated 2026-10-09 01:34. Cycle 526.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **28%** of the last 24 h (410 busy minutes; 3 minutes unsampled, counted idle); mean utilisation of sampled minutes 27%
+- card working (>=20%) **28%** of the last 24 h (411 busy minutes; 3 minutes unsampled, counted idle); mean utilisation of sampled minutes 27%
 
 ## Adopted (what the masters are rendered with)
 
@@ -39,7 +39,7 @@ Updated 2026-10-09 01:24. Cycle 525.
 - plate_hires_valley_closer: queued @ a924056a
 - plate_hires_valley_master: queued @ bb967a36
 - plate_hires_valley_reverse: queued @ c9fb8ccd
-- plate_hires_valley_side: queued @ b3683ea8
+- plate_hires_valley_side: queued @ f9fa0499
 - plate_hires_winter_master: queued @ dd3a9630
 - plate_shots_m16_r0: queued @ g2
 - plate_shots_m17_r1: queued @ g2
@@ -63,7 +63,6 @@ Updated 2026-10-09 01:24. Cycle 525.
 
 ## Last 12 experiments
 
-- 2026-10-08 21:45 plate_shots round 1: side r=0.55 style=0.90 ADOPTED (4/4 passed); reverse r=0.46 style=0.91 ADOPTED (4/4 passed); closer r=0.61 style=0.89 ADOPTED (4/4 passed) -> plate v14
 - 2026-10-08 21:54 plate_hires valley_master: hr_valley_master_cn0.5_d25.png sharpness x1.19 vs the upscale, style 0.983, ground +0.002 -> ADOPTED as master_geo_4x.png (plate v15)
 - 2026-10-08 22:02 plate_hires valley_side: 3 candidates, none kept the picture (style>=0.95, ground within 0.03)
 - 2026-10-08 22:11 plate_hires valley_reverse: best sharpness x1.13 (need >1.15), style 0.971 -> not adopted
@@ -75,3 +74,4 @@ Updated 2026-10-09 01:24. Cycle 525.
 - 2026-10-09 01:10 craft: FILM_FILL A/B over 0,0.6,1.2 -> AB_craft_FILM_FILL.png (human pick)
 - 2026-10-09 01:13 craft: FILM_FILL=0.6 ADOPTED into the loop's master recipe (AB_craft_FILM_FILL: lifts the near head's hair detail in the over-the-shoulder, neutral on close and wide; 1.2 flattens the face)
 - 2026-10-09 01:24 plate_shots round 1: side: none of 4 beat the standing plate (0 failed style); reverse: none of 4 beat the standing plate (0 failed style); closer: none of 4 beat the standing plate (0 failed style)
+- 2026-10-09 01:34 plate_hires valley_side: best sharpness x1.07 (need >1.15), style 0.969 -> not adopted

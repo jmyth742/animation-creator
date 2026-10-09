@@ -608,3 +608,4 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-09 01:10 craft: FILM_FILL A/B over 0,0.6,1.2 -> AB_craft_FILM_FILL.png (human pick)
 - 2026-10-09 01:13 craft: FILM_FILL=0.6 ADOPTED into the loop's master recipe (AB_craft_FILM_FILL: lifts the near head's hair detail in the over-the-shoulder, neutral on close and wide; 1.2 flattens the face)
 - 2026-10-09 01:24 plate_shots round 1: side: none of 4 beat the standing plate (0 failed style); reverse: none of 4 beat the standing plate (0 failed style); closer: none of 4 beat the standing plate (0 failed style)
+- 2026-10-09 01:34 plate_hires valley_side: best sharpness x1.07 (need >1.15), style 0.969 -> not adopted
