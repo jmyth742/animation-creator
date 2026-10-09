@@ -620,3 +620,4 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-09 08:37 plate_shots_geo round 1: side r=0.42 style=0.92 ADOPTED (4/4 passed); reverse r=0.38 style=0.92 ADOPTED (4/4 passed); closer r=0.52 style=0.87 ADOPTED (4/4 passed) -> plate v20
 - 2026-10-09 08:52 plate_shots_winter_geo round 0: side r=0.53 style=0.88 ADOPTED (4/4 passed); reverse r=0.36 style=0.89 ADOPTED (4/4 passed); closer r=0.50 style=0.87 ADOPTED (4/4 passed) -> plate v21
 - 2026-10-09 09:08 plate_shots_winter_geo round 1: side: none of 4 beat the standing plate (1 failed style); reverse r=0.41 style=0.88 ADOPTED (4/4 passed); closer r=0.51 style=0.89 ADOPTED (3/4 passed) -> plate v22
+- 2026-10-09 09:18 plate_hires valley_side: best sharpness x1.03 (need >1.15), style 0.965 -> not adopted
