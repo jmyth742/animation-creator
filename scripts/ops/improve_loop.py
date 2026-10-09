@@ -117,24 +117,34 @@ done
 
 
 def x_plate_shots():
-    """Per-shot setups of the adopted master plate (side, reverse, closer): the renderer swaps
-    them in by shot heading, so every angle of the valley must be the same place. Each is
-    painted from its own geometry guide, img2img from the old setup plate, style-judged
-    against the adopted master. Two rounds, then settled until the master plate changes."""
-    if st["plate_ver"] == 0 or not os.path.exists(REPO + "/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png"): return None
+    """Per-shot setups (side, reverse, closer) of each adopted master plate: the renderer swaps
+    them in by shot heading, so every angle of a place must be the same place. Each is painted
+    from its own geometry guide, img2img from the setup's init, style-judged against the set's
+    adopted master. Two rounds per master; seeds move with the plate version so a redo gives new
+    candidates. Valley setups are <setup>_geo, winter ones <setup>_winter_geo (film.py's naming)."""
+    from improve_sets import PROMPTS
+    S = REPO + "/series/tir-na-nog-legend/sets/tir_na_nog/"
     for c in ("side", "reverse", "closer"):
         if not os.path.exists(W + "/geo/valley2_%s_depth.png" % c): return None
-    key = "plate_shots_m%d" % st.get("plate_master_ver", st["plate_ver"]); rnd = st.get("shots_rounds", 0)
-    if rnd >= 2: return None
-    st["shots_rounds"] = rnd + 1; mark(key + "_r%d" % rnd, "g2")
-    body = HEAD + "# plate_shots round %d: side / reverse / closer painted from their own geometry guides\n" % rnd
-    body += "curl -s -m 10 -X POST http://127.0.0.1:8188/free -H 'Content-Type: application/json' -d '{\"unload_models\": true, \"free_memory\": true}' >/dev/null 2>&1; sleep 4\n"
-    for c in ("side", "reverse", "closer"):
-        body += ("for CN in 0.6 0.8; do PF_CN=$CN PF_SEED=%d PF_GUIDE=/workspace/loopwork/geo/valley2_%s_depth.png PF_GUIDE_COMFY=geo_depth2_%s.png PF_INIT_COMFY=geo_init_%s.png "
-                 "PF_STYLE_REF=series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png /workspace/venv/bin/python scripts/blender3d/plate_flux_depth.py "
-                 "/workspace/loopwork/geo/ps%d_%s_cn${CN} 0.55 0.7 2>&1 | grep -E '^PF agreement|Traceback|Error'; done\n") % (7100 + rnd * 11, c, c, c, rnd, c)
-    body += "/workspace/venv/bin/python scripts/ops/improve_score.py plate_shots %d\n" % rnd
-    return "plate_shots", body
+    for setname, master, suffix in (("valley", S + "master_geo.png", "_geo"), ("winter", S + "master_winter_geo.png", "_winter_geo")):
+        if not os.path.exists(master): continue
+        mver = hashlib.md5(open(master, "rb").read(65536)).hexdigest()[:8]
+        rk = "shots_rounds" if setname == "valley" else "shots_rounds_winter"
+        if st.get(rk + "_for") != mver: st[rk] = 0; st[rk + "_for"] = mver        # a new master: redo its setups
+        rnd = st.get(rk, 0)
+        if rnd >= 2: continue
+        st[rk] = rnd + 1; mark("plate_shots_%s_%s_r%d" % (setname, mver, rnd), "g2")
+        seed = 7100 + rnd * 11 + st["plate_ver"] * 101
+        body = HEAD + "# plate_shots %s round %d: side / reverse / closer painted from their own geometry guides\n" % (setname, rnd)
+        body += "curl -s -m 10 -X POST http://127.0.0.1:8188/free -H 'Content-Type: application/json' -d '{\"unload_models\": true, \"free_memory\": true}' >/dev/null 2>&1; sleep 4\n"
+        for c in ("side", "reverse", "closer"):
+            init = "geo_init_%s.png" % c if setname == "valley" else "geo_init_winter.png"
+            body += ("for CN in 0.6 0.8; do PG_PROMPT=%s PF_CN=$CN PF_SEED=%d PF_GUIDE=/workspace/loopwork/geo/valley2_%s_depth.png PF_GUIDE_COMFY=geo_depth2_%s.png PF_INIT_COMFY=%s "
+                     "PF_STYLE_REF=%s /workspace/venv/bin/python scripts/blender3d/plate_flux_depth.py "
+                     "/workspace/loopwork/geo/ps%d_%s%s_cn${CN} 0.55 0.7 2>&1 | grep -E '^PF agreement|Traceback|Error'; done\n") % (json.dumps(PROMPTS[setname]), seed, c, c, init, master, rnd, c, suffix, )
+        body += "/workspace/venv/bin/python scripts/ops/improve_score.py plate_shots %d %s\n" % (rnd, suffix)
+        return "plate_shots", body
+    return None
 
 
 def x_plate_hires():

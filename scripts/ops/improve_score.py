@@ -190,13 +190,13 @@ elif mode == "scene_fit":
         log("scene_fit @%s: gains %s -> best gain %s (on path %.0f%%, foot float p95 %d mm)%s" % (cyc, ",".join(r[1] for r in sorted(rows, key=lambda r: r[1])), g, onp, p95, " ADOPTED" if changed else " (unchanged)"))
 
 elif mode == "plate_shots":
-    rnd = int(sys.argv[2]); from PIL import Image
+    rnd = int(sys.argv[2]); suffix = sys.argv[3] if len(sys.argv) > 3 else "_geo"; from PIL import Image
     st = json.load(open(W + "/improve/state.json")); SETS = REPO + "/series/tir-na-nog-legend/sets/tir_na_nog"
     STYLE_MIN = float(os.environ.get("PS_STYLE_MIN", "0.86"))     # 9 Oct: at 0.80 the side plate's hall came out as a green block
     adopted = 0; parts = []
     for setup in ("side", "reverse", "closer"):
-        best = (st.get("shot_best_%s" % setup, -1.0), None); br = bs = None; rej = 0; n = 0
-        for j in glob.glob("%s/geo/ps%d_%s_cn*_agree.json" % (W, rnd, setup)):
+        best = (st.get("shot_best_%s%s" % (setup, suffix), -1.0), None); br = bs = None; rej = 0; n = 0
+        for j in glob.glob("%s/geo/ps%d_%s%s_cn*_agree.json" % (W, rnd, setup, suffix)):
             d = json.load(open(j))
             for pth, r in d["plates"].items():
                 n += 1; sty = d.get("style", {}).get(pth, 0.0)
@@ -204,14 +204,14 @@ elif mode == "plate_shots":
                 sc = r + 0.6 * (sty - STYLE_MIN)
                 if sc > best[0]: best = (sc, pth); br, bs = r, sty
         if best[1] is not None:
-            im = Image.open(best[1]).convert("RGB"); im.save("%s/%s_geo.png" % (SETS, setup))
-            im.resize((im.width * 2, im.height * 2), Image.LANCZOS).save("%s/%s_geo_4x.png" % (SETS, setup))
-            st["shot_best_%s" % setup] = best[0]; adopted += 1
+            im = Image.open(best[1]).convert("RGB"); im.save("%s/%s%s.png" % (SETS, setup, suffix))
+            im.resize((im.width * 2, im.height * 2), Image.LANCZOS).save("%s/%s%s_4x.png" % (SETS, setup, suffix))
+            st["shot_best_%s%s" % (setup, suffix)] = best[0]; adopted += 1
             parts.append("%s r=%.2f style=%.2f ADOPTED (%d/%d passed)" % (setup, br, bs, n - rej, n))
         else:
             parts.append("%s: none of %d beat the standing plate (%d failed style)" % (setup, n, rej))
     if adopted: st["plate_ver"] = st.get("plate_ver", 0) + 1
-    log("plate_shots round %d: %s%s" % (rnd, "; ".join(parts), " -> plate v%d" % st["plate_ver"] if adopted else ""))
+    log("plate_shots%s round %d: %s%s" % (suffix, rnd, "; ".join(parts), " -> plate v%d" % st["plate_ver"] if adopted else ""))
     json.dump(st, open(W + "/improve/state.json", "w"), indent=1)
 
 elif mode == "plate_hires":
