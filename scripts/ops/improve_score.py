@@ -103,7 +103,7 @@ elif mode in ("craft", "face"):
     tiles = []
     for v in vals:
         if mode == "craft":
-            for s in ("close", "wide"):
+            for s in ("close", "ots", "wide"):
                 fs = sorted(glob.glob("%s/improve/craft_%s_%s_%s/*.png" % (W, knob, v, s)))
                 if fs: tiles.append(("%s=%s %s" % (knob, v, s), Image.open(fs[0]).convert("RGB")))
         else:

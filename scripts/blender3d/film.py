@@ -220,6 +220,18 @@ if _sun:
             _n += 1
     print("SET_SUN", _el, _az, "lights", _n, flush=True)
 
+# FILM_FILL=<energy>: a shadowless sun parented to the shot camera, pointing where it points.
+# The painted world is emission and ignores it; it only lifts the cast's camera-facing side
+# out of the cel ramp's shadow tone. The over-the-shoulder shots (s04/s06/s07b/s08) put the
+# near head 1.5 m from the lens with the key behind it, and a dark-haired head in full
+# shadow tone is an unlit black mass in every master to date (9 Oct).
+_fill = float(os.environ.get("FILM_FILL", "0") or 0)
+if _fill > 0:
+    _fd = bpy.data.lights.new("fill_cam", 'SUN'); _fd.energy = _fill; _fd.angle = math.radians(25); _fd.use_shadow = False
+    _fo = bpy.data.objects.new("fill_cam", _fd); sc.collection.objects.link(_fo)
+    _fo.parent = co; _fo.matrix_parent_inverse.identity(); _fo.location = (0, 0, 0); _fo.rotation_euler = (0, 0, 0)
+    print("FILM_FILL", _fill, flush=True)
+
 # FILM_INTEGRATE=<haze>: sit the cast IN the plate rather than on it, plus a grade over
 # the whole frame. A character against a matte painting reads as a sticker because it is
 # more saturated than the painting, shares none of its atmosphere and nothing grounds it.

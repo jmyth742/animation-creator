@@ -235,7 +235,7 @@ done
 
 
 def x_ab(kind):
-    knobs = {"craft": [("FILM_LINES", ["3.2", "4.8", "6.4"]), ("CHAR_AO", ["0", "0.35", "0.6"]), ("FILM_INTEGRATE", ["0", "0.22", "0.4"]), ("FILM_LINE_ALPHA", ["0.6", "0.82", "1.0"])],
+    knobs = {"craft": [("FILM_FILL", ["0", "0.6", "1.2"]), ("FILM_LINES", ["3.2", "4.8", "6.4"]), ("CHAR_AO", ["0", "0.35", "0.6"]), ("FILM_INTEGRATE", ["0", "0.22", "0.4"]), ("FILM_LINE_ALPHA", ["0.6", "0.82", "1.0"])],
              "face": [("FP_MOUTH_PLATE", ["1.2", "1.5", "1.9"]), ("FCG_MOUTH", ["0.17", "0.195", "0.22"])]}[kind]
     for k, vals in knobs:
         if not fresh("%s_%s" % (kind, k)): continue
@@ -246,7 +246,7 @@ def x_ab(kind):
 # craft: A/B %s on a close-up and a wide shot (once per input set)
 BL=%s; [ -s $BL ] || exit 0
 %s
-for V in %s; do for S in "close -2.0,7.4,1.48 0.0,6.95,1.44 55 317" "wide 5.5,7.6,1.45 -0.8,7.5,1.35 50 221"; do
+for V in %s; do for S in "close -2.0,7.4,1.48 0.0,6.95,1.44 55 317" "ots 1.612,6.670,1.694 -1.550,8.050,1.326 42 300" "wide 5.5,7.6,1.45 -0.8,7.5,1.35 50 221"; do
   set -- $S; D=/workspace/loopwork/improve/craft_%s_${V}_$1; rm -rf $D
   %s=$V /workspace/blender42/blender -b --factory-startup $BL --python scripts/blender3d/film.py -- $D "$2" "$3" $4 $5 $5 static 1248 720 < /dev/null > $D.log 2>&1 &
 done; done; wait
