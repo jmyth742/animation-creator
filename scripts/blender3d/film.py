@@ -177,8 +177,20 @@ if pc is not None and os.environ.get("FILM_PAINTER", "shot") == "shot":
     # On a moving shot (orbit, dolly, crane) the frame edges travel beyond that projection and
     # the plate's edge pixels streak across the near ground (every wide in first_snow_loop).
     # A slightly shorter projector lens paints past the frame so the camera stays inside it.
-    _margin = float(os.environ.get("FILM_PROJ_MARGIN", "0.86")) if move != "static" else 1.0
+    _margin = float(os.environ.get("FILM_PROJ_MARGIN", "1.0")) if move != "static" else 1.0
     pc.data.lens = cam.lens * _margin
+    # FOLLOW (9 Oct): on a moving shot the projector FOLLOWS the camera frame by frame, so the
+    # painting is always glued to the view -- a 2D background panning under 3D characters, as
+    # anime does it. One projection from mid-shot smeared the hall and streaked the near ground
+    # at the ends of every orbit/dolly/pan; projecting from the painter camera streaked worse,
+    # because the shot cameras see ground the painter never painted. FILM_PAINTER_FOLLOW=0 reverts.
+    if move != "static" and os.environ.get("FILM_PAINTER_FOLLOW", "1") not in ("", "0"):
+        for _f in range(f0, f1 + 1):
+            sc.frame_set(_f)
+            pc.matrix_world = co.matrix_world.copy()
+            pc.keyframe_insert("location", frame=_f); pc.keyframe_insert("rotation_euler", frame=_f)
+        sc.frame_set(fm)
+        print("PAINTER projector follows the camera over frames %d-%d" % (f0, f1), flush=True)
     pc.data.sensor_width = cam.sensor_width; pc.data.sensor_fit = cam.sensor_fit
     ratio = sc.render.resolution_x / sc.render.resolution_y
     plate = os.environ.get("FILM_PLATE")
@@ -210,7 +222,9 @@ if pc is not None and os.environ.get("FILM_PAINTER", "shot") == "shot":
             pname = md.projectors[0].object.name          # by name: RNA wrappers are never `is`
             if pname == pc.name:
                 md.aspect_x = ratio; md.aspect_y = 1.0
-            elif pname == "painter_master" and ang < 50:
+            elif pname == "painter_master" and (ang < 50 or (move != "static" and os.environ.get("FILM_PAINTER_FOLLOW", "1") not in ("", "0"))):
+                # in follow mode every surface, the lake included, takes the per-frame projection:
+                # a lake left on the master projection shows as a slab in side/reverse shots
                 # a 'fixed' surface (the lake) near the master heading: the per-shot projection is
                 # exact there, and the fixed one would sit offset beside it (q9 est probe)
                 md.projectors[0].object = pc; md.aspect_x = ratio; md.aspect_y = 1.0
@@ -434,6 +448,10 @@ if _hull > 0:
             _kit.add_outline_hull(_ob, _hull, co, sc.render.resolution_y)
 
 sc.frame_start, sc.frame_end = f0, f1
+# FILM_ONLY_FRAME=<f>: render one frame of the shot while every per-shot decision (projection
+# frame, haze, contact) is made for the whole f0..f1 range -- a probe that behaves like the master
+if os.environ.get("FILM_ONLY_FRAME"):
+    sc.frame_start = sc.frame_end = int(os.environ["FILM_ONLY_FRAME"])
 sc.frame_step = int(os.environ.get("FILM_STEP", "1") or 1)   # probes: every Nth frame
 sc.render.filepath = outdir + "/frame_"
 sc.render.image_settings.file_format = 'PNG'
