@@ -26,9 +26,14 @@ if mode == "cast":
         if not cands: continue
         best_s, best = cands[0]
         cur_name, cur_s = adopted[who]
-        if best != cur_name and best_s < 0.9 * cur_s:
-            log("cast: %s candidate %s hands %.2f beats %s (%.2f) -> retopo+rig+gate queued" % (who, best, best_s, cur_name, cur_s))
-            adopted[who] = (best, best_s)
+        seen = st.setdefault("candidates", {}).setdefault(who, [])
+        if best != cur_name and best_s < 0.9 * cur_s and best not in seen:
+            # 9 Oct: a candidate is PROPOSED, never adopted by itself. Hand compactness said
+            # m23845/m20705 were better; their auto-built faces were far worse than the
+            # hand-calibrated oisin4/niamh4 in the close-ups of the master they went into.
+            # The rig + face + reel are built for review; a human promotes.
+            log("cast: %s candidate %s hands %.2f beats %s (%.2f) -> rig+face+reel built for REVIEW (not adopted)" % (who, best, best_s, cur_name, cur_s))
+            seen.append(best)
             # queue the promotion as its own job so the loop's job stays short
             open("%s/queue/91_promote_%s.sh" % (W, who), "w").write("""cd %s
 P=series/tir-na-nog-legend/meshes/props; RG=/workspace/loopwork/rigify; N=%s
@@ -39,6 +44,8 @@ TEXHY_FACES=60000 /workspace/venv/bin/python -u scripts/blender3d/texture_hy3d.p
 [ -s $RG/$N.blend ] && { rm -rf $RG/show_$N; RW_RES=1080 RW_SHOTS=walk,idle /workspace/blender42/blender -b $RG/$N.blend --python scripts/blender3d/rigify_walk.py -- $RG/show_$N 96; bash scripts/ops/encode_showreel.sh $RG/show_$N /workspace/review/MOTION_${N}_rigify.mp4 20 "walk idle"; }
 bash /workspace/export_outcomes.sh 2>&1 | tail -1
 """ % (REPO, best))
+        elif best in st.get("candidates", {}).get(who, []):
+            log("cast: %s best candidate %s (%.2f) already built for review; adopted %s stands" % (who, best, best_s, cur_name))
         else:
             log("cast: %s best new candidate %s hands %.2f, adopted %s (%.2f) stands" % (who, best, best_s, cur_name, cur_s))
     st["adopted"] = adopted; json.dump(st, open(W + "/improve/state.json", "w"), indent=1)
@@ -185,7 +192,7 @@ elif mode == "scene_fit":
 elif mode == "plate_shots":
     rnd = int(sys.argv[2]); from PIL import Image
     st = json.load(open(W + "/improve/state.json")); SETS = REPO + "/series/tir-na-nog-legend/sets/tir_na_nog"
-    STYLE_MIN = float(os.environ.get("PS_STYLE_MIN", "0.80"))     # a different heading of the same place: lower than the master's gate
+    STYLE_MIN = float(os.environ.get("PS_STYLE_MIN", "0.86"))     # 9 Oct: at 0.80 the side plate's hall came out as a green block
     adopted = 0; parts = []
     for setup in ("side", "reverse", "closer"):
         best = (st.get("shot_best_%s" % setup, -1.0), None); br = bs = None; rej = 0; n = 0

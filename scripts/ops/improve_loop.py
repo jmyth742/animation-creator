@@ -132,7 +132,7 @@ def x_plate_shots():
     for c in ("side", "reverse", "closer"):
         body += ("for CN in 0.6 0.8; do PF_CN=$CN PF_SEED=%d PF_GUIDE=/workspace/loopwork/geo/valley2_%s_depth.png PF_GUIDE_COMFY=geo_depth2_%s.png PF_INIT_COMFY=geo_init_%s.png "
                  "PF_STYLE_REF=series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png /workspace/venv/bin/python scripts/blender3d/plate_flux_depth.py "
-                 "/workspace/loopwork/geo/ps%d_%s_cn${CN} 0.7 0.85 2>&1 | grep -E '^PF agreement|Traceback|Error'; done\n") % (7100 + rnd * 11, c, c, c, rnd, c)
+                 "/workspace/loopwork/geo/ps%d_%s_cn${CN} 0.55 0.7 2>&1 | grep -E '^PF agreement|Traceback|Error'; done\n") % (7100 + rnd * 11, c, c, c, rnd, c)
     body += "/workspace/venv/bin/python scripts/ops/improve_score.py plate_shots %d\n" % rnd
     return "plate_shots", body
 
