@@ -611,3 +611,4 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-09 01:34 plate_hires valley_side: best sharpness x1.07 (need >1.15), style 0.969 -> not adopted
 - 2026-10-09 01:43 plate_hires valley_reverse: hr_valley_reverse_cn0.5_d45.png sharpness x1.25 vs the upscale, style 0.977, ground -0.004 -> ADOPTED as reverse_geo_4x.png (plate v18)
 - 2026-10-09 01:51 plate_hires valley_closer: best sharpness x1.05 (need >1.15), style 0.979 -> not adopted
+- 2026-10-09 02:12 scene_fit @529: gains 0.4,0.6,0.8 -> best gain 0.8 (on path 84%, foot float p95 0 mm) (unchanged)

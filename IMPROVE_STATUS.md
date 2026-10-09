@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-09 01:51. Cycle 528.
+Updated 2026-10-09 02:12. Cycle 529.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **28%** of the last 24 h (413 busy minutes; 2 minutes unsampled, counted idle); mean utilisation of sampled minutes 28%
+- card working (>=20%) **28%** of the last 24 h (407 busy minutes; 3 minutes unsampled, counted idle); mean utilisation of sampled minutes 27%
 
 ## Adopted (what the masters are rendered with)
 
@@ -43,7 +43,7 @@ Updated 2026-10-09 01:51. Cycle 528.
 - plate_hires_winter_master: queued @ dd3a9630
 - plate_shots_m16_r0: queued @ g2
 - plate_shots_m17_r1: queued @ g2
-- scene_fit: queued @ st_chibi3_oisin_m23845|st_chibi3_niamh_m20705|p16
+- scene_fit: queued @ oisin4|niamh4|p18
 - walk_RW_ARM_OUT: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 - walk_RW_DROP: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 - walk_RW_STRIDE: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
@@ -63,7 +63,6 @@ Updated 2026-10-09 01:51. Cycle 528.
 
 ## Last 12 experiments
 
-- 2026-10-08 22:11 plate_hires valley_reverse: best sharpness x1.13 (need >1.15), style 0.971 -> not adopted
 - 2026-10-08 22:20 plate_hires valley_closer: hr_valley_closer_cn0.5_d25.png sharpness x1.21 vs the upscale, style 0.976, ground -0.004 -> ADOPTED as closer_geo_4x.png (plate v16)
 - 2026-10-08 22:28 plate_hires winter_master: best sharpness x1.14 (need >1.15), style 0.961 -> not adopted
 - 2026-10-08 22:48 scene_fit @521: gains 0.4,0.6,0.8 -> best gain 0.8 (on path 84%, foot float p95 0 mm) (unchanged)
@@ -75,3 +74,4 @@ Updated 2026-10-09 01:51. Cycle 528.
 - 2026-10-09 01:34 plate_hires valley_side: best sharpness x1.07 (need >1.15), style 0.969 -> not adopted
 - 2026-10-09 01:43 plate_hires valley_reverse: hr_valley_reverse_cn0.5_d45.png sharpness x1.25 vs the upscale, style 0.977, ground -0.004 -> ADOPTED as reverse_geo_4x.png (plate v18)
 - 2026-10-09 01:51 plate_hires valley_closer: best sharpness x1.05 (need >1.15), style 0.979 -> not adopted
+- 2026-10-09 02:12 scene_fit @529: gains 0.4,0.6,0.8 -> best gain 0.8 (on path 84%, foot float p95 0 mm) (unchanged)
