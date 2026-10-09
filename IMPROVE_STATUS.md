@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-09 01:43. Cycle 527.
+Updated 2026-10-09 01:51. Cycle 528.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **28%** of the last 24 h (410 busy minutes; 3 minutes unsampled, counted idle); mean utilisation of sampled minutes 27%
+- card working (>=20%) **28%** of the last 24 h (413 busy minutes; 2 minutes unsampled, counted idle); mean utilisation of sampled minutes 28%
 
 ## Adopted (what the masters are rendered with)
 
@@ -13,7 +13,7 @@ Updated 2026-10-09 01:43. Cycle 527.
 - cast oisin: oisin4 (hand compactness 0.73, lower is better)
 - cast niamh: niamh4 (hand compactness 0.74, lower is better)
 - masters: nine_waterfalls_loop_97c79e_web.mp4, nine_waterfalls_loop_419a38_web.mp4, nine_waterfalls_loop_c7a15f_web.mp4
-- masters built at inputs: d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705|SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png|SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy|SET_RELIEF_GAIN=0.8; current inputs: d1|oisin4|niamh4|p17|s84a4b1
+- masters built at inputs: d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705|SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png|SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy|SET_RELIEF_GAIN=0.8; current inputs: d1|oisin4|niamh4|p18|s84a4b1
 
 ## Settled (not re-run until an input changes)
 
@@ -36,7 +36,7 @@ Updated 2026-10-09 01:43. Cycle 527.
 - plate_flux_winter_r0: queued @ g2
 - plate_flux_winter_r1: queued @ g2
 - plate_flux_winter_r2: queued @ g2
-- plate_hires_valley_closer: queued @ a924056a
+- plate_hires_valley_closer: queued @ 7fae92d2
 - plate_hires_valley_master: queued @ bb967a36
 - plate_hires_valley_reverse: queued @ b8271cbe
 - plate_hires_valley_side: queued @ f9fa0499
@@ -63,7 +63,6 @@ Updated 2026-10-09 01:43. Cycle 527.
 
 ## Last 12 experiments
 
-- 2026-10-08 22:02 plate_hires valley_side: 3 candidates, none kept the picture (style>=0.95, ground within 0.03)
 - 2026-10-08 22:11 plate_hires valley_reverse: best sharpness x1.13 (need >1.15), style 0.971 -> not adopted
 - 2026-10-08 22:20 plate_hires valley_closer: hr_valley_closer_cn0.5_d25.png sharpness x1.21 vs the upscale, style 0.976, ground -0.004 -> ADOPTED as closer_geo_4x.png (plate v16)
 - 2026-10-08 22:28 plate_hires winter_master: best sharpness x1.14 (need >1.15), style 0.961 -> not adopted
@@ -75,3 +74,4 @@ Updated 2026-10-09 01:43. Cycle 527.
 - 2026-10-09 01:24 plate_shots round 1: side: none of 4 beat the standing plate (0 failed style); reverse: none of 4 beat the standing plate (0 failed style); closer: none of 4 beat the standing plate (0 failed style)
 - 2026-10-09 01:34 plate_hires valley_side: best sharpness x1.07 (need >1.15), style 0.969 -> not adopted
 - 2026-10-09 01:43 plate_hires valley_reverse: hr_valley_reverse_cn0.5_d45.png sharpness x1.25 vs the upscale, style 0.977, ground -0.004 -> ADOPTED as reverse_geo_4x.png (plate v18)
+- 2026-10-09 01:51 plate_hires valley_closer: best sharpness x1.05 (need >1.15), style 0.979 -> not adopted

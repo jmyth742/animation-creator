@@ -610,3 +610,4 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-09 01:24 plate_shots round 1: side: none of 4 beat the standing plate (0 failed style); reverse: none of 4 beat the standing plate (0 failed style); closer: none of 4 beat the standing plate (0 failed style)
 - 2026-10-09 01:34 plate_hires valley_side: best sharpness x1.07 (need >1.15), style 0.969 -> not adopted
 - 2026-10-09 01:43 plate_hires valley_reverse: hr_valley_reverse_cn0.5_d45.png sharpness x1.25 vs the upscale, style 0.977, ground -0.004 -> ADOPTED as reverse_geo_4x.png (plate v18)
+- 2026-10-09 01:51 plate_hires valley_closer: best sharpness x1.05 (need >1.15), style 0.979 -> not adopted
