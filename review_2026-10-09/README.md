@@ -27,3 +27,13 @@ re-render.
 
 Episode 3 rendered in this pass is **not included**: a bug in the job environment projected the valley plate onto the
 cliff set (the whole episode played in the valley). Fixed; the re-render is queued behind the winter scene-fit.
+
+## Part 3 (14:00)
+
+**`farewell_cliff_loop_420767_web.mp4.part*`** (`cat … > name.mp4`) — episode 3 re-rendered correctly on the cliff
+(`EP3_420767_frames.png`): the headland, the sea stack, the cast on the shelf, calibrated faces, fill light.
+
+Decision taken on review of the per-shot setup plates: at style scores the gate accepted, the side/closer paintings kept
+drifting the hall (a green block, a gothic gold version, a white disc on the winter side). The master plate projected from
+every shot camera is consistent, so the setups are **withdrawn** from the masters; the loop still paints candidates for a
+human pick (`setups_review/`). Episodes 1 and 2 re-render on master-only plates next.
