@@ -173,6 +173,12 @@ if pc is not None and os.environ.get("FILM_PAINTER", "shot") == "shot":
     master_dir = mathutils.Vector(pc.matrix_world.to_3x3() @ mathutils.Vector((0, 0, -1)))
     pc.matrix_world = co.matrix_world.copy()
     pc.data.type = 'PERSP'; pc.data.lens = cam.lens
+    # PROJECTION MARGIN (9 Oct): the plate is projected once, from the shot camera at mid-shot.
+    # On a moving shot (orbit, dolly, crane) the frame edges travel beyond that projection and
+    # the plate's edge pixels streak across the near ground (every wide in first_snow_loop).
+    # A slightly shorter projector lens paints past the frame so the camera stays inside it.
+    _margin = float(os.environ.get("FILM_PROJ_MARGIN", "0.86")) if move != "static" else 1.0
+    pc.data.lens = cam.lens * _margin
     pc.data.sensor_width = cam.sensor_width; pc.data.sensor_fit = cam.sensor_fit
     ratio = sc.render.resolution_x / sc.render.resolution_y
     plate = os.environ.get("FILM_PLATE")
