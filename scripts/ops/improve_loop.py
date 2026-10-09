@@ -62,7 +62,7 @@ HEAD = ("cd %s\nset -a; . configs/walk_defaults.env; [ -f configs/scene_defaults
         "LEDGER=%s/IMPROVE_LEDGER.md; export %s\n" % (REPO, R, cast_env() or "IMPROVE_CYCLE=%d" % st["cycle"]))
 TAIL = "\n/workspace/venv/bin/python scripts/ops/improve_status.py > /dev/null 2>&1\nbash /workspace/export_outcomes.sh 2>&1 | tail -1\n"
 MASTER_ENV = ('export CHAR_NORMALFIX=1 CHAR_NORMALFIX_INTERP=1 FILM_LINES=4.8 FILM_LINE_MINLEN=40 FILM_LINE_CREASE=0 FILM_RES=1664x960 '
-              'FILM_INTEGRATE=0.22 CHAR_HAZE_SAT=0.3 FILM_CONTACT=1 SET_SUN="52,118" FILM_LINE_TINT="0.14,0.09,0.12" FILM_LINE_ALPHA=0.82 CHAR_AO=0.35 FILM_STEP_ANIM=2')
+              'FILM_INTEGRATE=0.22 CHAR_HAZE_SAT=0.3 FILM_CONTACT=1 SET_SUN="52,118" FILM_LINE_TINT="0.14,0.09,0.12" FILM_LINE_ALPHA=0.82 CHAR_AO=0.35 FILM_STEP_ANIM=2 FILM_FILL=0.6')
 BUILD_ENV = "CHAR_NORMALFIX=0 FILM_RIG=rigify FILM_BLINK=lam FILM_VIS_SUFFIX=_lam FILM_ENV_SUFFIX=_lam"
 PROBES = ('"s02_walk -4.2,0.5,1.3 0,2,1.2 42 160 pan" "s03_meet 5.5,7.6,1.45 -0.8,7.5,1.35 50 221 static" "s11_away 0.2,2.8,1.5 3.6,15.5,1.6 32 1150 crane:2.6"')
 
