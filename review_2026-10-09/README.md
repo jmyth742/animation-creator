@@ -17,3 +17,13 @@ What changed since the 3 Oct drop, all adopted on measurement (see `IMPROVE_LEDG
   close-ups, so candidates are now built for review only and the masters use the calibrated cast.
 - **Fill light** (`AB_craft_FILM_FILL.png`): 0.6 adopted — the near head in over-the-shoulder shots keeps its detail.
   `OTS_PROBE.png` shows the black-head mass seen in earlier masters is specific to two mesh variants, not the camera.
+
+## Part 2 (09:00)
+
+**`first_snow_loop_4c130d_web.mp4`** — episode 2 on the winter geometry plate (`EP2_4c130d_frames.png`): snowed cliffs,
+frozen shore, the golden hall, the calibrated cast. Known fault: the wide shots show a streaked band at the bottom edge —
+the relief gain tuned for the summer plate applied to the winter depth; the loop now tunes a separate winter gain and will
+re-render.
+
+Episode 3 rendered in this pass is **not included**: a bug in the job environment projected the valley plate onto the
+cliff set (the whole episode played in the valley). Fixed; the re-render is queued behind the winter scene-fit.
