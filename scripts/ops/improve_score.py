@@ -170,24 +170,25 @@ elif mode == "plate_geo":
     json.dump(st, open(W + "/improve/state.json", "w"), indent=1)
 
 elif mode == "scene_fit":
-    cyc = sys.argv[2]; rows = []
-    for f in glob.glob(W + "/improve/sf_g*.txt"):
-        g = f.split("sf_g")[1][:-4]; onp = []; p95 = []
+    cyc = sys.argv[2]; gk = sys.argv[3] if len(sys.argv) > 3 else "SET_RELIEF_GAIN"; ep = sys.argv[4] if len(sys.argv) > 4 else "1"
+    rows = []
+    for f in glob.glob(W + "/improve/sf%s_g*.txt" % ep):
+        g = f.split("_g")[1][:-4]; onp = []; p95 = []
         for l in open(f):
             m = re.match(r"SF \S+: on path (\d+)%.*p95 (\d+) mm", l)
             if m: onp.append(int(m.group(1))); p95.append(int(m.group(2)))
         if onp: rows.append((sum(onp) / len(onp) - 0.5 * max(p95), g, sum(onp) / len(onp), max(p95)))
-    if not rows: log("scene_fit @%s: no audits" % cyc)
+    if not rows: log("scene_fit ep%s @%s: no audits" % (ep, cyc))
     else:
         rows.sort(reverse=True); sc, g, onp, p95 = rows[0]
-        open(W + "/improve/sf_best", "w").write(g)
+        open(W + "/improve/sf%s_best" % ep, "w").write(g)
         cur = {}
         if os.path.exists(REPO + "/configs/scene_defaults.env"):
             for l in open(REPO + "/configs/scene_defaults.env"):
                 if "=" in l and not l.startswith("#"): k, v = l.strip().split("=", 1); cur[k] = v
-        changed = cur.get("SET_RELIEF_GAIN") != g; cur["SET_RELIEF_GAIN"] = g
+        changed = cur.get(gk) != g; cur[gk] = g
         open(REPO + "/configs/scene_defaults.env", "w").write("# adopted by improve_score.py (scene_fit)\n" + "".join("%s=%s\n" % kv for kv in cur.items()))
-        log("scene_fit @%s: gains %s -> best gain %s (on path %.0f%%, foot float p95 %d mm)%s" % (cyc, ",".join(r[1] for r in sorted(rows, key=lambda r: r[1])), g, onp, p95, " ADOPTED" if changed else " (unchanged)"))
+        log("scene_fit ep%s @%s: gains %s -> best %s=%s (on path %.0f%%, foot float p95 %d mm)%s" % (ep, cyc, ",".join(r[1] for r in sorted(rows, key=lambda r: r[1])), gk, g, onp, p95, " ADOPTED" if changed else " (unchanged)"))
 
 elif mode == "plate_shots":
     rnd = int(sys.argv[2]); suffix = sys.argv[3] if len(sys.argv) > 3 else "_geo"; from PIL import Image

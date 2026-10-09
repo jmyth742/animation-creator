@@ -191,36 +191,44 @@ done
 
 
 def x_scene_fit():
-    """Scene fit: build episode 1 at three relief gains with the current plate and cast,
-    audit foot float and on-path time, adopt the best gain, render three probe shots."""
-    sf_ver = "%s|%s|p%d" % (ao, an, st["plate_ver"])          # its own output (the gain) must not re-trigger it
-    if not fresh("scene_fit", sf_ver): return None
-    mark("scene_fit", sf_ver)
-    npy = "SET_RELIEF_NPY=%s" % scene_def["SET_RELIEF_NPY"] if "SET_RELIEF_NPY" in scene_def else ""
-    plate = "SET_PLATE=%s" % scene_def["SET_PLATE"] if "SET_PLATE" in scene_def else ""
-    return "scene_fit", HEAD + """
-# scene_fit @ %s: relief gain sweep, audited
-W=/workspace/loopwork; R=/workspace/review; B=/workspace/blender42/blender
+    """Scene fit per valley episode: build it at three relief gains with its plate and the
+    cast, audit foot float and on-path time, adopt the best gain for THAT episode's key,
+    render three probe shots. Keyed on cast + that episode's plate."""
+    from improve_sets import EPISODES
+    for ep in (1, 2):
+        e = EPISODES[ep]; gk = e.get("gain", "SET_RELIEF_GAIN")
+        sf_ver = "%s|%s|%s" % (ao, an, scene_def.get(e["plate"], "-"))
+        if not fresh("scene_fit_ep%d" % ep, sf_ver): continue
+        mark("scene_fit_ep%d" % ep, sf_ver)
+        env = "unset SET_PLATE SET_RELIEF_NPY SET_RELIEF_GAIN; export IMPROVE_EP=%d " % ep + " ".join(
+            (["SET_PLATE=%s" % scene_def[e["plate"]]] if e["plate"] in scene_def else []) +
+            (["SET_RELIEF_NPY=%s" % scene_def[e["npy"]]] if e["npy"] and e["npy"] in scene_def else []))
+        return "scene_fit", HEAD + """
+# scene_fit episode %d @ %s: relief gain sweep, audited
+W=/workspace/loopwork; R=/workspace/review; B=/workspace/blender42/blender; EP=%d
+%s
 for G in 0.4 0.6 0.8; do
-  %s %s %s SET_RELIEF_GAIN=$G $B -b --python scripts/blender3d/build_film.py -- $W/film_audio $R/sf_g$G.blend $W/sf_shots_g$G.json < /dev/null > $W/improve/sf_build_g$G.log 2>&1
-  grep -q "FILM SCENE SAVED" $W/improve/sf_build_g$G.log || continue
-  %s $B -b $R/sf_g$G.blend --python scripts/blender3d/scene_fit_audit.py -- $W/sf_shots_g$G.json $W/improve/sf_audit_g$G > $W/improve/sf_g$G.txt 2>&1
+  %s SET_RELIEF_GAIN=$G $B -b --python scripts/blender3d/%s -- $W/%s $R/sf${EP}_g$G.blend $W/sf${EP}_shots_g$G.json < /dev/null > $W/improve/sf${EP}_build_g$G.log 2>&1
+  grep -q "FILM SCENE SAVED" $W/improve/sf${EP}_build_g$G.log || continue
+  $B -b $R/sf${EP}_g$G.blend --python scripts/blender3d/scene_fit_audit.py -- $W/sf${EP}_shots_g$G.json $W/improve/sf${EP}_audit_g$G > $W/improve/sf${EP}_g$G.txt 2>&1
 done
-/workspace/venv/bin/python scripts/ops/improve_score.py scene_fit %d
-BEST=$(cat $W/improve/sf_best 2>/dev/null); [ -n "$BEST" ] || exit 0
+/workspace/venv/bin/python scripts/ops/improve_score.py scene_fit %d %s $EP
+BEST=$(cat $W/improve/sf${EP}_best 2>/dev/null); [ -n "$BEST" ] || exit 0
 %s; export CHAR_NORMALFIX=0 FILM_LINES=2.4 FILM_LINE_MINLEN=20 FILM_RES=832x480
-for S in %s; do set -- $S; rm -rf $W/improve/sfp_$1
-  $B -b --factory-startup $R/sf_g$BEST.blend --python scripts/blender3d/film.py -- $W/improve/sfp_$1 "$2" "$3" $4 $5 $5 "$6" 832 480 < /dev/null > $W/improve/sfp_$1.log 2>&1 &
+for S in %s; do set -- $S; rm -rf $W/improve/sfp${EP}_$1
+  $B -b --factory-startup $R/sf${EP}_g$BEST.blend --python scripts/blender3d/film.py -- $W/improve/sfp${EP}_$1 "$2" "$3" $4 $5 $5 "$6" 832 480 < /dev/null > $W/improve/sfp${EP}_$1.log 2>&1 &
 done; wait
 /workspace/venv/bin/python - <<'EOF'
-from PIL import Image, ImageDraw; import glob
-ims=[Image.open(sorted(glob.glob('/workspace/loopwork/improve/sfp_%%s/*.png'%%n))[0]).convert('RGB') for n in ('s02_walk','s03_meet','s11_away') if glob.glob('/workspace/loopwork/improve/sfp_%%s/*.png'%%n)]
+from PIL import Image, ImageDraw; import glob, os
+ep = os.environ.get("IMPROVE_EP", "1")
+ims=[Image.open(sorted(glob.glob('/workspace/loopwork/improve/sfp%%s_%%s/*.png'%%(ep,n)))[0]).convert('RGB') for n in ('s02_walk','s03_meet','s11_away') if glob.glob('/workspace/loopwork/improve/sfp%%s_%%s/*.png'%%(ep,n))]
 if ims:
     w,h=ims[0].size; s=Image.new('RGB',(w*len(ims),h+24),'black'); [s.paste(im,(i*w,24)) for i,im in enumerate(ims)]
-    ImageDraw.Draw(s).text((8,5),'scene fit %s gain '+open('/workspace/loopwork/improve/sf_best').read().strip(),fill='white'); s.save('/workspace/review/SCENE_FIT_%s.png')
+    ImageDraw.Draw(s).text((8,5),'scene fit ep%%s %s gain '%%ep+open('/workspace/loopwork/improve/sf%%s_best'%%ep).read().strip(),fill='white'); s.save('/workspace/review/SCENE_FIT_ep%%s_%s.png'%%ep)
 EOF
-cp $R/sf_g$BEST.blend $R/film_nw_loop.blend; cp $W/sf_shots_g$BEST.json $W/film_shots_loop.json
-""" % (inputs_ver, BUILD_ENV, plate, npy, plate, st["cycle"], MASTER_ENV, PROBES, short, short)
+cp $R/sf${EP}_g$BEST.blend $R/film${EP}_nw_loop.blend 2>/dev/null; [ "$EP" = 1 ] && cp $R/sf1_g$BEST.blend $R/film_nw_loop.blend
+""" % (ep, sf_ver, ep, env, BUILD_ENV, e["script"], e["audio"], st["cycle"], gk, MASTER_ENV, PROBES, short, short)
+    return None
 
 
 def x_walk():
@@ -280,7 +288,7 @@ done
 def ep_inputs(ep):
     from improve_sets import EPISODES
     e = EPISODES[ep]
-    keys = [e["plate"], e["npy"], "SET_RELIEF_GAIN"]
+    keys = [e["plate"], e["npy"], e.get("gain", "SET_RELIEF_GAIN")]
     return "d%d|%s|%s|" % (st["defaults_ver"], ao, an) + "|".join("%s=%s" % (k, scene_def.get(k, "-")) for k in keys if k)
 
 
@@ -296,12 +304,15 @@ def x_episode():
         # an episode without a geometry plate of its own still re-renders when the cast or walk changed
         masters[str(ep)] = iv; st["masters_ver"] = iv
         h = hashlib.md5(iv.encode()).hexdigest()[:6]
-        env = " ".join(["SET_PLATE=%s" % scene_def[e["plate"]]] if e["plate"] in scene_def else []) + " " + \
-              " ".join(["SET_RELIEF_NPY=%s" % scene_def[e["npy"]]] if e["npy"] and e["npy"] in scene_def else [])
+        gk = e.get("gain", "SET_RELIEF_GAIN")
+        env = "unset SET_PLATE SET_RELIEF_NPY SET_RELIEF_GAIN; export " + " ".join(
+            (["SET_PLATE=%s" % scene_def[e["plate"]]] if e["plate"] in scene_def else []) +
+            (["SET_RELIEF_NPY=%s" % scene_def[e["npy"]]] if e["npy"] and e["npy"] in scene_def else []) +
+            (["SET_RELIEF_GAIN=%s" % scene_def[gk]] if gk in scene_def else []))
         return "episode", HEAD + """
 # episode %d @ %s -> %s_loop_%s.mp4
 W=/workspace/loopwork; R=/workspace/review; B=/workspace/blender42/blender; H=%s; EPO=%s
-export %s
+%s
 %s $B -b --python scripts/blender3d/%s -- $W/%s $R/film${EPO}_loop_$H.blend $W/film${EPO}_shots_loop_$H.json < /dev/null > $W/improve/ep%d_build_$H.log 2>&1
 grep -q "FILM SCENE SAVED" $W/improve/ep%d_build_$H.log || { echo "- $(date +%%F\ %%H:%%M) episode %d @ $H: BUILD FAILED" >> $LEDGER; exit 0; }
 $B -b $R/film${EPO}_loop_$H.blend --python scripts/blender3d/scene_fit_audit.py -- $W/film${EPO}_shots_loop_$H.json $W/improve/ep%d_audit_$H > $W/improve/ep%d_audit_$H.txt 2>&1 || true
@@ -312,7 +323,7 @@ bash scripts/ops/render_episode.sh sl_film${EPO}_shots_loop_$H.json film${EPO}_l
 [ -f $R/%s_loop_$H.mp4 ] && ffmpeg -v error -y -i $R/%s_loop_$H.mp4 -c:v libx264 -crf 23 -preset medium -pix_fmt yuv420p -c:a aac -movflags +faststart $R/%s_loop_${H}_web.mp4
 rm -rf $W/filmL${EPO}$H
 echo "- $(date +%%F\ %%H:%%M) episode %d @ $H (%s): $([ -f $R/%s_loop_${H}_web.mp4 ] && echo rendered %s_loop_${H}_web.mp4 || echo RENDER FAILED); $(grep -h '^SF' $W/improve/ep%d_audit_$H.txt | tr '\n' ';')" >> $LEDGER
-""" % (ep, iv, e["out"], h, h, "" if ep == 1 else str(ep), env.strip() or "IMPROVE_EP=%d" % ep, BUILD_ENV, e["script"], e["audio"], ep, ep, ep, ep, ep,
+""" % (ep, iv, e["out"], h, h, "" if ep == 1 else str(ep), env.rstrip(" export"), BUILD_ENV, e["script"], e["audio"], ep, ep, ep, ep, ep,
        MASTER_ENV, e["sun"], e["title"], e["audio"], e["out"], ep, e["out"], e["out"], e["out"], ep, iv, e["out"], e["out"], ep)
     return None
 

@@ -32,6 +32,6 @@ PROMPTS = {
 }
 EPISODES = {
     1: dict(script="build_film.py",  audio="film_audio",  title="The Nine Waterfalls", sun="52,118", out="nine_waterfalls", plate="SET_PLATE",        npy="SET_RELIEF_NPY"),
-    2: dict(script="build_film2.py", audio="film2_audio", title="The First Snow",      sun="45,120", out="first_snow",      plate="SET_PLATE_WINTER", npy="SET_RELIEF_NPY_WINTER"),
+    2: dict(script="build_film2.py", audio="film2_audio", title="The First Snow",      sun="45,120", out="first_snow",      plate="SET_PLATE_WINTER", npy="SET_RELIEF_NPY_WINTER", gain="SET_RELIEF_GAIN_WINTER"),
     3: dict(script="build_film3.py", audio="film3_audio", title="The Farewell Cliff",  sun="26,96",  out="farewell_cliff",  plate="SET_PLATE_CLIFF",  npy=None),
 }
