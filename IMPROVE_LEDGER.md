@@ -616,3 +616,4 @@ One line per experiment the GPU loop ran, newest last.
 - 2026-10-09 06:05 episode 2 @ 4c130d (d1|oisin4|niamh4|SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png|SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy|SET_RELIEF_GAIN=0.8): rendered first_snow_loop_4c130d_web.mp4; 
 - 2026-10-09 08:01 episode 3 @ 420767 (d1|oisin4|niamh4|SET_PLATE_CLIFF=-|SET_RELIEF_GAIN=0.8): rendered farewell_cliff_loop_420767_web.mp4; 
 - 2026-10-09 08:07 craft: FILM_FILL A/B over 0,0.6,1.2 -> AB_craft_FILM_FILL.png (human pick)
+- 2026-10-09 08:21 plate_shots_geo round 0: side r=0.40 style=0.89 ADOPTED (4/4 passed); reverse: none of 4 beat the standing plate (0 failed style); closer r=0.46 style=0.88 ADOPTED (4/4 passed) -> plate v19
