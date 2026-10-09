@@ -1,19 +1,19 @@
 # Improvement status
 
-Updated 2026-10-09 08:21. Cycle 534.
+Updated 2026-10-09 08:37. Cycle 535.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **23%** of the last 24 h (339 busy minutes; 3 minutes unsampled, counted idle); mean utilisation of sampled minutes 22%
+- card working (>=20%) **23%** of the last 24 h (341 busy minutes; 2 minutes unsampled, counted idle); mean utilisation of sampled minutes 22%
 
 ## Adopted (what the masters are rendered with)
 
 - walk: RW_STRIDE=0.6, RW_DROP=0.062, RW_ARM_OUT=10 (defaults v1)
-- scene: SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png, SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy, SET_RELIEF_GAIN=0.8, SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png, SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy (plate v19)
+- scene: SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png, SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy, SET_RELIEF_GAIN=0.8, SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png, SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy (plate v20)
 - cast oisin: oisin4 (hand compactness 0.73, lower is better)
 - cast niamh: niamh4 (hand compactness 0.74, lower is better)
 - masters: nine_waterfalls_loop_419a38_web.mp4, nine_waterfalls_loop_c7a15f_web.mp4, nine_waterfalls_loop_e794bc_web.mp4
-- masters built at inputs: d1|oisin4|niamh4|SET_PLATE_CLIFF=-|SET_RELIEF_GAIN=0.8; current inputs: d1|oisin4|niamh4|p18|s84a4b1
+- masters built at inputs: d1|oisin4|niamh4|SET_PLATE_CLIFF=-|SET_RELIEF_GAIN=0.8; current inputs: d1|oisin4|niamh4|p19|s84a4b1
 
 ## Settled (not re-run until an input changes)
 
@@ -44,6 +44,7 @@ Updated 2026-10-09 08:21. Cycle 534.
 - plate_shots_m16_r0: queued @ g2
 - plate_shots_m17_r1: queued @ g2
 - plate_shots_valley_bb967a36_r0: queued @ g2
+- plate_shots_valley_bb967a36_r1: queued @ g2
 - scene_fit_ep1: settled (gain 0.8) @ oisin4|niamh4|/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png
 - walk_RW_ARM_OUT: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
 - walk_RW_DROP: queued @ d1|st_chibi3_oisin_m22223|st_chibi3_niamh_m20705_tex|p2|s39c2a7
@@ -64,7 +65,6 @@ Updated 2026-10-09 08:21. Cycle 534.
 
 ## Last 12 experiments
 
-- 2026-10-09 01:10 craft: FILM_FILL A/B over 0,0.6,1.2 -> AB_craft_FILM_FILL.png (human pick)
 - 2026-10-09 01:13 craft: FILM_FILL=0.6 ADOPTED into the loop's master recipe (AB_craft_FILM_FILL: lifts the near head's hair detail in the over-the-shoulder, neutral on close and wide; 1.2 flattens the face)
 - 2026-10-09 01:24 plate_shots round 1: side: none of 4 beat the standing plate (0 failed style); reverse: none of 4 beat the standing plate (0 failed style); closer: none of 4 beat the standing plate (0 failed style)
 - 2026-10-09 01:34 plate_hires valley_side: best sharpness x1.07 (need >1.15), style 0.969 -> not adopted
@@ -76,3 +76,4 @@ Updated 2026-10-09 08:21. Cycle 534.
 - 2026-10-09 08:01 episode 3 @ 420767 (d1|oisin4|niamh4|SET_PLATE_CLIFF=-|SET_RELIEF_GAIN=0.8): rendered farewell_cliff_loop_420767_web.mp4; 
 - 2026-10-09 08:07 craft: FILM_FILL A/B over 0,0.6,1.2 -> AB_craft_FILM_FILL.png (human pick)
 - 2026-10-09 08:21 plate_shots_geo round 0: side r=0.40 style=0.89 ADOPTED (4/4 passed); reverse: none of 4 beat the standing plate (0 failed style); closer r=0.46 style=0.88 ADOPTED (4/4 passed) -> plate v19
+- 2026-10-09 08:37 plate_shots_geo round 1: side r=0.42 style=0.92 ADOPTED (4/4 passed); reverse r=0.38 style=0.92 ADOPTED (4/4 passed); closer r=0.52 style=0.87 ADOPTED (4/4 passed) -> plate v20
