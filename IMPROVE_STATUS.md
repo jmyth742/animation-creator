@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-09 01:06. Cycle 524.
+Updated 2026-10-09 01:10. Cycle 524.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **28%** of the last 24 h (407 busy minutes; 3 minutes unsampled, counted idle); mean utilisation of sampled minutes 27%
+- card working (>=20%) **28%** of the last 24 h (406 busy minutes; 2 minutes unsampled, counted idle); mean utilisation of sampled minutes 27%
 
 ## Adopted (what the masters are rendered with)
 
@@ -53,6 +53,7 @@ Updated 2026-10-09 01:06. Cycle 524.
 ## Awaiting a human pick
 
 - AB_craft_CHAR_AO.png
+- AB_craft_FILM_FILL.png
 - AB_craft_FILM_INTEGRATE.png
 - AB_craft_FILM_LINES.png
 - AB_craft_FILM_LINE_ALPHA.png
@@ -61,7 +62,6 @@ Updated 2026-10-09 01:06. Cycle 524.
 
 ## Last 12 experiments
 
-- 2026-10-08 21:05 plate_geo winter round 10: 9 plates, best r10_winter_cn0.7_flux_d60.png agreement r=0.397 style 0.932 vs old plate r=0.298 -> ADOPTED as master_winter_geo.png (plate v12)
 - 2026-10-08 21:18 plate_geo winter round 11: 9 plates, best r11_winter_cn0.9_flux_d60.png agreement r=0.459 style 0.936 vs old plate r=0.298 -> ADOPTED as master_winter_geo.png (plate v13)
 - 2026-10-08 21:30 plate_geo winter round 12: 9 plates (5 failed the style gate >=0.85), best agreement r=0.511 vs old plate r=0.298, adopted r=0.511 stands
 - 2026-10-08 21:45 plate_shots round 1: side r=0.55 style=0.90 ADOPTED (4/4 passed); reverse r=0.46 style=0.91 ADOPTED (4/4 passed); closer r=0.61 style=0.89 ADOPTED (4/4 passed) -> plate v14
@@ -73,3 +73,4 @@ Updated 2026-10-09 01:06. Cycle 524.
 - 2026-10-08 22:48 scene_fit @521: gains 0.4,0.6,0.8 -> best gain 0.8 (on path 84%, foot float p95 0 mm) (unchanged)
 - 2026-10-09 00:48 episode 1 @ c7a15f (d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705|SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png|SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy|SET_RELIEF_GAIN=0.8): rendered nine_waterfalls_loop_c7a15f_web.mp4; 
 - 2026-10-09 01:06 plate_shots round 0: side r=0.40 style=0.92 ADOPTED (4/4 passed); reverse r=0.35 style=0.93 ADOPTED (4/4 passed); closer r=0.48 style=0.88 ADOPTED (4/4 passed) -> plate v17
+- 2026-10-09 01:10 craft: FILM_FILL A/B over 0,0.6,1.2 -> AB_craft_FILM_FILL.png (human pick)
