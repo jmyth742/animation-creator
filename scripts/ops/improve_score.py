@@ -204,6 +204,10 @@ elif mode == "plate_shots":
                 if sty < STYLE_MIN: rej += 1; continue
                 sc = r + 0.6 * (sty - STYLE_MIN)
                 if sc > best[0]: best = (sc, pth); br, bs = r, sty
+        if best[1] is not None and os.environ.get("PS_REVIEW_ONLY"):
+            os.makedirs(SETS + "/setups_review", exist_ok=True)
+            Image.open(best[1]).convert("RGB").save("%s/setups_review/%s%s_r%d.png" % (SETS, setup, suffix, rnd))
+            parts.append("%s r=%.2f style=%.2f best candidate saved for review" % (setup, br, bs)); continue
         if best[1] is not None:
             im = Image.open(best[1]).convert("RGB"); im.save("%s/%s%s.png" % (SETS, setup, suffix))
             im.resize((im.width * 2, im.height * 2), Image.LANCZOS).save("%s/%s%s_4x.png" % (SETS, setup, suffix))

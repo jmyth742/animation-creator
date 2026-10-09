@@ -117,7 +117,11 @@ done
 
 
 def x_plate_shots():
-    """Per-shot setups (side, reverse, closer) of each adopted master plate: the renderer swaps
+    """SETUPS REVIEW-ONLY (9 Oct): adopted side/closer plates kept drifting the hall (green block,
+    gothic gold, a white disc) at style scores the gate accepted; the master plate projected from
+    every shot camera is consistent. Candidates are still generated to review/SETUPS_candidates
+    for a human pick, never adopted -- the scorer is called in review mode.
+    Per-shot setups (side, reverse, closer) of each adopted master plate: the renderer swaps
     them in by shot heading, so every angle of a place must be the same place. Each is painted
     from its own geometry guide, img2img from the setup's init, style-judged against the set's
     adopted master. Two rounds per master; seeds move with the plate version so a redo gives new
@@ -132,7 +136,7 @@ def x_plate_shots():
         rk = "shots_rounds" if setname == "valley" else "shots_rounds_winter"
         if st.get(rk + "_for") != mver: st[rk] = 0; st[rk + "_for"] = mver        # a new master: redo its setups
         rnd = st.get(rk, 0)
-        if rnd >= 2: continue
+        if rnd >= 1: continue                                   # one round of candidates per master is enough for a pick
         st[rk] = rnd + 1; mark("plate_shots_%s_%s_r%d" % (setname, mver, rnd), "g2")
         seed = 7100 + rnd * 11 + st["plate_ver"] * 101
         body = HEAD + "# plate_shots %s round %d: side / reverse / closer painted from their own geometry guides\n" % (setname, rnd)
@@ -142,7 +146,7 @@ def x_plate_shots():
             body += ("for CN in 0.6 0.8; do PG_PROMPT=%s PF_CN=$CN PF_SEED=%d PF_GUIDE=/workspace/loopwork/geo/valley2_%s_depth.png PF_GUIDE_COMFY=geo_depth2_%s.png PF_INIT_COMFY=%s "
                      "PF_STYLE_REF=%s /workspace/venv/bin/python scripts/blender3d/plate_flux_depth.py "
                      "/workspace/loopwork/geo/ps%d_%s%s_cn${CN} 0.55 0.7 2>&1 | grep -E '^PF agreement|Traceback|Error'; done\n") % (json.dumps(PROMPTS[setname]), seed, c, c, init, master, rnd, c, suffix, )
-        body += "/workspace/venv/bin/python scripts/ops/improve_score.py plate_shots %d %s\n" % (rnd, suffix)
+        body += "PS_REVIEW_ONLY=1 /workspace/venv/bin/python scripts/ops/improve_score.py plate_shots %d %s\n" % (rnd, suffix)
         return "plate_shots", body
     return None
 
