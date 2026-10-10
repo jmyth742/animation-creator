@@ -1,19 +1,19 @@
 # Improvement status
 
-Updated 2026-10-09 13:44. Cycle 543.
+Updated 2026-10-10 14:21. Cycle 548.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **21%** of the last 24 h (307 busy minutes; 2 minutes unsampled, counted idle); mean utilisation of sampled minutes 19%
+- card working (>=20%) **3%** of the last 24 h (46 busy minutes; 1146 minutes unsampled, counted idle); mean utilisation of sampled minutes 10%
 
 ## Adopted (what the masters are rendered with)
 
 - walk: RW_STRIDE=0.6, RW_DROP=0.062, RW_ARM_OUT=10 (defaults v1)
-- scene: SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png, SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy, SET_RELIEF_GAIN=0.8, SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png, SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy, SET_RELIEF_GAIN_WINTER=0.4 (plate v23)
+- scene: SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png, SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy, SET_RELIEF_GAIN=0.8, SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png, SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy, SET_RELIEF_GAIN_WINTER=0.4 (plate v24)
 - cast oisin: oisin4 (hand compactness 0.73, lower is better)
 - cast niamh: niamh4 (hand compactness 0.74, lower is better)
 - masters: nine_waterfalls_loop_419a38_web.mp4, nine_waterfalls_loop_c7a15f_web.mp4, nine_waterfalls_loop_e794bc_web.mp4
-- masters built at inputs: d1|oisin4|niamh4|SET_PLATE_CLIFF=-|SET_RELIEF_GAIN=0.8; current inputs: d1|oisin4|niamh4|p23|sc02f8d
+- masters built at inputs: d1|oisin4|niamh4|SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png|SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy|SET_RELIEF_GAIN=0.8; current inputs: d1|oisin4|niamh4|p24|sc02f8d
 
 ## Settled (not re-run until an input changes)
 
@@ -68,8 +68,6 @@ Updated 2026-10-09 13:44. Cycle 543.
 
 ## Last 12 experiments
 
-- 2026-10-09 08:01 episode 3 @ 420767 (d1|oisin4|niamh4|SET_PLATE_CLIFF=-|SET_RELIEF_GAIN=0.8): rendered farewell_cliff_loop_420767_web.mp4; 
-- 2026-10-09 08:07 craft: FILM_FILL A/B over 0,0.6,1.2 -> AB_craft_FILM_FILL.png (human pick)
 - 2026-10-09 08:21 plate_shots_geo round 0: side r=0.40 style=0.89 ADOPTED (4/4 passed); reverse: none of 4 beat the standing plate (0 failed style); closer r=0.46 style=0.88 ADOPTED (4/4 passed) -> plate v19
 - 2026-10-09 08:37 plate_shots_geo round 1: side r=0.42 style=0.92 ADOPTED (4/4 passed); reverse r=0.38 style=0.92 ADOPTED (4/4 passed); closer r=0.52 style=0.87 ADOPTED (4/4 passed) -> plate v20
 - 2026-10-09 08:52 plate_shots_winter_geo round 0: side r=0.53 style=0.88 ADOPTED (4/4 passed); reverse r=0.36 style=0.89 ADOPTED (4/4 passed); closer r=0.50 style=0.87 ADOPTED (4/4 passed) -> plate v21
@@ -79,4 +77,6 @@ Updated 2026-10-09 13:44. Cycle 543.
 - 2026-10-09 09:36 plate_hires valley_closer: best sharpness x1.14 (need >1.15), style 0.954 -> not adopted
 - 2026-10-09 09:58 scene_fit ep2 @541: gains 0.4,0.6,0.8 -> best SET_RELIEF_GAIN_WINTER=0.4 (on path 80%, foot float p95 0 mm) ADOPTED
 - 2026-10-09 11:51 episode 2 @ f03553 (d1|oisin4|niamh4|SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png|SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy|SET_RELIEF_GAIN_WINTER=0.4): rendered first_snow_loop_f03553_web.mp4; 
-- 2026-10-09 13:44 episode 3 @ 420767 (d1|oisin4|niamh4|SET_PLATE_CLIFF=-|SET_RELIEF_GAIN=0.8): rendered farewell_cliff_loop_420767_web.mp4;
+- 2026-10-09 13:44 episode 3 @ 420767 (d1|oisin4|niamh4|SET_PLATE_CLIFF=-|SET_RELIEF_GAIN=0.8): rendered farewell_cliff_loop_420767_web.mp4; 
+- 2026-10-09 13:48 plates: per-shot setups withdrawn from the masters (side/closer drifted the hall at accepted style scores); the master plate is projected from every shot camera; setups are candidates for a human pick only
+- 2026-10-10 14:21 episode 1 @ e794bc (d1|oisin4|niamh4|SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png|SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy|SET_RELIEF_GAIN=0.8): rendered nine_waterfalls_loop_e794bc_web.mp4;
