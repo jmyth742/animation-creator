@@ -56,3 +56,10 @@ angle (behind Niamh in the over-the-shoulder of episode 1) — needs a real hall
 **`farewell_cliff_loop_420767_web.mp4.part*`** (replaces part 3) — episode 3 with the follow projection
 (`EP3_420767_follow_frames.png`). All three episodes now share: geometry-first plates (valley, winter), calibrated cast,
 fill light, projector following the camera on moving shots, relief tuned per episode by audit.
+
+## Part 6 (10 Oct, 21:45) — near-figure guard
+
+**`nine_waterfalls_loop_6efe7b_web.mp4`** (replaces `e794bc`) — `EP1_6efe7b_guard_frames.png`. New shot-language rule:
+a camera closer than 2 m to a figure that is not its aim point slides sideways past it. The over-the-shoulder shots
+that used to be a dark head across a third of the frame are now clean shots of the speaker, with the listener small at
+the frame edge. Episodes 2 and 3 follow with the same rule.
