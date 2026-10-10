@@ -37,3 +37,16 @@ Decision taken on review of the per-shot setup plates: at style scores the gate 
 drifting the hall (a green block, a gothic gold version, a white disc on the winter side). The master plate projected from
 every shot camera is consistent, so the setups are **withdrawn** from the masters; the loop still paints candidates for a
 human pick (`setups_review/`). Episodes 1 and 2 re-render on master-only plates next.
+
+## Part 4 (10 Oct, 17:00) — the follow-projection masters
+
+The streaked bands and smeared hall in the moving shots turned out to be a projection flaw: the plate was projected once
+from mid-shot, and every orbit/dolly/pan drifted away from it. The projector now **follows the camera frame by frame** on
+moving shots (the painting pans like a 2D anime background under the 3D cast). Episodes 1 and 2 re-rendered with it, on
+the master plates only (per-shot setups withdrawn):
+
+- **`nine_waterfalls_loop_e794bc_web.mp4`** (replaces the part-1 file of the same name) — `EP1_e794bc_follow_frames.png`
+- **`first_snow_loop_f03553_web.mp4`** (replaces `4c130d`) — `EP2_f03553_follow_frames.png`: no bottom band any more.
+
+Episode 3 with the same fix follows. Known remaining blemish: the hall billboard smears its texels when seen at a grazing
+angle (behind Niamh in the over-the-shoulder of episode 1) — needs a real hall mass rather than a billboard; next on the list.
