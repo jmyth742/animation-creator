@@ -54,6 +54,9 @@ reclaim() {
   find /workspace/loopwork -maxdepth 1 -name "*.log" ! -name "gpu_keeper.log" -size +20M -delete 2>/dev/null
   # frame dumps of finished or abandoned renders, and scene-fit scratch blends
   rm -rf /workspace/loopwork/filmL* /workspace/review/sf*_g*.blend 2>/dev/null
+  # per-hash episode blends and non-web masters: keep the newest two per episode
+  for EP in film film2 film3; do ls -t /workspace/review/${EP}_loop_*.blend 2>/dev/null | tail -n +3 | xargs -r rm -f; done
+  for EP in nine_waterfalls first_snow farewell_cliff; do ls -t /workspace/review/${EP}_loop_*.mp4 2>/dev/null | grep -v _web | tail -n +3 | xargs -r rm -f; done
   # frame dumps whose video was already assembled, and probe frames older than a day
   find /workspace/loopwork -maxdepth 1 -type d \( -name "show_ep*" -o -name "sw_*" -o -name "sw2_*" \
        -o -name "probe_*" -o -name "allshots_*" \) -mmin +120 -exec rm -rf {} + 2>/dev/null
