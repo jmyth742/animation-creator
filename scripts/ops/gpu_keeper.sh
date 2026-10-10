@@ -42,7 +42,8 @@ refill() {
 # into a 600-iteration spin on empty scripts with the GPU idle all night. `df` lies about
 # this quota, so the only reliable test is to actually write.
 space_ok() {
-  dd if=/dev/zero of=/workspace/.keeper_probe bs=1M count=300 >/dev/null 2>&1
+  # a master render needs ~3 GB of frame dump plus a 300 MB blend: probe for 2 GB, not 300 MB
+  dd if=/dev/zero of=/workspace/.keeper_probe bs=1M count=2000 >/dev/null 2>&1
   local rc=$?
   rm -f /workspace/.keeper_probe
   return $rc
@@ -50,7 +51,9 @@ space_ok() {
 
 reclaim() {
   log "DISK FULL — reclaiming"
-  find /workspace/loopwork -maxdepth 1 -name "*.log" -size +20M -delete 2>/dev/null
+  find /workspace/loopwork -maxdepth 1 -name "*.log" ! -name "gpu_keeper.log" -size +20M -delete 2>/dev/null
+  # frame dumps of finished or abandoned renders, and scene-fit scratch blends
+  rm -rf /workspace/loopwork/filmL* /workspace/review/sf*_g*.blend 2>/dev/null
   # frame dumps whose video was already assembled, and probe frames older than a day
   find /workspace/loopwork -maxdepth 1 -type d \( -name "show_ep*" -o -name "sw_*" -o -name "sw2_*" \
        -o -name "probe_*" -o -name "allshots_*" \) -mmin +120 -exec rm -rf {} + 2>/dev/null
