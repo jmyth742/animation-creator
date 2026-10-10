@@ -326,7 +326,7 @@ rm -rf $W/filmL${EPO}$H $W/filmL${EPO}$H.*.log
 bash scripts/ops/render_episode.sh sl_film${EPO}_shots_loop_$H.json film${EPO}_loop_$H.blend filmL${EPO}$H "%s" %s $R/%s_loop_$H.mp4 6 > $W/improve/ep%d_render_$H.log 2>&1
 [ -f $R/%s_loop_$H.mp4 ] && ffmpeg -v error -y -i $R/%s_loop_$H.mp4 -c:v libx264 -crf 23 -preset medium -pix_fmt yuv420p -c:a aac -movflags +faststart $R/%s_loop_${H}_web.mp4
 rm -rf $W/filmL${EPO}$H
-echo "- $(date +%%F\ %%H:%%M) episode %d @ $H (%s): $([ -f $R/%s_loop_${H}_web.mp4 ] && echo rendered %s_loop_${H}_web.mp4 || echo RENDER FAILED); $(grep -h '^SF' $W/improve/ep%d_audit_$H.txt | tr '\n' ';')" >> $LEDGER
+echo "- $(date +%%F\ %%H:%%M) episode %d @ $H (%s): $([ -f $R/%s_loop_${H}_web.mp4 ] && echo rendered %s_loop_${H}_web.mp4 || echo RENDER FAILED); $(grep -ah '^SF' $W/improve/ep%d_audit_$H.txt | tr '\n' ';')" >> $LEDGER
 """ % (ep, iv, e["out"], h, h, "" if ep == 1 else str(ep), env.rstrip(" export"), BUILD_ENV, e["script"], e["audio"], ep, ep, ep, ep, ep,
        MASTER_ENV, e["sun"], e["title"], e["audio"], e["out"], ep, e["out"], e["out"], e["out"], ep, iv, e["out"], e["out"], ep)
     return None
