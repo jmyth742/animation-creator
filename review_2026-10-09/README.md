@@ -50,3 +50,9 @@ the master plates only (per-shot setups withdrawn):
 
 Episode 3 with the same fix follows. Known remaining blemish: the hall billboard smears its texels when seen at a grazing
 angle (behind Niamh in the over-the-shoulder of episode 1) — needs a real hall mass rather than a billboard; next on the list.
+
+## Part 5 (10 Oct, 19:30)
+
+**`farewell_cliff_loop_420767_web.mp4.part*`** (replaces part 3) — episode 3 with the follow projection
+(`EP3_420767_follow_frames.png`). All three episodes now share: geometry-first plates (valley, winter), calibrated cast,
+fill light, projector following the camera on moving shots, relief tuned per episode by audit.
