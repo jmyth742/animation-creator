@@ -70,7 +70,7 @@ def apply(sc, floor, cam, depth_npy, lake_center=None, lake_radius=0.0, zmax=2.5
         t_pred = 1.0 / inv_t
         d = (p - cam_loc).normalized()
         z = (cam_loc + d * t_pred).z
-        zs[k] = float(min(zmax, max(zmin, z * GAIN)))
+        zs[k] = float(min(float(os.environ.get("SET_RELIEF_ZMAX", zmax)), max(zmin, z * GAIN)))
     # smooth on the grid (the floor is a regular grid: neighbours by index distance)
     n = int(round(math.sqrt(len(verts))))
     if n * n == len(verts):
