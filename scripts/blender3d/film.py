@@ -216,6 +216,16 @@ if pc is not None and os.environ.get("FILM_PAINTER", "shot") == "shot":
             for nd in m.node_tree.nodes:
                 if nd.type == 'TEX_IMAGE': nd.image = img
         cur = img
+    # DENSIFY (11 Oct): UV_PROJECT assigns UVs per vertex and interpolates linearly across a face.
+    # The lake is one 32-vertex NGON, the falls and foam a few quads: seen obliquely they smeared
+    # the painting into diagonal bands (behind Niamh in every over-the-shoulder). A simple
+    # subdivision ahead of the projector gives the interpolation vertices to work with.
+    if os.environ.get("FILM_DENSIFY", "1") not in ("", "0"):
+        for ob in sc.objects:
+            if ob.type != 'MESH' or not any(m.type == 'UV_PROJECT' for m in ob.modifiers): continue
+            if len(ob.data.polygons) >= 400 or ob.modifiers.get("densify"): continue
+            md = ob.modifiers.new("densify", 'SUBSURF'); md.subdivision_type = 'SIMPLE'; md.levels = 3; md.render_levels = 3
+            ob.modifiers.move(len(ob.modifiers) - 1, 0)
     for ob in sc.objects:
         for md in ob.modifiers:
             if md.type != 'UV_PROJECT' or not md.projectors[0].object: continue
