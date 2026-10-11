@@ -63,3 +63,13 @@ fill light, projector following the camera on moving shots, relief tuned per epi
 a camera closer than 2 m to a figure that is not its aim point slides sideways past it. The over-the-shoulder shots
 that used to be a dark head across a third of the frame are now clean shots of the speaker, with the listener small at
 the frame edge. Episodes 2 and 3 follow with the same rule.
+
+## Part 7 (11 Oct, 02:15) — episodes 2 and 3 with the near-figure guard
+
+**`first_snow_loop_3e6ffd_web.mp4`** (replaces `f03553`), **`farewell_cliff_loop_413f71_web.mp4.part*`** (replaces `420767`);
+frames in `EP2_3e6ffd_guard_frames.png`, `EP3_413f71_guard_frames.png`. The three current masters are now
+`nine_waterfalls_loop_6efe7b`, `first_snow_loop_3e6ffd`, `farewell_cliff_loop_413f71`.
+
+`OTS_LAKE_PROBE.png`: the diagonal-band smear behind a figure in side shots was the lake — a single 32-vertex face whose
+projected UVs interpolate linearly. Subdividing the few big single-face meshes at render time removes it (right half).
+That fix goes into the next pass of masters.
