@@ -293,7 +293,7 @@ def ep_inputs(ep):
     from improve_sets import EPISODES
     e = EPISODES[ep]
     keys = [e["plate"], e["npy"], e.get("gain", "SET_RELIEF_GAIN")]
-    return "d%d|%s|%s|sl2|" % (st["defaults_ver"], ao, an) + "|".join("%s=%s" % (k, scene_def.get(k, "-")) for k in keys if k)
+    return "d%d|%s|%s|sl3|" % (st["defaults_ver"], ao, an) + "|".join("%s=%s" % (k, scene_def.get(k, "-")) for k in keys if k)
 
 
 def x_episode():
