@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-11 01:58. Cycle 553.
+Updated 2026-10-11 02:05. Cycle 554.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **6%** of the last 24 h (92 busy minutes; 619 minutes unsampled, counted idle); mean utilisation of sampled minutes 7%
+- card working (>=20%) **6%** of the last 24 h (94 busy minutes; 612 minutes unsampled, counted idle); mean utilisation of sampled minutes 7%
 
 ## Adopted (what the masters are rendered with)
 
@@ -21,7 +21,7 @@ Updated 2026-10-11 01:58. Cycle 553.
 - cast_face_st_chibi3_oisin_m22223: queued @ st_chibi3_oisin_m22223
 - cast_face_st_chibi3_oisin_m23845: queued @ st_chibi3_oisin_m23845
 - craft_CHAR_AO: queued @ d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p7|scb8174
-- craft_FILM_FILL: queued @ d1|oisin4|niamh4|p18|s84a4b1
+- craft_FILM_FILL: queued @ d1|oisin4|niamh4|p24|sc02f8d
 - craft_FILM_INTEGRATE: queued @ d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p7|scb8174
 - craft_FILM_LINES: queued @ d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p7|scb8174
 - craft_FILM_LINE_ALPHA: queued @ d1|st_chibi3_oisin_m23845|st_chibi3_niamh_m20705_tex|p7|scb8174
@@ -68,7 +68,6 @@ Updated 2026-10-11 01:58. Cycle 553.
 
 ## Last 12 experiments
 
-- 2026-10-09 09:28 plate_hires valley_reverse: hr_valley_reverse_cn0.5_d45.png sharpness x1.28 vs the upscale, style 0.958, ground -0.011 -> ADOPTED as reverse_geo_4x.png (plate v23)
 - 2026-10-09 09:36 plate_hires valley_closer: best sharpness x1.14 (need >1.15), style 0.954 -> not adopted
 - 2026-10-09 09:58 scene_fit ep2 @541: gains 0.4,0.6,0.8 -> best SET_RELIEF_GAIN_WINTER=0.4 (on path 80%, foot float p95 0 mm) ADOPTED
 - 2026-10-09 11:51 episode 2 @ f03553 (d1|oisin4|niamh4|SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png|SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy|SET_RELIEF_GAIN_WINTER=0.4): rendered first_snow_loop_f03553_web.mp4; 
@@ -80,3 +79,4 @@ Updated 2026-10-11 01:58. Cycle 553.
 - 2026-10-10 21:36 episode 1 @ 6efe7b (d1|oisin4|niamh4|sl2|SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png|SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy|SET_RELIEF_GAIN=0.8): rendered nine_waterfalls_loop_6efe7b_web.mp4; SF_DONE /workspace/loopwork/improve/ep1_audit_6efe7b.txt ['/workspace/loopwork/improve/ep1_audit_6efe7b_worst_oisin_rigify_1090.png', '/workspace/loopwork/improve/ep1_audit_6efe7b_worst_oisin_rigify_1282.png', '/workspace/loopwork/improve/ep1_audit_6efe7b_worst_oisin_rigify_1266.png', '/workspace/loopwork/improve/ep1_audit_6efe7b_worst_niamh_rigify_1254.png'];
 - 2026-10-10 23:53 episode 2 @ 3e6ffd (d1|oisin4|niamh4|sl2|SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png|SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy|SET_RELIEF_GAIN_WINTER=0.4): rendered first_snow_loop_3e6ffd_web.mp4; SF_DONE /workspace/loopwork/improve/ep2_audit_3e6ffd.txt ['/workspace/loopwork/improve/ep2_audit_3e6ffd_worst_oisin_rigify_1196.png', '/workspace/loopwork/improve/ep2_audit_3e6ffd_worst_oisin_rigify_1254.png', '/workspace/loopwork/improve/ep2_audit_3e6ffd_worst_oisin_rigify_1118.png', '/workspace/loopwork/improve/ep2_audit_3e6ffd_worst_niamh_rigify_1190.png'];
 - 2026-10-11 01:58 episode 3 @ 413f71 (d1|oisin4|niamh4|sl2|SET_PLATE_CLIFF=-|SET_RELIEF_GAIN=0.8): rendered farewell_cliff_loop_413f71_web.mp4; SF_DONE /workspace/loopwork/improve/ep3_audit_413f71.txt ['/workspace/loopwork/improve/ep3_audit_413f71_worst_oisin_rigify_201.png', '/workspace/loopwork/improve/ep3_audit_413f71_worst_oisin_rigify_1.png', '/workspace/loopwork/improve/ep3_audit_413f71_worst_oisin_rigify_658.png', '/workspace/loopwork/improve/ep3_audit_413f71_worst_niamh_rigify_1079.png'];
+- 2026-10-11 02:05 craft: FILM_FILL A/B over 0,0.6,1.2 -> AB_craft_FILM_FILL.png (human pick)
