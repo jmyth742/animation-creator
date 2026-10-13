@@ -1,10 +1,10 @@
 # Improvement status
 
-Updated 2026-10-11 02:21. Cycle 555.
+Updated 2026-10-13 02:26. Cycle 556.
 
 ## GPU duty cycle (last 24 h, 1-min samples)
 
-- card working (>=20%) **6%** of the last 24 h (95 busy minutes; 597 minutes unsampled, counted idle); mean utilisation of sampled minutes 7%
+- card working (>=20%) **0%** of the last 24 h (6 busy minutes; 986 minutes unsampled, counted idle); mean utilisation of sampled minutes 1%
 
 ## Adopted (what the masters are rendered with)
 
@@ -13,7 +13,7 @@ Updated 2026-10-11 02:21. Cycle 555.
 - cast oisin: oisin4 (hand compactness 0.73, lower is better)
 - cast niamh: niamh4 (hand compactness 0.74, lower is better)
 - masters: nine_waterfalls_loop_c7a15f_web.mp4, nine_waterfalls_loop_e794bc_web.mp4, nine_waterfalls_loop_6efe7b_web.mp4
-- masters built at inputs: d1|oisin4|niamh4|sl2|SET_PLATE_CLIFF=-|SET_RELIEF_GAIN=0.8; current inputs: d1|oisin4|niamh4|p24|sc02f8d
+- masters built at inputs: d1|oisin4|niamh4|sl3|SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png|SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy|SET_RELIEF_GAIN=0.8; current inputs: d1|oisin4|niamh4|p24|sc02f8d
 
 ## Settled (not re-run until an input changes)
 
@@ -68,7 +68,6 @@ Updated 2026-10-11 02:21. Cycle 555.
 
 ## Last 12 experiments
 
-- 2026-10-09 09:58 scene_fit ep2 @541: gains 0.4,0.6,0.8 -> best SET_RELIEF_GAIN_WINTER=0.4 (on path 80%, foot float p95 0 mm) ADOPTED
 - 2026-10-09 11:51 episode 2 @ f03553 (d1|oisin4|niamh4|SET_PLATE_WINTER=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_winter_geo.png|SET_RELIEF_NPY_WINTER=/workspace/loopwork/improve/plate_winter_geo_depth.npy|SET_RELIEF_GAIN_WINTER=0.4): rendered first_snow_loop_f03553_web.mp4; 
 - 2026-10-09 13:44 episode 3 @ 420767 (d1|oisin4|niamh4|SET_PLATE_CLIFF=-|SET_RELIEF_GAIN=0.8): rendered farewell_cliff_loop_420767_web.mp4; 
 - 2026-10-09 13:48 plates: per-shot setups withdrawn from the masters (side/closer drifted the hall at accepted style scores); the master plate is projected from every shot camera; setups are candidates for a human pick only
@@ -80,3 +79,4 @@ Updated 2026-10-11 02:21. Cycle 555.
 - 2026-10-11 01:58 episode 3 @ 413f71 (d1|oisin4|niamh4|sl2|SET_PLATE_CLIFF=-|SET_RELIEF_GAIN=0.8): rendered farewell_cliff_loop_413f71_web.mp4; SF_DONE /workspace/loopwork/improve/ep3_audit_413f71.txt ['/workspace/loopwork/improve/ep3_audit_413f71_worst_oisin_rigify_201.png', '/workspace/loopwork/improve/ep3_audit_413f71_worst_oisin_rigify_1.png', '/workspace/loopwork/improve/ep3_audit_413f71_worst_oisin_rigify_658.png', '/workspace/loopwork/improve/ep3_audit_413f71_worst_niamh_rigify_1079.png'];
 - 2026-10-11 02:05 craft: FILM_FILL A/B over 0,0.6,1.2 -> AB_craft_FILM_FILL.png (human pick)
 - 2026-10-11 02:21 craft: FILM_LINES A/B over 3.2,4.8,6.4 -> AB_craft_FILM_LINES.png (human pick)
+- 2026-10-13 02:26 episode 1 @ 1b2778 (d1|oisin4|niamh4|sl3|SET_PLATE=/workspace/text-to-video/series/tir-na-nog-legend/sets/tir_na_nog/master_geo.png|SET_RELIEF_NPY=/workspace/loopwork/improve/plate_geo_depth.npy|SET_RELIEF_GAIN=0.8): RENDER FAILED; SF_DONE /workspace/loopwork/improve/ep1_audit_1b2778.txt ['/workspace/loopwork/improve/ep1_audit_1b2778_worst_oisin_rigify_1090.png', '/workspace/loopwork/improve/ep1_audit_1b2778_worst_oisin_rigify_1282.png', '/workspace/loopwork/improve/ep1_audit_1b2778_worst_oisin_rigify_1266.png', '/workspace/loopwork/improve/ep1_audit_1b2778_worst_niamh_rigify_1254.png'];
